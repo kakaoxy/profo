@@ -42,7 +42,7 @@ class ProjectCreator:
         """
         self.db = db
 
-    def create(self, project_data: ProjectCreate) -> Project:
+    def create(self, project_data: ProjectCreate, *, submitted_by: str | None = None) -> Project:
         """创建项目.
 
         同时创建项目基础记录、合同记录和业主记录（如提供）。
@@ -50,6 +50,7 @@ class ProjectCreator:
 
         Args:
             project_data: 项目创建数据
+            submitted_by: 操作者用户ID（字典 pending 引用审核池「提交人」）
 
         Returns:
             创建成功的项目模型实例
@@ -96,7 +97,7 @@ class ProjectCreator:
                 biz_id=str(project_id),
                 community_id=project.community_id,
                 building_id=project.building_id,
-                submitted_by=None,
+                submitted_by=submitted_by,
                 commit=False,
             )
 

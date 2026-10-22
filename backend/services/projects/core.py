@@ -195,7 +195,7 @@ class ProjectCoreService:
             创建成功的项目响应数据
 
         """
-        project = self.creator.create(project_data)
+        project = self.creator.create(project_data, submitted_by=operator_id)
         # 字典 pending 引用已在 creator.create 内随主事务提交（M3/FR-10 引用闭环），
         # 此处不再补提交——post-commit 补录失败会造成「项目已落库但前端 5xx」的半提交。
         # 重新查询以预加载 builder 所需的所有关联（create 已 commit，关联已 expire）
@@ -462,7 +462,7 @@ class ProjectCoreService:
         )
         # 变更前快照（updater.update 会 commit 并 expire 属性，before 需在更新前构造）
         before_snapshot = _project_snapshot(project)
-        project = self.updater.update(project, update_dict)
+        project = self.updater.update(project, update_dict, submitted_by=operator_id)
         # 字典 pending 引用已在 updater.update 内随主事务提交（M2/BR-22 引用闭环），
         # 此处不再 post-commit 补提交，避免半提交。
 

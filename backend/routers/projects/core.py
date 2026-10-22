@@ -37,7 +37,7 @@ from schemas.project import (
     TodoBoardRulesUpdateRequest,
 )
 from schemas.response import PaginatedResponse
-from services.projects.internal.owners import _OWNER_NOT_FOUND
+from services.projects.internal.owners import is_owner_not_found
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 from services.system.operation_log import operation_log_service
 from utils.common import RateLimits, limiter
@@ -105,7 +105,7 @@ def get_owner_bank_card(
         str(owner_id),
         operator_id=str(current_user.id),
     )
-    if bank_card_number is _OWNER_NOT_FOUND:
+    if is_owner_not_found(bank_card_number):
         msg = "业主不存在"
         raise ResourceNotFoundError(msg)
     # 仅当实际返回了卡号（敏感数据访问成功）时写审计日志

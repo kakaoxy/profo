@@ -40,7 +40,7 @@ class ProjectUpdater:
         """
         self.db = db
 
-    def update(self, project: Project, update_dict: dict[str, Any]) -> Project:
+    def update(self, project: Project, update_dict: dict[str, Any], *, submitted_by: str | None = None) -> Project:
         """更新项目信息.
 
         支持更新项目基础字段、合同信息、业主信息和销售信息。
@@ -49,6 +49,7 @@ class ProjectUpdater:
         Args:
             project: 项目模型实例
             update_dict: 更新数据字典
+            submitted_by: 操作者用户ID（字典 pending 引用审核池「提交人」）
 
         Returns:
             更新后的项目模型实例
@@ -109,7 +110,7 @@ class ProjectUpdater:
                 biz_id=str(project.id),
                 community_id=project.community_id,
                 building_id=project.building_id,
-                submitted_by=None,
+                submitted_by=submitted_by,
                 commit=False,
             )
 

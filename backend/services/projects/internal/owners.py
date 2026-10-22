@@ -19,6 +19,22 @@ logger = logging.getLogger(__name__)
 # 业主不存在/已删除/所属项目已软删的哨兵返回值（区别于「存在但无卡」的 None）
 _OWNER_NOT_FOUND = object()
 
+
+def is_owner_not_found(value: object) -> bool:
+    """判断 get_bank_card_number 的返回值是否为「业主不存在」哨兵.
+
+    供 Router 层等外部消费方使用，避免直接导入模块私有名。
+
+    Args:
+        value: get_bank_card_number 的返回值
+
+    Returns:
+        业主不存在时 True
+
+    """
+    return value is _OWNER_NOT_FOUND
+
+
 _OWNER_FIELDS: tuple[str, ...] = (
     "owner_name",
     "owner_phone",
