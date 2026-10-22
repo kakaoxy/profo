@@ -10,7 +10,7 @@ export interface SalesRecordOperator {
 export interface SalesRecord {
   id: string;
   project_id: string;
-  record_type: "viewing" | "offer" | "negotiation" | "sold";
+  record_type: "viewing" | "offer" | "negotiation";
   customer_name?: string;
   price?: number;
   record_date: string;

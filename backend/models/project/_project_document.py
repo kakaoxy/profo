@@ -1,8 +1,9 @@
 """项目文书签收模型."""
 
+import datetime
 import uuid
 
-from sqlalchemy import Boolean, Index, Integer, String, Uuid
+from sqlalchemy import Boolean, Date, Index, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.common.base import BaseModel, DocumentSignoffStatus
@@ -21,7 +22,7 @@ class ProjectDocument(BaseModel):
         default=DocumentSignoffStatus.UNSIGNED.value,
         comment="签收状态: unsigned/signed/archived",
     )
-    archive_date: Mapped[str | None] = mapped_column(String(10), nullable=True, comment="归档日期 YYYY-MM-DD")
+    archive_date: Mapped[datetime.date | None] = mapped_column(Date, nullable=True, comment="归档日期")
     display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0, comment="显示顺序")
     category: Mapped[str] = mapped_column(String(50), nullable=False, default="other", comment="文书分类")
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")

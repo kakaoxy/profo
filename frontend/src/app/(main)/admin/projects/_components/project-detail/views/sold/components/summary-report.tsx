@@ -9,6 +9,8 @@ import { safeFormatDate } from "@/lib/formatters";
 
 interface SummaryReportProps {
   project: Project;
+  /** 渠道经理展示名（由页面级 usersById 解析 channel_manager_id；缺失省略渠道行） */
+  channelManagerName?: string | null;
 }
 
 interface InfoField {
@@ -18,16 +20,16 @@ interface InfoField {
   full?: boolean;
 }
 
-export function SummaryReport({ project }: SummaryReportProps) {
+export function SummaryReport({ project, channelManagerName }: SummaryReportProps) {
   const [copied, setCopied] = useState(false);
   const today = useCurrentDate();
 
   const netProfit = Number(project.net_cash_flow) || 0; // 元
   const roi = Number(project.roi) || 0; // %
-  const totalInvestment = Number(project.total_investment ?? project.total_expense ?? 0) || 0; // 元
+  const totalInvestment = Number(project.total_expense ?? 0) || 0; // 元
 
   const signingDateStr = project.signing_date || project.created_at;
-  const soldDateStr = project.sold_at || project.sold_date;
+  const soldDateStr = project.sold_date;
 
   // 项目周期：签约 → 成交
   let projectDays: number | null = null;
@@ -57,10 +59,10 @@ export function SummaryReport({ project }: SummaryReportProps) {
   const offerCount = salesRecords?.filter((r) => r.record_type === "offer").length;
 
   // 成交渠道：无渠道数据则整行省略
-  const channelName = project.channel_manager?.trim() || null;
+  const channelName = channelManagerName?.trim() || null;
 
-  // 经验备注：无专用字段，复用项目备注（notes/remarks），无则整行省略
-  const experienceNote = project.notes?.trim() || project.remarks?.trim() || null;
+  // 经验备注真源为 owner_info（后端提交侧 notes 映射到 owner_info），无则整行省略
+  const experienceNote = project.owner_info?.trim() || null;
 
   const fields: InfoField[] = [
     projectDays != null

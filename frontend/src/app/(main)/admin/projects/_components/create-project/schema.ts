@@ -30,7 +30,8 @@ const roomNumberSchema = z
     message: "请输入非负整数",
   });
 
-// 朝向选项
+// 朝向选项（预设值；后端 orientation 为自由文本 max_length=50，
+// 编辑存量项目含非常规朝向时需放行，故 schema 校验为字符串而非枚举白名单）
 export const ORIENTATION_OPTIONS = [
   { value: "南北", label: "南北" },
   { value: "南", label: "南" },
@@ -38,8 +39,6 @@ export const ORIENTATION_OPTIONS = [
   { value: "西", label: "西" },
   { value: "北", label: "北" },
 ] as const;
-
-export const orientationEnum = z.enum(["南北", "南", "东", "西", "北"]);
 
 // 业务形式枚举（"" 表示未设置，对应后端 null）
 export const BUSINESS_FORM_OPTIONS = [
@@ -102,8 +101,8 @@ export const formSchema = z
     halls: roomNumberSchema,
     bathrooms: roomNumberSchema,
 
-    // 朝向 - 单选框
-    orientation: orientationEnum.default("南北"),
+    // 朝向 - 单选框（预设 5 值；后端为自由文本 max_length=50，编辑存量项目放行任意值）
+    orientation: z.string().max(50).default("南北"),
 
     // 楼层信息（如：5/28层），与线索表单格式一致
     floor_info: z.string().max(50).optional(),

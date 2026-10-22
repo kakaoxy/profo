@@ -13,6 +13,7 @@ import {
   STAGE_CONFIG,
   type ViewMode,
 } from "../../../_components/project-detail/constants";
+import type { RenovationContractMeta } from "../../../_components/project-detail/views/renovation/kpi";
 import { getBusinessFormLabel } from "./config";
 import { StageStepper } from "./stage-stepper";
 
@@ -24,6 +25,8 @@ interface HeroSectionProps {
   onViewModeChange: (mode: ViewMode) => void;
   /** 已售态「修改销售信息」textlink（联动 SoldView 的 EditSalesInfoDialog） */
   onEditSalesInfo?: () => void;
+  /** 装修合同摘要（装修阶段「第 N 天」开工日来源：actualStart → contractStart） */
+  renovationMeta?: RenovationContractMeta;
 }
 
 interface MetaPart {
@@ -103,14 +106,20 @@ function pushBasePart(parts: MetaPart[], project: Project) {
  * - 已售：小区·区/商圈·面积·「成交周期 N 天」（优先 days_on_market，否则成交-上架日期差）
  * - 已下架：小区·区/商圈·面积
  */
-function buildMetaParts(project: Project, stageKey: string, today: Date | null): MetaPart[] {
+function buildMetaParts(
+  project: Project,
+  stageKey: string,
+  today: Date | null,
+  renovationStart?: string | null,
+): MetaPart[] {
   const parts: MetaPart[] = [];
 
   switch (stageKey) {
     case "renovation": {
       pushBasePart(parts, project);
       if (project.area) parts.push({ key: "area", node: <span>{project.area} ㎡</span> });
-      const startDate = toDate(project.renovation_start_date);
+      // 开工日：实际开工 → 合同开工（装修合同子资源，随 renovationMeta 下发）
+      const startDate = toDate(renovationStart);
       if (startDate && today) {
         const elapsed = differenceInDays(today, startDate) + 1;
         parts.push({ key: "day-n", node: <span>第 {elapsed} 天</span> });
@@ -143,7 +152,7 @@ function buildMetaParts(project: Project, stageKey: string, today: Date | null):
           node: <span>成交周期 {project.days_on_market} 天</span>,
         });
       } else {
-        const soldDate = toDate(project.sold_at || project.sold_date);
+        const soldDate = toDate(project.sold_date);
         const listingDate = toDate(project.listing_date);
         if (soldDate && listingDate) {
           parts.push({
@@ -186,6 +195,7 @@ export function HeroSection({
   currentProjectStageIndex,
   onViewModeChange,
   onEditSalesInfo,
+  renovationMeta,
 }: HeroSectionProps) {
   const today = useCurrentDate();
   const { stageLabel } = useRenovationStageLabel();
@@ -195,7 +205,12 @@ export function HeroSection({
   const pillClass = STATUS_PILL_CLASS[statusStage.key] ?? STATUS_PILL_CLASS.signing;
   const pillLabel = getStatusPillLabel(project, statusStage.key, stageLabel);
   const businessFormLabel = getBusinessFormLabel(project.business_form);
-  const metaParts = buildMetaParts(project, statusStage.key, today);
+  const metaParts = buildMetaParts(
+    project,
+    statusStage.key,
+    today,
+    renovationMeta?.actualStart ?? renovationMeta?.contractStart,
+  );
   // 归档态单一判据：归档后状态 pill 旁追加锁形 badge，隐藏「修改销售信息」写入口
   const isArchived = project.is_archived === true;
 

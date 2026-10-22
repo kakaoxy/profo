@@ -9,7 +9,7 @@ export type ApiSalesRecord = {
   notes?: string | null;
 };
 
-const VALID_RECORD_TYPES = ["viewing", "offer", "negotiation", "sold"] as const;
+const VALID_RECORD_TYPES = ["viewing", "offer", "negotiation"] as const;
 export type ValidRecordType = (typeof VALID_RECORD_TYPES)[number];
 
 export function isValidRecordType(type: string): type is ValidRecordType {
@@ -44,12 +44,8 @@ export function validateAndTransformSalesRecords(
     if (typeof record.record_date !== "string") continue;
 
     const recordType = record.record_type;
-    if (
-      recordType !== "viewing" &&
-      recordType !== "offer" &&
-      recordType !== "negotiation" &&
-      recordType !== "sold"
-    ) {
+    // 对齐后端 RecordType：仅 viewing/offer/negotiation（无 "sold"，历史误加已移除）
+    if (recordType !== "viewing" && recordType !== "offer" && recordType !== "negotiation") {
       continue;
     }
 

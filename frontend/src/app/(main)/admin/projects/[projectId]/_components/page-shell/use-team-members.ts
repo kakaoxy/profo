@@ -63,6 +63,9 @@ export function useTeamMembers(projectId: string | undefined): TeamMembersData {
           setRenovationMeta({
             companyName: contractRes.data.renovation_company ?? undefined,
             contactPersonId: contractRes.data.contact_person_id ?? undefined,
+            // 合同开工日：装修阶段首起始日的权威来源（ProjectResponse 无
+            // renovation_start_date 字段，历史手写字段已删除）
+            contractStart: contractRes.data.contract_start_date ?? undefined,
             actualStart: contractRes.data.actual_start_date ?? undefined,
             expectedEnd: contractRes.data.contract_end_date ?? undefined,
             actualEnd: contractRes.data.actual_end_date ?? undefined,

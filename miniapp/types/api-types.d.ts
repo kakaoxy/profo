@@ -1772,10 +1772,11 @@ export interface paths {
          *     刻意不纳入权限码体系，避免自定义角色被授予权限码后即可读取卡号；如需放开
          *     请显式评估并新增专用权限码。
          *     service 层会校验 owner 所属 project 未被软删除；
-         *     审计日志（OperationLog）在路由层记录，不记录银行卡号本身。
+         *     审计日志（OperationLog）在路由层记录，不记录银行卡号本身（E7 收敛：
+         *     service 层不再重复写 logger.info 审计，统一由 OperationLog 承载）。
          *
-         *     返回 200 + ``{"bank_card_number": null}`` 表示业主存在但未登记银行卡号；
-         *     业主不存在时 service 同样返回 None，前端按 null 处理即可（避免将"无卡"误报为 404）。
+         *     语义：200 + ``{"bank_card_number": null}`` 仅表示业主存在但未登记卡号；
+         *     业主不存在时抛 404（Fail Loud，前端可区分「无卡」与「查无此人」）。
          */
         get: operations["get_owner_bank_card_api_v1_projects_owners__owner_id__bank_card_get"];
         put?: never;
@@ -8785,7 +8786,7 @@ export interface components {
             signoff_status: string;
             /**
              * Archive Date
-             * @description 归档日期
+             * @description 归档日期 YYYY-MM-DD
              */
             archive_date?: string | null;
             /**
@@ -19240,34 +19241,24 @@ export interface components {
         /**
          * SalesRecordCreate
          * @description 创建销售记录.
+         *
+         *     字段与 ProjectInteraction 实际可持久化列一一对应；不接受无落库列的
+         *     "幽灵字段"（customer_phone/customer_info/record_time/feedback/result/
+         *     related_agent 曾在此声明但被静默丢弃，已移除）。
          */
         SalesRecordCreate: {
             record_type: components["schemas"]["RecordType"];
             /** Customer Name */
             customer_name?: string | null;
-            /** Customer Phone */
-            customer_phone?: string | null;
-            /** Customer Info */
-            customer_info?: {
-                [key: string]: string;
-            } | null;
             /**
              * Record Date
              * Format: date-time
              */
             record_date: string;
-            /** Record Time */
-            record_time?: string | null;
             /** Price */
             price?: number | string | null;
             /** Notes */
             notes?: string | null;
-            /** Feedback */
-            feedback?: string | null;
-            /** Result */
-            result?: string | null;
-            /** Related Agent */
-            related_agent?: string | null;
         };
         /**
          * SalesRecordFlowItem
@@ -19361,29 +19352,15 @@ export interface components {
             record_type: components["schemas"]["RecordType"];
             /** Customer Name */
             customer_name?: string | null;
-            /** Customer Phone */
-            customer_phone?: string | null;
-            /** Customer Info */
-            customer_info?: {
-                [key: string]: string;
-            } | null;
             /**
              * Record Date
              * Format: date-time
              */
             record_date: string;
-            /** Record Time */
-            record_time?: string | null;
             /** Price */
             price?: string | null;
             /** Notes */
             notes?: string | null;
-            /** Feedback */
-            feedback?: string | null;
-            /** Result */
-            result?: string | null;
-            /** Related Agent */
-            related_agent?: string | null;
             /**
              * Created At
              * Format: date-time

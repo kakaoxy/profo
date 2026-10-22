@@ -192,7 +192,9 @@ def test_list_documents_sorted_and_filtered(db_session: Session, project: Projec
 
 
 def test_update_document_status_archived(db_session: Session, project: Project) -> None:
-    """状态改 archived 时 archive_date 写入."""
+    """状态改 archived 时 archive_date 写入（archive_date 已迁移为 Date 列）."""
+    from datetime import date
+
     doc = documents_service.create_document(db_session, project.id, DocumentCreate(document_name="装修合同"))
     updated = documents_service.update_document(
         db_session,
@@ -202,7 +204,7 @@ def test_update_document_status_archived(db_session: Session, project: Project) 
     )
     assert updated is not None
     assert updated.signoff_status == "archived"
-    assert updated.archive_date == "2025-05-18"
+    assert updated.archive_date == date(2025, 5, 18)
 
 
 def test_update_document_status_archived_without_archive_date_defaults_today(
@@ -221,7 +223,7 @@ def test_update_document_status_archived_without_archive_date_defaults_today(
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     assert updated is not None
     assert updated.signoff_status == "archived"
-    assert updated.archive_date == today
+    assert updated.archive_date.isoformat() == today
 
 
 def test_update_document_archived_with_explicit_archive_date_not_overwritten(
@@ -278,7 +280,7 @@ def test_update_document_archived_with_explicit_none_does_not_clear_existing_dat
     assert updated is not None
     assert updated.signoff_status == "archived"
     # 原日期 2025-05-18 保留，未被 None 覆盖
-    assert updated.archive_date == "2025-05-18"
+    assert updated.archive_date.isoformat() == "2025-05-18"
 
 
 def test_update_document_status_unsigned_clears_archive_date(db_session: Session, project: Project) -> None:
@@ -318,7 +320,7 @@ def test_update_document_status_signed_keeps_archive_date(db_session: Session, p
     )
     assert signed is not None
     assert signed.signoff_status == "signed"
-    assert signed.archive_date == "2025-05-18"
+    assert signed.archive_date.isoformat() == "2025-05-18"
 
 
 def test_update_document_name(db_session: Session, project: Project) -> None:

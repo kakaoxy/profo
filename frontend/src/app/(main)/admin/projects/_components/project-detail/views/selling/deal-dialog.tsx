@@ -33,7 +33,7 @@ export function DealDialog({ project, onSuccess, open, onOpenChange }: DealDialo
   const [price, setPrice] = useState("");
 
   // 动态让利 hint：输入价与挂牌价均有效且输入价低于挂牌价时显示
-  const listingPrice = project.list_price ?? project.listing_price;
+  const listingPrice = project.list_price;
   const inputPrice = Number(price);
   const showDiscountHint =
     listingPrice != null &&

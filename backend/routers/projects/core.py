@@ -37,6 +37,7 @@ from schemas.project import (
     TodoBoardRulesUpdateRequest,
 )
 from schemas.response import PaginatedResponse
+from services.projects.internal.owners import _OWNER_NOT_FOUND
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 from services.system.operation_log import operation_log_service
 from utils.common import RateLimits, limiter
@@ -94,15 +95,19 @@ def get_owner_bank_card(
     刻意不纳入权限码体系，避免自定义角色被授予权限码后即可读取卡号；如需放开
     请显式评估并新增专用权限码。
     service 层会校验 owner 所属 project 未被软删除；
-    审计日志（OperationLog）在路由层记录，不记录银行卡号本身。
+    审计日志（OperationLog）在路由层记录，不记录银行卡号本身（E7 收敛：
+    service 层不再重复写 logger.info 审计，统一由 OperationLog 承载）。
 
-    返回 200 + ``{"bank_card_number": null}`` 表示业主存在但未登记银行卡号；
-    业主不存在时 service 同样返回 None，前端按 null 处理即可（避免将"无卡"误报为 404）。
+    语义：200 + ``{"bank_card_number": null}`` 仅表示业主存在但未登记卡号；
+    业主不存在时抛 404（Fail Loud，前端可区分「无卡」与「查无此人」）。
     """
     bank_card_number = service.get_owner_bank_card_number(
         str(owner_id),
         operator_id=str(current_user.id),
     )
+    if bank_card_number is _OWNER_NOT_FOUND:
+        msg = "业主不存在"
+        raise ResourceNotFoundError(msg)
     # 仅当实际返回了卡号（敏感数据访问成功）时写审计日志
     if bank_card_number is not None:
         operation_log_service.log_action(

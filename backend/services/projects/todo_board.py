@@ -166,7 +166,8 @@ class TodoBoardService:
                 DocumentFact(
                     document_name=d.document_name,
                     signoff_status=d.signoff_status,
-                    archive_date=d.archive_date,
+                    # archive_date 现为 Date 列，序列化为 YYYY-MM-DD 字符串
+                    archive_date=d.archive_date.isoformat() if d.archive_date else None,
                     updated_at=_to_local_date(d.updated_at),
                 )
                 for d in documents

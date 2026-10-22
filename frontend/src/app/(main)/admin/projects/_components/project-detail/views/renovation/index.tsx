@@ -84,7 +84,7 @@ export function RenovationView({
 
       {/* 装修进度时间线（锚点：分区导航「装修进度」） */}
       <section id={SECTION_IDS.progress} className="scroll-mt-28 md:scroll-mt-24">
-        <RenovationTimeline project={project} onRefresh={onRefresh} />
+        <RenovationTimeline project={project} onRefresh={onRefresh} renovationMeta={contractMeta} />
       </section>
     </div>
   );

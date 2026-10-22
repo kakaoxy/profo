@@ -17,12 +17,19 @@ from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from models import FinanceRecord, Project, ProjectContract, ProjectRenovation
+from models import (
+    FinanceRecord,
+    Project,
+    ProjectContract,
+    ProjectInteraction,
+    ProjectOwner,
+    ProjectRenovation,
+    ProjectSale,
+)
 from models.common import BusinessForm, ProjectStatus
 from schemas.project import ProjectCreate, ProjectResponse, ProjectStatusUpdate, ProjectUpdate
 from services.projects.archive import ensure_project_writable
 from services.property.dict_ownership import validate_dict_ownership
-from services.property.dict_submit_service import submit_dict_chain
 from services.system.operation_log import operation_log_service
 from settings import settings
 
@@ -74,49 +81,6 @@ def _enum_value(value: object) -> str | None:
     if value is None:
         return None
     return value.value if hasattr(value, "value") else str(value)
-
-
-def _submit_project_dict_pendings(
-    db: Session,
-    *,
-    new_community: dict | None,
-    new_building: dict | None,
-    new_room: dict | None,
-    biz_id: str,
-    community_id: str | None,
-    building_id: int | None = None,
-    submitted_by: str | None = None,
-) -> None:
-    """补录项目单据的录入端新增字典 pending 引用（M6：委托 dict_submit_service 单点）.
-
-    单据落库后、同事务 commit 前调用：以真实单据 id 作为 source_id 提交审核池。
-    注（M6 注释纠错）：原注释写「submit 内部自行提交 pending；业务单据创建失败时
-    pending 引用仍保留」，与代码 ``commit=False`` 的实际语义相反 —— pending 与
-    业务单据同事务，单据失败时 pending 一起回滚，不产生半提交。
-
-    Args:
-        db: 数据库会话
-        new_community: 小区快照载荷（可为空）
-        new_building: 楼栋载荷（可为空）
-        new_room: 户室载荷（可为空）
-        biz_id: 项目单据 ID
-        community_id: 单据关联的字典实表小区 ID（可为空）
-        building_id: 单据关联的字典实表楼栋 ID（room 挂实表父级用，可为空）
-        submitted_by: 提交人用户 ID（L1 修复：审核池「提交人」列与通知依据）
-
-    """
-    submit_dict_chain(
-        db,
-        new_community=new_community,
-        new_building=new_building,
-        new_room=new_room,
-        biz_type="project",
-        biz_id=biz_id,
-        community_id=community_id,
-        building_id=building_id,
-        submitted_by=submitted_by,
-        commit=False,
-    )
 
 
 def _project_snapshot(project: Project) -> dict[str, Any]:
@@ -206,7 +170,9 @@ class ProjectCoreService:
             operator_id: 调用方用户ID，用于审计日志
 
         Returns:
-            未脱敏银行卡号；业主不存在、已删除或所属项目已软删时返回 None
+            未脱敏银行卡号；业主存在但未登记卡号时返回 None；
+            业主不存在/已删除/所属项目已软删时返回哨兵值
+            ``owners.get_bank_card_number._OWNER_NOT_FOUND``（Router 层抛 404）
 
         """
         return get_bank_card_number(self.db, owner_id, operator_id=operator_id)
@@ -230,19 +196,8 @@ class ProjectCoreService:
 
         """
         project = self.creator.create(project_data)
-        # 单据落库 commit 后：补录录入端新增字典 pending 引用（biz_type=project）
-        # creator.create 内部已 commit，此处以真实单据 id 补提交（M3/FR-10 引用闭环）
-        if project_data.new_community or project_data.new_building or project_data.new_room:
-            _submit_project_dict_pendings(
-                self.db,
-                new_community=project_data.new_community,
-                new_building=project_data.new_building,
-                new_room=project_data.new_room,
-                biz_id=str(project.id),
-                community_id=project.community_id,
-                building_id=project.building_id,
-                submitted_by=operator_id,
-            )
+        # 字典 pending 引用已在 creator.create 内随主事务提交（M3/FR-10 引用闭环），
+        # 此处不再补提交——post-commit 补录失败会造成「项目已落库但前端 5xx」的半提交。
         # 重新查询以预加载 builder 所需的所有关联（create 已 commit，关联已 expire）
         project = self.query_service.get_by_id(project.id, include_all=False)
         # 审计日志在主操作成功 commit 后写入；写入失败由 OperationLogService 内部捕获，不阻塞主流程
@@ -273,7 +228,8 @@ class ProjectCoreService:
                 业务身份标志；列表页可传 None
 
         Returns:
-            项目响应数据，不存在时返回None
+            项目响应数据；项目不存在时抛 ResourceNotFoundError（get_by_id 内部），
+            Router 层的无 project 死分支仅为防御性保留
 
         """
         project = self.query_service.get_by_id(project_id, include_all=include_all)
@@ -497,10 +453,6 @@ class ProjectCoreService:
         project = self.query_service.get_by_id(project_id, include_all=False)
 
         update_dict = update_data.model_dump(exclude_unset=True)
-        # 录入端新增载荷（new_*）非 Project 列：单独取出待补录 pending 引用（M2/BR-22）
-        new_community = update_dict.pop("new_community", None) or None
-        new_building = update_dict.pop("new_building", None) or None
-        new_room = update_dict.pop("new_room", None) or None
         # 字典归属校验（M1 修复：update 携带 building_id/room_id 时必须属于单据小区）
         validate_dict_ownership(
             self.db,
@@ -511,19 +463,8 @@ class ProjectCoreService:
         # 变更前快照（updater.update 会 commit 并 expire 属性，before 需在更新前构造）
         before_snapshot = _project_snapshot(project)
         project = self.updater.update(project, update_dict)
-
-        # 更新落库 commit 后：补录录入端新增字典 pending 引用（biz_type=project）
-        if new_community or new_building or new_room:
-            _submit_project_dict_pendings(
-                self.db,
-                new_community=new_community,
-                new_building=new_building,
-                new_room=new_room,
-                biz_id=str(project_id),
-                community_id=project.community_id,
-                building_id=project.building_id,
-                submitted_by=operator_id,
-            )
+        # 字典 pending 引用已在 updater.update 内随主事务提交（M2/BR-22 引用闭环），
+        # 此处不再 post-commit 补提交，避免半提交。
 
         # update 已 commit，重新查询以预加载 builder 所需关联
         project = self.query_service.get_by_id(project_id, include_all=False)
@@ -599,6 +540,21 @@ class ProjectCoreService:
             },
             synchronize_session=False,
         )
+
+        # 同步软删除其余业务子表（销售/业主/互动记录），与合同、流水的级联口径一致：
+        # 项目删除后这些记录若仍存活，仍会出现在跨项目流水流、销售明细页等查询中，
+        # 且 builder 的"获取或创建 sale/owner"逻辑可能复用已删项目的残留记录。
+        for child_model in (ProjectSale, ProjectOwner, ProjectInteraction):
+            self.db.query(child_model).filter(
+                child_model.project_id == project_id,
+                child_model.is_deleted.is_(False),
+            ).update(
+                {
+                    "is_deleted": True,
+                    "updated_at": now,
+                },
+                synchronize_session=False,
+            )
 
         self.db.commit()
 

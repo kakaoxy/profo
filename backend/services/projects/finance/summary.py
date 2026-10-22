@@ -8,7 +8,7 @@ from typing import Any
 
 from sqlalchemy import case, func
 
-from models import FinanceRecord, Project, ProjectContract, ProjectSale
+from models import FinanceRecord, Project, ProjectContract, ProjectRenovation, ProjectSale
 from models.common import CashFlowType, ProjectStatus
 from schemas.project.finance import CashFlowSummary
 from services.system.exceptions import ResourceNotFoundError, ServiceException
@@ -119,20 +119,33 @@ class _SummaryMixin:
             msg = "项目不存在"
             raise ResourceNotFoundError(msg)
 
-        # 从 ProjectContract 获取签约价格
+        # 从 ProjectContract 获取签约价格（排除软删记录）
         contract = (
             self.db.query(ProjectContract)
             .filter(
                 ProjectContract.project_id == project_id,
+                ProjectContract.is_deleted.is_(False),
             )
             .first()
         )
 
-        # 从 ProjectSale 获取销售价格
+        # 从 ProjectSale 获取销售价格（排除软删记录）
         sale = (
             self.db.query(ProjectSale)
             .filter(
                 ProjectSale.project_id == project_id,
+                ProjectSale.is_deleted.is_(False),
+            )
+            .first()
+        )
+
+        # 装修信息：renovation_start_date 取装修合同开始日期（权威来源），
+        # renovation_end_date 取实际完工日期；不再用 project.updated_at 冒充
+        renovation = (
+            self.db.query(ProjectRenovation)
+            .filter(
+                ProjectRenovation.project_id == project_id,
+                ProjectRenovation.is_deleted.is_(False),
             )
             .first()
         )
@@ -165,11 +178,13 @@ class _SummaryMixin:
 
         return {
             "project_id": project.id,
+            "project_name": project.name or project.generate_name(),
             "community_name": project.community_name,
             "status": project.status,
             "address": project.address,
             "signing_date": contract.signing_date if contract else None,
-            "renovation_start_date": project.updated_at if project.status == "renovating" else None,
+            "renovation_start_date": renovation.contract_start_date if renovation else None,
+            "renovation_end_date": renovation.actual_end_date if renovation else None,
             "listing_date": sale.listing_date if sale else None,
             "sold_date": sale.sold_date if sale else None,
             "total_investment": total_expense,

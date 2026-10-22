@@ -293,6 +293,7 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
           currentProjectStageIndex={currentProjectStageIndex}
           onViewModeChange={handleViewModeChange}
           onEditSalesInfo={isSoldMode ? () => setSoldEditOpen(true) : undefined}
+          renovationMeta={pageRenovationMeta}
         />
       </div>
 
@@ -337,6 +338,8 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
                 editSalesInfoOpen={soldEditOpen}
                 onEditSalesInfoOpenChange={setSoldEditOpen}
                 hideHeader
+                usersById={usersById}
+                renovationMeta={pageRenovationMeta}
               />
             ) : viewMode === "ended" ? (
               <EndedView

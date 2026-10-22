@@ -174,11 +174,11 @@ export function SellingBasicInfo({
             </span>
           </div>
 
-          {/* 总投入（设计稿 1460） */}
+          {/* 总投入（设计稿 1460；后端真源字段为 total_expense） */}
           <div className="flex flex-col gap-[3px] border-b border-[#f0f0f2] py-[13px]">
             <span className="text-[13px] font-[430] text-graphite">总投入</span>
             <span className="text-[14.5px] font-[450] text-ink">
-              {project.total_investment ? `${project.total_investment} 万元` : "-"}
+              {project.total_expense ? `${project.total_expense} 万元` : "-"}
             </span>
           </div>
         </div>

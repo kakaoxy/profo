@@ -19,18 +19,25 @@ interface FinNode {
   warm?: boolean;
 }
 
-export function FinancialLifecycle({ project }: { project: Project }) {
-  // ---- 取数：价格为万元，投入为元（total_investment 为后端 total_expense 别名） ----
+export function FinancialLifecycle({
+  project,
+  renovationStart,
+}: {
+  project: Project;
+  /** 装修开工日（装修合同 actual_start_date / contract_start_date，页面级下发；缺失省略区间起始） */
+  renovationStart?: string | null;
+}) {
+  // ---- 取数：价格为万元，投入为元（投入真源为后端 total_expense） ----
   const signingPrice = Number(project.signing_price || 0);
   const listPrice = Number(project.list_price || 0);
   const soldPrice = Number(project.sold_price || 0);
-  const totalInvestment = Number(project.total_investment ?? project.total_expense ?? 0) || 0; // 元
+  const totalInvestment = Number(project.total_expense ?? 0) || 0; // 元
   const totalIncome = Number(project.total_income) || 0; // 元
 
-  const rawSoldDate = project.sold_at || project.sold_date;
+  const rawSoldDate = project.sold_date;
 
   // 装修投入区间：装修开工 → 上架（缺上架则成交），仅起止可得时拼区间
-  const renoStartShort = safeFormatDate(project.renovation_start_date, "MM.dd", "");
+  const renoStartShort = safeFormatDate(renovationStart, "MM.dd", "");
   const renoEndShort = safeFormatDate(project.listing_date || rawSoldDate, "MM.dd", "");
   const investmentDateText =
     renoStartShort && renoEndShort ? `${renoStartShort} – ${renoEndShort}` : renoStartShort;

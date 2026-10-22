@@ -10,7 +10,14 @@ function formatWan(value: number): string {
   return value.toFixed(1).replace(/\.0$/, "");
 }
 
-export function HeroMetrics({ project }: { project: Project }) {
+export function HeroMetrics({
+  project,
+  channelManagerName,
+}: {
+  project: Project;
+  /** 渠道经理展示名（由页面级 usersById 解析 channel_manager_id；缺失省略渠道行） */
+  channelManagerName?: string | null;
+}) {
   const today = useCurrentDate();
 
   // ---- 取数（沿用旧版缓存字段：net_cash_flow / roi / days_on_market） ----
@@ -20,7 +27,7 @@ export function HeroMetrics({ project }: { project: Project }) {
   const signingPrice = Number(project.signing_price || 0); // 万
   const area = Number(project.area || 0); // ㎡
 
-  const rawSoldDate = project.sold_at || project.sold_date;
+  const rawSoldDate = project.sold_date;
   const soldDateDisplay = safeFormatDate(rawSoldDate, "yyyy.MM.dd", "--");
 
   // 资金占用天数（原「资金占用」指标：签约 → 成交，未成交时取今天）
@@ -61,7 +68,7 @@ export function HeroMetrics({ project }: { project: Project }) {
   }
 
   // ---- 指标 ②：成交日期（delta = 渠道信息，无则省略） ----
-  const channelName = project.channel_manager?.trim() || null;
+  const channelName = channelManagerName?.trim() || null;
 
   // ---- 指标 ③：售出天数（delta = 上架 → 成交，融入原「资金占用」数据） ----
   const listingShort = safeFormatDate(project.listing_date, "MM.dd", "");

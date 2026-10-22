@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 import { PhotoGrid } from "./photo-grid";
+import type { RenovationContractMeta } from "../kpi";
 import { ActionBar } from "./action-bar";
 import { useRenovationUpload } from "./use-renovation-upload";
 
@@ -40,6 +41,8 @@ interface TimelineItemProps {
   photos: RenovationPhoto[];
   onPhotoUploaded: () => void;
   onRefresh?: () => void;
+  /** 装修合同摘要（首阶段起始日来源：actualStart → contractStart） */
+  renovationMeta?: RenovationContractMeta;
 }
 
 export function TimelineItem({
@@ -50,6 +53,7 @@ export function TimelineItem({
   photos,
   onPhotoUploaded,
   onRefresh,
+  renovationMeta,
 }: TimelineItemProps) {
   const router = useRouter();
   const { hasAnyPermission } = usePermission();
@@ -79,10 +83,10 @@ export function TimelineItem({
   const isCurrent = !isCompleted && index === currentIndex;
   const isLast = index === RENOVATION_STAGES.length - 1;
 
-  // 区间起始日期：上一阶段完成日期（首阶段取 renovation_start_date），不可得则单日展示
+  // 区间起始日期：上一阶段完成日期（首阶段回退实际开工 → 合同开工），不可得则单日展示
   const stageStartDateStr = (() => {
     const stageDates = project.renovationStageDates ?? {};
-    if (index === 0) return project.renovation_start_date ?? undefined;
+    if (index === 0) return renovationMeta?.actualStart ?? renovationMeta?.contractStart;
     return stageDates[RENOVATION_STAGES[index - 1].value];
   })();
 

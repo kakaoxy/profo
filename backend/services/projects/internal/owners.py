@@ -16,6 +16,9 @@ from schemas.project.owner import OwnerInlineCreate, OwnerInlineUpdate
 
 logger = logging.getLogger(__name__)
 
+# 业主不存在/已删除/所属项目已软删的哨兵返回值（区别于「存在但无卡」的 None）
+_OWNER_NOT_FOUND = object()
+
 _OWNER_FIELDS: tuple[str, ...] = (
     "owner_name",
     "owner_phone",
@@ -70,6 +73,12 @@ def sync_owners(
             owner = existing_map.get(item_id)
             if owner is not None:
                 updates = item.model_dump(exclude_unset=True, exclude={"id"})
+                # ⚠️ 防脱敏值回写：响应下发的 phone/id_card/bank_card 为脱敏值（含 *），
+                # 编辑表单未改动时原样提交会覆盖明文；真实明文不可能包含星号，跳过
+                for field in ("owner_phone", "owner_id_card", "bank_card_number"):
+                    value = updates.get(field)
+                    if isinstance(value, str) and "*" in value:
+                        del updates[field]
                 for field, value in updates.items():
                     if field in _OWNER_FIELDS:
                         setattr(owner, field, value)
@@ -122,21 +131,23 @@ def list_owners(db: Session, project_id: uuid.UUID) -> list[ProjectOwner]:
 def get_bank_card_number(
     db: Session,
     owner_id: str,
-    operator_id: str | None = None,
+    operator_id: str | None = None,  # noqa: ARG001 - 保留签名以兼容 facade 透传（审计在 Router 层落）
 ) -> str | None:
     """获取业主未脱敏银行卡号.
 
     安全检查：
     - 校验 owner 所属 project 未被软删除，避免越权访问已归档数据
-    - 记录敏感数据访问审计日志（操作人/业主ID/时间戳）
+    - 审计日志统一由 Router 层 OperationLog 记录（本函数不再重复写 logger）
 
     Args:
         db: SQLAlchemy 数据库会话
         owner_id: 业主ID
-        operator_id: 调用方用户ID，用于审计日志
+        operator_id: 调用方用户ID（透传给 Router 审计上下文，本函数不落日志）
 
     Returns:
-        未脱敏银行卡号；业主不存在、已删除或所属项目已软删时返回 None
+        未脱敏银行卡号；业主存在但未登记卡号时返回 None；
+        业主不存在/已删除/所属项目已软删时返回哨兵值 _OWNER_NOT_FOUND
+        （调用方据此区分「无卡」与「查无此人」，Fail Loud）。
 
     """
     # join Project 校验项目未软删，防止越权访问已归档项目的业主敏感数据
@@ -151,13 +162,6 @@ def get_bank_card_number(
         .first()
     )
     if row is None:
-        return None
+        return _OWNER_NOT_FOUND
 
-    bank_card_number = row[0]
-    # 敏感数据访问审计日志
-    logger.info(
-        "敏感数据访问: 业主银行卡号查看 owner_id=%s operator_id=%s",
-        owner_id,
-        operator_id or "unknown",
-    )
-    return bank_card_number
+    return row[0]

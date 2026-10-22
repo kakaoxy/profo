@@ -4,14 +4,17 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Project, RenovationPhoto } from "../../../../types";
 import { RENOVATION_STAGES } from "../../constants";
 import { getRenovationPhotosAction } from "../../../../actions/renovation";
+import type { RenovationContractMeta } from "./kpi";
 import { TimelineItem } from "./components/timeline-item";
 
 interface RenovationTimelineProps {
   project: Project;
   onRefresh?: () => void;
+  /** 装修合同摘要（首阶段起始日来源：actualStart → contractStart） */
+  renovationMeta?: RenovationContractMeta;
 }
 
-export function RenovationTimeline({ project, onRefresh }: RenovationTimelineProps) {
+export function RenovationTimeline({ project, onRefresh, renovationMeta }: RenovationTimelineProps) {
   const [photos, setPhotos] = useState<RenovationPhoto[]>([]);
 
   // 2. 获取照片数据的方法
@@ -78,6 +81,7 @@ export function RenovationTimeline({ project, onRefresh }: RenovationTimelinePro
             photos={groupedPhotos[stage.key] || []}
             onPhotoUploaded={fetchPhotos}
             onRefresh={onRefresh}
+            renovationMeta={renovationMeta}
           />
         ))}
       </div>

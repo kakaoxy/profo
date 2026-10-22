@@ -9,6 +9,7 @@ import { HeroMetrics } from "./hero-metrics";
 import { FinancialLifecycle } from "./financial-lifecycle";
 import { VisualJourney, SummaryReport } from "./visual-journey";
 import { EditSalesInfoDialog } from "./edit-sales-info-dialog";
+import type { RenovationContractMeta } from "../renovation/kpi";
 
 interface SoldViewProps {
   project: Project;
@@ -21,6 +22,10 @@ interface SoldViewProps {
   onEditSalesInfoOpenChange?: (open: boolean) => void;
   /** 独立页场景隐藏顶部 SoldHeader（页面 Hero 已含项目名与阶段，避免重复；抽屉场景默认保留） */
   hideHeader?: boolean;
+  /** 页面级用户 Map（userId → 昵称），渠道经理展示名解析来源 */
+  usersById?: Map<string, string>;
+  /** 装修合同摘要（装修投入区间起始日来源：actualStart → contractStart） */
+  renovationMeta?: RenovationContractMeta;
 }
 
 export function SoldView({
@@ -32,6 +37,8 @@ export function SoldView({
   editSalesInfoOpen,
   onEditSalesInfoOpenChange,
   hideHeader = false,
+  usersById,
+  renovationMeta,
 }: SoldViewProps) {
   // EditSalesInfoDialog 开关：页面级受控优先，否则退回内部 state（抽屉场景向后兼容）
   const [internalEditOpen, setInternalEditOpen] = useState(false);
@@ -62,10 +69,18 @@ export function SoldView({
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-8">
           {/* 成交总览：锚点沿用页面级 project-section-overview 包裹层，此处不重复挂 id */}
-          <HeroMetrics project={project} />
+          <HeroMetrics
+            project={project}
+            channelManagerName={
+              project.channel_manager_id ? usersById?.get(project.channel_manager_id) : undefined
+            }
+          />
 
           <div id="project-section-financial" className="scroll-mt-28 md:scroll-mt-24">
-            <FinancialLifecycle project={project} />
+            <FinancialLifecycle
+              project={project}
+              renovationStart={renovationMeta?.actualStart ?? renovationMeta?.contractStart}
+            />
           </div>
 
           <div id="project-section-visual" className="scroll-mt-28 md:scroll-mt-24">
@@ -73,7 +88,12 @@ export function SoldView({
           </div>
 
           <div id="project-section-report" className="scroll-mt-28 md:scroll-mt-24">
-            <SummaryReport project={project} />
+            <SummaryReport
+              project={project}
+              channelManagerName={
+                project.channel_manager_id ? usersById?.get(project.channel_manager_id) : undefined
+              }
+            />
           </div>
 
           {/* 底部留白 */}

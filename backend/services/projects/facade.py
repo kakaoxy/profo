@@ -4,11 +4,12 @@
 - core.py (核心 CRUD)
 - renovation.py (装修)
 - sales.py (销售)
-- finance.py (财务)
+- finance/ (财务，包)
 
-建议：
-后续修改 Router 层时，应改为直接依赖具体的子 Service，最终删除此文件。
-目前保留此类是为了让现有的 Router 代码无需修改即可运行。
+现状说明（2026-10-22）：该兼容层仍被 routers/projects 全部端点经 ProjectServiceDep
+消费；因所有 Router 依赖均注入本类，直接删除需要同步改动整个 Router 层签名，
+属于跨模块重构而非缺陷修复，保留现状并在每次触碰本文件时收缩其表面积
+（已移除无调用方的 get_renovation_info / update_renovation_info 委托）。
 """
 
 import uuid
@@ -280,20 +281,6 @@ class ProjectService:
         from .internal import ProjectResponseBuilder
 
         return ProjectResponse.model_validate(ProjectResponseBuilder(self.db).build(project, current_user=current_user))
-
-    def get_renovation_info(self, project_id: uuid.UUID, *, current_user: User) -> ProjectResponse | None:
-        """获取装修信息."""
-        renovation = self._renovation_service.get_info(project_id)
-        if not renovation:
-            return None
-        return self._core_service.get_project(project_id, current_user=current_user, include_all=False)
-
-    def update_renovation_info(
-        self, project_id: uuid.UUID, renovation_data: dict[str, Any], *, current_user: User
-    ) -> ProjectResponse:
-        """更新装修信息."""
-        self._renovation_service.update_info(project_id, renovation_data)
-        return self._core_service.get_project(project_id, current_user=current_user, include_all=False)
 
     def add_renovation_photo(
         self,

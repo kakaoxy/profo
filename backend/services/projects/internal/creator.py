@@ -11,6 +11,7 @@ from models import Project, ProjectContract, ProjectOwner
 from models.common import ProjectStatus
 from schemas.project import ProjectCreate
 from services.property.dict_ownership import validate_dict_ownership
+from services.property.dict_submit_service import submit_dict_chain
 from services.utils import parse_date_string
 
 from . import documents, owners
@@ -80,6 +81,23 @@ class ProjectCreator:
                 project_id,
                 project_data.business_form,
                 project=project,
+            )
+
+        # 6. 补录录入端新增字典 pending 引用（M3/FR-10 引用闭环）：
+        # 与业务单据同一事务提交（commit=False），submit 失败时随主事务整体回滚，
+        # 避免「项目已落库但 pending 引用丢失 → 前端 5xx → 重试产生重复项目」的半提交。
+        if project_data.new_community or project_data.new_building or project_data.new_room:
+            submit_dict_chain(
+                self.db,
+                new_community=project_data.new_community,
+                new_building=project_data.new_building,
+                new_room=project_data.new_room,
+                biz_type="project",
+                biz_id=str(project_id),
+                community_id=project.community_id,
+                building_id=project.building_id,
+                submitted_by=None,
+                commit=False,
             )
 
         self.db.commit()

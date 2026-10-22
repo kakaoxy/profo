@@ -67,9 +67,9 @@ const EMPTY_MEMBER_NAME = "未设置";
  * - 备注卡仅签约阶段渲染；已下架副列仅渲染快捷入口卡
  */
 export function SideColumn({ project, viewMode, renovationMeta, usersById }: SideColumnProps) {
-  const managerName = project.project_manager?.nickname || project.manager;
+  const managerName = project.project_manager?.nickname;
 
-  // 角色 ID → 用户昵称解析；ID 缺失时回退旧文本字段（兼容历史数据），再无则「未设置」占位
+  // 角色 ID → 用户昵称解析；ID 缺失时「未设置」占位（后端仅下发角色 ID，无文本字段）
   const userNameOf = (id?: string | null, fallback?: string | null): string => {
     if (id) {
       const name = usersById?.get(id);
@@ -85,9 +85,9 @@ export function SideColumn({ project, viewMode, renovationMeta, usersById }: Sid
       name: userNameOf(renovationMeta?.contactPersonId, renovationMeta?.companyName),
       role: "对接负责人",
     },
-    { name: userNameOf(project.channel_manager_id, project.channel_manager), role: "渠道经理" },
-    { name: userNameOf(project.property_agent_id, project.presenter), role: "讲房人" },
-    { name: userNameOf(project.negotiator_id, project.negotiator), role: "谈判人" },
+    { name: userNameOf(project.channel_manager_id), role: "渠道经理" },
+    { name: userNameOf(project.property_agent_id), role: "讲房人" },
+    { name: userNameOf(project.negotiator_id), role: "谈判人" },
   ];
 
   const dateRows: DateRow[] = (() => {
@@ -97,7 +97,7 @@ export function SideColumn({ project, viewMode, renovationMeta, usersById }: Sid
           { label: "签约日期", value: formatDate(project.signing_date) },
           {
             label: "装修开工",
-            value: formatDate(renovationMeta?.actualStart ?? project.renovation_start_date),
+            value: formatDate(renovationMeta?.actualStart ?? renovationMeta?.contractStart),
           },
           // 预计完工（合同约定竣工）：装修合同子资源，缺失跳过
           { label: "预计完工", value: formatDate(renovationMeta?.expectedEnd), accent: true },
@@ -131,7 +131,7 @@ export function SideColumn({ project, viewMode, renovationMeta, usersById }: Sid
           { label: "上架", value: formatDate(project.listing_date) },
           {
             label: "成交",
-            value: formatDate(project.sold_at || project.sold_date),
+            value: formatDate(project.sold_date),
             accent: true,
           },
         ];
@@ -147,7 +147,8 @@ export function SideColumn({ project, viewMode, renovationMeta, usersById }: Sid
     }
   })().filter((row): row is DateRow => row.value !== null);
 
-  const noteText = project.notes?.trim() || project.remarks?.trim() || null;
+  // 备注真源为 owner_info（后端提交侧 notes 映射到 owner_info，见 updater._update_owner_fields）
+  const noteText = project.owner_info?.trim() || null;
 
   const monitorHref = `?monitor_id=${project.id}&project_name=${encodeURIComponent(project.name)}`;
   const ledgerHref = `/admin/ledger/${project.id}`;

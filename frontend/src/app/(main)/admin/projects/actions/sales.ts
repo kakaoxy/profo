@@ -195,15 +195,13 @@ export async function createSalesRecordAction(payload: {
     // 1. 类型映射：前端 "offer" -> 后端 "offer"
     const backendRecordType = payload.recordType === "offer" ? "offer" : payload.recordType;
 
-    // 2. 构造请求 Body
+    // 2. 构造请求 Body（与后端 SalesRecordCreate 一一对应，无幽灵字段）
     const requestBody = {
       record_type: backendRecordType as "viewing" | "offer" | "negotiation",
       customer_name: payload.customerName,
       price: payload.price,
       record_date: payload.recordDate,
       notes: payload.notes,
-      result: null,
-      feedback: null,
     };
 
     let result;

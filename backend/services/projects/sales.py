@@ -97,11 +97,12 @@ class SalesService:
         project = self._get_project(project_id)
         ensure_project_writable(self.db, project)
 
-        # 获取或创建销售记录
+        # 获取或创建销售记录（排除软删记录，避免复活已删除的 sale）
         sale = (
             self.db.query(ProjectSale)
             .filter(
                 ProjectSale.project_id == project_id,
+                ProjectSale.is_deleted.is_(False),
             )
             .first()
         )
@@ -314,11 +315,12 @@ class SalesService:
         project.status = ProjectStatus.SOLD.value
         project.updated_at = datetime.now(timezone.utc)
 
-        # 更新销售记录
+        # 更新销售记录（排除软删记录）
         sale = (
             self.db.query(ProjectSale)
             .filter(
                 ProjectSale.project_id == project_id,
+                ProjectSale.is_deleted.is_(False),
             )
             .first()
         )

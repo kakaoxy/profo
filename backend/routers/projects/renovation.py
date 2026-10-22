@@ -151,7 +151,8 @@ def get_renovation_contract(
 
     使用 ProjectReadOrBusinessPermDep 双通道校验：持 project:read/write 或为该项目业务负责人.
     """
-    return service.get_renovation_contract(project_id)
+    # 显式 model_validate（与本文件 photos 端点风格一致，统一 ORM→响应转换入口）
+    return RenovationContractResponse.model_validate(service.get_renovation_contract(project_id))
 
 
 @router.put("/{project_id}/renovation/contract")

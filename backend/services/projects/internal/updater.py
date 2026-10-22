@@ -91,6 +91,28 @@ class ProjectUpdater:
                 new_enum,
             )
 
+        # 补录录入端新增字典 pending 引用（M2/BR-22 引用闭环）：
+        # 与主更新同一事务提交（commit=False），submit 失败时随主事务整体回滚，
+        # 避免「更新已落库但 pending 引用丢失」的半提交。
+        new_community = update_dict.pop("new_community", None) or None
+        new_building = update_dict.pop("new_building", None) or None
+        new_room = update_dict.pop("new_room", None) or None
+        if new_community or new_building or new_room:
+            from services.property.dict_submit_service import submit_dict_chain
+
+            submit_dict_chain(
+                self.db,
+                new_community=new_community,
+                new_building=new_building,
+                new_room=new_room,
+                biz_type="project",
+                biz_id=str(project.id),
+                community_id=project.community_id,
+                building_id=project.building_id,
+                submitted_by=None,
+                commit=False,
+            )
+
         project.updated_at = datetime.now(timezone.utc)
         self.db.commit()
         self.db.refresh(project)
@@ -275,9 +297,18 @@ class ProjectUpdater:
         project_id: uuid.UUID,
         update_dict: dict[str, Any],
     ) -> None:
-        """更新业主相关字段."""
+        """更新业主相关字段.
+
+        ⚠️ 防脱敏值回写：ProjectResponse 下发的 owner_phone/owner_id_card 为脱敏值
+        （含 ``*``），编辑表单若未改动直接原样提交，会把脱敏值写回覆盖明文。
+        此处跳过仍含 ``*`` 的值（真实明文不可能包含星号）。
+        """
         owner_fields = ["owner_name", "owner_phone", "owner_id_card", "owner_info"]
         owner_updates = {k: update_dict.pop(k) for k in list(owner_fields) if k in update_dict}
+        for field in ("owner_phone", "owner_id_card"):
+            value = owner_updates.get(field)
+            if isinstance(value, str) and "*" in value:
+                del owner_updates[field]
 
         if "notes" in update_dict:
             owner_updates["owner_info"] = update_dict.pop("notes")

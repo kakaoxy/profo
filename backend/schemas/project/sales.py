@@ -49,19 +49,18 @@ class SalesRolesUpdate(BaseModel):
 
 
 class SalesRecordCreate(BaseModel):
-    """创建销售记录."""
+    """创建销售记录.
+
+    字段与 ProjectInteraction 实际可持久化列一一对应；不接受无落库列的
+    "幽灵字段"（customer_phone/customer_info/record_time/feedback/result/
+    related_agent 曾在此声明但被静默丢弃，已移除）。
+    """
 
     record_type: RecordType
     customer_name: str | None = Field(None, max_length=100)
-    customer_phone: str | None = Field(None, max_length=20)
-    customer_info: dict[str, str] | None = None
     record_date: datetime
-    record_time: str | None = None
     price: Decimal | None = None
     notes: str | None = None
-    feedback: str | None = None
-    result: str | None = None
-    related_agent: str | None = None
     model_config = ConfigDict(from_attributes=True)
 
     @field_validator("record_date", mode="after")
@@ -80,15 +79,9 @@ class SalesRecordResponse(BaseModel):
     project_id: UUID4
     record_type: RecordType
     customer_name: str | None = Field(None, validation_alias=AliasChoices("customer_name", "interaction_target"))
-    customer_phone: str | None = None
-    customer_info: dict[str, str] | None = None
     record_date: datetime = Field(validation_alias=AliasChoices("record_date", "interaction_at"))
-    record_time: str | None = None
     price: Decimal | None = None
     notes: str | None = Field(None, validation_alias=AliasChoices("notes", "content"))
-    feedback: str | None = None
-    result: str | None = None
-    related_agent: str | None = None
     created_at: datetime
     operator: UserBriefResponse | None = Field(
         None,

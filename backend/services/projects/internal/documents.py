@@ -87,7 +87,8 @@ def _document_snapshot(doc: ProjectDocument) -> dict[str, str | int | None]:
     return {
         "document_name": doc.document_name,
         "signoff_status": doc.signoff_status,
-        "archive_date": doc.archive_date,
+        # archive_date 现为 Date 列，快照统一序列化为 YYYY-MM-DD 字符串
+        "archive_date": doc.archive_date.isoformat() if doc.archive_date else None,
         "display_order": doc.display_order,
         "category": doc.category,
     }
@@ -204,6 +205,9 @@ def update_document(
     before_snapshot = _document_snapshot(doc)
 
     updates = payload.model_dump(exclude_unset=True)
+    # archive_date 现为 Date 列：payload 字符串 "YYYY-MM-DD" 解析为 date 后再落库
+    if "archive_date" in updates and updates["archive_date"] is not None:
+        updates["archive_date"] = datetime.fromisoformat(str(updates["archive_date"])).date()
     new_status = updates.get("signoff_status")
     if new_status is not None:
         # 状态回退为 unsigned 时清空 archive_date
@@ -211,7 +215,7 @@ def update_document(
             doc.archive_date = None
         # 状态变 archived 且 payload 未提供 archive_date 时自动填今天（与前端 handleStatusChange 语义一致）
         elif new_status == DocumentSignoffStatus.ARCHIVED.value and "archive_date" not in updates:
-            doc.archive_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+            doc.archive_date = datetime.now(timezone.utc).date()
     for field in ("document_name", "category", "signoff_status", "archive_date"):
         if field in updates and updates[field] is not None:
             setattr(doc, field, updates[field])

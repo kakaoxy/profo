@@ -365,45 +365,6 @@ class RenovationService:
         )
         return project
 
-    def get_info(self, project_id: uuid.UUID) -> ProjectRenovation | None:
-        """获取装修信息."""
-        return (
-            self.db.query(ProjectRenovation)
-            .filter(
-                ProjectRenovation.project_id == project_id,
-                ProjectRenovation.is_deleted.is_(False),
-            )
-            .first()
-        )
-
-    def update_info(self, project_id: uuid.UUID, renovation_data: dict[str, Any]) -> ProjectRenovation:
-        """更新装修信息."""
-        project = self._get_project(project_id)
-        ensure_project_writable(self.db, project)
-
-        # 验证状态
-        allowed_statuses = [
-            ProjectStatus.RENOVATING.value,
-            ProjectStatus.SELLING.value,
-            ProjectStatus.SOLD.value,
-        ]
-        if project.status not in allowed_statuses:
-            msg = "当前状态不允许更新装修信息"
-            raise BusinessLogicError(msg)
-
-        renovation = self._get_or_create_renovation(project_id)
-
-        # 更新字段（使用白名单过滤，防止设置敏感字段）
-        for field, value in renovation_data.items():
-            if field in _RENOVATION_ALLOWED_FIELDS and value is not None:
-                setattr(renovation, field, value)
-
-        renovation.updated_at = datetime.now(timezone.utc)
-        self.db.commit()
-        self.db.refresh(renovation)
-
-        return renovation
-
     def add_photo(
         self,
         project_id: uuid.UUID,

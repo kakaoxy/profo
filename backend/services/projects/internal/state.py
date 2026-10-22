@@ -161,6 +161,7 @@ class ProjectStateManager:
                 self.db.query(ProjectSale)
                 .filter(
                     ProjectSale.project_id == project_id,
+                    ProjectSale.is_deleted.is_(False),
                 )
                 .first()
             )
@@ -176,7 +177,7 @@ class ProjectStateManager:
                 sale.updated_at = datetime.now(timezone.utc)
             else:
                 sale = ProjectSale(
-                    id=str(__import__("uuid").uuid4()),
+                    id=uuid.uuid4(),
                     project_id=project_id,
                     listing_date=listing_date,
                     list_price=status_update.list_price,
@@ -192,11 +193,13 @@ class ProjectStateManager:
                 self.db.query(ProjectSale)
                 .filter(
                     ProjectSale.project_id == project_id,
+                    ProjectSale.is_deleted.is_(False),
                 )
                 .first()
             )
 
             if sale:
                 sale.transaction_status = "已售"
-                sale.sold_date = datetime.now(timezone.utc)
+                # sold_date 留给 /complete 端点写入（唯一权威来源），此处不改写，
+                # 避免「状态流转路径强制 now() 覆盖客户端成交日期」的双轨口径。
                 sale.updated_at = datetime.now(timezone.utc)

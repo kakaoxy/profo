@@ -479,3 +479,41 @@ def migrate_uuid_columns_to_native_uuid(engine: Engine) -> None:
         len(pending),
         elapsed_ms,
     )
+
+
+def migrate_project_document_archive_date_to_date(engine: Engine) -> None:
+    """将 project_documents.archive_date 从 VARCHAR(10) 迁移为 date 类型.
+
+    合规性修复：archive_date 原为 String(10) 存 YYYY-MM-DD 日期字符串，
+    违反 AGENTS.md（日期列用 Date）；migrate_project_date_columns_to_date
+    只修了 projects 表 3 列，本函数补齐 project_documents 的同类漂移。
+
+    - PostgreSQL: ALTER COLUMN ... TYPE date USING to_date(..., 'YYYY-MM-DD')
+    - 幂等：通过 information_schema.columns 判断 data_type，已是 date 则跳过
+    - 表名/列名为硬编码字符串，未用 f-string 拼接变量
+    """
+    inspector = inspect(engine)
+    if "project_documents" not in inspector.get_table_names():
+        return
+    if engine.dialect.name != "postgresql":
+        return
+
+    with engine.connect() as conn:
+        row = conn.execute(
+            text(
+                "SELECT data_type FROM information_schema.columns "
+                "WHERE table_name = 'project_documents' AND column_name = 'archive_date'",
+            ),
+        ).first()
+    if row is None or row[0] == "date":
+        return
+
+    logger.info("迁移：project_documents.archive_date → date（当前类型 %s）", row[0])
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "ALTER TABLE project_documents "
+                "ALTER COLUMN archive_date TYPE date "
+                "USING to_date(archive_date, 'YYYY-MM-DD')"
+            ),
+        )

@@ -15,7 +15,7 @@ from models.common import CashFlowType, ProjectStatus
 from services.projects.archive_constants import ARCHIVABLE_STATUSES
 from services.property.dict_read_service import BuildingDictReadService
 from services.property.doc_dict_resolver import DocDictKey
-from utils.mask import mask_bank_card
+from utils.mask import mask_bank_card, mask_id_card, mask_phone
 
 if TYPE_CHECKING:
     from models import Project, User
@@ -218,9 +218,11 @@ class ProjectResponseBuilder:
             return {}
 
         return {
+            # 敏感字段脱敏下发（与 owners 列表同口径）：完整卡号有 admin-only
+            # 专用端点（/owners/{id}/bank-card），phone/id_card 同理不做明文直出
             "owner_name": owner.owner_name,
-            "owner_phone": owner.owner_phone,
-            "owner_id_card": owner.owner_id_card,
+            "owner_phone": mask_phone(owner.owner_phone),
+            "owner_id_card": mask_id_card(owner.owner_id_card),
             "owner_info": owner.owner_info,
         }
 
@@ -241,8 +243,8 @@ class ProjectResponseBuilder:
                     "id": o.id,
                     "project_id": o.project_id,
                     "owner_name": o.owner_name,
-                    "owner_phone": o.owner_phone,
-                    "owner_id_card": o.owner_id_card,
+                    "owner_phone": mask_phone(o.owner_phone),
+                    "owner_id_card": mask_id_card(o.owner_id_card),
                     "bank_name": o.bank_name,
                     "bank_card_number": mask_bank_card(o.bank_card_number),
                     "relation_type": o.relation_type,
@@ -392,6 +394,7 @@ class ProjectResponseBuilder:
                 "project_id": photo.project_id,
                 "stage": photo.stage,
                 "url": photo.url,
+                "thumbnail_url": photo.thumbnail_url,
                 "filename": photo.filename,
                 "description": photo.description,
                 "media_type": photo.media_type,
@@ -453,6 +456,10 @@ class ProjectResponseBuilder:
         3. 持 project:renovation:upload_photo 权限码（operator）→ True
         4. user 角色为对接负责人（contact_person_id == current_user.id）→ True
         5. 其他 → False
+
+        权限口径单一权威源为 ``dependencies.auth.require_project_business_permission``
+        （Router 层依赖注入）；本函数为响应内嵌标志的同构复算，权限码经由
+        ``constants`` 级常量引用（lazy import 规避循环依赖）。
         """
         if current_user is None:
             return False

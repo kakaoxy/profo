@@ -145,6 +145,7 @@ import logging
 
 from sqlalchemy.engine import Engine
 
+from migrations._batched_backfill_leads_finance import batched_backfill_leads_and_finance
 from migrations._bd_audit_20261017_fixes import run_bd_audit_20261017_fixes
 from migrations._bd_audit_20261018_fixes import run_bd_audit_20261018_fixes
 from migrations._bd_community_address_widen import widen_community_address_column
@@ -204,6 +205,7 @@ from migrations._permission_system import (
 from migrations._project_archive import add_project_archive_columns
 from migrations._project_booking_share import create_project_booking_and_share_tables
 from migrations._project_booking_status import add_project_booking_status_column
+from migrations._project_sale_partial_unique import rebuild_project_sale_unique_index
 from migrations._property_sheet import create_property_sheet_tables
 from migrations._recruit import (
     add_poster_bg_url_to_campaigns,
@@ -229,6 +231,7 @@ from migrations._type_migrations import (
     migrate_all_datetime_columns_to_timestamptz,
     migrate_encrypted_columns_to_text,
     migrate_project_date_columns_to_date,
+    migrate_project_document_archive_date_to_date,
     migrate_record_date_to_timestamptz,
     migrate_user_datetime_columns_to_timestamptz,
     migrate_uuid_columns_to_native_uuid,
@@ -447,6 +450,14 @@ def _run_all_migrations(engine: Engine) -> None:
         close_orphan_finance_records(engine)
         # 资金账户：从 operation_logs 回填流水记账人（仅可精确追溯部分，幂等）
         backfill_finance_record_operator(engine)
+        # 文书归档日期类型合规：project_documents.archive_date VARCHAR(10) → date（幂等）
+        migrate_project_document_archive_date_to_date(engine)
+        # 销售 record 唯一约束合规：project_sales UNIQUE(project_id) → 部分唯一索引
+        # （WHERE is_deleted=false），允许软删行让位新行，修复 409 唯一性冲突（幂等）
+        rebuild_project_sale_unique_index(engine)
+        # M1–M3 补齐：leads 单价/总价、finance_records 孤儿流水与记账人
+        # 按 _MIGRATION_BATCH_SIZE 分批回填（历史迁移保持不动，本迁移兜底漏网行，幂等）
+        batched_backfill_leads_and_finance(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

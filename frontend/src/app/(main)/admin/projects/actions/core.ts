@@ -442,6 +442,11 @@ export async function getOwnerBankCardAction(
     });
 
     if (error) {
+      // 404 = 业主不存在（后端 Fail Loud 区分「无卡」与「查无此人」）
+      const errStatus = (error as { status?: number }).status;
+      if (errStatus === 404) {
+        return { success: false, message: "业主不存在" };
+      }
       return { success: false, message: "获取银行卡号失败" };
     }
 

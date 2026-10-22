@@ -1,6 +1,6 @@
 """项目文书签收相关Schema."""
 
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import UUID4, AliasChoices, BaseModel, ConfigDict, Field
 
@@ -47,7 +47,9 @@ class DocumentResponse(BaseModel):
     project_id: UUID4 = Field(description="项目ID")
     document_name: str = Field(description="文书名称")
     signoff_status: str = Field(description="签收状态")
-    archive_date: str | None = Field(None, description="归档日期")
+    # archive_date 列已迁移为 Date；Pydantic 将 date 序列化为 "YYYY-MM-DD" 字符串，
+    # 对外契约（前端消费格式）不变
+    archive_date: date | None = Field(None, description="归档日期 YYYY-MM-DD")
     display_order: int = Field(description="显示顺序")
     category: DocumentCategory = Field(description="文书分类")
     created_at: datetime

@@ -18,9 +18,9 @@ import { validateSalesRecords, type ApiSalesRecord } from "../../../_components/
 import { getListingDaysText } from "../../../_components/project-card-utils";
 import { MobileRecordForm } from "./mobile-record-form";
 
-type ProjectResponse = components["schemas"]["ProjectResponse"] & {
-  sale?: { can_edit_sales?: boolean } | null;
-};
+// ProjectResponse.sale.can_edit_sales 已由 pnpm gen-api 同步到生成类型，
+// 直接消费 components["schemas"]["ProjectResponse"]，无需交叉补丁
+type ProjectResponse = components["schemas"]["ProjectResponse"];
 interface MobileSellingViewProps {
   projectId: string;
   project: ProjectResponse;

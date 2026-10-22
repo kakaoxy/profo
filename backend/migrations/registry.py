@@ -1,8 +1,8 @@
 """迁移注册表：``_run_all_migrations`` 顶层调用单元的版本化登记（迭代一 T1.2）。
 
 **权威口径**
-- ``version`` = ``1..87``，严格按 ``migrations/__init__.py::_run_all_migrations``
-  的**当前调用顺序**编号（实测 87 项，非计划稿的 77/80；见总纲 §1 B1/B8）。
+- ``version`` = ``1..90``，严格按 ``migrations/__init__.py::_run_all_migrations``
+  的**当前调用顺序**编号（实测 90 项，非计划稿的 77/80；见总纲 §1 B1/B8）。
 - 新增迁移**只能追加**在 ``MIGRATIONS`` 末尾，``version`` 从 ``NEXT_VERSION``（88）起
   严格递增，禁止插入历史中间序号，禁止复用已删除版本号。
 - 粒度 = 一次顶层 ``fn(engine)`` 调用；wrapper 内部子步骤（如
@@ -32,6 +32,7 @@ from typing import Literal
 
 from sqlalchemy.engine import Engine
 
+from migrations._batched_backfill_leads_finance import batched_backfill_leads_and_finance
 from migrations._bd_audit_20261017_fixes import run_bd_audit_20261017_fixes
 from migrations._bd_audit_20261018_fixes import run_bd_audit_20261018_fixes
 from migrations._bd_community_address_widen import widen_community_address_column
@@ -85,6 +86,7 @@ from migrations._permission_system import (
 from migrations._project_archive import add_project_archive_columns
 from migrations._project_booking_share import create_project_booking_and_share_tables
 from migrations._project_booking_status import add_project_booking_status_column
+from migrations._project_sale_partial_unique import rebuild_project_sale_unique_index
 from migrations._property_sheet import create_property_sheet_tables
 from migrations._recruit import (
     add_poster_bg_url_to_campaigns,
@@ -111,6 +113,7 @@ from migrations._type_migrations import (
     migrate_all_datetime_columns_to_timestamptz,
     migrate_encrypted_columns_to_text,
     migrate_project_date_columns_to_date,
+    migrate_project_document_archive_date_to_date,
     migrate_record_date_to_timestamptz,
     migrate_user_datetime_columns_to_timestamptz,
     migrate_uuid_columns_to_native_uuid,
@@ -1089,6 +1092,39 @@ MIGRATIONS: tuple[Migration, ...] = (
         backup_tables=("finance_records",),
         description="从 operation_logs 回填流水记账人（仅可精确追溯部分，其余留空）",
     ),
+    Migration(
+        version=88,
+        name="migrate_project_document_archive_date_to_date",
+        fn=migrate_project_document_archive_date_to_date,
+        kind="schema",
+        risk="B",
+        backup="table",
+        reversible=False,
+        backup_tables=("project_documents",),
+        description="project_documents.archive_date VARCHAR(10) → date（类型合规修复）",
+    ),
+    Migration(
+        version=89,
+        name="rebuild_project_sale_unique_index",
+        fn=rebuild_project_sale_unique_index,
+        kind="schema",
+        risk="B",
+        backup="table",
+        reversible=False,
+        backup_tables=("project_sales",),
+        description="project_sales UNIQUE(project_id) → 部分唯一索引(WHERE is_deleted=false)，修复软删行占用唯一键",
+    ),
+    Migration(
+        version=90,
+        name="batched_backfill_leads_and_finance",
+        fn=batched_backfill_leads_and_finance,
+        kind="data",
+        risk="B",
+        backup="table",
+        reversible=True,
+        backup_tables=("leads", "finance_records"),
+        description="分批回填 leads.unit_price/total_price、收敛 finance_records 孤儿流水与记账人",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1101,7 +1137,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 87）。"""
+"""登记总数（当前 90）。"""
 
-NEXT_VERSION = 88
+NEXT_VERSION = 91
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

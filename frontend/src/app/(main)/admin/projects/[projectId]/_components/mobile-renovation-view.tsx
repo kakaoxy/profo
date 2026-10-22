@@ -38,11 +38,9 @@ import { getRenovationPhotosAction } from "../../actions/client";
 import { updateRenovationStageAction, deleteRenovationPhotoAction } from "../../actions/renovation";
 import type { RenovationPhoto } from "../../types";
 
-// 后端 ProjectResponse 已附带 renovation.can_edit_renovation 业务身份标志，
-// 但该字段由后端动态计算，api-types.d.ts 可能未及时同步，此处以交叉类型补齐
-type ProjectResponse = components["schemas"]["ProjectResponse"] & {
-  renovation?: { can_edit_renovation?: boolean } | null;
-};
+// ProjectResponse.renovation.can_edit_renovation 已由 pnpm gen-api 同步到生成类型，
+// 直接消费 components["schemas"]["ProjectResponse"]，无需交叉补丁
+type ProjectResponse = components["schemas"]["ProjectResponse"];
 
 interface MobileRenovationViewProps {
   projectId: string;

@@ -26,6 +26,8 @@ export interface RenovationContractMeta {
   companyName?: string;
   /** 对接负责人（contact_person_id，内部用户 ID） */
   contactPersonId?: string;
+  /** 合同开工（contract_start_date；装修阶段首起始日权威来源） */
+  contractStart?: string;
   /** 实际开工（actual_start_date） */
   actualStart?: string;
   /** 约定竣工/合同截止（contract_end_date） */
@@ -36,7 +38,7 @@ export interface RenovationContractMeta {
 
 interface RenovationKPIsProps {
   project: Project;
-  /** 装修合同摘要：实际开工日期优先于 project.renovation_start_date */
+  /** 装修合同摘要：实际开工日期优先于 contract_start_date */
   contractMeta?: RenovationContractMeta;
 }
 
@@ -108,9 +110,9 @@ export function RenovationKPIs({ project, contractMeta }: RenovationKPIsProps) {
       ? `${currentIndex + 1} / ${RENOVATION_STAGES.length}`
       : undefined;
 
-  // 2.5 当前阶段卡 delta：开工日期 + 已开工天数（合同实际开工优先，均缺失则省略）
+  // 2.5 当前阶段卡 delta：开工日期 + 已开工天数（实际开工 → 合同开工，均缺失则省略）
   const renovationStartDelta = (() => {
-    const startDate = contractMeta?.actualStart ?? project.renovation_start_date;
+    const startDate = contractMeta?.actualStart ?? contractMeta?.contractStart;
     if (!startDate) return null;
     try {
       const start = parseISO(startDate);
