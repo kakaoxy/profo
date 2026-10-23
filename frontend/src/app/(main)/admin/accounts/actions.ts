@@ -309,25 +309,6 @@ export async function updateAccount(
   }
 }
 
-export async function deleteAccount(
-  accountId: string,
-  token: string | null,
-): Promise<ActionResult<null>> {
-  try {
-    const client = await fetchClient();
-    const { error } = await client.DELETE("/api/v1/admin/accounts/{account_id}", {
-      params: { path: { account_id: accountId } },
-      headers: headersOf(token),
-    });
-    if (error) return errorResult(error, "删除账户失败");
-    revalidatePath("/admin/accounts");
-    return { success: true, data: null };
-  } catch (e) {
-    logger.error("删除资金账户异常:", e);
-    return { success: false, error: "网络错误，请稍后重试" };
-  }
-}
-
 export async function createAdjustment(
   accountId: string,
   input: unknown,

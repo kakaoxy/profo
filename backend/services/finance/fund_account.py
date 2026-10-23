@@ -33,7 +33,7 @@ from sqlalchemy import (
     literal,
     or_,
 )
-from sqlalchemy.orm import Query, Session
+from sqlalchemy.orm import Session
 from sqlalchemy.sql.selectable import Subquery
 
 from models import (
@@ -62,6 +62,7 @@ from schemas.finance import (
 from services.system.exceptions import ConflictError, ResourceNotFoundError, ValidationError
 from services.system.operation_log import operation_log_service
 from utils.formatters import escape_like
+from utils.mask import mask_bank_card
 
 logger = logging.getLogger(__name__)
 
@@ -483,6 +484,14 @@ class FundAccountService:
 
         安全边界：记账需要「选哪张卡」，不需要「卡里有多少钱」。把这两件事拆成两个
         接口，可以让记账动线在不暴露余额的前提下可用。
+
+        ⚠️ 卡号必须脱敏（2026-10-23 缺陷修复）：本端点**不要求模块解锁**，此前却把
+        ``account_no`` 原样下发，于是只持 ``account:read``、从未输过模块密码的调用方
+        （含小程序端）能拉到全部账户的完整卡号——余额这层挡住了，卡号这层没挡住，
+        与「敏感信息只在解锁后可见」的口径自相矛盾，也与模型里
+        「卡号/账户号(掩码)」的字段注释不符。
+        记账弹窗只需要「认出是哪张卡」，故此处统一走 ``mask_bank_card``（保留前 4 后 4）。
+        解锁后的 ``/admin/accounts`` 列表**不掩码**，以免编辑表单把掩码回写成真实卡号。
         """
         rows = (
             self.db.query(FundAccount)
@@ -498,7 +507,8 @@ class FundAccountService:
                 id=str(account.id),
                 name=account.name,
                 type=account.type,
-                account_no=account.account_no,
+                # 本端点免解锁 → 卡号一律掩码下发（见 docstring）
+                account_no=mask_bank_card(account.account_no),
                 status=account.status,
                 is_locked=True,
             )
@@ -769,34 +779,6 @@ class FundAccountService:
 
     # ==================== 账户流水 ====================
 
-    def _flow_query(self) -> Query:
-        """流水基础查询（联项目 / 科目 / 账户 / 操作人名称）.
-
-        ⚠️ 必须过滤 `Project.is_deleted.is_(False)`（2026-10-21 缺陷修复）：
-        删除项目只把 `projects.is_deleted` 置真，`finance_records` 保持未删，
-        因此不过滤项目会让**已删项目的流水**照常出现在账户流水页，且点「补上」
-        会命中 `update_record` 的「项目不存在」404——列表与操作的能力边界不一致。
-
-        注：本方法是 ``_unified_flow_query`` 的前身，目前已无外部调用（流水页
-        统一走 UNION 版本）。保留仅为存量调试脚本兼容，口径已对齐 ``_alive_records_filter``。
-        """
-        return (
-            self.db.query(
-                FinanceRecord,
-                Project.name.label("project_name"),
-                ProjectContract.contract_no.label("project_code"),
-                FinanceSubject.name.label("subject_name"),
-                FundAccount.name.label("account_name"),
-                User.nickname.label("operator_name"),
-            )
-            .join(Project, Project.id == FinanceRecord.project_id)
-            .outerjoin(ProjectContract, ProjectContract.project_id == FinanceRecord.project_id)
-            .outerjoin(FinanceSubject, FinanceSubject.id == FinanceRecord.subject_id)
-            .outerjoin(FundAccount, FundAccount.id == FinanceRecord.account_id)
-            .outerjoin(User, User.id == FinanceRecord.operator_id)
-            .filter(*self._alive_records_filter())
-        )
-
     def _unified_flow_query(
         self,
         *,
@@ -826,8 +808,6 @@ class FundAccountService:
         - 排序用 ``sort_at``：记录取 record_date 当天 00:00，调整取 created_at，
           保证同一天内调整排在记账之后（调整是基于当日账面对出来的）。
         """
-        now_expr = func.now()
-
         # ── 段一：项目记账 ──
         record_q = (
             self.db.query(
@@ -948,8 +928,6 @@ class FundAccountService:
                 )
             )
 
-        # 计数器用占位（UNION 里不能出现 now() 这类易变函数以外的差异列顺序）
-        _ = now_expr
         return record_q.union_all(adjust_q).subquery("uflow")
 
     def list_flows(

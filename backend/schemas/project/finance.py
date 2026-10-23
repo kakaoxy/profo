@@ -293,8 +293,12 @@ class LedgerRecordUpdate(BaseModel):
 
     # 新字段
     subject_id: str | None = Field(None, description="科目ID")
-    outflow: Decimal | None = Field(None, ge=0, description="流出金额(元)")
-    inflow: Decimal | None = Field(None, ge=0, description="流入金额(元)")
+    # ⚠️ decimal_places/max_digits 与 LedgerRecordCreate 同口径（2026-10-23 缺陷修复）：
+    # 创建路径已加约束、更新路径此前漏改，于是 PATCH 仍能写入 100.005（PostgreSQL
+    # NUMERIC(15,2) 静默四舍五入成 100.01）或 1e13（溢出 22003 → 500）。
+    # 金额精度必须在**每个**写入口一致，否则约束只是摆设。
+    outflow: Decimal | None = Field(None, ge=0, decimal_places=2, max_digits=15, description="流出金额(元)")
+    inflow: Decimal | None = Field(None, ge=0, decimal_places=2, max_digits=15, description="流入金额(元)")
     payer: str | None = Field(None, max_length=100, description="付款方")
     payee: str | None = Field(None, max_length=100, description="收款方")
 

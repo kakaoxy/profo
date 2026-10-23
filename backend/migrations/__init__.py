@@ -146,6 +146,7 @@ import logging
 from sqlalchemy.engine import Engine
 
 from migrations._batched_backfill_leads_finance import batched_backfill_leads_and_finance
+from migrations._batched_backfill_leads_finance_fix import backfill_lead_and_operator_reachability
 from migrations._bd_audit_20261017_fixes import run_bd_audit_20261017_fixes
 from migrations._bd_audit_20261018_fixes import run_bd_audit_20261018_fixes
 from migrations._bd_community_address_widen import widen_community_address_column
@@ -467,6 +468,9 @@ def _run_all_migrations(engine: Engine) -> None:
         rename_investment_subjects(engine)
         # v92：H-3 追补——清理同 project_id 已有活跃行的冗余软删 sale 行（幂等）
         cleanup_redundant_soft_deleted_sales(engine)
+        # v93：v90 回填缺陷修复——先补 total_price 再算 unit_price（顺序颠倒致永久留空）、
+        # operator_id 回填改目标集合驱动（队头 500 行无命中即终止的阻塞，幂等）
+        backfill_lead_and_operator_reachability(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise
