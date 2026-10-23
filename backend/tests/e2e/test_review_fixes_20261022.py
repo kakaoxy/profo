@@ -204,10 +204,25 @@ def _run_checks(engine, configure_mappers, text, Session) -> None:  # noqa: N803
     versions = sorted(m.version for m in _MIGS)
     check("版本号 1..N 连续无空洞", ok=versions == list(range(1, len(versions) + 1)), detail=f"N={len(versions)}")
     v93 = MIGRATION_BY_VERSION.get(93)
+    # v93 当初也是追加的：它大于此前所有已登记版本（v93 之后新增的 v94 不计入比较）
     check(
-        "V93 为追加迁移（不修改任何历史版本）",
-        ok=v93 is not None and v93.version > max(m.version for m in _MIGS if m.version != 93),
+        "V93 当初为追加迁移（版本号大于其之前的所有迁移）",
+        ok=v93 is not None and v93.version > max(m.version for m in _MIGS if m.version < 93),
         detail=v93.name if v93 else "-",
+    )
+
+    # v93 已 applied（生产账本 3dd6f52e…），故后续加固必须走 v94，不得改 v93。
+    v94 = MIGRATION_BY_VERSION.get(94)
+    prod_v93_checksum = "3dd6f52ef0cf99c3647c809611145f56f0960455723139f0699ff82dbf4272d6"
+    check(
+        "v93 checksum == 生产账本值（v93 已部署，禁止再改）",
+        ok=checksum_of(v93.fn) == prod_v93_checksum,
+        detail=f"actual={checksum_of(v93.fn)[:16]}… prod={prod_v93_checksum[:16]}…",
+    )
+    check(
+        "V94 已登记为追加迁移（加固走新版本，不改已部署的 v93）",
+        ok=v94 is not None and v94.version == 94,
+        detail=v94.name if v94 else "-",
     )
 
     # ── ④ R4：v90 回填缺陷 → v93 修复 ──────────────────────────────────
@@ -350,6 +365,47 @@ def _run_checks(engine, configure_mappers, text, Session) -> None:  # noqa: N803
         next_ok = False
     check("拆分后首批 SQL 可执行（无 CAST）", ok=first_ok)
     check("拆分后后续批 SQL 可执行（id > :after_id 裸参数，无 CAST）", ok=next_ok)
+
+    # ── ④c D4：表名白名单（表名是标识符，不能用字面量转义）─────────────
+    log("\n④c D4 表名白名单：误传未知标识符必须 Fail Loud，且不能用 _pg_quote_literal")
+    from migrations._backfill_hardened import (
+        _ALLOWED_TABLES,
+        _cursor_batch_update,
+    )
+
+    check(
+        "白名单仅含本模块两张表",
+        ok=frozenset({"leads", "finance_records"}) == _ALLOWED_TABLES,
+        detail=str(sorted(_ALLOWED_TABLES)),
+    )
+    for bad_table in ("users", "leads; DROP TABLE leads", "leads'", "Leads"):
+        blocked = False
+        try:
+            _cursor_batch_update(
+                engine,
+                table=bad_table,
+                where_sql="1=1",
+                update_sql="UPDATE leads SET id = id WHERE id = :id",
+                label="probe",
+            )
+        except ValueError:
+            blocked = True
+        except Exception:
+            blocked = False
+        check(f"非法表名 {bad_table!r} 被白名单拦截", ok=blocked)
+
+    # 反证：`_pg_quote_literal` 用在这里会生成 `FROM 'leads'` → 语法错误。
+    from migrations._helpers import _pg_quote_literal
+
+    literal_breaks = False
+    # 反证 SQL 刻意使用字符串拼接：要验证的正是「拼接后语法错误」这一事实。
+    quoted = _pg_quote_literal("leads")  # -> "'leads'"（标识符不能这样写）
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(f"SELECT id FROM {quoted} LIMIT 1")).all()  # noqa: S608 - 反证用例，故意拼接
+    except Exception:
+        literal_breaks = True
+    check("_pg_quote_literal 不能用于表名（会语法错误，故白名单才是正解）", ok=literal_breaks)
 
     # ── ⑤ R5：金额精度约束（Create 与 Update 同口径）───────────────────
     log("\n⑤ R5 LedgerRecordUpdate 金额精度约束")

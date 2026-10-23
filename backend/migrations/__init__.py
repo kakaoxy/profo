@@ -145,6 +145,7 @@ import logging
 
 from sqlalchemy.engine import Engine
 
+from migrations._backfill_hardened import backfill_leads_and_operator_hardened
 from migrations._batched_backfill_leads_finance import batched_backfill_leads_and_finance
 from migrations._batched_backfill_leads_finance_fix import backfill_lead_and_operator_reachability
 from migrations._bd_audit_20261017_fixes import run_bd_audit_20261017_fixes
@@ -471,6 +472,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # v93：v90 回填缺陷修复——先补 total_price 再算 unit_price（顺序颠倒致永久留空）、
         # operator_id 回填改目标集合驱动（队头 500 行无命中即终止的阻塞，幂等）
         backfill_lead_and_operator_reachability(engine)
+        # v94：同一组回填改用「无 CAST + 表名白名单」的加固实现（幂等，兜底复核）
+        backfill_leads_and_operator_hardened(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise
