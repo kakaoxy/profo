@@ -301,6 +301,56 @@ def _run_checks(engine, configure_mappers, text, Session) -> None:  # noqa: N803
         after = conn.execute(text("SELECT count(*) FROM finance_records WHERE operator_id IS NULL")).scalar()
     check("v93 幂等（重复执行不再改动）", ok=before == after, detail=f"{before} → {after}")
 
+    # ── ④b D3：游标 SQL 不得依赖「参数在 IS NULL 里」的歧义写法 ──────────
+    log("\n④b D3 游标 SQL：禁止 (:after_id IS NULL OR ...) —— PG 无法推断参数类型")
+    # 背景（2026-10-23 评审意见核实）：评审建议把 ``CAST(:after_id AS text)`` 去掉、
+    # 直接写 ``(:after_id IS NULL OR id > :after_id)``，理由是 leads.id 本是 varchar。
+    # 但**实测该写法在首次执行就抛** AmbiguousParameter（纯 psql 的
+    # ``PREPARE p AS ... $1 IS NULL ...`` 也一样报错），因为 ``$1 IS NULL`` 中
+    # 参数没有任何类型上下文。故实现改为「首批/后续批两条 SQL」，彻底不用 CAST。
+    # 这条用例把「歧义写法必须失败」钉住，防止有人再改回去。
+    ambiguous_sql = (
+        "SELECT id FROM leads WHERE total_price IS NULL AND expected_price IS NOT NULL "
+        "AND (:after_id IS NULL OR id > :after_id) ORDER BY id LIMIT :batch"
+    )
+    try:
+        with engine.begin() as conn:
+            conn.execute(text(ambiguous_sql), {"after_id": None, "batch": 5}).all()
+        ambiguous_failed = False
+    except Exception:
+        ambiguous_failed = True
+    check("歧义写法 (:after_id IS NULL OR ...) 确实会抛错（故必须拆分）", ok=ambiguous_failed)
+
+    # 拆分后的两种写法都必须可执行：首批（仅 :batch）+ 后续批（id > :after_id 裸参数）
+    first_ok = next_ok = False
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "SELECT id FROM leads WHERE total_price IS NULL "
+                    "AND expected_price IS NOT NULL ORDER BY id LIMIT :batch"
+                ),
+                {"batch": 5},
+            ).all()
+        first_ok = True
+    except Exception:
+        first_ok = False
+    try:
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "SELECT id FROM leads WHERE total_price IS NULL "
+                    "AND expected_price IS NOT NULL AND id > :after_id "
+                    "ORDER BY id LIMIT :batch"
+                ),
+                {"after_id": "", "batch": 5},
+            ).all()
+        next_ok = True
+    except Exception:
+        next_ok = False
+    check("拆分后首批 SQL 可执行（无 CAST）", ok=first_ok)
+    check("拆分后后续批 SQL 可执行（id > :after_id 裸参数，无 CAST）", ok=next_ok)
+
     # ── ⑤ R5：金额精度约束（Create 与 Update 同口径）───────────────────
     log("\n⑤ R5 LedgerRecordUpdate 金额精度约束")
     from schemas.project.finance import LedgerRecordCreate, LedgerRecordUpdate
