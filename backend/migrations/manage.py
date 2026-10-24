@@ -204,10 +204,29 @@ def cmd_verify(args: argparse.Namespace) -> int:
     for version, row in sorted(state.failed.items()):
         problems.append(f"存在 failed 记录 v{version} {row.name}（需 retry 或 compensate）")
 
+    # 与「已发布冻结基线」比对（跨环境真源）：能一次性发现「某个环境账本漂移」。
+    # 这是本地 dev 库被单独 rebaseline、而生产没有的典型事故的检测手段。
+    from migrations.frozen_checksums import FROZEN_CHECKSUMS, FROZEN_MAX_VERSION
+
+    drifted_vs_frozen = []
+    for version in range(1, FROZEN_MAX_VERSION + 1):
+        frozen_name, frozen_checksum = FROZEN_CHECKSUMS[version]
+        row = state.applied.get(version)
+        if row is None:
+            continue  # 未应用不算漂移（新环境/新建库）
+        if row.checksum != frozen_checksum:
+            drifted_vs_frozen.append(
+                f"v{version} {frozen_name}：账本={row.checksum[:12]} 已发布基线={frozen_checksum[:12]}"
+            )
+    problems.extend(f"与环境无关的已发布基线不一致：{item}" for item in drifted_vs_frozen)
+
     if args.json:
         print(json.dumps({"ok": not problems, "problems": problems}, ensure_ascii=False, indent=2))
     else:
-        print(f"校验项：注册表 {len(MIGRATIONS)} 项 / 已应用 {len(state.applied)} 项 / 失败 {len(state.failed)} 项")
+        print(
+            f"校验项：注册表 {len(MIGRATIONS)} 项 / 已应用 {len(state.applied)} 项 / "
+            f"失败 {len(state.failed)} 项 / 冻结基线 {FROZEN_MAX_VERSION} 项"
+        )
         if problems:
             print("发现问题：")
             for item in problems:
@@ -285,6 +304,58 @@ def cmd_rebaseline(args: argparse.Namespace) -> int:
         print(f"[FATAL] {exc}", file=sys.stderr)
         return EXIT_PROBLEM
     print(f"v{migration.version} {migration.name} checksum 已重基线（审计已记录）")
+    return EXIT_OK
+
+
+def cmd_freeze(args: argparse.Namespace) -> int:
+    """把某个已发布迁移的**当前源码** checksum 写入冻结基线（需审计原因）.
+
+    仅在「确认是纯重构、无行为变化」且**所有环境**都已同步的基础上使用。
+    默认拒绝：必须同时提供 ``--reason`` 与 ``--confirm``，避免把漂移当成重构放行。
+    """
+    migration = _migration_or_exit(args.version)
+    from migrations.checksum import checksum_of
+    from migrations.frozen_checksums import FROZEN_CHECKSUMS, FROZEN_MAX_VERSION
+
+    if migration.version > FROZEN_MAX_VERSION:
+        print(
+            f"[FATAL] v{migration.version} 超出冻结上限 v{FROZEN_MAX_VERSION}："
+            "新增迁移不需要冻结（它还没发布），请先部署到生产再冻结",
+            file=sys.stderr,
+        )
+        return EXIT_REFUSED
+    frozen_name, frozen_checksum = FROZEN_CHECKSUMS[migration.version]
+    actual = checksum_of(migration.fn)
+    if actual == frozen_checksum:
+        print(f"v{migration.version} {frozen_name} 与基线一致，无需更新")
+        return EXIT_OK
+    if not (args.reason or "").strip():
+        print("[FATAL] 更新冻结基线必须提供 --reason（审计要求）", file=sys.stderr)
+        return EXIT_REFUSED
+    if not args.confirm:
+        print(
+            "更新冻结基线需要显式确认：\n"
+            f"  v{migration.version} {frozen_name}\n"
+            f"  基线: {frozen_checksum}\n"
+            f"  源码: {actual}\n"
+            "  ⚠️ 这会放行对已发布迁移的修改，仅在确认「无行为变化且所有环境同步」时使用。\n"
+            f"  python -m migrations.manage freeze {migration.version} "
+            '--reason "..." --confirm',
+            file=sys.stderr,
+        )
+        return EXIT_REFUSED
+
+    manifest = Path(__file__).with_name("frozen_checksums.py")
+    text_src = manifest.read_text(encoding="utf-8")
+    old_line = f'    {migration.version}: ("{frozen_name}", "{frozen_checksum}"),'
+    new_line = f'    {migration.version}: ("{frozen_name}", "{actual}"),'
+    if old_line not in text_src:
+        print(f"[FATAL] 冻结基线文件中未找到 v{migration.version} 的条目，请手工核对", file=sys.stderr)
+        return EXIT_PROBLEM
+    manifest.write_text(text_src.replace(old_line, new_line, 1), encoding="utf-8")
+    print(f"v{migration.version} {frozen_name} 冻结基线已更新：{frozen_checksum[:12]} → {actual[:12]}")
+    print(f"  原因：{args.reason}")
+    print("  ⚠️ 请确认所有环境（本地/测试/生产）账本已 rebaseline 后再提交本文件")
     return EXIT_OK
 
 
@@ -661,6 +732,15 @@ def build_parser() -> argparse.ArgumentParser:
     rebase.add_argument("version", help="版本号或迁移名")
     rebase.add_argument("--reason", required=True, help="审计原因（必填）")
     rebase.set_defaults(func=cmd_rebaseline)
+
+    freeze = sub.add_parser(
+        "freeze",
+        help="更新已发布迁移的冻结基线（仅在确认无行为变化且全环境同步时使用）",
+    )
+    freeze.add_argument("version", help="版本号或迁移名")
+    freeze.add_argument("--reason", required=True, help="审计原因（必填）")
+    freeze.add_argument("--confirm", action="store_true", help="显式确认（否则只打印提示）")
+    freeze.set_defaults(func=cmd_freeze)
 
     comp = sub.add_parser("compensate", help="补偿/回滚指定版本")
     comp.add_argument("version", help="版本号或迁移名")

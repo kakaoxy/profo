@@ -27,9 +27,36 @@ docker compose exec backend .venv/bin/python -m migrations.manage restore-hint 5
 无法记录「创建版本表」这件事）。因此两张账本表由执行器建表阶段用 `CREATE TABLE IF NOT EXISTS`
 创建，等价于「schema 的 schema」，不参与版本序列。同理，`migration_compensations` 是纯审计流水。
 
-**当前口径**：注册表 **82 项**（`version=1..82`），下一个可用版本号 **83**（`registry.NEXT_VERSION`）。
-> 与计划稿的 77/80 差异见总纲 §1 的 B1/B8：实测 `_run_all_migrations` 有 82 个顶层调用
-> （多出 `add_project_archive_columns` / `create_biz_dict_items_table`）。
+**当前口径**：注册表 **94 项**（`version=1..94`），下一个可用版本号 **95**（`registry.NEXT_VERSION`）。
+> 以 `registry.MIGRATION_COUNT` / `NEXT_VERSION` 为准，本段数字仅供速查；两者不一致时以代码为准。
+
+### 0.1 ⚠️ 铁律：不要修改已发布（applied）的迁移
+
+本项目曾连续 3 次因**修改已 applied 的迁移**或**只对单个环境 rebaseline** 导致启动失败：
+
+| 现象 | 真实原因 |
+|------|---------|
+| `deploy-local.sh` 报「backend 健康状态为 unhealthy（120s 超时）」 | 只改了本地并 `rebaseline`，生产账本仍是旧 checksum → 容器启动即抛 `MigrationBlockedError` |
+| `dev-start.sh` 报「迁移源码校验和不匹配」 | 生产/代码已回退，本地账本却停在 rebaseline 后的值 |
+
+**根治手段**：仓库内维护跨环境唯一真源 `backend/migrations/frozen_checksums.py`（已发布版本的 checksum）。
+任何对历史迁移的改动都会在 `pytest tests/test_migration_freeze.py` 阶段失败，不必等部署。
+
+```bash
+# 校验「源码 ↔ 冻结基线」是否一致（CI/本地必跑）
+pytest backend/tests/test_migration_freeze.py -q
+
+# 校验「某个环境的账本 ↔ 冻结基线」是否一致（能在部署前发现环境漂移）
+docker compose exec backend .venv/bin/python -m migrations.manage verify
+#   → 输出中 "与环境无关的已发布基线不一致" 即为环境漂移
+
+# 确认是纯重构（无行为变化）且**所有环境**都已 rebaseline 后，才更新基线
+docker compose exec backend .venv/bin/python -m migrations.manage freeze <version> \
+  --reason "纯重构：..." --confirm   # 随后提交 frozen_checksums.py
+```
+
+**需要改行为时的正确做法**：新增**追加**迁移（版本从 `NEXT_VERSION` 起），旧函数保持原样。
+v94 就是这么来的（原计划改 v93，改为追加 v94）。
 
 ---
 

@@ -366,6 +366,29 @@ def _run_checks(engine, configure_mappers, text, Session) -> None:  # noqa: N803
     check("拆分后首批 SQL 可执行（无 CAST）", ok=first_ok)
     check("拆分后后续批 SQL 可执行（id > :after_id 裸参数，无 CAST）", ok=next_ok)
 
+    # ── ④d D5：冻结基线 —— 跨环境唯一真源（根治「改历史迁移」反复事故）──
+    log("\n④d D5 冻结基线：已发布迁移的 checksum 必须与仓库基线逐字一致")
+    from migrations.frozen_checksums import FROZEN_CHECKSUMS, FROZEN_MAX_VERSION
+
+    frozen_bad = []
+    for _v, (_name, _frozen) in sorted(FROZEN_CHECKSUMS.items()):
+        _m = MIGRATION_BY_VERSION.get(_v)
+        if _m is None:
+            frozen_bad.append(f"v{_v} 在注册表缺失")
+            continue
+        if checksum_of(_m.fn) != _frozen:
+            frozen_bad.append(f"v{_v} {_name}")
+    check(
+        f"全部 {FROZEN_MAX_VERSION} 个已发布迁移与冻结基线一致",
+        ok=not frozen_bad,
+        detail="均一致" if not frozen_bad else f"漂移: {frozen_bad[:3]}",
+    )
+    check(
+        "冻结基线版本号连续（1..FROZEN_MAX_VERSION）",
+        ok=sorted(FROZEN_CHECKSUMS) == list(range(1, FROZEN_MAX_VERSION + 1)),
+        detail=f"1..{FROZEN_MAX_VERSION}",
+    )
+
     # ── ④c D4：表名白名单（表名是标识符，不能用字面量转义）─────────────
     log("\n④c D4 表名白名单：误传未知标识符必须 Fail Loud，且不能用 _pg_quote_literal")
     from migrations._backfill_hardened import (
