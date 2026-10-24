@@ -430,6 +430,80 @@ def _run_checks(engine, configure_mappers, text, Session) -> None:  # noqa: N803
         literal_breaks = True
     check("_pg_quote_literal 不能用于表名（会语法错误，故白名单才是正解）", ok=literal_breaks)
 
+    # ── ④e D6：v94 加固实现真实数据验证（首批/后续批 SQL 均落在真实 PG 执行）───
+    # 背景（2026-10-24 审查）：v94 临时库全链跑时表是空的、dev 库 v93 已补完 0 行，
+    # 「首批 SQL（无游标）+ 后续批 SQL（uuid 主键 id > :after_id 裸参数）」这条真实
+    # 数据执行路径此前从未被验证过——正是本项目反复踩的「未实测」坑。此用例
+    # 造可回填数据后实跑 v94，锁住三组回填语义。
+    log("\n④e D6 v94 加固实现：真实数据验证首批/后续批游标循环与三组回填语义")
+    from migrations._backfill_hardened import backfill_leads_and_operator_hardened
+
+    now = datetime.now(timezone.utc)
+    pid = str(uuid.uuid4())
+    lead_id = str(uuid.uuid4())
+    fr_id = str(uuid.uuid4())
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO projects (id, name, community_name, address, status, business_form, "
+                "is_deleted, finance_settlement_status, created_at, updated_at) "
+                "VALUES (:i, 'E2Ev94验证项目', 'E2Ev94小区', 'E2Ev94地址', 'selling', 'agent', "
+                "false, 'unsettled', :n, :n)"
+            ),
+            {"i": pid, "n": now},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO leads (id, community_name, is_hot, status, is_deleted, created_at, updated_at, "
+                "area, expected_price, total_price, unit_price) "
+                "VALUES (:i, 'E2Ev94小区', 0, 'PENDING_ASSESSMENT', false, :n, :n, 80, 1600000, NULL, NULL)"
+            ),
+            {"i": lead_id, "n": now},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO finance_records (id, project_id, type, category, amount, outflow, inflow, "
+                "record_date, is_deleted, created_at, updated_at) "
+                "VALUES (:i, :p, 'expense', '其他支出', 5, 5, 0, :n, false, :n, :n)"
+            ),
+            {"i": fr_id, "p": pid, "n": now},
+        )
+        conn.execute(
+            text(
+                "INSERT INTO operation_logs (id, user_id, action, resource_type, resource_id, created_at, updated_at) "
+                "VALUES (gen_random_uuid(), 'e2e-v94', 'create', 'project_finance', :r, :n, :n)"
+            ),
+            {"r": fr_id, "n": now},
+        )
+
+    # 实跑 v94：先过首批（无游标），再走后续批（id > :after_id 裸参数）至扫描完
+    backfill_leads_and_operator_hardened(engine)
+
+    with engine.begin() as conn:
+        _lead = conn.execute(text("SELECT total_price, unit_price FROM leads WHERE id = :i"), {"i": lead_id}).first()
+        _op = conn.execute(text("SELECT operator_id FROM finance_records WHERE id = :i"), {"i": fr_id}).scalar()
+    check(
+        "v94 先补 total_price 再算 unit_price（1600000.00 / 20000.00）",
+        ok=_lead is not None and _lead[0] == Decimal("1600000.00") and _lead[1] == Decimal("20000.00"),
+        detail=str(tuple(_lead) if _lead else None),
+    )
+    check("v94 operator_id 经 operation_logs 精确回填", ok=_op == "e2e-v94", detail=str(_op))
+
+    # 幂等：再跑一遍不应再改动（结果不变即通过）
+    backfill_leads_and_operator_hardened(engine)
+    with engine.begin() as conn:
+        _lead2 = conn.execute(text("SELECT total_price, unit_price FROM leads WHERE id = :i"), {"i": lead_id}).first()
+        _op2 = conn.execute(text("SELECT operator_id FROM finance_records WHERE id = :i"), {"i": fr_id}).scalar()
+    check("v94 幂等（重复执行结果不变）", ok=(_lead, _op) == (_lead2, _op2))
+
+    # 清理造数（同事务删除，失败即整体回滚并让 check 失败）
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM operation_logs WHERE resource_id = :r AND user_id = 'e2e-v94'"), {"r": fr_id})
+        conn.execute(text("DELETE FROM finance_records WHERE id = :i"), {"i": fr_id})
+        conn.execute(text("DELETE FROM leads WHERE id = :i"), {"i": lead_id})
+        conn.execute(text("DELETE FROM projects WHERE id = :i"), {"i": pid})
+    check("v94 造数清理完成（不留残留）", ok=True)
+
     # ── ⑤ R5：金额精度约束（Create 与 Update 同口径）───────────────────
     log("\n⑤ R5 LedgerRecordUpdate 金额精度约束")
     from schemas.project.finance import LedgerRecordCreate, LedgerRecordUpdate

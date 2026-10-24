@@ -56,8 +56,8 @@ def test_published_migration_source_is_frozen(version: int) -> None:
         "  正确做法：把改动写成**新的追加迁移**（version 从 NEXT_VERSION 起），"
         "保留旧函数原样。\n"
         "  若确认是纯重构（无行为变化）且已完成全环境 rebaseline，"
-        "才用 python -m migrations.manage freeze --update "
-        f"{version} {actual} --reason '...' 更新基线。"
+        "才用 python -m migrations.manage freeze "
+        f"{version} --reason '...' --confirm 更新基线。"
     )
 
 
