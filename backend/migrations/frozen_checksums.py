@@ -12,14 +12,18 @@
 此后：
 - ``tests/test_migration_freeze.py`` 会在 CI/pytest 中比对源码与基线，
   任何人改动已发布迁移都会**立刻**失败（而不是等到部署）；
-- ``manage verify --env-check`` 可拿它比对任意环境的账本，
-  一次性发现「某个环境账本漂移」。
+- ``manage verify`` 会把**当前环境账本**与本基线比对，一次性发现「某个环境账本漂移」
+  （输出里出现「与环境无关的已发布基线不一致」即为漂移）。
 
 **如何更新（必须走追加迁移，不要改历史）**：
 1. 新增一个**追加**迁移（版本号从 ``NEXT_VERSION`` 起），不要修改旧函数；
 2. 部署到生产并确认 applied；
-3. 用 ``python -m migrations.manage freeze --update <version> <checksum>``
-   或直接按下方格式追加一行，然后提交本文件。
+3. 用下面的命令更新本文件，然后提交::
+
+       python -m migrations.manage freeze <version> --reason "..." --confirm
+
+   ``freeze`` 只接受一个位置参数（``version``）；``--reason`` 必填、``--confirm`` 显式确认，
+   未加 ``--confirm`` 时只打印提示、不写文件。
 
 生成方式：部署后从生产账本导出（``select version,checksum from schema_migrations
 where status='applied' order by version``）。

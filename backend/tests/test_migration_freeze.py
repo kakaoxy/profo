@@ -71,3 +71,25 @@ def test_new_migrations_must_be_appended_not_frozen() -> None:
     # 注册表本身仍要连续（由 test_migration_registry 覆盖，这里只做交叉确认）
     versions = [m.version for m in MIGRATIONS]
     assert versions == sorted(versions)
+
+
+def test_manifest_parser_covers_every_entry() -> None:
+    """``_parse_frozen_entries`` 必须解析出**全部**条目（含 ruff format 折行形态）.
+
+    ⚠️ 这条是回归护栏（2026-10-24 实测踩坑）：``ruff format`` 会把超长条目折成多行，
+    本基线 94 条中有 8 条是折行形态。早期解析器只认单行，导致
+    ``manage freeze`` 的「改写后校验」把未受影响的折行条目误判为"消失"，
+    从而拒绝写入或漏检。
+    """
+    from pathlib import Path
+
+    from migrations.manage import _parse_frozen_entries
+
+    manifest = Path(__file__).resolve().parent.parent / "migrations" / "frozen_checksums.py"
+    parsed = _parse_frozen_entries(manifest.read_text(encoding="utf-8"))
+    assert parsed == FROZEN_CHECKSUMS, (
+        "解析结果与模块内基线不一致："
+        f"缺失={sorted(set(FROZEN_CHECKSUMS) - set(parsed))[:5]}，"
+        f"多余={sorted(set(parsed) - set(FROZEN_CHECKSUMS))[:5]}"
+    )
+    assert len(parsed) == len(FROZEN_CHECKSUMS) == FROZEN_MAX_VERSION

@@ -25,6 +25,7 @@
 import argparse
 import json
 import logging
+import re
 import sys
 import time
 from pathlib import Path
@@ -347,16 +348,83 @@ def cmd_freeze(args: argparse.Namespace) -> int:
 
     manifest = Path(__file__).with_name("frozen_checksums.py")
     text_src = manifest.read_text(encoding="utf-8")
-    old_line = f'    {migration.version}: ("{frozen_name}", "{frozen_checksum}"),'
-    new_line = f'    {migration.version}: ("{frozen_name}", "{actual}"),'
-    if old_line not in text_src:
-        print(f"[FATAL] 冻结基线文件中未找到 v{migration.version} 的条目，请手工核对", file=sys.stderr)
+
+    # 定位 + 解析后校验（2026-10-24 加固）：
+    # 不再依赖「单行格式恰好如此」的隐式假设——实测 ``ruff format`` 会把超长条目
+    # **折成多行**（本基线 94 条中有 8 条是折行形态），旧实现若只认单行会静默漏检。
+    # 因此用「版本号锚点 + 紧随的 name/checksum」跨行匹配，两种形态都能处理：
+    #   - 单行：  17: ("name", "<64 hex>"),
+    #   - 折行：  17: (\n  "name",\n  "<64 hex>",\n),
+    # 要求**恰好命中 1 处**；改完再整体解析前后对照，确认真只有目标版本变化才落盘。
+    version = migration.version
+    pattern = re.compile(
+        rf"^(?P<indent>[ \t]*){version}:[ \t]*\([ \t]*\n?[ \t]*"
+        r'(?P<q1>["\'])(?P<name>[^"\']+)(?P=q1)[ \t]*,[ \t]*\n?[ \t]*'
+        r'(?P<q2>["\'])(?P<sum>[0-9a-f]{64})(?P=q2)[ \t]*,?[ \t]*\n?[ \t]*\)[ \t]*,',
+        re.MULTILINE,
+    )
+    matches = list(pattern.finditer(text_src))
+    if len(matches) != 1:
+        print(
+            f"[FATAL] 冻结基线中 v{version} 的条目命中 {len(matches)} 处（应为 1）。"
+            "文件格式可能已变化，请手工核对后重试",
+            file=sys.stderr,
+        )
         return EXIT_PROBLEM
-    manifest.write_text(text_src.replace(old_line, new_line, 1), encoding="utf-8")
-    print(f"v{migration.version} {frozen_name} 冻结基线已更新：{frozen_checksum[:12]} → {actual[:12]}")
+    hit = matches[0]
+    if hit.group("name") != frozen_name or hit.group("sum") != frozen_checksum:
+        print(
+            f"[FATAL] v{version} 条目内容与预期不符："
+            f"文件内={hit.group('name')}/{hit.group('sum')[:12]}，"
+            f"预期={frozen_name}/{frozen_checksum[:12]}",
+            file=sys.stderr,
+        )
+        return EXIT_PROBLEM
+
+    # 统一改写为单行形态（ruff format 之后若仍超长会再次折行，不影响解析）
+    new_line = f'{hit.group("indent")}{version}: ("{frozen_name}", "{actual}"),'
+    updated = text_src[: hit.start()] + new_line + text_src[hit.end() :]
+
+    # 解析级校验：改写前后各版本条目，应当只有目标版本发生变化。
+    before_map = _parse_frozen_entries(text_src)
+    after_map = _parse_frozen_entries(updated)
+    changed = {v for v in set(before_map) | set(after_map) if before_map.get(v) != after_map.get(v)}
+    if changed != {version}:
+        print(
+            f"[FATAL] 改写结果异常：受影响版本={sorted(changed)}（应仅 {version}），已放弃写入",
+            file=sys.stderr,
+        )
+        return EXIT_PROBLEM
+
+    manifest.write_text(updated, encoding="utf-8")
+    print(f"v{version} {frozen_name} 冻结基线已更新：{frozen_checksum[:12]} → {actual[:12]}")
     print(f"  原因：{args.reason}")
     print("  ⚠️ 请确认所有环境（本地/测试/生产）账本已 rebaseline 后再提交本文件")
     return EXIT_OK
+
+
+def _parse_frozen_entries(source: str) -> dict[int, tuple[str, str]]:
+    """解析冻结基线源码里的 ``version: (name, checksum)`` 条目（用于改写后校验）.
+
+    同时支持单行与 ``ruff format`` 折行两种形态（实测本基线有 8 条折行）。
+
+    Args:
+        source: ``frozen_checksums.py`` 的源码文本。
+
+    Returns:
+        ``{version: (name, checksum)}``。
+
+    """
+    entries: dict[int, tuple[str, str]] = {}
+    for m in re.finditer(
+        r"^[ \t]*(\d+):[ \t]*\([ \t]*\n?[ \t]*"
+        r"([\"'])([^\"']+)\2[ \t]*,[ \t]*\n?[ \t]*"
+        r"([\"'])([0-9a-f]{64})\4[ \t]*,?[ \t]*\n?[ \t]*\)",
+        source,
+        re.MULTILINE,
+    ):
+        entries[int(m.group(1))] = (m.group(3), m.group(5))
+    return entries
 
 
 # ---------------------------------------------------------------------------
