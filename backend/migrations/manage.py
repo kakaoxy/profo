@@ -58,6 +58,40 @@ EXIT_OK = 0
 EXIT_PROBLEM = 1
 EXIT_REFUSED = 2
 
+# 冻结基线条目「版本号 + 名称 + checksum」的**唯一**正则（2026-10-24 重构）。
+#
+# 此前 cmd_freeze 的「定位」与 _parse_frozen_entries 的「解析」各写一份，两者边缘
+# 行为已经出现分歧（实测：条目末尾缺逗号时定位失败、解析仍成功），维护者在手工
+# 调整过格式的文件上会被卡住。改为共享同一来源，结构上消除分歧。
+#
+# 捕获组（两处代码共用，勿改编号）：
+#   1 = version  2 = 名称引号  3 = 名称  4 = checksum 引号  5 = 64 位 hex checksum
+#   反向引用 \2 / \4 保证前后引号成对。
+# 兼容两种形态（ruff format 会把超长条目折行）：
+#   单行： 17: ("name", "<64 hex>"),
+#   折行： 17: (\n  "name",\n  "<64 hex>",\n),
+_FROZEN_ENTRY_RE = (
+    r"^[ \t]*(?P<version>\d+):[ \t]*\([ \t]*\n?[ \t]*"
+    r"(?P<q1>[\"'])(?P<name>[^\"']+)(?P=q1)[ \t]*,[ \t]*\n?[ \t]*"
+    r"(?P<q2>[\"'])(?P<checksum>[0-9a-f]{64})(?P=q2)[ \t]*,?[ \t]*\n?[ \t]*\)"
+)
+
+
+def _compile_frozen_entry_pattern(version: int | None = None) -> re.Pattern[str]:
+    """编译冻结条目正则；给出 ``version`` 时锚定该版本（供 freeze 精确定位）.
+
+    Args:
+        version: 为 None 时匹配任意版本（解析全表）；否则只匹配该版本号。
+
+    Returns:
+        已编译的正则（``re.MULTILINE``）。
+
+    """
+    source = _FROZEN_ENTRY_RE
+    if version is not None:
+        source = source.replace(r"(?P<version>\d+)", f"(?P<version>{version})", 1)
+    return re.compile(source, re.MULTILINE)
+
 
 def _engine() -> Engine:
     """取应用共享引擎（与 uvicorn 同一 ``settings``/``.env``）."""
@@ -349,20 +383,14 @@ def cmd_freeze(args: argparse.Namespace) -> int:
     manifest = Path(__file__).with_name("frozen_checksums.py")
     text_src = manifest.read_text(encoding="utf-8")
 
-    # 定位 + 解析后校验（2026-10-24 加固）：
+    # 定位 + 解析后校验（2026-10-24）：
     # 不再依赖「单行格式恰好如此」的隐式假设——实测 ``ruff format`` 会把超长条目
     # **折成多行**（本基线 94 条中有 8 条是折行形态），旧实现若只认单行会静默漏检。
-    # 因此用「版本号锚点 + 紧随的 name/checksum」跨行匹配，两种形态都能处理：
-    #   - 单行：  17: ("name", "<64 hex>"),
-    #   - 折行：  17: (\n  "name",\n  "<64 hex>",\n),
-    # 要求**恰好命中 1 处**；改完再整体解析前后对照，确认真只有目标版本变化才落盘。
+    # 正则与 ``_parse_frozen_entries`` **共用** ``_FROZEN_ENTRY_RE``（此前各写一份，
+    # 已在「条目末尾无逗号」上出现行为分歧）。要求**恰好命中 1 处**；改完再整体
+    # 解析前后对照，确认真只有目标版本变化才落盘。
     version = migration.version
-    pattern = re.compile(
-        rf"^(?P<indent>[ \t]*){version}:[ \t]*\([ \t]*\n?[ \t]*"
-        r'(?P<q1>["\'])(?P<name>[^"\']+)(?P=q1)[ \t]*,[ \t]*\n?[ \t]*'
-        r'(?P<q2>["\'])(?P<sum>[0-9a-f]{64})(?P=q2)[ \t]*,?[ \t]*\n?[ \t]*\)[ \t]*,',
-        re.MULTILINE,
-    )
+    pattern = _compile_frozen_entry_pattern(version)
     matches = list(pattern.finditer(text_src))
     if len(matches) != 1:
         print(
@@ -372,17 +400,17 @@ def cmd_freeze(args: argparse.Namespace) -> int:
         )
         return EXIT_PROBLEM
     hit = matches[0]
-    if hit.group("name") != frozen_name or hit.group("sum") != frozen_checksum:
+    if hit.group("name") != frozen_name or hit.group("checksum") != frozen_checksum:
         print(
             f"[FATAL] v{version} 条目内容与预期不符："
-            f"文件内={hit.group('name')}/{hit.group('sum')[:12]}，"
+            f"文件内={hit.group('name')}/{hit.group('checksum')[:12]}，"
             f"预期={frozen_name}/{frozen_checksum[:12]}",
             file=sys.stderr,
         )
         return EXIT_PROBLEM
 
     # 统一改写为单行形态（ruff format 之后若仍超长会再次折行，不影响解析）
-    new_line = f'{hit.group("indent")}{version}: ("{frozen_name}", "{actual}"),'
+    new_line = f'    {version}: ("{frozen_name}", "{actual}"),'
     updated = text_src[: hit.start()] + new_line + text_src[hit.end() :]
 
     # 解析级校验：改写前后各版本条目，应当只有目标版本发生变化。
@@ -416,14 +444,8 @@ def _parse_frozen_entries(source: str) -> dict[int, tuple[str, str]]:
 
     """
     entries: dict[int, tuple[str, str]] = {}
-    for m in re.finditer(
-        r"^[ \t]*(\d+):[ \t]*\([ \t]*\n?[ \t]*"
-        r"([\"'])([^\"']+)\2[ \t]*,[ \t]*\n?[ \t]*"
-        r"([\"'])([0-9a-f]{64})\4[ \t]*,?[ \t]*\n?[ \t]*\)",
-        source,
-        re.MULTILINE,
-    ):
-        entries[int(m.group(1))] = (m.group(3), m.group(5))
+    for m in _compile_frozen_entry_pattern().finditer(source):
+        entries[int(m.group("version"))] = (m.group("name"), m.group("checksum"))
     return entries
 
 

@@ -93,3 +93,30 @@ def test_manifest_parser_covers_every_entry() -> None:
         f"多余={sorted(set(parsed) - set(FROZEN_CHECKSUMS))[:5]}"
     )
     assert len(parsed) == len(FROZEN_CHECKSUMS) == FROZEN_MAX_VERSION
+
+
+def test_freeze_locate_and_parse_share_one_regex() -> None:
+    """``freeze`` 的定位与 ``_parse_frozen_entries`` 的解析必须**行为一致**.
+
+    ⚠️ 回归背景（2026-10-24）：两处原本各写一份正则，实测在「条目末尾缺逗号」时
+    定位失败、解析却成功——维护者在手工调整过格式的基线文件上会被 CLI 卡住。
+    现改为共用 ``_FROZEN_ENTRY_RE``；本用例锁住「两侧判定一致」，防止再次分叉。
+    """
+    from migrations.manage import _compile_frozen_entry_pattern, _parse_frozen_entries
+
+    hex_checksum = "721533f386b3a1d727b1118e17f63e21a2b999e69633804d06e450560995fda7"
+    candidates = {
+        "标准单行": f'    17: ("create_finance_subjects_table", "{hex_checksum}"),',
+        "折行": (f'    17: (\n        "create_finance_subjects_table",\n        "{hex_checksum}",\n    ),'),
+        "末尾无逗号": f'    17: ("create_finance_subjects_table", "{hex_checksum}")',
+        "单引号": f"    17: ('create_finance_subjects_table', '{hex_checksum}'),",
+        "Tab缩进": f'\t17: ("create_finance_subjects_table", "{hex_checksum}"),',
+    }
+    locator = _compile_frozen_entry_pattern(17)
+    diverged = []
+    for name, source in candidates.items():
+        by_locator = bool(locator.search(source))
+        by_parser = bool(_parse_frozen_entries(source).get(17))
+        if by_locator != by_parser:
+            diverged.append(f"{name}(定位={by_locator}, 解析={by_parser})")
+    assert not diverged, f"两处正则行为分叉：{diverged}"
