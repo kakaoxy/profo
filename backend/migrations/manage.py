@@ -70,10 +70,15 @@ EXIT_REFUSED = 2
 # 兼容两种形态（ruff format 会把超长条目折行）：
 #   单行： 17: ("name", "<64 hex>"),
 #   折行： 17: (\n  "name",\n  "<64 hex>",\n),
+#
+# ⚠️ 末尾的 `,?` 必须**包含在匹配范围内**（2026-10-24 修复）：``cmd_freeze`` 用
+# ``new_line``（自带结尾逗号）整体替换命中片段。若正则不吞掉原有的结尾逗号，
+# 替换后就会残留一个逗号，生成 `"),,"` —— 语法错误。实测已复现「双逗号」。
 _FROZEN_ENTRY_RE = (
     r"^[ \t]*(?P<version>\d+):[ \t]*\([ \t]*\n?[ \t]*"
     r"(?P<q1>[\"'])(?P<name>[^\"']+)(?P=q1)[ \t]*,[ \t]*\n?[ \t]*"
     r"(?P<q2>[\"'])(?P<checksum>[0-9a-f]{64})(?P=q2)[ \t]*,?[ \t]*\n?[ \t]*\)"
+    r"[ \t]*,?"
 )
 
 
@@ -347,10 +352,27 @@ def cmd_freeze(args: argparse.Namespace) -> int:
 
     仅在「确认是纯重构、无行为变化」且**所有环境**都已同步的基础上使用。
     默认拒绝：必须同时提供 ``--reason`` 与 ``--confirm``，避免把漂移当成重构放行。
+
+    ``--manifest`` 可指向基线文件的**副本**，用于演练/测试（默认就地更新真实文件）。
     """
     migration = _migration_or_exit(args.version)
     from migrations.checksum import checksum_of
-    from migrations.frozen_checksums import FROZEN_CHECKSUMS, FROZEN_MAX_VERSION
+    from migrations.frozen_checksums import FROZEN_MAX_VERSION
+
+    # ⚠️ 「是否需要更新」的判断必须与「写入目标」来自**同一个文件**（2026-10-24 修正）。
+    # 此前判断读模块常量 FROZEN_CHECKSUMS、写入却可被 --manifest 指到副本，二者一旦
+    # 不一致就自相矛盾：副本已过期却报告「与基线一致，无需更新」。
+    # 现在统一从目标文件解析基线，再与源码比对。
+    manifest_arg = getattr(args, "manifest", None)
+    if manifest_arg:
+        manifest = Path(manifest_arg)
+        if not manifest.is_file():
+            print(f"[FATAL] --manifest 指向的文件不存在：{manifest}", file=sys.stderr)
+            return EXIT_REFUSED
+    else:
+        manifest = Path(__file__).with_name("frozen_checksums.py")
+    text_src = manifest.read_text(encoding="utf-8")
+    manifest_entries = _parse_frozen_entries(text_src)
 
     if migration.version > FROZEN_MAX_VERSION:
         print(
@@ -359,7 +381,14 @@ def cmd_freeze(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return EXIT_REFUSED
-    frozen_name, frozen_checksum = FROZEN_CHECKSUMS[migration.version]
+    entry = manifest_entries.get(migration.version)
+    if entry is None:
+        print(
+            f"[FATAL] 目标基线文件中未找到 v{migration.version} 的条目：{manifest}",
+            file=sys.stderr,
+        )
+        return EXIT_PROBLEM
+    frozen_name, frozen_checksum = entry
     actual = checksum_of(migration.fn)
     if actual == frozen_checksum:
         print(f"v{migration.version} {frozen_name} 与基线一致，无需更新")
@@ -380,8 +409,7 @@ def cmd_freeze(args: argparse.Namespace) -> int:
         )
         return EXIT_REFUSED
 
-    manifest = Path(__file__).with_name("frozen_checksums.py")
-    text_src = manifest.read_text(encoding="utf-8")
+    # text_src / manifest 已在函数开头解析（与判断同源），此处直接使用。
 
     # 定位 + 解析后校验（2026-10-24）：
     # 不再依赖「单行格式恰好如此」的隐式假设——实测 ``ruff format`` 会把超长条目
@@ -830,6 +858,11 @@ def build_parser() -> argparse.ArgumentParser:
     freeze.add_argument("version", help="版本号或迁移名")
     freeze.add_argument("--reason", required=True, help="审计原因（必填）")
     freeze.add_argument("--confirm", action="store_true", help="显式确认（否则只打印提示）")
+    freeze.add_argument(
+        "--manifest",
+        metavar="PATH",
+        help="基线文件路径（默认就地更新 migrations/frozen_checksums.py；可指向副本做演练）",
+    )
     freeze.set_defaults(func=cmd_freeze)
 
     comp = sub.add_parser("compensate", help="补偿/回滚指定版本")
