@@ -194,3 +194,51 @@ def test_freeze_rejects_missing_manifest(repo_manifest_guard: object, tmp_path: 
 
     ghost = tmp_path / "nope.py"
     assert cmd_freeze(_make_args(17, ghost)) == EXIT_REFUSED
+
+
+def _drop_entry(tmp_path: Path, version: int, name: str) -> Path:
+    """复制真实基线并删除指定版本条目（构造「与仓库不同步的副本」）."""
+    copy = tmp_path / f"frozen_drop_{version}.py"
+    text = _REPO_MANIFEST.read_text(encoding="utf-8")
+    entry = _parse_frozen_entries(text)[version]
+    assert entry[0] == name
+    lines = [ln for ln in text.splitlines(keepends=True) if not ln.startswith(f"    {version}: (")]
+    result = "".join(lines)
+    assert f'"{name}"' not in result
+    copy.write_text(result, encoding="utf-8")
+    return copy
+
+
+def test_freeze_upper_limit_comes_from_manifest_not_module(
+    tmp_path: Path,
+    repo_manifest_guard: object,
+) -> None:
+    """⑤ 同源上限：落后副本（缺尾部条目）必须按**副本自身**上限拒绝.
+
+    ⚠️ 回归背景（2026-10-24）：上限判断曾读模块常量 FROZEN_MAX_VERSION（=仓库真实值），
+    条目判断读 --manifest 副本。副本落后一步（如缺 v94）时，门槛用 94 放行、
+    条目查找却按副本失败，同一函数内两个数据源结论互相矛盾。
+    现在上限 = ``max(_parse_frozen_entries(副本))``，与条目/当前值完全同源。
+    """
+    from migrations.manage import EXIT_REFUSED
+
+    max_version = max(_parse_frozen_entries(_REPO_MANIFEST.read_text(encoding="utf-8")))
+    latest_name = _parse_frozen_entries(_REPO_MANIFEST.read_text(encoding="utf-8"))[max_version][0]
+    lagging = _drop_entry(tmp_path, max_version, latest_name)
+
+    # 对「缺最新条目」的副本 freeze 该版本：应被副本自身上限拒绝（EXIT_REFUSED），
+    # 而不是漏到条目查找才报 EXIT_PROBLEM，更不是被模块常量放行。
+    before = lagging.read_bytes()
+    assert cmd_freeze(_make_args(max_version, lagging)) == EXIT_REFUSED
+    assert lagging.read_bytes() == before, "拒绝路径不得写文件"
+
+
+def test_freeze_detects_manifest_gap(
+    tmp_path: Path,
+    repo_manifest_guard: object,
+) -> None:
+    """⑥ 副本中间空洞：上限够但条目缺失 → EXIT_PROBLEM（区别于超限拒绝）."""
+    from migrations.manage import EXIT_PROBLEM
+
+    gap = _drop_entry(tmp_path, 50, "backfill_lead_unit_price")
+    assert cmd_freeze(_make_args(50, gap)) == EXIT_PROBLEM

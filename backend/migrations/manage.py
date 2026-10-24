@@ -357,12 +357,14 @@ def cmd_freeze(args: argparse.Namespace) -> int:
     """
     migration = _migration_or_exit(args.version)
     from migrations.checksum import checksum_of
-    from migrations.frozen_checksums import FROZEN_MAX_VERSION
 
-    # ⚠️ 「是否需要更新」的判断必须与「写入目标」来自**同一个文件**（2026-10-24 修正）。
-    # 此前判断读模块常量 FROZEN_CHECKSUMS、写入却可被 --manifest 指到副本，二者一旦
-    # 不一致就自相矛盾：副本已过期却报告「与基线一致，无需更新」。
-    # 现在统一从目标文件解析基线，再与源码比对。
+    # ⚠️ 本函数内**所有**基线判断（上限、条目、当前值）必须与「写入目标」来自
+    # 同一个文件（2026-10-24 两步修正）。此前「是否需要更新」已改为解析目标文件，
+    # 但「冻结上限」仍读模块常量 FROZEN_MAX_VERSION——用 ``--manifest`` 指到与仓库
+    # 不同步的副本时（如旧备份/演练用的落后副本），门槛放行、条目查找却失败，
+    # 同一函数内两个数据源结论互相矛盾。现在上限也从解析结果动态算。
+    # 默认路径（真实文件）下解析出的上限与模块常量恒等（test_manifest_parser_covers_every_entry
+    # 保证解析覆盖全部条目），语义不变。
     manifest_arg = getattr(args, "manifest", None)
     if manifest_arg:
         manifest = Path(manifest_arg)
@@ -373,18 +375,20 @@ def cmd_freeze(args: argparse.Namespace) -> int:
         manifest = Path(__file__).with_name("frozen_checksums.py")
     text_src = manifest.read_text(encoding="utf-8")
     manifest_entries = _parse_frozen_entries(text_src)
+    manifest_max_version = max(manifest_entries, default=0)
 
-    if migration.version > FROZEN_MAX_VERSION:
+    if migration.version > manifest_max_version:
         print(
-            f"[FATAL] v{migration.version} 超出冻结上限 v{FROZEN_MAX_VERSION}："
-            "新增迁移不需要冻结（它还没发布），请先部署到生产再冻结",
+            f"[FATAL] v{migration.version} 超出该基线文件的冻结上限 v{manifest_max_version}"
+            f"（{manifest}）：新增迁移不需要冻结（它还没发布），请先部署到生产再冻结",
             file=sys.stderr,
         )
         return EXIT_REFUSED
     entry = manifest_entries.get(migration.version)
     if entry is None:
         print(
-            f"[FATAL] 目标基线文件中未找到 v{migration.version} 的条目：{manifest}",
+            f"[FATAL] 目标基线文件中缺少 v{migration.version} 的条目"
+            f"（上限 {manifest_max_version}，中间出现空洞=文件被误编辑）：{manifest}",
             file=sys.stderr,
         )
         return EXIT_PROBLEM
