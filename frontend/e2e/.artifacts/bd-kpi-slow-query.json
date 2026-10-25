@@ -1,0 +1,24 @@
+{
+  "measured_at": "2026-10-25T14:57:19.074Z",
+  "page_loads": 5,
+  "bd_rooms_rows": 7350621,
+  "seq_scan_before": 100,
+  "seq_scan_after": 100,
+  "seq_scan_delta": 0,
+  "page_load_ms": [
+    802,
+    725,
+    758,
+    770,
+    770
+  ],
+  "page_load_ms_max": 802,
+  "kpi": {
+    "community_count": 21731,
+    "building_count": 530956,
+    "room_count": 7350621,
+    "linked_project_count": 1,
+    "pending_count": 1
+  },
+  "verdict": "PASS：页面加载不再触发 bd_rooms 全表 COUNT"
+}

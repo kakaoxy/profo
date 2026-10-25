@@ -40,6 +40,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 
 from models import BdImportTask, ImportTaskStatus
+from services.property.dict_kpi_cache import invalidate_bd_counts
 from services.property.dict_parser import ParsedCommunity, open_decoded_text, parse_community_txt_stream
 from utils.building_dict import normalize_building_no, parse_room_floor
 
@@ -798,6 +799,10 @@ class DictImportProcessor:
             task.error_message = f"{task.error_message}；{mismatch_msg}" if task.error_message else mismatch_msg
             logger.warning("字典导入提前结束: %s (task=%s)", mismatch_msg, task.id)
         db.commit()
+        # 导入批量改写了 bd_rooms/bd_buildings 行数（慢查询报告 §6.1a）：
+        # 失效 KPI 计数缓存。导入期间逐小区 commit 已在写路径产生高频失效，
+        # 这里收尾再失效一次，保证导入结束后首屏读到的是最终数字。
+        invalidate_bd_counts()
 
         logger.info(
             "字典导入完成: %s 对账=%s 失败小区=%d",

@@ -32,8 +32,7 @@ import {
 import { Pagination } from "@/components/common/pagination";
 
 import { CommunityDrawer } from "./community-drawer";
-import type { BdCommunityListItem, BdCommunityListResponse, BdKpiResponse } from "./types";
-import { cn } from "@/lib/utils";
+import type { BdCommunityListItem, BdCommunityListResponse } from "./types";
 
 interface FilterOption {
   value: string;
@@ -41,7 +40,6 @@ interface FilterOption {
 }
 
 interface BdOverviewClientProps {
-  kpi: BdKpiResponse;
   list: BdCommunityListResponse;
   keyword: string;
   district: string;
@@ -78,7 +76,6 @@ function eraValueOf(eraFrom: number | undefined, eraTo: number | undefined): str
 }
 
 export function BdOverviewClient({
-  kpi,
   list,
   keyword,
   district,
@@ -161,28 +158,8 @@ export function BdOverviewClient({
     setSelected(c);
   }, []);
 
-  const kpis = [
-    { label: "小区", value: kpi.community_count, sub: "全量 19,655 · 覆盖 16 区", warm: true },
-    { label: "楼栋", value: kpi.building_count, sub: "全量 526,670 · 97% 带坐标", warm: false },
-    { label: "户室", value: kpi.room_count, sub: "全量 7,332,314", warm: false },
-    { label: "已绑项目", value: kpi.linked_project_count, sub: "已选到具体户室的项目", warm: false },
-  ];
-
   return (
     <div className="flex flex-col gap-5">
-      {/* KPI hero（设计稿：唯一 Apricot 暖卡 + 灰底卡） */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {kpis.map((k) => (
-          <div key={k.label} className={cn("rounded-[20px] px-[18px] pb-3.5 pt-4", k.warm ? "bg-apricot-wash" : "bg-fog")}>
-            <p className={cn("text-[12px]", k.warm ? "text-rust" : "text-graphite")}>{k.label}</p>
-            <p className="mt-1 font-display text-[30px] leading-none tracking-[-0.01em] text-ink tabular-nums">
-              {k.value.toLocaleString()}
-            </p>
-            <p className="mt-1 text-[10.5px] text-graphite">{k.sub}</p>
-          </div>
-        ))}
-      </div>
-
       {/* 筛选栏（设计稿 filter-bar：下拉组靠左 + 搜索药丸靠右撑满剩余宽度） */}
       <div className="flex flex-wrap items-center gap-2">
         <Select value={district} onValueChange={(v) => applyFilter({ district: v === "all" ? "" : v })}>

@@ -186,6 +186,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
 
     logger.info("Application started successfully: %s v%s", settings.app_name, settings.app_version)
 
+    # KPI 户室/楼栋计数缓存预热（慢查询报告 2026-10-25 §6.1a）：fresh 缺失时后台重算，
+    # 避免重启后首个页面加载付一次 735 万行全表 COUNT。幂等且不抛异常（见模块 docstring）。
+    try:
+        from services.property.dict_kpi_cache import prewarm_bd_counts
+
+        prewarm_bd_counts()
+    except Exception:
+        logger.exception("KPI 计数缓存预热调度失败（首个 KPI 请求将冷重算）")
+
     # 每日巡检超期归档（90 天原始包/失败明细），独立守护线程随进程退出
     def _bd_archive_daily_cleanup() -> None:
         while True:

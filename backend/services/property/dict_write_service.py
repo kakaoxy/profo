@@ -41,6 +41,7 @@ from schemas.building_dict import (
     BdDeleteResult,
     BdRoomCreateRequest,
 )
+from services.property.dict_kpi_cache import invalidate_bd_counts
 from services.property.dict_parser import normalize_district_value
 from services.property.dict_read_service import BuildingDictReadService
 from services.property.dict_rename_mixin import DictRenameMixin
@@ -220,6 +221,8 @@ class DictWriteService(DictRenameMixin):
                 # 非 uq 的 DB 异常：只回滚当条，保留已成功的写入（L1 第 1 点）
                 logger.exception("补录楼栋失败（跳过该条）: community=%s no=%s", community_id, no)
         db.commit()
+        if added:
+            invalidate_bd_counts()
         return added, created_map
 
     def create_buildings(
@@ -272,6 +275,10 @@ class DictWriteService(DictRenameMixin):
                 nos=[n for n in nos if n not in existing],
                 now=now,
             )
+        else:
+            # 主路径提交成功；异常分支的失效由 _retry_buildings_one_by_one 收尾负责
+            if added:
+                invalidate_bd_counts()
 
         # 撞同名 open pending 自动转正（BR-26）
         # L1：放在 finally 语义位置（此处已无未捕获异常路径），确保重试分支的
@@ -339,6 +346,8 @@ class DictWriteService(DictRenameMixin):
             except Exception:
                 logger.exception("补录户室失败（跳过该条）: building=%s room_no=%s", building_id, room_no)
         db.commit()
+        if added:
+            invalidate_bd_counts()
         return added, created_map
 
     def create_rooms(
@@ -397,6 +406,10 @@ class DictWriteService(DictRenameMixin):
                 candidates=[c for c in candidates if c not in existing],
                 now=now,
             )
+        else:
+            # 主路径提交成功；异常分支的失效由 _retry_rooms_one_by_one 收尾负责
+            if added:
+                invalidate_bd_counts()
 
         # 撞同名 open pending 自动转正（BR-26）
         self._promote_matching_pendings(
@@ -413,6 +426,7 @@ class DictWriteService(DictRenameMixin):
         building.room_count = count
         building.updated_at = datetime.now(timezone.utc)
         db.commit()
+        invalidate_bd_counts()
 
         self._audit(
             db,
@@ -495,6 +509,7 @@ class DictWriteService(DictRenameMixin):
         # session.delete 会尝试对已删除的房间行发 FK 置空 UPDATE → StaleDataError
         db.query(BdBuilding).filter(BdBuilding.id == building_id).delete(synchronize_session=False)
         db.commit()
+        invalidate_bd_counts()
         self._audit(
             db,
             user_id=operator_id,
@@ -542,6 +557,7 @@ class DictWriteService(DictRenameMixin):
         building.room_count = db.query(BdRoom).filter(BdRoom.building_id == building_id).count()
         building.updated_at = datetime.now(timezone.utc)
         db.commit()
+        invalidate_bd_counts()
         self._audit(
             db,
             user_id=operator_id,
@@ -579,6 +595,7 @@ class DictWriteService(DictRenameMixin):
             building.room_count = db.query(BdRoom).filter(BdRoom.building_id == building_id).count()
             building.updated_at = datetime.now(timezone.utc)
         db.commit()
+        invalidate_bd_counts()
         self._audit(
             db,
             user_id=operator_id,
@@ -871,6 +888,7 @@ class DictWriteService(DictRenameMixin):
             db.query(BdBuilding).filter(BdBuilding.id.in_(building_ids)).delete(synchronize_session=False)
         db.query(Community).filter(Community.id == community_id).delete(synchronize_session=False)
         db.commit()
+        invalidate_bd_counts()
 
         self._audit(
             db,

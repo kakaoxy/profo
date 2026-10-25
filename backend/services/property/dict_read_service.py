@@ -269,12 +269,21 @@ class BuildingDictReadService:
         )
 
     def get_kpi(self, db: Session) -> BdKpiResponse:
-        """字典 KPI hero（FR-01：小区/楼栋/户室/已关联项目 + 待审核数）."""
-        from models import BdRoom
+        """字典 KPI hero（FR-01：小区/楼栋/户室/已关联项目 + 待审核数）.
+
+        性能（慢查询报告 2026-10-25 §6.1a）：``count(*) FROM bd_rooms`` 在 735 万行 /
+        1GB 表上生产实测 6.3~9s，``count(*) FROM bd_buildings``（53 万行）0.35~0.9s；
+        二者每次页面加载都执行且被 ``Promise.all`` 阻塞整页。现改为经
+        ``dict_kpi_cache`` 的 Redis SWR 缓存读取（写路径 commit 后失效 + 后台重算）。
+
+        其余三个计数（小区 / 已绑项目 / 待审核）实测 <3ms，保持实时精确——不做无谓缓存，
+        也避免「待审核徽标」这类运营强一致诉求受缓存影响。
+        """
+        from services.property.dict_kpi_cache import get_or_compute_bd_counts
+
+        cached = get_or_compute_bd_counts(db)
 
         community_count = db.query(func.count(Community.id)).filter(Community.is_active.is_(True)).scalar() or 0
-        building_count = db.query(func.count(BdBuilding.id)).scalar() or 0
-        room_count = db.query(func.count(BdRoom.id)).scalar() or 0
         linked = (
             db.query(func.count(Project.id))
             .filter(
@@ -290,8 +299,8 @@ class BuildingDictReadService:
         )
         return BdKpiResponse(
             community_count=int(community_count),
-            building_count=int(building_count),
-            room_count=int(room_count),
+            building_count=cached["building_count"],
+            room_count=cached["room_count"],
             linked_project_count=int(linked),
             pending_count=int(pending_count),
         )

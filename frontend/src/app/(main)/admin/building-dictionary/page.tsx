@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import {
@@ -5,6 +7,7 @@ import {
   PageHeader,
 } from "@/app/(main)/admin/_components";
 import { BdOverviewClient } from "./_components/overview-client";
+import { BdKpiHero } from "./_components/kpi-hero";
 import { BdOverviewHeaderActions } from "./_components/overview-header-actions";
 
 export const dynamic = "force-dynamic";
@@ -29,6 +32,13 @@ interface BuildingDictionaryPageProps {
  * KPI hero（Apricot 暖卡唯一）+ 筛选栏 + 小区表格 + 20 条/页；
  * 行点击打开详情抽屉（_components/community-drawer）；页头动作
  * （overview-header-actions）：＋新增小区 / 审核池（徽标计数）/ 导入数据。
+ *
+ * 性能（慢查询报告 2026-10-25 §6.1.2）：KPI 与列表渲染**解耦**。
+ * 原实现把 `/kpi` 与列表放进同一个 `Promise.all`，整页 SSR 等最慢者——
+ * 而 `/kpi` 的 `count(*) FROM bd_rooms`（735 万行）生产实测 6.3~9s，
+ * 于是每次搜索/翻页都被 KPI 拖住。现在主链路只等「列表 + 筛选选项」
+ * （均毫秒级），KPI 由 `<Suspense>` 独立流式渲染，其失败/变慢都不阻塞表格。
+ * 后端侧另有 Redis 计数缓存（§6.1a）把 KPI 本身降到毫秒级，两层独立生效。
  */
 export default async function BuildingDictionaryPage(props: BuildingDictionaryPageProps) {
   const searchParams = await props.searchParams;
@@ -49,9 +59,9 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
 
   const client = await fetchClient();
 
-  // KPI / 列表 / 筛选选项三者无依赖，并行请求（消除瀑布）
-  const [kpiResult, listResult, optionsResult] = await Promise.all([
-    client.GET("/api/v1/admin/building-dictionary/kpi", {}),
+  // 主链路：列表 + 筛选选项（无依赖，并行；两者均毫秒级）。
+  // KPI 不在此处等待——它有自己的 Suspense 边界（见下方 <BdKpiHero />）。
+  const [listResult, optionsResult] = await Promise.all([
     client.GET("/api/v1/admin/building-dictionary/communities", {
       params: {
         query: {
@@ -73,18 +83,10 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
     }),
   ]);
 
-  if (
-    kpiResult.error ||
-    !kpiResult.data ||
-    listResult.error ||
-    !listResult.data ||
-    optionsResult.error ||
-    !optionsResult.data
-  ) {
+  if (listResult.error || !listResult.data || optionsResult.error || !optionsResult.data) {
     const status = listResult.response?.status;
     logger.error("楼盘字典数据加载失败:", {
       status,
-      kpiError: kpiResult.error,
       listError: listResult.error,
       optionsError: optionsResult.error,
     });
@@ -99,7 +101,6 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
   }
 
   // M4 修复：直接消费生成类型（fetchClient 泛型已绑定 OpenAPI schema），不再强转
-  const kpi = kpiResult.data;
   const list = listResult.data;
 
   return (
@@ -107,10 +108,17 @@ export default async function BuildingDictionaryPage(props: BuildingDictionaryPa
       <PageHeader
         title="楼盘字典"
         description="上海 1.97 万个小区，逐级看楼栋和户室 · 点击行看详情"
-        actions={<BdOverviewHeaderActions pendingCount={kpi.pending_count} />}
+        actions={
+          <Suspense fallback={<BdOverviewHeaderActions pendingCount={0} />}>
+            <BdKpiHero section="actions" />
+          </Suspense>
+        }
       />
+      {/* KPI hero 独立边界：数字迟到/失败都不影响表格与筛选交互 */}
+      <Suspense fallback={<BdKpiHero section="skeleton" />}>
+        <BdKpiHero section="hero" />
+      </Suspense>
       <BdOverviewClient
-        kpi={kpi}
         list={list}
         keyword={keyword}
         district={district}

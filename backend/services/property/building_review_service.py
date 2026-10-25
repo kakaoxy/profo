@@ -51,6 +51,7 @@ from services.property.building_review_backfill import (
 )
 from services.property.building_review_create import BuildingDictCreateMixin
 from services.property.building_review_queue import list_review_queue
+from services.property.dict_kpi_cache import invalidate_bd_counts
 from services.system.exceptions import ConflictError, PermissionDeniedError, ResourceNotFoundError, ValidationError
 from utils.building_dict import normalize_building_no, normalize_community_name
 
@@ -430,6 +431,8 @@ class BuildingReviewService(BuildingDictCreateMixin):
                 backfill_enqueued += 1
 
         db.commit()
+        # 字典落库改变了 bd_rooms/bd_buildings 行数（慢查询报告 §6.1a：KPI 计数缓存失效）
+        invalidate_bd_counts()
         self._audit(db, operator, entry, "create", request)
 
         # 其余引用异步回填已同步完成（同库单体，分批任务用于重试兜底）
@@ -550,6 +553,9 @@ class BuildingReviewService(BuildingDictCreateMixin):
         for ref in refs:
             self._backfill_reference(db, ref, target_value=target_value)
         db.commit()
+        # 仅「合并到待审兄弟」会转正落库新增字典行；合并到现有目标不改变行数
+        if target_kind == "pending":
+            invalidate_bd_counts()
         self._audit(db, operator, entry, "merge", request)
         return BdReviewResolveResponse(success=True, message=f"已合并现有目标 {target_value}，{len(refs)} 条引用已改指")
 
