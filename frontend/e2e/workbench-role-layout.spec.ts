@@ -188,6 +188,9 @@ async function loginAs(page: import("@playwright/test").Page, username: string, 
 }
 
 test.beforeAll(async () => {
+  // execFileSync 建 python 子进程 + 建 2 个临时账号 + 预热登录：
+  // 并行压测下超出默认 30s（与本仓其他重 E2E 同一稳定性口径）
+  test.setTimeout(120_000);
   const out = backendPython(SETUP_SCRIPT);
   if (!out.includes("setup ok")) throw new Error(`临时账号创建失败: ${out}`);
   // 只预热两个临时账号：admin 由 helpers/auth 的 loginPage 缓存登录，

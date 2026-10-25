@@ -99,16 +99,22 @@ finally:
 `;
 
 test.beforeAll(() => {
+  // execFileSync 启动 python 进程 + 写库：并行压测下可能超出默认 30s
+  test.setTimeout(120_000);
   backendPython(CLEANUP_SCRIPT); // 幂等：清掉可能的历史残留
   const out = backendPython(SEED_SCRIPT);
   if (!out.includes("seeded")) throw new Error(`造数失败: ${out}`);
 });
 
 test.afterAll(() => {
+  test.setTimeout(120_000);
   backendPython(CLEANUP_SCRIPT);
 });
 
 test.beforeEach(async ({ page }) => {
+  // 多 spec 并行时 getAdminTokens 冷启动可能撞后端 5次/分钟限流，
+  // 内建 20s/40s 退避重试会超出默认 30s（与 bd-kpi-slow-query 同一稳定性问题）
+  test.setTimeout(120_000);
   await loginPage(page);
 });
 

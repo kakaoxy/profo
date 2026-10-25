@@ -10,7 +10,7 @@ from decimal import Decimal
 from typing import Any
 
 from redis.exceptions import RedisError
-from sqlalchemy import desc
+from sqlalchemy import desc, func
 from sqlalchemy.orm import Session, joinedload
 
 from constants.role_codes import INTERNAL_ROLE_CODES
@@ -30,6 +30,7 @@ from services.notification.dual_write import (
     MODULE_LABELS,
     emit_customer_new,
     emit_customer_status_changed,
+    emit_lead_status_changed,
 )
 from services.property.dict_ownership import validate_dict_ownership
 from services.property.dict_submit_service import submit_dict_chain
@@ -442,9 +443,34 @@ class LeadService:
                     community=lead.community_name or "",
                     module_label=MODULE_LABELS.get(module.value, module.value),
                 )
-                # 迭代二：#2 线索状态变更（线索中心口径，收件人为线索归属员工同一人；
-                # dedupe 与 #4 不同域名前缀，两事件并存不重复）
+                # 迭代二：#2 lead.status_changed（线索中心口径，SPEC §5.2 #2；
+                # 收件人 = 线索归属员工，operator 文案取更新人姓名）
+                emit_lead_status_changed(
+                    self.db,
+                    lead_id=str(lead.id),
+                    owner_id=lead.referrer_id,
+                    status=new_unified.value,
+                    status_label=unified_status_label(new_unified.value),
+                    community=lead.community_name or "",
+                    operator=self._user_display_name(updater_id),
+                )
         return lead
+
+    def _user_display_name(self, user_id: str) -> str:
+        """用户显示名（nickname 缺失回退 username，与 admin_flow._employee_name 同口径）.
+
+        仅用于 lead.status_changed 通知文案；查无此人回退空串（模板层
+        fallback 由 ``operator or "同事"`` 兑底，与 lead.assigned 一致）。
+
+        Args:
+            user_id: 用户ID
+
+        Returns:
+            显示名；无记录时为空串。
+
+        """
+        row = self.db.query(func.coalesce(User.nickname, User.username)).filter(User.id == user_id).first()
+        return row[0] if row and row[0] else ""
 
     def delete_lead(self, lead_id: str) -> None:
         """删除线索.

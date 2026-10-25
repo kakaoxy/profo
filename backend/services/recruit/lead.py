@@ -13,6 +13,7 @@ from schemas.growth_center import GrowthModule, UnifiedLeadStatus
 from schemas.recruit import RecruitLeadStatusUpdate
 from services.growth_center.customer_notify import notify_customer_status_changed, unified_status_label
 from services.growth_center.flow_matrix import ensure_transition_allowed
+from services.notification.dual_write import MODULE_LABELS, emit_customer_status_changed
 from services.system.exceptions import ResourceNotFoundError
 from services.utils import aggregate_my_share_stats
 
@@ -194,6 +195,17 @@ class RecruitLeadService:
                 lead.referrer_employee_id,
                 unified_status_label(lead.status.value),
                 lead.main_business_area,
+            )
+            # 迭代二：站内信旁路双写（#4 客户状态变更招募线，SPEC §5.2 #4 第三接线点；best-effort）
+            emit_customer_status_changed(
+                self.db,
+                module=GrowthModule.RECRUIT.value,
+                lead_id=lead.id,
+                referrer_user_id=lead.referrer_employee_id,
+                status=lead.status.value,
+                status_label=unified_status_label(lead.status.value),
+                community=lead.main_business_area or "",
+                module_label=MODULE_LABELS.get(GrowthModule.RECRUIT.value, "招募"),
             )
 
         # 查询归属员工昵称（nickname 缺失时回退 username），保持与 list 端点响应一致

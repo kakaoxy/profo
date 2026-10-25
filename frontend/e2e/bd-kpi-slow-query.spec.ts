@@ -61,6 +61,9 @@ async function fetchKpi(ctx: APIRequestContext): Promise<KpiCounts> {
 
 test.describe("楼盘字典慢查询修复（KPI 计数缓存 + 渲染解耦）", () => {
   test("连续页面加载不再触发 bd_rooms 全表 COUNT，且 KPI 数字精确", async ({ page, playwright }) => {
+    // 5 次页面加载 + 首登 + docker exec psql：dev 模式 HMR 抖动时默认 30s 不够
+    // （与 admin-project-archive 等重用例同一范式：test.setTimeout 放宽）
+    test.setTimeout(120_000);
     const token = await getAdminToken();
     const ctx = await playwright.request.newContext({
       baseURL: API_BASE,

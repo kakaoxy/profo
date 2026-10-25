@@ -58,7 +58,7 @@ export function GrowthOverviewCard({ kpi, trend, sources }: GrowthOverviewCardPr
       role="region"
       aria-label="获客总览"
     >
-      <WidgetHead title="获客总览" sub="近 14 日" link="获客中心" href="/admin/growth-center" />
+      <WidgetHead title="获客总览" sub="近 14 日" link="获客中心" href="/admin/growth-center/overview" />
 
       <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="min-w-0">
