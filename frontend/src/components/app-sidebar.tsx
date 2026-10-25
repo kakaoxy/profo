@@ -22,6 +22,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { NotificationBell } from "@/components/notification-bell";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -413,6 +414,10 @@ export function AppSidebar({ user }: { user: User | null }) {
           className={`pb-2 mb-2 border-b border-dove/25 flex ${state === "collapsed" ? "justify-center" : "justify-end"}`}
         >
           <SidebarTrigger className="text-graphite hover:text-ink h-8 w-8 rounded-xl hover:bg-ink/5 transition-colors" />
+        </div>
+        {/* 消息铃铛（迭代二）：折叠按钮之下、用户头像之上；折叠态仅图标 */}
+        <div className={`mb-2 ${state === "collapsed" ? "flex justify-center" : ""}`}>
+          <NotificationBell collapsed={state === "collapsed"} />
         </div>
         {/* 用户头像 */}
         <div className={state === "collapsed" ? "flex justify-center" : ""}>

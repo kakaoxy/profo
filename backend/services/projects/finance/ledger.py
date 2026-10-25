@@ -5,7 +5,7 @@ import io
 import logging
 import uuid
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -22,6 +22,9 @@ from utils.file_security import get_safe_file_path
 from utils.formatters import escape_like
 
 logger = logging.getLogger(__name__)
+
+# 月度概览的周数上限（一个月最多跨 6 个自然周，取 8 留余量；设计稿为 8 柱）
+_MONTH_MAX_WEEKS = 8
 
 # 票据文件下载超时（秒）：单个 OSS 文件下载上限
 _RECEIPT_DOWNLOAD_TIMEOUT = 30.0
@@ -243,6 +246,175 @@ class _LedgerMixin:
                 self.db.query(Project.id).filter(Project.is_deleted.is_(False)).subquery().select()
             ),
         ]
+
+    def get_monthly_summary(self) -> dict[str, Any]:
+        """资金月度概览（SPEC D-02 / D-02a / D-02b / D-02c）.
+
+        全部由现有 ``finance_records`` + ``projects`` 计算（不新造业务概念）：
+        - 本月窗口按 Asia/Shanghai 自然月，左闭右开；
+        - 在投金额 = 未结算(``finance_settlement_status=unsettled``)且状态 ∈
+          {renovating, selling} 项目的**累计支出**合计；
+        - 本月回款 = 本月 ``type=income`` 的 ``inflow`` 合计；
+        - 按周现金流 = 本月按自然周（周一首）切分的 ``inflow − outflow``，最多 8 段。
+
+        Returns:
+            与 ``LedgerMonthlySummaryResponse`` 字段同名的 dict。
+
+        """
+        from zoneinfo import ZoneInfo
+
+        from models.common import ProjectStatus, SettlementStatus
+
+        cst = ZoneInfo("Asia/Shanghai")
+        now = datetime.now(cst)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        # 下月首日（左闭右开）
+        next_month = (month_start + timedelta(days=32)).replace(day=1)
+        start_utc = month_start.astimezone(timezone.utc)
+        end_utc = next_month.astimezone(timezone.utc)
+
+        month_filter = [
+            *self._alive_records_filter(),
+            FinanceRecord.record_date >= start_utc,
+            FinanceRecord.record_date < end_utc,
+        ]
+
+        # 本月净现金流 + 回款 + 笔数（单次聚合）
+        month_row = (
+            self.db.query(
+                func.coalesce(func.sum(FinanceRecord.inflow), 0),
+                func.coalesce(func.sum(FinanceRecord.outflow), 0),
+                func.coalesce(
+                    func.sum(
+                        case(
+                            (FinanceRecord.type == CashFlowType.INCOME.value, FinanceRecord.inflow),
+                            else_=Decimal(0),
+                        )
+                    ),
+                    0,
+                ),
+                func.count(FinanceRecord.id),
+            )
+            .filter(*month_filter)
+            .one()
+        )
+        inflow = Decimal(month_row[0] or 0)
+        outflow = Decimal(month_row[1] or 0)
+        month_receipts = Decimal(month_row[2] or 0)
+        month_record_count = int(month_row[3] or 0)
+        net_cash_flow = inflow - outflow
+
+        # 在投：未结算且装修/在售项目的累计支出
+        invested_row = (
+            self.db.query(
+                func.coalesce(func.sum(FinanceRecord.outflow), 0),
+                func.count(func.distinct(FinanceRecord.project_id)),
+            )
+            .join(Project, Project.id == FinanceRecord.project_id)
+            .filter(
+                *self._alive_records_filter(),
+                Project.is_deleted.is_(False),
+                Project.finance_settlement_status == SettlementStatus.UNSETTLED,
+                Project.status.in_((ProjectStatus.RENOVATING, ProjectStatus.SELLING)),
+            )
+            .one()
+        )
+        invested_amount = Decimal(invested_row[0] or 0)
+        invested_project_count = int(invested_row[1] or 0)
+
+        # 按周现金流：本月按自然周（周一首日）切分，最多 8 段，不足补 0
+        week_cash_flows = self._month_week_cash_flows(start_utc, end_utc, cst, month_start)
+
+        # 项目损益 Top3（按 |net_cash_flow| 降序）
+        profit_rows = (
+            self.db.query(
+                Project.id,
+                Project.community_name,
+                Project.status,
+                Project.finance_settlement_status,
+                (
+                    func.coalesce(func.sum(FinanceRecord.inflow), 0) - func.coalesce(func.sum(FinanceRecord.outflow), 0)
+                ).label("net_cash_flow"),
+            )
+            .join(FinanceRecord, FinanceRecord.project_id == Project.id)
+            .filter(*self._alive_records_filter(), Project.is_deleted.is_(False))
+            .group_by(
+                Project.id,
+                Project.community_name,
+                Project.status,
+                Project.finance_settlement_status,
+            )
+            .order_by(
+                func.abs(
+                    func.coalesce(func.sum(FinanceRecord.inflow), 0) - func.coalesce(func.sum(FinanceRecord.outflow), 0)
+                ).desc()
+            )
+            .limit(3)
+            .all()
+        )
+        top_profits = [
+            {
+                "project_id": row[0],
+                "community_name": row[1],
+                "status": row[2].value if hasattr(row[2], "value") else str(row[2]),
+                "settled": row[3] == SettlementStatus.SETTLED,
+                "net_cash_flow": Decimal(row[4] or 0),
+            }
+            for row in profit_rows
+        ]
+
+        return {
+            "month": month_start.strftime("%Y-%m"),
+            "net_cash_flow": net_cash_flow,
+            "month_record_count": month_record_count,
+            "invested_amount": invested_amount,
+            "invested_project_count": invested_project_count,
+            "month_receipts": month_receipts,
+            "week_cash_flows": week_cash_flows,
+            "top_profits": top_profits,
+        }
+
+    def _month_week_cash_flows(
+        self,
+        start_utc: datetime,
+        end_utc: datetime,
+        cst: Any,
+        month_start: datetime,
+    ) -> list[Decimal]:
+        """本月按自然周（周一首日）聚合净现金流，最多 8 段，不足补 0.
+
+        Args:
+            start_utc: 本月起始（UTC）
+            end_utc: 下月起始（UTC）
+            cst: Asia/Shanghai 时区对象
+            month_start: 本月起始（CST）
+
+        Returns:
+            8 个 Decimal（无数据段为 0）。
+
+        """
+        rows = (
+            self.db.query(
+                FinanceRecord.record_date,
+                FinanceRecord.inflow,
+                FinanceRecord.outflow,
+            )
+            .filter(
+                *self._alive_records_filter(),
+                FinanceRecord.record_date >= start_utc,
+                FinanceRecord.record_date < end_utc,
+            )
+            .all()
+        )
+        buckets: list[Decimal] = [Decimal(0)] * _MONTH_MAX_WEEKS
+        for record_date, inflow, outflow in rows:
+            local = record_date.astimezone(cst) if record_date.tzinfo else record_date
+            # 周序号：以本月首日为第 0 周基准，按自然周（周一）对齐
+            days_from_first_monday = (local.date() - month_start.date()).days
+            week_index = (month_start.weekday() + days_from_first_monday) // 7
+            if 0 <= week_index < _MONTH_MAX_WEEKS:
+                buckets[week_index] += Decimal(inflow or 0) - Decimal(outflow or 0)
+        return buckets
 
     def get_overall_stats(self) -> dict[str, Any]:
         """项目账本：全局汇总（有流水记录的项目数、总收入、总支出、净现金流、记录数）."""

@@ -293,3 +293,8 @@ class RateLimits:
     # ==================== 业务字典公开读 ====================
     # C 端/小程序渲染下拉与展示名，进程内 60s 缓存；量级对齐 PUBLIC_PROJECT_LIST
     PUBLIC_DICT = "300/minute"
+
+    # ==================== 通知中心（迭代二） ====================
+    # 前端 SWR 30s 轮询列表与未读数；按登录用户计数（key_func=get_login_user_identifier），
+    # NAT 共享出口 IP 时不互相挤占额度。60/min 对单用户宽松，对滥用仍收敛。
+    NOTIFICATION_READ = "60/minute"

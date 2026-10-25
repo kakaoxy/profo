@@ -975,6 +975,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leads/stats/assessment-backlog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Leads Assessment Backlog
+         * @description 待评估积压（工作台 alert_card：数量 / 最久等待 / 涉及负责人）.
+         *
+         *     权限沿用 ``lead:write``（与设计稿 alert_card 的 perm 声明一致）；
+         *     三项指标均可由现有数据计算，不引入新业务概念。
+         */
+        get: operations["get_leads_assessment_backlog_api_v1_leads_stats_assessment_backlog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/leads/stats/funnel": {
         parameters: {
             query?: never;
@@ -1850,8 +1873,13 @@ export interface paths {
          * Get Project Todo Board
          * @description 项目待办看板：规则引擎实时计算签约+装修阶段项目待办.
          *
-         *     只读快照不落库；无查询参数，全量返回（数据量小），筛选由前端完成。
-         *     使用 ProjectReadPermDep 基于权限码校验（与项目列表一致）.
+         *     只读快照不落库；筛选由前端完成。
+         *
+         *     **权限（SPEC §6.3）**：
+         *     - ``scope=all``：需 ``project:read``（与项目列表一致，返回结构/排序全不变）；
+         *     - ``scope=mine``：仅需登录态——普通员工即使无 ``project:read``，被指派为
+         *       业务负责人后也能看到自己负责项目的待办（与 ``/projects/my-responsible``
+         *       同一口径，复用 ``get_by_business_identity``）。
          */
         get: operations["get_project_todo_board_api_v1_projects_todo_board_get"];
         put?: never;
@@ -3028,6 +3056,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/ledger/monthly-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 资金月度概览（工作台 finance_summary）
+         * @description 本月净现金流 / 在投 / 本月回款 / 流水笔数 / 按周现金流 / 损益 Top3.
+         *
+         *     口径见 SPEC D-02/D-02a/D-02b/D-02c：全部由现有 finance_records + projects 计算，
+         *     不引入「已到账」「在途」等业务中不存在的概念。
+         */
+        get: operations["get_ledger_monthly_summary_api_v1_admin_ledger_monthly_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/ledger/export": {
         parameters: {
             query?: never;
@@ -3860,6 +3911,29 @@ export interface paths {
          * @description 全量替换角色权限.
          */
         put: operations["set_role_permissions_api_v1_permissions_roles__role_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/operation-logs/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Operation Log Summary
+         * @description 审计概览（工作台 audit_summary：今日操作数 / 登录失败 / 动作分布）.
+         *
+         *     ⚠️ 不含「高风险」与「查询类」指标——审计表无风险等级列，且读操作不落库
+         *     （见 ``OperationLogService.get_summary`` docstring 与 SPEC D-03/D-10）。
+         */
+        get: operations["get_operation_log_summary_api_v1_operation_logs_summary_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -6437,6 +6511,162 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 通知列表（仅自己）
+         * @description 分页查询当前用户的站内信（SPEC §6.1 #1）.
+         */
+        get: operations["list_notifications_api_v1_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 未读统计（总数 + 按分类）
+         * @description 未读数（铃铛角标 + 抽屉 tabs 计数）.
+         */
+        get: operations["get_unread_count_api_v1_notifications_unread_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取通知偏好
+         * @description 读取偏好（缺行 = 默认全开，K5）.
+         */
+        get: operations["get_preferences_api_v1_notifications_preferences_get"];
+        /**
+         * 保存通知偏好
+         * @description 保存偏好（`system`/`security` 关闭站内信 → 400）.
+         */
+        put: operations["update_preferences_api_v1_notifications_preferences_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 全部标记已读（可按分类）
+         * @description 全部已读（抽屉/消息中心共用；支持 ``category`` 收敛当前 tab）.
+         */
+        post: operations["mark_all_read_api_v1_notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 标记单条已读（幂等）
+         * @description 标记单条已读；非收件人 → 404（K7）.
+         */
+        post: operations["mark_read_api_v1_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/workbench/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取当前用户生效的工作台布局
+         * @description 三级 fallback + 权限过滤后的生效布局.
+         */
+        get: operations["get_config_api_v1_admin_workbench_config_get"];
+        /**
+         * 保存个人工作台布局
+         * @description 保存个人覆盖布局（user 角色 403，D-07）.
+         */
+        put: operations["update_config_api_v1_admin_workbench_config_put"];
+        post?: never;
+        /**
+         * 重置为角色默认布局
+         * @description 删除个人覆盖，回退角色默认（user 角色 403，D-07）.
+         */
+        delete: operations["reset_config_api_v1_admin_workbench_config_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/workbench/role-layouts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取三角色默认布局（workbench:manage）
+         * @description 管理端读取角色默认布局 + widget 注册表.
+         */
+        get: operations["get_role_layouts_api_v1_admin_workbench_role_layouts_get"];
+        /**
+         * 保存三角色默认布局（workbench:manage）
+         * @description 保存角色默认布局并写审计日志.
+         */
+        put: operations["update_role_layouts_api_v1_admin_workbench_role_layouts_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/market/kpi": {
         parameters: {
             query?: never;
@@ -6664,6 +6894,22 @@ export interface components {
             risk_points: components["schemas"]["RiskPoints"];
             /** Action Plan */
             action_plan: string[];
+        };
+        /**
+         * ActionCountItem
+         * @description 按 action 聚合的计数项.
+         */
+        ActionCountItem: {
+            /**
+             * Action
+             * @description operation_logs.action 原值
+             */
+            action: string;
+            /**
+             * Count
+             * @description 条数
+             */
+            count: number;
         };
         /**
          * AddCompetitorRequest
@@ -10140,6 +10386,12 @@ export interface components {
              * @description 整体转化率（%）＝有效新客 ÷ 分享次数（近 30 天），分享次数为 0 时为 null
              */
             conversion_rate: number | null;
+            /**
+             * Share Sourced Leads
+             * @description 近 30 天带分享归因（referrer 非空）的线索数（迭代二 D-04，可由现有数据计算）
+             * @default 0
+             */
+            share_sourced_leads: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -12309,6 +12561,32 @@ export interface components {
             eval_price?: number | null;
         };
         /**
+         * LeadAssessmentBacklogResponse
+         * @description 待评估积压指标（设计稿 alert_card：数量 + 最久等待 + 涉及负责人）.
+         */
+        LeadAssessmentBacklogResponse: {
+            /**
+             * Pending Count
+             * @description 待评估线索数
+             */
+            pending_count: number;
+            /**
+             * Oldest Wait Days
+             * @description 最久等待天数（无待评估时为 0）
+             */
+            oldest_wait_days: number;
+            /**
+             * Oldest Wait Hours
+             * @description 最久等待的余数小时（设计稿「3 天 2 小时」）
+             */
+            oldest_wait_hours: number;
+            /**
+             * Owner Count
+             * @description 涉及的业务负责人数（distinct 归属）
+             */
+            owner_count: number;
+        };
+        /**
          * LeadAssignRequest
          * @description 管理端无归属线索兜底员工指派请求（触发动作类，*Request 后缀）.
          */
@@ -12894,6 +13172,58 @@ export interface components {
             page_size: number;
         };
         /**
+         * LedgerMonthlySummaryResponse
+         * @description 资金月度概览（D-02 / D-02a / D-02b / D-02c）.
+         *
+         *     全部指标由现有 ``finance_records`` / ``projects`` 数据计算，不新造概念：
+         *     - 本月净现金流 = 本月 inflow − outflow；
+         *     - 在投金额 = 未结算且状态 ∈ {renovating, selling} 项目的累计支出合计；
+         *     - 本月回款 = 本月 income 类型流水的 inflow 合计；
+         *     - 按周现金流 = 本月按自然周（周一首）切分的净额，最多 8 段。
+         */
+        LedgerMonthlySummaryResponse: {
+            /**
+             * Month
+             * @description 统计月份，格式 YYYY-MM
+             */
+            month: string;
+            /**
+             * Net Cash Flow
+             * @description 本月净现金流(元)
+             */
+            net_cash_flow: number;
+            /**
+             * Month Record Count
+             * @description 本月流水笔数
+             */
+            month_record_count: number;
+            /**
+             * Invested Amount
+             * @description 在投金额(元)：未结算装修/在售项目累计支出
+             */
+            invested_amount: number;
+            /**
+             * Invested Project Count
+             * @description 在投项目数
+             */
+            invested_project_count: number;
+            /**
+             * Month Receipts
+             * @description 本月回款(元)：本月收入类流水合计
+             */
+            month_receipts: number;
+            /**
+             * Week Cash Flows
+             * @description 本月按周净现金流(元)，不足补 0
+             */
+            week_cash_flows: number[];
+            /**
+             * Top Profits
+             * @description 项目损益 Top3（按绝对值降序）
+             */
+            top_profits: components["schemas"]["ProjectProfitItem"][];
+        };
+        /**
          * LedgerProjectListItem
          * @description 项目账本项目列表项（含聚合统计）.
          */
@@ -13271,6 +13601,28 @@ export interface components {
             updated_at?: string | null;
             /** Updated By Name */
             updated_by_name?: string | null;
+        };
+        /**
+         * MarkAllReadRequest
+         * @description 全部已读请求（可按分类收敛）.
+         */
+        MarkAllReadRequest: {
+            /**
+             * Category
+             * @description 仅该分类；省略=全部
+             */
+            category?: ("lead" | "growth" | "project" | "key" | "marketing" | "finance" | "system" | "security") | null;
+        };
+        /**
+         * MarkAllReadResponse
+         * @description 全部已读响应.
+         */
+        MarkAllReadResponse: {
+            /**
+             * Affected
+             * @description 实际更新条数
+             */
+            affected: number;
         };
         /**
          * MarketSentimentResponse
@@ -13906,6 +14258,191 @@ export interface components {
             status?: "disabled" | null;
         };
         /**
+         * NotificationDeliveryInfo
+         * @description 最新一次微信投递结果（读 recipients.delivery_status 快照，不查日志表）.
+         */
+        NotificationDeliveryInfo: {
+            /**
+             * Status
+             * @description 投递状态：success/skipped/failed
+             * @enum {string}
+             */
+            status: "success" | "skipped" | "failed";
+            /**
+             * Error Code
+             * @description 错误码：TEMPLATE_MISSING/NO_OPENID/WECHAT_ERROR
+             */
+            error_code?: string | null;
+        };
+        /**
+         * NotificationDeliverySnapshot
+         * @description 投递状态快照外层结构（recipients.delivery_status 列的原样形状）.
+         */
+        NotificationDeliverySnapshot: {
+            /** @description 微信渠道结果 */
+            wechat?: components["schemas"]["NotificationDeliveryInfo"] | null;
+        };
+        /**
+         * NotificationListItem
+         * @description 通知列表项.
+         */
+        NotificationListItem: {
+            /**
+             * Id
+             * Format: uuid
+             * @description 通知ID
+             */
+            id: string;
+            /**
+             * Category
+             * @description 分类
+             */
+            category: string;
+            /**
+             * Type
+             * @description 事件类型
+             */
+            type: string;
+            /**
+             * Title
+             * @description 标题
+             */
+            title: string;
+            /**
+             * Body
+             * @description 正文摘要
+             */
+            body?: string | null;
+            /**
+             * Action Type
+             * @description 点击行为：route/miniapp/none
+             */
+            action_type?: string | null;
+            /**
+             * Action Url
+             * @description 点击跳转地址
+             */
+            action_url?: string | null;
+            /**
+             * Priority
+             * @description 优先级
+             * @enum {string}
+             */
+            priority: "low" | "normal" | "high" | "urgent";
+            /**
+             * Read At
+             * @description 已读时间（NULL=未读）
+             */
+            read_at?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description 创建时间
+             */
+            created_at: string;
+            /**
+             * Payload
+             * @description 结构化附加数据
+             */
+            payload?: {
+                [key: string]: unknown;
+            } | null;
+            /** @description 最新微信投递结果（设计稿消息行右侧状态点） */
+            delivery?: components["schemas"]["NotificationDeliverySnapshot"] | null;
+        };
+        /**
+         * NotificationListResponse
+         * @description 通知列表响应.
+         */
+        NotificationListResponse: {
+            /**
+             * Items
+             * @description 当前页数据
+             */
+            items: components["schemas"]["NotificationListItem"][];
+            /**
+             * Total
+             * @description 筛选后总数
+             */
+            total: number;
+            /**
+             * Page
+             * @description 页码
+             */
+            page: number;
+            /**
+             * Page Size
+             * @description 每页数量
+             */
+            page_size: number;
+            /**
+             * Unread Total
+             * @description 当前用户全量未读数（不随筛选变化）
+             */
+            unread_total: number;
+            /**
+             * Unread In Filter
+             * @description 当前筛选条件下的未读数（tabs 角标）
+             */
+            unread_in_filter: number;
+        };
+        /**
+         * NotificationPreferencesResponse
+         * @description 偏好读取/保存响应.
+         */
+        NotificationPreferencesResponse: {
+            /**
+             * Categories
+             * @description 8 个分类的完整配置
+             */
+            categories: {
+                [key: string]: components["schemas"]["PreferenceCategory"];
+            };
+            /**
+             * Wechat Available
+             * @description 微信渠道整体是否可用（未绑定微信则为 False）
+             */
+            wechat_available: boolean;
+            /**
+             * Template Missing Count
+             * @description 5 个订阅模板中未配置的个数（横幅文案）
+             */
+            template_missing_count: number;
+        };
+        /**
+         * NotificationPreferencesUpdateRequest
+         * @description 偏好保存请求（分类 × 渠道全量提交；未列出的分类保持默认全开）.
+         */
+        NotificationPreferencesUpdateRequest: {
+            /**
+             * Categories
+             * @description 形如 {"lead": {"in_app": true, "wechat": false}}
+             */
+            categories: {
+                [key: string]: {
+                    [key: string]: boolean;
+                };
+            };
+        };
+        /**
+         * NotificationReadResponse
+         * @description 单条已读响应（幂等：重复调用返回同一 read_at）.
+         */
+        NotificationReadResponse: {
+            /**
+             * Id
+             * Format: uuid
+             * @description 通知ID
+             */
+            id: string;
+            /**
+             * Read At
+             * Format: date-time
+             * @description 已读时间
+             */
+            read_at: string;
+        };
+        /**
          * OperationLogListResponse
          * @description 操作审计日志分页响应模型.
          * @example {
@@ -14011,6 +14548,36 @@ export interface components {
              * @description 更新时间
              */
             updated_at: string;
+        };
+        /**
+         * OperationLogSummaryResponse
+         * @description 审计概览（迭代二 audit_summary widget）.
+         *
+         *     **只有可算指标**（SPEC D-03 / D-10）：
+         *     - ``today_total``：今日操作数；
+         *     - ``login_failure_count``：今日登录失败数（真实存在的 action）；
+         *     - ``action_distribution``：今日按 action 原值聚合 Top 6。
+         *
+         *     ⚠️ **不含「高风险」指标**：``operation_logs`` 无风险等级列，业务中不存在该概念。
+         *     ⚠️ **不做「查询/新增/修改」四分类**：审计只记录写操作与敏感读，
+         *     普通查询不落库（``routers/leads/core.py`` 无 ``log_action`` 调用）。
+         */
+        OperationLogSummaryResponse: {
+            /**
+             * Today Total
+             * @description 今日操作总数
+             */
+            today_total: number;
+            /**
+             * Login Failure Count
+             * @description 今日登录失败数
+             */
+            login_failure_count: number;
+            /**
+             * Action Distribution
+             * @description 今日按 action 聚合 Top 6
+             */
+            action_distribution: components["schemas"]["ActionCountItem"][];
         };
         /**
          * OwnerInlineCreate
@@ -14620,6 +15187,47 @@ export interface components {
          */
         PhotoCategory: "marketing" | "renovation";
         /**
+         * PreferenceCategory
+         * @description 单个分类的偏好与可用性.
+         */
+        PreferenceCategory: {
+            /**
+             * Label
+             * @description 中文名
+             */
+            label: string;
+            /**
+             * Description
+             * @description 说明文案
+             */
+            description: string;
+            /**
+             * In App
+             * @description 站内信开关
+             */
+            in_app: boolean;
+            /**
+             * Wechat
+             * @description 微信开关
+             */
+            wechat: boolean;
+            /**
+             * In App Locked
+             * @description 站内信是否锁定（system/security 恒 True）
+             */
+            in_app_locked: boolean;
+            /**
+             * Wechat Only
+             * @description 是否仅微信（marketing 为 True，站内信开关置灰）
+             */
+            wechat_only: boolean;
+            /**
+             * Wechat Template Missing
+             * @description 该分类的微信模板是否未配置（True 时置灰）
+             */
+            wechat_template_missing: boolean;
+        };
+        /**
          * PriceBucket
          * @description 价格分布桶.
          */
@@ -14948,6 +15556,31 @@ export interface components {
             stage_flows: components["schemas"]["LedgerStatisticsStageFlow"][];
             kpi: components["schemas"]["LedgerStatisticsKPI"];
             breakdown: components["schemas"]["LedgerStatisticsCalcBreakdown"];
+        };
+        /**
+         * ProjectProfitItem
+         * @description 单项目损益（月度概览 Top N）.
+         */
+        ProjectProfitItem: {
+            /**
+             * Project Id
+             * Format: uuid4
+             */
+            project_id: string;
+            /** Community Name */
+            community_name?: string | null;
+            /** Status */
+            status: string;
+            /**
+             * Settled
+             * @description 账本是否已结算
+             */
+            settled: boolean;
+            /**
+             * Net Cash Flow
+             * @description 累计净现金流(元)
+             */
+            net_cash_flow: number;
         };
         /**
          * ProjectReportResponse
@@ -20318,6 +20951,31 @@ export interface components {
          */
         UnifiedLeadStatus: "new" | "contacted" | "high_intent" | "converted" | "eliminated";
         /**
+         * UnreadCountResponse
+         * @description 未读统计响应.
+         */
+        UnreadCountResponse: {
+            /**
+             * Total
+             * @description 未读总数
+             */
+            total: number;
+            /**
+             * By Category
+             * @description 按分类的未读数
+             */
+            by_category?: {
+                [key: string]: number;
+            };
+            /**
+             * Total By Category
+             * @description 按分类的总数（抽屉 tabs 在未读为 0 时显示）
+             */
+            total_by_category?: {
+                [key: string]: number;
+            };
+        };
+        /**
          * UnsettleRequest
          * @description 反结算请求（settled → unsettled）.
          */
@@ -20700,6 +21358,117 @@ export interface components {
              * @description 已上传到 /public/files/upload 的图片访问 URL（可选，与 nickname 至少一个非空）
              */
             avatar_url?: string | null;
+        };
+        /**
+         * WorkbenchConfigResponse
+         * @description 当前用户生效布局.
+         */
+        WorkbenchConfigResponse: {
+            /**
+             * Source
+             * @description 来源：user=个人覆盖 / role=角色默认 / fallback=代码兜底
+             * @enum {string}
+             */
+            source: "user" | "role" | "fallback";
+            /**
+             * Widgets
+             * @description 已按权限过滤并按 order 排序
+             */
+            widgets: components["schemas"]["WorkbenchWidgetEntry"][];
+        };
+        /**
+         * WorkbenchLayoutUpdateRequest
+         * @description 保存个人布局请求.
+         */
+        WorkbenchLayoutUpdateRequest: {
+            /**
+             * Widgets
+             * @description 全量提交；未注册 key 会被后端丢弃
+             */
+            widgets: components["schemas"]["WorkbenchWidgetEntry"][];
+        };
+        /**
+         * WorkbenchRoleLayoutsResponse
+         * @description 三角色默认布局 + widget 注册表.
+         */
+        WorkbenchRoleLayoutsResponse: {
+            /**
+             * Roles
+             * @description 角色 → 条目列表
+             */
+            roles: {
+                [key: string]: components["schemas"]["WorkbenchWidgetEntry"][];
+            };
+            /**
+             * Widgets
+             * @description 12 个 widget 的注册信息
+             */
+            widgets: components["schemas"]["WorkbenchWidgetInfo"][];
+        };
+        /**
+         * WorkbenchRoleLayoutsUpdateRequest
+         * @description 保存角色默认布局请求（管理员）.
+         */
+        WorkbenchRoleLayoutsUpdateRequest: {
+            /**
+             * Roles
+             * @description 角色 → 条目列表
+             */
+            roles: {
+                [key: string]: components["schemas"]["WorkbenchWidgetEntry"][];
+            };
+        };
+        /**
+         * WorkbenchWidgetEntry
+         * @description 布局中的单个 widget 条目（K14：只存 key/order/enabled）.
+         */
+        WorkbenchWidgetEntry: {
+            /**
+             * Key
+             * @description widget 注册表 key
+             */
+            key: string;
+            /**
+             * Order
+             * @description 排序值，间隔 10
+             */
+            order: number;
+            /**
+             * Enabled
+             * @description 是否显示
+             */
+            enabled: boolean;
+        };
+        /**
+         * WorkbenchWidgetInfo
+         * @description widget 注册表条目（管理端展示用）.
+         */
+        WorkbenchWidgetInfo: {
+            /**
+             * Key
+             * @description widget key
+             */
+            key: string;
+            /**
+             * Label
+             * @description 中文名
+             */
+            label: string;
+            /**
+             * Description
+             * @description 说明
+             */
+            description: string;
+            /**
+             * Permission
+             * @description 所需权限码；None 表示仅需登录
+             */
+            permission?: string | null;
+            /**
+             * Default Span
+             * @description 注册表默认栅格宽度（仅展示，不入布局 JSON）
+             */
+            default_span: number;
         };
         /**
          * CommunityListResponse
@@ -22818,6 +23587,33 @@ export interface operations {
             };
         };
     };
+    get_leads_assessment_backlog_api_v1_leads_stats_assessment_backlog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadAssessmentBacklogResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
     get_leads_funnel_api_v1_leads_stats_funnel_get: {
         parameters: {
             query?: never;
@@ -24472,7 +25268,10 @@ export interface operations {
     };
     get_project_todo_board_api_v1_projects_todo_board_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description all=全量(需 project:read)；mine=我的业务身份项目(仅需登录) */
+                scope?: "all" | "mine";
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -24486,6 +25285,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectTodoBoardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -26717,6 +27525,26 @@ export interface operations {
             };
         };
     };
+    get_ledger_monthly_summary_api_v1_admin_ledger_monthly_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LedgerMonthlySummaryResponse"];
+                };
+            };
+        };
+    };
     export_ledger_api_v1_admin_ledger_export_get: {
         parameters: {
             query?: {
@@ -28485,6 +29313,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_operation_log_summary_api_v1_operation_logs_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperationLogSummaryResponse"];
                 };
             };
         };
@@ -32949,6 +33797,311 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminLeadPhoneResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notifications_api_v1_notifications_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+                /** @description 仅未读 */
+                unread?: boolean;
+                /** @description 分类筛选 */
+                category?: ("lead" | "growth" | "project" | "key" | "marketing" | "finance" | "system" | "security") | null;
+                /** @description 优先级筛选 */
+                priority?: ("low" | "normal" | "high" | "urgent") | null;
+                /** @description 最近 N 天（设计稿「近 30 天」筛选） */
+                days?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_unread_count_api_v1_notifications_unread_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCountResponse"];
+                };
+            };
+        };
+    };
+    get_preferences_api_v1_notifications_preferences_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferencesResponse"];
+                };
+            };
+        };
+    };
+    update_preferences_api_v1_notifications_preferences_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationPreferencesUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferencesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_all_read_api_v1_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["MarkAllReadRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_read_api_v1_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationReadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_config_api_v1_admin_workbench_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchConfigResponse"];
+                };
+            };
+        };
+    };
+    update_config_api_v1_admin_workbench_config_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkbenchLayoutUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_config_api_v1_admin_workbench_config_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchConfigResponse"];
+                };
+            };
+        };
+    };
+    get_role_layouts_api_v1_admin_workbench_role_layouts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchRoleLayoutsResponse"];
+                };
+            };
+        };
+    };
+    update_role_layouts_api_v1_admin_workbench_role_layouts_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkbenchRoleLayoutsUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkbenchRoleLayoutsResponse"];
                 };
             };
             /** @description Validation Error */

@@ -186,12 +186,6 @@ export function formatCnyWan(value: number): string {
   return `¥ ${dashboardDecimalFormatter.format(value)}万`;
 }
 
-/** 工作台：转化率 "12.5%" / "暂无" */
-export function formatConversionRate(total: number, signed: number): string {
-  if (total <= 0 || signed <= 0) return "暂无";
-  return `${dashboardDecimalFormatter.format((signed / total) * 100)}%`;
-}
-
 /**
  * 返回今天 YYYY-MM-DD（本地时区）。
  *

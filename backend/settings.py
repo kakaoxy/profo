@@ -17,6 +17,9 @@ _base_dir = Path(__file__).resolve().parent
 # 迁移备份磁盘余量下限的绝对底线（MB）；默认 2048，低于此值视为误配
 _MIGRATION_MIN_FREE_MB_FLOOR = 100
 
+# 通知清理线程的最小执行间隔（秒）：低于 1 分钟会让守护线程变成忙轮询
+_NOTIFICATION_CLEANUP_MIN_INTERVAL = 60
+
 
 class Settings(BaseSettings):
     """应用配置."""
@@ -109,6 +112,24 @@ class Settings(BaseSettings):
     migration_operator: str = ""
     # pg_dump 可执行文件路径（空则 shutil.which("pg_dump")；缺失即 RuntimeError，K9）
     migration_pg_dump_path: str = ""
+
+    # ==================== 通知中心（迭代二） ====================
+    # 现有微信链路是否旁路双写站内信（K17）；false 时完全不写站内信，读能力保留
+    notification_dual_write: bool = True
+    # 站内信保留天数（K9：只清理「已读且通知创建超 N 天」的收件行）
+    notification_retention_days: int = 180
+    # 清理守护线程开关
+    notification_cleanup_enabled: bool = True
+    # 清理线程每日执行的间隔秒数（默认 24h；测试可调小）
+    notification_cleanup_interval_seconds: int = 86400
+    # 消息列表单页上限（防 page_size=10000）
+    notification_page_size_max: int = 100
+
+    # ==================== 角色化工作台（迭代二） ====================
+    # 工作台开关（false → /admin 回落到 v0 单套仪表盘，回退用）
+    workbench_layout_enabled: bool = True
+    # 角色默认布局在 system_configs 中的键名（便于测试隔离）
+    workbench_role_layouts_key: str = "workbench_role_layouts"
 
     @field_validator("migration_backup_mode")
     @classmethod
@@ -271,6 +292,15 @@ class Settings(BaseSettings):
             raise ValueError(msg)
         if self.migration_compensation_max_rows < 1:
             msg = "MIGRATION_COMPENSATION_MAX_ROWS 必须 >= 1"
+            raise ValueError(msg)
+        if self.notification_retention_days < 1:
+            msg = "NOTIFICATION_RETENTION_DAYS 必须 >= 1"
+            raise ValueError(msg)
+        if self.notification_page_size_max < 1:
+            msg = "NOTIFICATION_PAGE_SIZE_MAX 必须 >= 1"
+            raise ValueError(msg)
+        if self.notification_cleanup_interval_seconds < _NOTIFICATION_CLEANUP_MIN_INTERVAL:
+            msg = "NOTIFICATION_CLEANUP_INTERVAL_SECONDS 必须 >= 60"
             raise ValueError(msg)
         return self
 

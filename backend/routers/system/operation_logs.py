@@ -7,10 +7,27 @@ from fastapi import APIRouter, Query
 
 from dependencies.auth import DbSessionDep, OperationLogReadPermDep
 from dependencies.common import PaginationDep
-from schemas.operation_log import OperationLogListResponse, OperationLogResponse
+from schemas.operation_log import (
+    OperationLogListResponse,
+    OperationLogResponse,
+    OperationLogSummaryResponse,
+)
 from services.system import operation_log_service
 
 router = APIRouter(prefix="/operation-logs", tags=["operation-logs"])
+
+
+@router.get("/summary")
+def get_operation_log_summary(
+    db: DbSessionDep,
+    _current_user: OperationLogReadPermDep,
+) -> OperationLogSummaryResponse:
+    """审计概览（工作台 audit_summary：今日操作数 / 登录失败 / 动作分布）.
+
+    ⚠️ 不含「高风险」与「查询类」指标——审计表无风险等级列，且读操作不落库
+    （见 ``OperationLogService.get_summary`` docstring 与 SPEC D-03/D-10）。
+    """
+    return OperationLogSummaryResponse(**operation_log_service.get_summary(db))
 
 
 @router.get("")

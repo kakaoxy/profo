@@ -82,6 +82,8 @@ export const PERMISSION_CODES = {
   RECRUIT_WRITE: "recruit:write",
   // 审计日志
   OPERATION_LOG_READ: "operation_log:read",
+  // 工作台布局管理（迭代二 v97 权限点，仅 admin）
+  WORKBENCH_MANAGE: "workbench:manage",
   // API Key
   API_KEY_MANAGE: "api_key:manage",
   // 业务字典（运营可配枚举字典，仅 admin）
@@ -132,6 +134,10 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   // 业务字典配置 → 需 dict:manage 权限；必须排在 /admin/settings 之前
   // （首个命中即返回，否则会被 /admin/settings 的 api_key:manage 影子掉）
   { prefix: "/admin/settings/dicts", permission: PERMISSION_CODES.DICT_MANAGE },
+  // 工作台布局管理 → 需 workbench:manage（仅 admin）；同理必须排在 /admin/settings 之前
+  { prefix: "/admin/settings/workbench", permission: PERMISSION_CODES.WORKBENCH_MANAGE },
+  // 消息中心 /admin/notifications 与 /admin/notifications/preferences 故意**不登记**：
+  // 无条目 = hasPathPermission 返回 true，所有后台登录用户都可访问自己的消息（SPEC §8.2 ②）
   // 设置（API Key 等）→ 需 api_key:manage 权限
   { prefix: "/admin/settings", permission: PERMISSION_CODES.API_KEY_MANAGE },
   // 项目待办看板 → 需 project:read 权限；必须排在 /admin/projects（exact）之前，

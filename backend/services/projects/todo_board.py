@@ -6,6 +6,7 @@
 
 import uuid
 from datetime import date, datetime
+from typing import Literal
 
 from sqlalchemy.orm import Session, joinedload, selectinload
 
@@ -46,11 +47,26 @@ class TodoBoardService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def get_board(self) -> ProjectTodoBoardResponse:
-        """实时计算看板快照（规则阈值读 system_configs，容忍缺行回退默认）."""
+    def get_board(
+        self,
+        *,
+        scope: Literal["all", "mine"] = "all",
+        user_id: str | None = None,
+    ) -> ProjectTodoBoardResponse:
+        """实时计算看板快照（规则阈值读 system_configs，容忍缺行回退默认）.
+
+        Args:
+            scope: ``all``=全量（既有行为，需 project:read）；``mine``=仅当前用户
+                作为业务身份负责的项目（与 ``/projects/my-responsible`` 同口径）
+            user_id: 当前用户ID（``scope=mine`` 时必填）
+
+        Raises:
+            ValueError: ``scope=mine`` 未提供 ``user_id``
+
+        """
         today = datetime.now().astimezone().date()
         rules = load_rules(self.db)
-        projects = self._load_projects()
+        projects = self._load_scoped_projects(scope=scope, user_id=user_id)
         documents_by_project = self._load_documents([p.id for p in projects])
 
         cards: list[TodoProjectCard] = []
@@ -90,6 +106,32 @@ class TodoBoardService:
         )
 
     # ── 数据加载 ──────────────────────────────────────────────────────
+
+    def _load_scoped_projects(self, *, scope: Literal["all", "mine"], user_id: str | None) -> list[Project]:
+        """按 scope 加载项目.
+
+        ``mine`` 复用 ``ProjectQueryService.get_by_business_identity``（与
+        ``/projects/my-responsible`` 同一谓词），**禁止重写过滤条件**。
+
+        Args:
+            scope: all / mine
+            user_id: 当前用户ID
+
+        Returns:
+            项目列表；``mine`` 下按业务身份收敛，且仍限制在签约+装修阶段
+            （规则引擎只对这些阶段产出待办，见 SPEC §6.3 已知偏差）。
+
+        """
+        if scope == "all":
+            return self._load_projects()
+        if not user_id:
+            msg = "scope=mine 必须提供 user_id"
+            raise ValueError(msg)
+        from .internal.query import ProjectQueryService
+
+        mine = ProjectQueryService(self.db).get_by_business_identity(user_id)
+        # 规则引擎只处理签约+装修阶段；其余阶段即使业务身份命中也不产出待办
+        return [p for p in mine if p.status in (ProjectStatus.SIGNING, ProjectStatus.RENOVATING)]
 
     def _load_projects(self) -> list[Project]:
         """签约+装修阶段项目批量加载（预载规则所需关联，避免 N+1）。"""

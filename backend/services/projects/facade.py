@@ -14,7 +14,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import Request
 from sqlalchemy.orm import Session
@@ -80,9 +80,20 @@ class ProjectService:
 
     # ========== TodoBoardService 方法委托 ==========
 
-    def get_todo_board(self) -> ProjectTodoBoardResponse:
-        """项目待办看板：规则引擎实时计算签约+装修阶段项目待办（不落库）."""
-        return self._todo_board_service.get_board()
+    def get_todo_board(
+        self,
+        *,
+        scope: Literal["all", "mine"] = "all",
+        user_id: str | None = None,
+    ) -> ProjectTodoBoardResponse:
+        """项目待办看板：规则引擎实时计算签约+装修阶段项目待办（不落库）.
+
+        Args:
+            scope: ``all``=全量；``mine``=仅业务身份负责的项目（SPEC §6.3）
+            user_id: 当前用户ID（``scope=mine`` 时必填）
+
+        """
+        return self._todo_board_service.get_board(scope=scope, user_id=user_id)
 
     def get_todo_board_config(self) -> TodoBoardRulesResponse:
         """待办规则阈值配置读取（缺行回退代码默认）."""

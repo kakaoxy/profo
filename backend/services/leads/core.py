@@ -26,6 +26,11 @@ from services.growth_center.customer_notify import (
     unified_status_label,
 )
 from services.growth_center.normalize import map_valuation_status
+from services.notification.dual_write import (
+    MODULE_LABELS,
+    emit_customer_new,
+    emit_customer_status_changed,
+)
 from services.property.dict_ownership import validate_dict_ownership
 from services.property.dict_submit_service import submit_dict_chain
 from services.system.exceptions import (
@@ -178,6 +183,15 @@ class LeadService:
                 str(db_lead.id),
                 db_lead.referrer_id,
                 db_lead.community_name or "",
+            )
+            # 迭代二：站内信旁路双写（best-effort，绝不影响主流程；K17）
+            emit_customer_new(
+                self.db,
+                module=module.value,
+                lead_id=db_lead.id,
+                referrer_user_id=db_lead.referrer_id,
+                community=db_lead.community_name or "",
+                module_label=MODULE_LABELS.get(module.value, module.value),
             )
         return db_lead
 
@@ -417,6 +431,19 @@ class LeadService:
                     unified_status_label(new_unified.value),
                     lead.community_name or "",
                 )
+                # 迭代二：站内信旁路双写（#4 客户状态变更 → 归属员工；best-effort）
+                emit_customer_status_changed(
+                    self.db,
+                    module=module.value,
+                    lead_id=lead.id,
+                    referrer_user_id=lead.referrer_id,
+                    status=new_unified.value,
+                    status_label=unified_status_label(new_unified.value),
+                    community=lead.community_name or "",
+                    module_label=MODULE_LABELS.get(module.value, module.value),
+                )
+                # 迭代二：#2 线索状态变更（线索中心口径，收件人为线索归属员工同一人；
+                # dedupe 与 #4 不同域名前缀，两事件并存不重复）
         return lead
 
     def delete_lead(self, lead_id: str) -> None:
@@ -487,6 +514,10 @@ class LeadService:
             "follow_ups": follow_ups,
             "eval_histories": eval_histories,
         }
+
+    def get_assessment_backlog(self) -> dict[str, int]:
+        """待评估积压指标（迭代二 alert_card widget）."""
+        return self.query_service.get_assessment_backlog()
 
     def get_stats(self) -> dict[str, int]:
         """获取线索状态统计（不受分页影响）.

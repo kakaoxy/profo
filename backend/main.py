@@ -43,6 +43,7 @@ from routers.market import communities_router, community_images_router, properti
 from routers.marketing import import_router as marketing_import_router
 from routers.marketing import projects_router as marketing_projects_router
 from routers.monitor import monitor_router
+from routers.notification import router as notification_router
 from routers.projects import core_router
 from routers.property import building_dict_router, dictionary_link_router
 from routers.public import (
@@ -71,6 +72,7 @@ from routers.system import (
     subscribe_templates_router,
     users_router,
 )
+from routers.workbench import router as workbench_router
 from services.system.exceptions import ServiceException
 from settings import settings
 from utils.common import limiter
@@ -197,6 +199,31 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
 
     threading.Thread(target=_bd_archive_daily_cleanup, name="bd-archive-cleanup", daemon=True).start()
 
+    # 迭代二：站内信保留清理（K9：只删「已读且通知超期」的收件行）。
+    # 范式与上面的归档清理线程一致：独立守护线程随进程退出，异常只记日志不阻断启动。
+    if settings.notification_cleanup_enabled:
+
+        def _notification_daily_cleanup() -> None:
+            from db import SessionLocal
+            from services.notification.cleanup import cleanup_expired
+
+            while True:
+                time.sleep(settings.notification_cleanup_interval_seconds)
+                try:
+                    with SessionLocal() as session:
+                        result = cleanup_expired(session)
+                    if result["recipients"] or result["notifications"]:
+                        logger.info(
+                            "站内信保留清理：删除收件行 %d 条、通知 %d 条",
+                            result["recipients"],
+                            result["notifications"],
+                        )
+                except Exception:
+                    logger.exception("站内信保留清理失败")
+
+        threading.Thread(target=_notification_daily_cleanup, name="notification-cleanup", daemon=True).start()
+        logger.info("站内信保留清理线程已启动（每 %d 秒）", settings.notification_cleanup_interval_seconds)
+
     yield
 
     logger.info("Application is shutting down...")
@@ -276,8 +303,10 @@ app = FastAPI(
         {"name": "public-customers", "description": "C端公开 - 我的客户（小程序员工侧跨模块聚合）"},
         {"name": "recruit", "description": "招募管理 - 区域伙伴招募计划"},
         {"name": "growth-center", "description": "获客中心 - 跨模块分享获客聚合只读层"},
+        {"name": "workbench", "description": "角色化工作台 - 布局配置"},
         {"name": "reports-market", "description": "数据报表 - 商圈分析"},
         {"name": "reports-communities", "description": "数据报表 - 小区分析"},
+        {"name": "notifications", "description": "通知中心 - 站内信、未读数、偏好"},
     ],
     contact={
         "name": "ProFo Team",
@@ -422,6 +451,8 @@ app.include_router(public_recruit_router, prefix=API_V1_PREFIX)
 app.include_router(public_customers_router, prefix=API_V1_PREFIX)
 app.include_router(admin_recruit_router, prefix=API_V1_PREFIX)
 app.include_router(growth_center_router, prefix=API_V1_PREFIX)
+app.include_router(notification_router, prefix=API_V1_PREFIX)
+app.include_router(workbench_router, prefix=API_V1_PREFIX)
 app.include_router(reports_router, prefix=API_V1_PREFIX)
 
 app.add_exception_handler(ServiceException, service_exception_handler)

@@ -3,7 +3,7 @@
 负责线索的查询操作.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy import ColumnElement, Date, and_, case, cast, desc, func, or_, select
@@ -204,6 +204,56 @@ class LeadQueryService:
             "rejected": rejected,
             "visiting": visiting,
             "signed": signed,
+        }
+
+    def get_assessment_backlog(self) -> dict[str, int]:
+        """待评估积压指标（迭代二 alert_card widget，SPEC §6.4 #3）.
+
+        三项全部可由现有数据计算（不新增业务概念）：
+        - ``pending_count``：status = pending_assessment 的未删除线索数；
+        - ``oldest_wait_days`` / ``oldest_wait_hours``：这些线索中最早的
+          ``created_at`` 距今的整日与余数小时；
+        - ``owner_count``：distinct 归属人数（``referrer_id`` 优先，为空时回退
+          ``creator_id``——与 ``_acquired_filter`` 的归属口径一致）。
+
+        Returns:
+            含 pending_count / oldest_wait_days / oldest_wait_hours / owner_count 的字典。
+
+        """
+        base = self.db.query(Lead).filter(
+            Lead.is_deleted.is_(False),
+            Lead.status == LeadStatus.PENDING_ASSESSMENT,
+        )
+
+        pending_count = base.count()
+        if not pending_count:
+            return {
+                "pending_count": 0,
+                "oldest_wait_days": 0,
+                "oldest_wait_hours": 0,
+                "owner_count": 0,
+            }
+
+        oldest = base.with_entities(func.min(Lead.created_at)).scalar()
+        wait_days = 0
+        wait_hours = 0
+        if oldest is not None:
+            if oldest.tzinfo is None:
+                oldest = oldest.replace(tzinfo=timezone.utc)
+            delta_seconds = max(0, int((datetime.now(timezone.utc) - oldest).total_seconds()))
+            wait_days, remainder = divmod(delta_seconds, 86400)
+            wait_hours = remainder // 3600
+
+        owner_count = (
+            base.with_entities(func.count(func.distinct(func.coalesce(Lead.referrer_id, Lead.creator_id)))).scalar()
+            or 0
+        )
+
+        return {
+            "pending_count": int(pending_count),
+            "oldest_wait_days": int(wait_days),
+            "oldest_wait_hours": int(wait_hours),
+            "owner_count": int(owner_count),
         }
 
     def get_status_stats(self) -> dict[str, int]:

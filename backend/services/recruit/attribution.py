@@ -24,6 +24,7 @@ from models.recruit import (
 from schemas.recruit import RecruitShareEventCreate, RecruitVisitCreate, RecruitVisitUpdate
 from services.system import subscribe_templates
 from services.system.exceptions import ResourceNotFoundError
+from services.system.openid import resolve_user_openids
 from services.system.wechat import WeChatAuthService
 from services.utils import resolve_global_fallback_referrer, resolve_valid_referrer
 from utils.crypto import hash_phone
@@ -259,22 +260,8 @@ class RecruitAttributionService:
             可发送 openid 列表；无任何可用的 openid 时返回空列表。
 
         """
-        employee = self.db.query(User).filter(User.id == employee_id).first()
-        if employee is None:
-            return []
-        if employee.wechat_openid:
-            return [employee.wechat_openid]
-        # 间接绑定：反查已合并临时账号（align 语义对齐 services/system/user/core.py 的 wechat_bound 间接绑定）
-        merged = (
-            self.db.query(User)
-            .filter(
-                User.merged_to_user_id == employee_id,
-                User.status == "merged",
-                User.wechat_openid.isnot(None),
-            )
-            .all()
-        )
-        return [u.wechat_openid for u in merged if u.wechat_openid]
+        # 统一实现见 services/system/openid.py（原 4 套同构逻辑收敛，行为不变）
+        return resolve_user_openids(self.db, employee_id)
 
     def notify_new_lead(self, lead: RecruitLead) -> None:
         """新线索订阅消息通知（同步阻塞，供路由层 run_in_threadpool 调用）.

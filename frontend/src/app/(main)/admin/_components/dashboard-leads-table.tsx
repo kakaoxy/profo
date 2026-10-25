@@ -2,8 +2,7 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronRight, UserCircle2, ClipboardList } from "lucide-react";
-import Link from "next/link";
+import { UserCircle2, ClipboardList } from "lucide-react";
 import type { RawDashboardLead } from "../types";
 import { getStatusStyleConfig } from "@/lib/status-colors";
 import {
@@ -13,6 +12,7 @@ import {
   formatDashboardDateTime,
 } from "@/lib/formatters";
 import { DashboardLeadsCardList } from "./dashboard-leads-card-list";
+import { WidgetHead } from "./widgets/widget-head";
 
 interface DashboardLeadsTableProps {
   leads: RawDashboardLead[];
@@ -30,20 +30,15 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
   );
 
   return (
-    <section aria-label="近期线索跟进">
-      <div className="flex items-center justify-between mb-[18px]">
-        <h2 className="text-[21px] font-medium text-ink tracking-[-0.01em]">近期线索跟进</h2>
-        <Link
-          href="/admin/leads"
-          className="inline-flex items-center gap-1 text-sm font-[450] text-ink hover:text-rust transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
-        >
-          查看全部
-          <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
-      </div>
+    <section
+      aria-label="最近线索"
+      className="flex min-w-0 flex-1 flex-col rounded-cards bg-white px-[22px] py-5 shadow-steep-sm"
+    >
+      <WidgetHead title="最近线索" link="全部线索" href="/admin/leads" />
 
-      <div className="bg-white rounded-cards shadow-steep-sm overflow-hidden">
-        <div className="hidden sm:block overflow-x-auto px-2 md:px-3 py-2">
+      <div className="overflow-hidden">
+        {/* 11 列表格需要 ≥lg 才不被挤压；窄屏走卡片列表 */}
+        <div className="hidden lg:block overflow-x-auto px-2 md:px-3 pb-2">
           <table className="w-full text-left" aria-label="近期线索跟进列表">
             <caption className="sr-only">
               近期线索跟进列表，包含小区、户型、面积、楼层、总价、单价、状态、区域、录入人与更新时间
@@ -106,7 +101,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-dove/20">
+            <tbody className="[&>tr:last-child>td]:border-b-0 [&>tr>td]:border-b [&>tr>td]:border-dove/18">
               {isEmpty ? (
                 <tr>
                   <td colSpan={11} className="py-12 text-center">
@@ -192,7 +187,7 @@ export function DashboardLeadsTable({ leads }: DashboardLeadsTableProps) {
           </table>
         </div>
 
-        <div className="sm:hidden px-4 pb-6 pt-2">
+        <div className="lg:hidden px-4 pb-6 pt-2">
           <DashboardLeadsCardList leads={leads} />
         </div>
       </div>

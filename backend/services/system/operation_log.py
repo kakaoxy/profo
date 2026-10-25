@@ -4,10 +4,11 @@
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from fastapi import Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models.system import OperationLog
@@ -15,6 +16,9 @@ from settings import settings
 from utils.common import _get_client_ip
 
 logger = logging.getLogger(__name__)
+
+# 审计概览的动作分布取前 N 项（设计稿右栏为 4 条，这里留余量）
+_SUMMARY_ACTION_LIMIT = 6
 
 # User-Agent 字段在数据库中为 VARCHAR(255)，超长需截断
 USER_AGENT_MAX_LENGTH = 255
@@ -141,6 +145,54 @@ class OperationLogService:
         offset = (page - 1) * effective_page_size
         logs = query.order_by(OperationLog.created_at.desc()).offset(offset).limit(effective_page_size).all()
         return total, logs
+
+    def get_summary(self, db: Session) -> dict[str, Any]:
+        """审计概览（迭代二 audit_summary widget，SPEC D-03 / D-10）.
+
+        只统计**真实存在**的数据：
+        - ``today_total``：今日（Asia/Shanghai 自然日）操作总数；
+        - ``login_failure_count``：今日 ``action='login_failure'`` 条数
+          （该 action 由 ``routers/system/auth.py`` 真实写入）；
+        - ``action_distribution``：今日按 ``action`` 原值聚合 Top 6。
+
+        不含「高风险」：``operation_logs`` 无风险等级列，业务中不存在该概念。
+        不做「查询」分类：审计只记录写操作与敏感读，读接口不落库。
+
+        Args:
+            db: 数据库会话
+
+        Returns:
+            与 ``OperationLogSummaryResponse`` 字段同名的 dict。
+
+        """
+        from utils.time_windows import cst_today_start
+
+        day_start = cst_today_start()
+        day_end = day_start + timedelta(days=1)
+
+        base = db.query(OperationLog).filter(
+            OperationLog.created_at >= day_start,
+            OperationLog.created_at < day_end,
+        )
+        today_total = base.count()
+        login_failure_count = base.filter(OperationLog.action == "login_failure").count()
+
+        rows = (
+            db.query(OperationLog.action, func.count(OperationLog.id).label("cnt"))
+            .filter(
+                OperationLog.created_at >= day_start,
+                OperationLog.created_at < day_end,
+            )
+            .group_by(OperationLog.action)
+            .order_by(func.count(OperationLog.id).desc(), OperationLog.action.asc())
+            .limit(_SUMMARY_ACTION_LIMIT)
+            .all()
+        )
+        return {
+            "today_total": int(today_total),
+            "login_failure_count": int(login_failure_count),
+            "action_distribution": [{"action": action, "count": int(cnt)} for action, cnt in rows],
+        }
 
 
 # 全局服务实例

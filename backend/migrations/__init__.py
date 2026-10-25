@@ -197,6 +197,10 @@ from migrations._marketing_notify import (
     create_marketing_subscription_tables,
     widen_subscription_openid_columns,
 )
+from migrations._notification import (
+    create_notification_tables,
+    create_user_preferences_table,
+)
 from migrations._permission_system import (
     add_permission_foreign_indexes,
     add_reports_indexes,
@@ -252,6 +256,7 @@ from migrations._user_security import (
 )
 
 # 独立迁移模块
+from migrations._workbench import seed_workbench_manage_permission
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
 from migrations.add_lead_auditor_index import add_lead_auditor_index
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
@@ -474,6 +479,12 @@ def _run_all_migrations(engine: Engine) -> None:
         backfill_lead_and_operator_reachability(engine)
         # v94：同一组回填改用「无 CAST + 表名白名单」的加固实现（幂等，兜底复核）
         backfill_leads_and_operator_hardened(engine)
+        # v95：迭代二通知三表（notifications / notification_recipients / notification_delivery_logs）
+        create_notification_tables(engine)
+        # v96：迭代二 user_preferences（工作台布局个人覆盖）
+        create_user_preferences_table(engine)
+        # v97：迭代二 workbench:manage 权限点 + 授予 admin
+        seed_workbench_manage_permission(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

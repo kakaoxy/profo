@@ -38,6 +38,7 @@ from schemas.project.finance import (
     FinanceSettlementChangeRequest,
     FinanceSettlementResponse,
     FinanceUnsettleRequest,
+    LedgerMonthlySummaryResponse,
 )
 from services import FinanceService
 from services.system.operation_log import operation_log_service
@@ -97,6 +98,22 @@ def get_ledger_stats(
 ) -> LedgerStatsResponse:
     """全局汇总：有流水记录的项目数、总收入、总支出、净现金流、记录数."""
     return LedgerStatsResponse(**service.get_overall_stats())
+
+
+@router.get(
+    "/monthly-summary",
+    summary="资金月度概览（工作台 finance_summary）",
+)
+def get_ledger_monthly_summary(
+    service: _FinanceServiceDep,
+    _current_user: LedgerReadPermDep,
+) -> LedgerMonthlySummaryResponse:
+    """本月净现金流 / 在投 / 本月回款 / 流水笔数 / 按周现金流 / 损益 Top3.
+
+    口径见 SPEC D-02/D-02a/D-02b/D-02c：全部由现有 finance_records + projects 计算，
+    不引入「已到账」「在途」等业务中不存在的概念。
+    """
+    return LedgerMonthlySummaryResponse(**service.get_monthly_summary())
 
 
 @router.get(

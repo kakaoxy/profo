@@ -51,6 +51,11 @@ from services.growth_center.my_customers_flow import (
     add_system_follow_up_if_remarked,
 )
 from services.growth_center.normalize import map_valuation_status
+from services.notification.dual_write import (
+    MODULE_LABELS,
+    emit_customer_status_changed,
+    emit_lead_assigned,
+)
 from services.recruit.lead import RecruitLeadService
 from services.system.exceptions import BusinessLogicError, ConflictError, ResourceNotFoundError
 from services.utils.referrer import (
@@ -203,6 +208,17 @@ class AdminLeadFlowService:
                 UNIFIED_STATUS_LABELS[UnifiedLeadStatus(booking.status)],
                 self._booking_summary(booking.marketing_project_id),
             )
+            # 迭代二：站内信旁路双写（best-effort）
+            emit_customer_status_changed(
+                self.db,
+                module=GrowthModule.BOOKING.value,
+                lead_id=lead_id,
+                referrer_user_id=booking.referrer_user_id,
+                status=booking.status,
+                status_label=UNIFIED_STATUS_LABELS[UnifiedLeadStatus(booking.status)],
+                community=self._booking_summary(booking.marketing_project_id),
+                module_label=MODULE_LABELS.get(GrowthModule.BOOKING.value, "预约"),
+            )
         return {"unified_status": UnifiedLeadStatus(booking.status), "native_status": booking.status}
 
     def _update_lead_status(
@@ -292,6 +308,17 @@ class AdminLeadFlowService:
                 UNIFIED_STATUS_LABELS[unified_after],
                 lead.community_name or "",
             )
+            # 迭代二：站内信旁路双写（best-effort）
+            emit_customer_status_changed(
+                self.db,
+                module=module.value,
+                lead_id=lead_id,
+                referrer_user_id=lead.referrer_id,
+                status=unified_after.value,
+                status_label=UNIFIED_STATUS_LABELS[unified_after],
+                community=lead.community_name or "",
+                module_label=MODULE_LABELS.get(module.value, module.value),
+            )
         return {"unified_status": unified_after, "native_status": lead.status.value}
 
     def _booking_summary(self, marketing_project_id: int) -> str:
@@ -301,14 +328,28 @@ class AdminLeadFlowService:
 
     # ─── 兜底员工指派 ─────────────────────────────────────────────────────
 
-    def assign_employee(self, *, module: GrowthModule, lead_id: str, employee_id: str) -> dict[str, Any]:
+    def assign_employee(
+        self,
+        *,
+        module: GrowthModule,
+        lead_id: str,
+        employee_id: str,
+        operator_id: str,
+    ) -> dict[str, Any]:
         """管理端为无归属线索指派兜底员工（仅归属为空可指派，已归属 409 不可改派）.
 
         四模块通用：booking/valuation/sheet/recruit 均按当前归属为空（无分享
         归因）才允许指派——招募 referrer 语义为「首次留资写入，此后永不更新」，
         从 NULL 填充视为首次写入，已归属永不改派。指派员工经
         ``resolve_valid_referrer`` 校验（存在 + active + 后台身份，无效 422）。
-        指派成功后 best-effort 推送新线索留资通知给该员工（通知内部捕获一切异常）。
+        指派成功后 best-effort 推送新线索留资通知给该员工（通知内部捕获一切异常），
+        并旁路写一条 ``lead.assigned`` 站内信（迭代二 D-01，收件人为被指派员工）。
+
+        Args:
+            module: 获客模块
+            lead_id: 线索ID
+            employee_id: 被指派员工ID
+            operator_id: 操作人用户ID（用于「由 X 分配给 Y」文案；D-01 新增）
 
         Raises:
             ResourceNotFoundError: 线索不存在
@@ -331,6 +372,17 @@ class AdminLeadFlowService:
         self.db.commit()
         # best-effort 新线索留资通知（通知内部捕获一切异常）
         notify_new_customer_lead(self.db, module.value, lead_id, valid_employee_id, summary)
+        # 迭代二：lead.assigned 站内信（D-01；微信侧保持现状不动）
+        emit_lead_assigned(
+            self.db,
+            module=module.value,
+            lead_id=lead_id,
+            assignee_id=valid_employee_id,
+            assigner_id=operator_id,
+            assigner_name=self._employee_name(operator_id) or "",
+            community=summary,
+            status="new",
+        )
         return {"employee_id": valid_employee_id, "employee_name": self._employee_name(valid_employee_id)}
 
     def _assign_booking(self, lead_id: str, employee_id: str) -> str:

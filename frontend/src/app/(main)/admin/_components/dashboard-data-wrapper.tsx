@@ -85,10 +85,8 @@ export async function DashboardLeadsWrapper() {
 }
 
 export async function DashboardQuickEntryWrapper() {
-  const { renovationProjects, sellingProjects } = await getDashboardData();
-  return (
-    <QuickEntrySection renovationProjects={renovationProjects} sellingProjects={sellingProjects} />
-  );
+  // 旧版仪表盘同样渲染新版快捷入口卡（meta 由卡片自身按权限取数）
+  return <QuickEntrySection />;
 }
 
 /**

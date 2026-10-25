@@ -93,6 +93,31 @@ describe("hasPathPermission", () => {
   });
 });
 
+describe("workbench 布局管理权限映射（迭代二 B3 顺序关键）", () => {
+  // PATH_PERMISSION_MAP 是「首个命中即返回」结构，且实测**并非**按 prefix 长度降序，
+  // 因此 /admin/settings/workbench 必须**手工插在 /admin/settings 之前**。
+  // 下面两条断言就是防「后来者把顺序改回去」的锁：若条目错位，
+  // /admin/settings/workbench 会命中 /admin/settings 的 api_key:manage，
+  // 导致只有 api_key 权限的人能进布局管理页（权限影子）。
+  it("should map /admin/settings/workbench to workbench:manage, not api_key:manage", () => {
+    expect(hasPathPermission("/admin/settings/workbench", ["workbench:manage"])).toBe(true);
+    expect(hasPathPermission("/admin/settings/workbench", ["api_key:manage"])).toBe(false);
+  });
+
+  it("should keep /admin/settings itself on api_key:manage", () => {
+    expect(hasPathPermission("/admin/settings", ["api_key:manage"])).toBe(true);
+    expect(hasPathPermission("/admin/settings", ["workbench:manage"])).toBe(false);
+  });
+
+  // 消息中心与偏好页**故意不登记**：所有后台登录用户可访问自己的消息
+  it("should leave /admin/notifications unguarded (no entry in map)", () => {
+    expect(hasPathPermission("/admin/notifications", [])).toBe(true);
+    expect(hasPathPermission("/admin/notifications", ["lead:read"])).toBe(true);
+    expect(hasPathPermission("/admin/notifications/preferences", [])).toBe(true);
+    expect(isRestrictedAdminPath("/admin/notifications")).toBe(false);
+  });
+});
+
 describe("isRestrictedAdminPath", () => {
   it("should return true for /admin/projects (restricted)", () => {
     expect(isRestrictedAdminPath("/admin/projects")).toBe(true);

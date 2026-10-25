@@ -4,7 +4,7 @@
 符合 AGENTS.md 规范第 26 条.
 """
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
@@ -18,6 +18,7 @@ from dependencies.auth import (
     ProjectReadOrBusinessPermDep,
     ProjectReadPermDep,
     ProjectWritePermDep,
+    has_permission,
 )
 from dependencies.common import PaginationDep
 from dependencies.projects import ProjectServiceDep
@@ -38,7 +39,7 @@ from schemas.project import (
 )
 from schemas.response import PaginatedResponse
 from services.projects.internal.owners import is_owner_not_found
-from services.system.exceptions import ResourceNotFoundError, ValidationError
+from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError, ValidationError
 from services.system.operation_log import operation_log_service
 from utils.common import RateLimits, limiter
 from utils.csv_exporter import generate_csv_response
@@ -196,14 +197,27 @@ def get_project_stats(
 @router.get("/todo-board")
 def get_project_todo_board(
     service: ProjectServiceDep,
-    _current_user: ProjectReadPermDep,
+    current_user: CurrentActiveUserDep,
+    db: DbSessionDep,
+    scope: Annotated[
+        Literal["all", "mine"],
+        Query(description="all=全量(需 project:read)；mine=我的业务身份项目(仅需登录)"),
+    ] = "all",
 ) -> ProjectTodoBoardResponse:
     """项目待办看板：规则引擎实时计算签约+装修阶段项目待办.
 
-    只读快照不落库；无查询参数，全量返回（数据量小），筛选由前端完成。
-    使用 ProjectReadPermDep 基于权限码校验（与项目列表一致）.
+    只读快照不落库；筛选由前端完成。
+
+    **权限（SPEC §6.3）**：
+    - ``scope=all``：需 ``project:read``（与项目列表一致，返回结构/排序全不变）；
+    - ``scope=mine``：仅需登录态——普通员工即使无 ``project:read``，被指派为
+      业务负责人后也能看到自己负责项目的待办（与 ``/projects/my-responsible``
+      同一口径，复用 ``get_by_business_identity``）。
     """
-    return service.get_todo_board()
+    if scope == "all" and not has_permission(current_user, "project:read", db):
+        msg = "缺少项目读取权限"
+        raise PermissionDeniedError(msg)
+    return service.get_todo_board(scope=scope, user_id=str(current_user.id))
 
 
 @router.get("/todo-board/config")

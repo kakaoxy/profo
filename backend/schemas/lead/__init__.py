@@ -448,6 +448,18 @@ class LeadAssessmentAuthorizeResponse(BaseModel):
     eval_price: float | None = Field(None, description="授权评估价(万)，reject/lost 为空")
 
 
+# ----------------------
+# 待评估积压聚合（迭代二 alert_card widget）
+# ----------------------
+class LeadAssessmentBacklogResponse(BaseModel):
+    """待评估积压指标（设计稿 alert_card：数量 + 最久等待 + 涉及负责人）."""
+
+    pending_count: int = Field(description="待评估线索数")
+    oldest_wait_days: int = Field(description="最久等待天数（无待评估时为 0）")
+    oldest_wait_hours: int = Field(description="最久等待的余数小时（设计稿「3 天 2 小时」）")
+    owner_count: int = Field(description="涉及的业务负责人数（distinct 归属）")
+
+
 __all__ = [
     "FollowUpBase",
     "FollowUpCreate",
@@ -456,6 +468,7 @@ __all__ = [
     "HandledItem",
     "LeadAssessmentAuthorizeRequest",
     "LeadAssessmentAuthorizeResponse",
+    "LeadAssessmentBacklogResponse",
     "LeadBase",
     "LeadCreate",
     "LeadEvalHistoryCreate",

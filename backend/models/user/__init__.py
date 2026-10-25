@@ -5,16 +5,20 @@
 
 from .api_key import ApiKey
 from .permission import Permission, PermissionCategory, role_permissions
+from .preference import NAMESPACE_NOTIFICATION_PREFS, NAMESPACE_WORKBENCH_LAYOUT, UserPreference
 from .refresh_token import RefreshToken
 from .user import Role, User, UserRole, user_roles
 
 __all__ = [
+    "NAMESPACE_NOTIFICATION_PREFS",
+    "NAMESPACE_WORKBENCH_LAYOUT",
     "ApiKey",
     "Permission",
     "PermissionCategory",
     "RefreshToken",
     "Role",
     "User",
+    "UserPreference",
     "UserRole",
     "role_permissions",
     "user_roles",

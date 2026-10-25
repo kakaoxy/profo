@@ -27,6 +27,7 @@ from schemas.public import (
     PublicVisitEventRequest,
 )
 from services.growth_center.customer_notify import notify_new_customer_lead
+from services.notification.dual_write import MODULE_LABELS, emit_customer_new
 from services.system import biz_dict
 from services.system.exceptions import ConflictError, ResourceNotFoundError
 from services.utils import (
@@ -418,6 +419,15 @@ class PublicProjectService:
                 booking.id,
                 booking.referrer_user_id,
                 project.title,
+            )
+            # 迭代二：站内信旁路双写（#3 customer.new，预约线）
+            emit_customer_new(
+                self.db,
+                module=GrowthModule.BOOKING.value,
+                lead_id=booking.id,
+                referrer_user_id=booking.referrer_user_id,
+                community=project.title,
+                module_label=MODULE_LABELS.get(GrowthModule.BOOKING.value, "预约"),
             )
         return booking, project, True
 

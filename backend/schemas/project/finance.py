@@ -533,6 +533,53 @@ class FinanceSubjectFilter(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+# ----------------------
+# 资金月度聚合（迭代二 finance_summary widget，SPEC D-02）
+# ----------------------
+class ProjectProfitItem(BaseModel):
+    """单项目损益（月度概览 Top N）."""
+
+    project_id: UUID4
+    community_name: str | None = None
+    status: str
+    settled: bool = Field(description="账本是否已结算")
+    net_cash_flow: Decimal = Field(description="累计净现金流(元)")
+
+    @field_serializer("net_cash_flow")
+    def serialize_net(self, v: Decimal) -> float:
+        return float(v)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class LedgerMonthlySummaryResponse(BaseModel):
+    """资金月度概览（D-02 / D-02a / D-02b / D-02c）.
+
+    全部指标由现有 ``finance_records`` / ``projects`` 数据计算，不新造概念：
+    - 本月净现金流 = 本月 inflow − outflow；
+    - 在投金额 = 未结算且状态 ∈ {renovating, selling} 项目的累计支出合计；
+    - 本月回款 = 本月 income 类型流水的 inflow 合计；
+    - 按周现金流 = 本月按自然周（周一首）切分的净额，最多 8 段。
+    """
+
+    month: str = Field(description="统计月份，格式 YYYY-MM")
+    net_cash_flow: Decimal = Field(description="本月净现金流(元)")
+    month_record_count: int = Field(description="本月流水笔数")
+    invested_amount: Decimal = Field(description="在投金额(元)：未结算装修/在售项目累计支出")
+    invested_project_count: int = Field(description="在投项目数")
+    month_receipts: Decimal = Field(description="本月回款(元)：本月收入类流水合计")
+    week_cash_flows: list[Decimal] = Field(description="本月按周净现金流(元)，不足补 0")
+    top_profits: list[ProjectProfitItem] = Field(description="项目损益 Top3（按绝对值降序）")
+
+    @field_serializer("net_cash_flow", "invested_amount", "month_receipts")
+    def serialize_decimal(self, v: Decimal) -> float:
+        return float(v)
+
+    @field_serializer("week_cash_flows")
+    def serialize_weeks(self, v: list[Decimal]) -> list[float]:
+        return [float(x) for x in v]
+
+
 # 前向引用 rebuild：CashFlowRecordResponse.subject 引用了下方定义的 FinanceSubjectResponse。
 # Pydantic v2 在所有类定义完成后需 rebuild 才能正确解析前向引用。
 CashFlowRecordResponse.model_rebuild()

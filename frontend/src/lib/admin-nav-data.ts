@@ -218,6 +218,13 @@ export const navMain: NavItem[] = [
         roles: [ROLE_CODES.ADMIN],
         permission: PERMISSION_CODES.DICT_MANAGE,
       },
+      {
+        // 迭代二：角色默认工作台布局管理（仅 admin）
+        title: "工作台布局",
+        url: "/admin/settings/workbench",
+        roles: [ROLE_CODES.ADMIN],
+        permission: PERMISSION_CODES.WORKBENCH_MANAGE,
+      },
     ],
   },
 ];

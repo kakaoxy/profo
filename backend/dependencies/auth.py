@@ -498,6 +498,7 @@ OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_
 ApiKeyManagePermDep = Annotated[User, Depends(require_permission("api_key:manage"))]
 # dict 模块（业务字典管理，仅 admin 角色持有该权限点）
 DictManagePermDep = Annotated[User, Depends(require_permission("dict:manage"))]
+WorkbenchManagePermDep = Annotated[User, Depends(require_permission("workbench:manage"))]
 
 
 # ==================== 业务身份双通道校验 ====================
@@ -808,6 +809,7 @@ __all__ = [
     "UserResetPasswordPermDep",
     "UserUnbindWechatPermDep",
     "UserUpdatePermDep",
+    "WorkbenchManagePermDep",
     # 依赖函数
     "get_current_active_user",
     "get_current_user",

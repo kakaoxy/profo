@@ -40,8 +40,35 @@ class OperationLogFilter(BaseModel):
     end_time: datetime | None = Field(None, description="结束时间过滤(<=)")
 
 
+class ActionCountItem(BaseModel):
+    """按 action 聚合的计数项."""
+
+    action: str = Field(description="operation_logs.action 原值")
+    count: int = Field(description="条数")
+
+
+class OperationLogSummaryResponse(BaseModel):
+    """审计概览（迭代二 audit_summary widget）.
+
+    **只有可算指标**（SPEC D-03 / D-10）：
+    - ``today_total``：今日操作数；
+    - ``login_failure_count``：今日登录失败数（真实存在的 action）；
+    - ``action_distribution``：今日按 action 原值聚合 Top 6。
+
+    ⚠️ **不含「高风险」指标**：``operation_logs`` 无风险等级列，业务中不存在该概念。
+    ⚠️ **不做「查询/新增/修改」四分类**：审计只记录写操作与敏感读，
+    普通查询不落库（``routers/leads/core.py`` 无 ``log_action`` 调用）。
+    """
+
+    today_total: int = Field(description="今日操作总数")
+    login_failure_count: int = Field(description="今日登录失败数")
+    action_distribution: list[ActionCountItem] = Field(description="今日按 action 聚合 Top 6")
+
+
 __all__ = [
+    "ActionCountItem",
     "OperationLogFilter",
     "OperationLogListResponse",
     "OperationLogResponse",
+    "OperationLogSummaryResponse",
 ]

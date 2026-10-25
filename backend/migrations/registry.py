@@ -1,9 +1,9 @@
 """迁移注册表：``_run_all_migrations`` 顶层调用单元的版本化登记（迭代一 T1.2）。
 
 **权威口径**
-- ``version`` = ``1..94``，严格按 ``migrations/__init__.py::_run_all_migrations``
+- ``version`` = ``1..97``，严格按 ``migrations/__init__.py::_run_all_migrations``
   的**当前调用顺序**编号（实测 94 项，非计划稿的 77/80；见总纲 §1 B1/B8）。
-- 新增迁移**只能追加**在 ``MIGRATIONS`` 末尾，``version`` 从 ``NEXT_VERSION``（95）起
+- 新增迁移**只能追加**在 ``MIGRATIONS`` 末尾，``version`` 从 ``NEXT_VERSION``（98）起
   严格递增，禁止插入历史中间序号，禁止复用已删除版本号。
 - 粒度 = 一次顶层 ``fn(engine)`` 调用；wrapper 内部子步骤（如
   ``create_marketing_project_subscription_table`` 内的 ``add_last_subscribed_at_*``）
@@ -78,6 +78,10 @@ from migrations._marketing_notify import (
     create_marketing_subscription_tables,
     widen_subscription_openid_columns,
 )
+from migrations._notification import (
+    create_notification_tables,
+    create_user_preferences_table,
+)
 from migrations._permission_system import (
     add_permission_foreign_indexes,
     add_reports_indexes,
@@ -132,6 +136,7 @@ from migrations._user_security import (
     encrypt_existing_phones,
     populate_phone_hash,
 )
+from migrations._workbench import seed_workbench_manage_permission
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
 from migrations.add_lead_auditor_index import add_lead_auditor_index
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
@@ -1175,6 +1180,36 @@ MIGRATIONS: tuple[Migration, ...] = (
         backup_tables=("leads", "finance_records"),
         description="v93 游标实现加固：去掉 CAST（拆首批/后续批两条 SQL）+ 表名白名单（幂等兜底复核）",
     ),
+    Migration(
+        version=95,
+        name="create_notification_tables",
+        fn=create_notification_tables,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="迭代二：通知三表（notifications/notification_recipients/notification_delivery_logs）+ 索引",
+    ),
+    Migration(
+        version=96,
+        name="create_user_preferences_table",
+        fn=create_user_preferences_table,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="迭代二：user_preferences 表（工作台布局个人覆盖）",
+    ),
+    Migration(
+        version=97,
+        name="seed_workbench_manage_permission",
+        fn=seed_workbench_manage_permission,
+        kind="seed",
+        risk="B",
+        backup="none",
+        reversible=False,
+        description="迭代二：workbench:manage 权限点 + 授予 admin",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1187,7 +1222,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 94）。"""
+"""登记总数（当前 97）。"""
 
-NEXT_VERSION = 95
+NEXT_VERSION = 98
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

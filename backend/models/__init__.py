@@ -76,6 +76,17 @@ from .marketing import (
     SendStatus,
 )
 
+# 系统模块
+# 通知中心模块（迭代二：统一消息中心）
+from .notification import (
+    DELIVERY_CHANNELS,
+    DELIVERY_STATUSES,
+    NOTIFICATION_PRIORITIES,
+    Notification,
+    NotificationDeliveryLog,
+    NotificationRecipient,
+)
+
 # 项目管理模块
 from .project import (
     FinanceRecord,
@@ -125,8 +136,6 @@ from .recruit import (
     RecruitShareType,
     RecruitVisit,
 )
-
-# 系统模块
 from .system import (
     BizDictItem,
     FailedRecord,
@@ -139,18 +148,26 @@ from .system import (
 
 # 用户权限模块
 from .user import (
+    NAMESPACE_NOTIFICATION_PREFS,
+    NAMESPACE_WORKBENCH_LAYOUT,
     ApiKey,
     Permission,
     PermissionCategory,
     RefreshToken,
     Role,
     User,
+    UserPreference,
     UserRole,
     role_permissions,
     user_roles,
 )
 
 __all__ = [
+    "DELIVERY_CHANNELS",
+    "DELIVERY_STATUSES",
+    "NAMESPACE_NOTIFICATION_PREFS",
+    "NAMESPACE_WORKBENCH_LAYOUT",
+    "NOTIFICATION_PRIORITIES",
     "ApiKey",
     # 基础
     "Base",
@@ -215,6 +232,9 @@ __all__ = [
     "MarketingProjectStatus",
     "MediaType",
     "MigrationCompensation",
+    "Notification",
+    "NotificationDeliveryLog",
+    "NotificationRecipient",
     "NotifyType",
     "OperationLog",
     "Permission",
@@ -267,6 +287,7 @@ __all__ = [
     "SubjectStage",
     "SystemConfig",
     "User",
+    "UserPreference",
     "UserRole",
     # 估价页分享埋点
     "ValuationShareEvent",

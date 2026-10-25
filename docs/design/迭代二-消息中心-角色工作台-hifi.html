@@ -27,7 +27,24 @@
 
   技术形态：单文件自包含 HTML + React 18（CDN，Babel 内联转译）。
   字体：Inter（Sohne 替代）+ Source Serif 4（Signifier 替代），与 frontend 落地方案一致。
-  ⚠️ 设计稿交付物，有意单文件不拆分。数据为贴近业务的演示数据。
+  ⚠️ 设计稿交付物，有意单文件不拆分。
+
+  ============================================================
+  【数据源约束 · 2026-10-25 反向迭代】
+  依据：docs/To-Do/2026-10-25-迭代二-消息中心-角色工作台-SPEC.md「最高约束」
+  「现有业务口径数据中没有的，不要硬创建数据，除了转化率这种计算可获得的」。
+  本稿所有指标已回退为「已有字段」或「可由现有数据计算」，共 5 处降级：
+    1. 待办卡      逾期/今日/本周  → 待办项目/待办总数/P0/最深逾期
+    2. 获客卡      到访转化        → 整体转化率（有效新客 ÷ 分享次数）
+                   渠道来源        → 按 4 模块（估价/预约/房源单/招募）
+    3. 审计卡      高风险          → 敏感访问（导出/银行卡）
+                   操作分布四分类  → 按 action 原值聚合
+    4. 快捷入口    进行中 N 场     → 删除（活动无起止时间字段）
+                   今日 N 项       → 删除 / 改静态文案
+    5. 偏好页      6 个入口        → 5 个入口（后端仅 5 个模板 key）
+  降级依据逐条见 Screen 06「⚠️ 未覆盖 / 待确认」。
+  演示数据仍为贴近业务的样例值，但**含义**已与真实数据源一一对应。
+  ============================================================
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -638,10 +655,10 @@ const WIDGETS = {
   project_overview:   { key: "project_overview",   label: "项目总览",     perm: "project:read",     span: 3,  roles: ["admin", "operator"], desc: "签约/装修/在售/已成交计数" },
   leads_funnel:       { key: "leads_funnel",       label: "线索漏斗",     perm: "lead:read",        span: 3,  roles: ["admin", "operator"], desc: "总线索→评估→看房→签约" },
   alert_card:         { key: "alert_card",         label: "待评估提醒",   perm: "lead:write",       span: 3,  roles: ["admin", "operator"], desc: "待评估线索数与最久等待" },
-  todo_board_summary: { key: "todo_board_summary", label: "项目待办",     perm: "project:read",     span: 3,  roles: ["admin", "operator"], desc: "逾期/今日/本周待办条数" },
-  growth_overview:    { key: "growth_overview",    label: "获客总览",     perm: "recruit:read",     span: 6,  roles: ["admin", "operator"], desc: "新增线索 14 日趋势 + 渠道分布" },
+  todo_board_summary: { key: "todo_board_summary", label: "项目待办",     perm: "project:read",     span: 3,  roles: ["admin", "operator"], desc: "待办项目数/待办总数/P0/最深逾期" },
+  growth_overview:    { key: "growth_overview",    label: "获客总览",     perm: "recruit:read",     span: 6,  roles: ["admin", "operator"], desc: "新增线索 + 转化率 + 分享带来 + 14 日趋势" },
   finance_summary:    { key: "finance_summary",    label: "资金概览",     perm: "ledger:read",      span: 6,  roles: ["admin"],             desc: "净现金流 / 在投 / 本月回款" },
-  audit_summary:      { key: "audit_summary",      label: "审计概览",     perm: "operation_log:read", span: 6, roles: ["admin"],            desc: "今日操作数与高风险操作" },
+  audit_summary:      { key: "audit_summary",      label: "审计概览",     perm: "operation_log:read", span: 6, roles: ["admin"],            desc: "今日操作数/敏感访问/登录失败 + 动作分布" },
   monitor_projects:   { key: "monitor_projects",   label: "重点监控项目", perm: "project:read",     span: 12, roles: ["admin", "operator"], desc: "横向项目卡（现状逻辑）" },
   leads_table:        { key: "leads_table",        label: "最近线索",     perm: "lead:read",        span: 12, roles: ["admin", "operator"], desc: "最近 5 条线索表格" },
   quick_entry:        { key: "quick_entry",        label: "快捷入口",     perm: "按子项过滤",       span: 12, roles: ["admin", "operator", "user"], desc: "常用操作入口，子项各自鉴权" },
@@ -988,20 +1005,20 @@ const QUICK = {
   admin: [
     { nm: "新建项目", meta: "录入房源或开发项目", ic: "plus" },
     { nm: "录入线索", meta: "评估价与归属分配", ic: "phone" },
-    { nm: "项目待办", meta: "逾期 3 · 今日 5", ic: "list" },
+    { nm: "项目待办", meta: "逾期 3 · P0 3", ic: "list" },
     { nm: "资金流水", meta: "本月 128 笔", ic: "wallet" },
-    { nm: "获客活动", meta: "进行中 2 场", ic: "megaphone" },
-    { nm: "订阅模板", meta: "微信 6 个入口", ic: "mail" },
+    { nm: "获客活动", meta: "活动配置", ic: "megaphone" },
+    { nm: "订阅模板", meta: "微信 5 个入口", ic: "mail" },
   ],
   operator: [
     { nm: "录入线索", meta: "评估价与归属分配", ic: "phone" },
-    { nm: "项目待办", meta: "逾期 3 · 今日 5", ic: "list" },
-    { nm: "获客活动", meta: "进行中 2 场", ic: "megaphone" },
+    { nm: "项目待办", meta: "逾期 3 · P0 3", ic: "list" },
+    { nm: "获客活动", meta: "活动配置", ic: "megaphone" },
     { nm: "房源上传", meta: "批量导入", ic: "plus" },
   ],
   user: [
     { nm: "我的线索", meta: "待跟进 4 条", ic: "phone" },
-    { nm: "我的待办", meta: "今日 2 项", ic: "list" },
+    { nm: "我的待办", meta: "业务身份项目", ic: "list" },
     { nm: "分享房源", meta: "生成小程序卡片", ic: "smartphone" },
     { nm: "我的客户", meta: "跟进中 6 位", ic: "user" },
   ],
@@ -1073,10 +1090,11 @@ function Widget({ k, role, onCustomize, onGo }) {
       return (
         <div className="wg">
           <WGHead title="项目待办" link="看板" onLink={() => go("todo")} />
-          <div className="kpi-3">
-            <div className="kpi"><div className="k">逾期</div><div className="v tnum" style={{ color: "var(--rust)" }}>3</div></div>
-            <div className="kpi"><div className="k">今日</div><div className="v tnum">5</div></div>
-            <div className="kpi"><div className="k">本周</div><div className="v tnum">11</div></div>
+          <div className="kpi-2">
+            <div className="kpi"><div className="k">待办项目</div><div className="v tnum">4</div></div>
+            <div className="kpi"><div className="k">待办总数</div><div className="v tnum">14</div></div>
+            <div className="kpi"><div className="k">P0 阻塞</div><div className="v tnum" style={{ color: "var(--rust)" }}>3</div></div>
+            <div className="kpi"><div className="k">最深逾期</div><div className="v tnum">12<span className="unit">天</span></div></div>
           </div>
           <div className="todo-rows">
             <div className="todo-row">
@@ -1094,8 +1112,8 @@ function Widget({ k, role, onCustomize, onGo }) {
           <div className="wg-split narrow-right" style={{ marginTop: 16 }}>
             <div>
               <div className="kpi-3" style={{ marginTop: 0 }}>
-                <div className="kpi"><div className="k">新增线索</div><div className="v tnum lg">342<span className="unit">条</span></div><div className="d" style={{ color: "var(--rust)" }}><Icon n="trendUp" size={11} sw={2} />+18.4%</div></div>
-                <div className="kpi"><div className="k">到访转化</div><div className="v tnum lg">18.4<span className="unit">%</span></div><div className="d"><Icon n="trendUp" size={11} sw={2} />+2.1pp</div></div>
+                <div className="kpi"><div className="k">新增线索</div><div className="v tnum lg">342<span className="unit">条</span></div><div className="d" style={{ color: "var(--rust)" }}><Icon n="trendUp" size={11} sw={2} />近 30 天</div></div>
+                <div className="kpi"><div className="k">整体转化率</div><div className="v tnum lg">18.4<span className="unit">%</span></div><div className="d">有效新客 ÷ 分享次数</div></div>
                 <div className="kpi"><div className="k">分享带来</div><div className="v tnum lg">126<span className="unit">条</span></div><div className="d">占 36.8%</div></div>
               </div>
               <div className="spark" style={{ marginTop: 22, height: 74 }}>
@@ -1108,16 +1126,16 @@ function Widget({ k, role, onCustomize, onGo }) {
               </div>
             </div>
             <div>
-              <div className="help" style={{ fontSize: 12, marginBottom: 10 }}>渠道来源</div>
+              <div className="help" style={{ fontSize: 12, marginBottom: 10 }}>线索来源（按模块）</div>
               {[
-                { nm: "小程序分享", n: 126, p: 37 },
-                { nm: "自然到访", n: 98, p: 29 },
-                { nm: "微信订阅", n: 74, p: 22 },
-                { nm: "其他渠道", n: 44, p: 13 },
-              ].map((c) => (
+                { nm: "估价", n: 126, p: 37 },
+                { nm: "预约", n: 98, p: 29 },
+                { nm: "房源单", n: 74, p: 22 },
+                { nm: "招募", n: 44, p: 13 },
+              ].map((c, ci) => (
                 <div key={c.nm} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0" }}>
                   <span style={{ width: 72, fontSize: 12.5, color: "var(--ash)", flex: "none" }}>{c.nm}</span>
-                  <span className="f-bar" style={{ height: 7 }}><i style={{ width: c.p * 2.4 + "%", background: c.nm === "小程序分享" ? "var(--rust)" : "var(--ink)", opacity: c.nm === "小程序分享" ? 1 : 0.28 }}></i></span>
+                  <span className="f-bar" style={{ height: 7 }}><i style={{ width: c.p * 2.4 + "%", background: ci === 0 ? "var(--rust)" : "var(--ink)", opacity: ci === 0 ? 1 : 0.28 }}></i></span>
                   <span style={{ width: 32, fontSize: 12.5, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{c.n}</span>
                 </div>
               ))}
@@ -1131,9 +1149,9 @@ function Widget({ k, role, onCustomize, onGo }) {
         <div className="wg">
           <WGHead title="资金概览" sub="本月" link="资金账本" onLink={() => go("ledger")} />
           <div className="kpi-3">
-            <div className="kpi"><div className="k">净现金流</div><div className="v tnum money-pos">+128.6<span className="unit">万</span></div><div className="d">本月累计</div></div>
-            <div className="kpi"><div className="k">在投金额</div><div className="v tnum">3,240<span className="unit">万</span></div><div className="d">共 12 个项目</div></div>
-            <div className="kpi"><div className="k">本月回款</div><div className="v tnum">86.4<span className="unit">万</span></div><div className="d">已到账 100%</div></div>
+            <div className="kpi"><div className="k">净现金流</div><div className="v tnum money-pos">+128.6<span className="unit">万</span></div><div className="d">本月流入 − 流出</div></div>
+            <div className="kpi"><div className="k">在投金额</div><div className="v tnum">3,240<span className="unit">万</span></div><div className="d">装修/在售 · 12 个项目</div></div>
+            <div className="kpi"><div className="k">本月回款</div><div className="v tnum">86.4<span className="unit">万</span></div><div className="d">本月收入类流水</div></div>
           </div>
           <div className="wg-split" style={{ marginTop: 20 }}>
             <div>
@@ -1177,38 +1195,38 @@ function Widget({ k, role, onCustomize, onGo }) {
         <div className="wg">
           <WGHead title="审计概览" sub="今日" link="审计日志" onLink={() => go("audit")} />
           <div className="kpi-3">
-            <div className="kpi"><div className="k">操作总数</div><div className="v tnum">1,284</div><div className="d">较昨日 +8.2%</div></div>
-            <div className="kpi"><div className="k">高风险</div><div className="v tnum" style={{ color: "var(--rust)" }}>3</div><div className="d">需人工复核</div></div>
-            <div className="kpi"><div className="k">登录失败</div><div className="v tnum">1</div><div className="d">同一 IP</div></div>
+            <div className="kpi"><div className="k">操作总数</div><div className="v tnum">128</div><div className="d">今日</div></div>
+            <div className="kpi"><div className="k">敏感访问</div><div className="v tnum" style={{ color: "var(--rust)" }}>3</div><div className="d">导出/银行卡</div></div>
+            <div className="kpi"><div className="k">登录失败</div><div className="v tnum">1</div><div className="d">今日</div></div>
           </div>
           <div className="wg-split narrow-right" style={{ marginTop: 20 }}>
             <div>
               <div className="mini-list" style={{ marginTop: 0 }}>
                 <div className="mini-row">
-                  <span><span className="nm">批量导出线索</span><span className="meta">陈明远 · 10:24 · 导出 342 条</span></span>
-                  <Badge cls="b-apricot">高风险</Badge>
+                  <span><span className="nm">导出项目数据</span><span className="meta">陈明远 · 10:24 · project</span></span>
+                  <Badge cls="b-apricot">敏感访问</Badge>
                 </div>
                 <div className="mini-row">
-                  <span><span className="nm">角色权限变更</span><span className="meta">陈明远 · 09:12 · operator 一组</span></span>
-                  <Badge cls="b-fog">常规</Badge>
+                  <span><span className="nm">角色权限变更</span><span className="meta">陈明远 · 09:12 · role</span></span>
+                  <Badge cls="b-fog">修改</Badge>
                 </div>
                 <div className="mini-row">
                   <span><span className="nm">登录失败</span><span className="meta">10.12.3.44 · 08:47 · 密码错误</span></span>
-                  <Badge cls="b-outline">待确认</Badge>
+                  <Badge cls="b-outline">login_failure</Badge>
                 </div>
               </div>
             </div>
             <div>
               <div className="help" style={{ fontSize: 12, marginBottom: 10 }}>今日操作分布</div>
               {[
-                { nm: "查询", n: 912, p: 71 },
-                { nm: "新增", n: 231, p: 18 },
-                { nm: "修改", n: 118, p: 9 },
-                { nm: "删除/导出", n: 23, p: 2 },
-              ].map((c) => (
+                { nm: "修改", n: 48, p: 62 },
+                { nm: "新增", n: 21, p: 27 },
+                { nm: "删除", n: 5, p: 6 },
+                { nm: "敏感访问", n: 4, p: 5 },
+              ].map((c, ci) => (
                 <div key={c.nm} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0" }}>
                   <span style={{ width: 66, fontSize: 12.5, color: "var(--ash)", flex: "none" }}>{c.nm}</span>
-                  <span className="f-bar" style={{ height: 7 }}><i style={{ width: c.p * 1.36 + "%", background: c.nm === "删除/导出" ? "var(--rust)" : "var(--ink)", opacity: c.nm === "删除/导出" ? 1 : 0.22 }}></i></span>
+                  <span className="f-bar" style={{ height: 7 }}><i style={{ width: c.p * 1.36 + "%", background: c.nm === "敏感访问" ? "var(--rust)" : "var(--ink)", opacity: c.nm === "敏感访问" ? 1 : 0.22 }}></i></span>
                   <span style={{ width: 38, fontSize: 12.5, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{c.n}</span>
                 </div>
               ))}
@@ -1696,7 +1714,7 @@ function PreferencesScreen({ go }) {
       <div className="banner warn" style={{ maxWidth: 1180 }}>
         <span className="ic"><Icon n="alert" size={17} /></span>
         <span>
-          <span className="t">微信模板缺失：6 个订阅入口中 1 个未配置</span>
+          <span className="t">微信模板缺失：5 个订阅入口中 1 个未配置</span>
           <span className="d" style={{ display: "block" }}>
             「新客户线索」模板未配置（status=skipped / error_code=TEMPLATE_MISSING），对应微信开关已置灰且不可打开（K18）。
             请先在 设置 → 订阅消息模板 补齐后再回来开启。
@@ -2148,7 +2166,7 @@ function SpecScreen() {
               "6 栏孤儿卡自动升满宽：admin 的 audit_summary、operator 的 growth_overview 落单时占 12 栏，避免栅格空洞（渲染期计算，不改布局 JSON 的 key/order/enabled）。",
               "消息行右侧常驻微信投递状态点（绿/灰/Rust），把 K18 的 TEMPLATE_MISSING 从日志搬到用户可见处。",
               "抽屉分类 tabs 只渲染有消息的分类，避免空 tab。",
-              "偏好页顶部横幅直接指出「6 个入口中 1 个模板缺失」，并把补模板的入口做成跳转。",
+              "偏好页顶部横幅直接指出「5 个入口中 1 个模板缺失」，并把补模板的入口做成跳转。",
               "工作台页面头部显示「当前生效 N / 总数 · 来源」，让 K11 的三级 fallback 对用户可见。",
             ].map((t, i) => (
               <div className="note-item" key={i}><span className="no">{String(i + 1).padStart(2, "0")}</span><span>{t}</span></div>
@@ -2157,12 +2175,16 @@ function SpecScreen() {
           <div className="card" style={{ padding: "20px 22px" }}>
             <div className="card-title" style={{ marginBottom: 12 }}>⚠️ 未覆盖 / 待确认</div>
             {[
-              "operator 可见 widget：SPEC §4.7 表为 8 个，同节文字写「operator 7」。本稿按表 8 个渲染，需产品确认。",
+              "【数据源约束】本稿所有指标均限定为「现有业务口径已有字段」或「可由现有数据计算」，不新造数据。已按下表 5 处降级，取代原稿的虚构指标。",
+              "待办卡：原「逾期/今日/本周」改为「待办项目/待办总数/P0/最深逾期」。原因：规则 R1–R9 的触发条件本身即「已过期」，仅 R10 委托期临近有未来日期，今日/本周两桶结构性恒为 0（todo_board_rules.py:365/395/424/471/502）。",
+              "获客卡：原「到访转化」改为「整体转化率」（有效新客 ÷ 分享次数）。原因：业务无「到访」概念（全仓 grep=0），且 high_intent 在估价映射「已看房」、在预约/招募是「意向高」，4 模块语义不一致。渠道分布改为按 4 模块（估价/预约/房源单/招募），与 /overview/source-breakdown 一致。",
+              "审计卡：原「高风险 3」改为「敏感访问」（导出/银行卡）。原因：operation_logs 无 risk_level 列（该字段只在 permissions 表）。操作分布由四分类改为按 action 原值聚合——审计只记录写操作与敏感读，普通查询不落库（routers/leads/core.py 的 log_action 为 0 处），「查询 912 条」无数据来源。",
+              "快捷入口：删除「进行中 2 场」（recruit_campaigns 只有 enabled/disabled 开关，无起止时间字段）与「今日 N 项」（同待办卡原因）；「6 个入口」改「5 个」（后端仅 5 个模板 key）。",
+              "operator 可见 widget：SPEC 表为 8 个，同节文字写「operator 7」。本稿按表 8 个渲染，需产品确认。",
               "事件 #6/#7/#8 本期不接触发点，仅登记 EventSpec——因此 UI 上没有「项目状态变更」「待办到期」「分享被查看」的真实消息样例。",
               "移动端未覆盖（本次仅桌面 1440+）：SPEC §12-4 的 header 铃铛落位与 Sheet 抽屉仍需 T2.8 确认。",
               "消息中心未新增侧边栏菜单项（K10）：只能经铃铛 → 查看全部进入，可发现性依赖角标。",
-              "alert_card 仍沿用 lead:write（SPEC §12-2），若产品要求 operator 也能看需改权限口径。",
-              "audit_summary 数据源是 GET /api/v1/operation-logs，但跳转目标必须是 /admin/audit-logs（SPEC §12-3），实现时核对一次。",
+              "audit_summary 跳转目标必须是 /admin/audit-logs（SPEC §12-3），实现时核对一次。",
             ].map((t, i) => (
               <div className="note-item warn" key={i}><span className="no">⚠️</span><span>{t}</span></div>
             ))}

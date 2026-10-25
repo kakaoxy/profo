@@ -32,6 +32,7 @@ from schemas.recruit import (
     RecruitVisitUpdate,
 )
 from services.growth_center.customer_notify import notify_new_customer_lead
+from services.notification.dual_write import emit_recruit_new_lead
 from services.recruit import (
     RecruitAttributionService,
     RecruitCampaignService,
@@ -168,6 +169,14 @@ async def submit_lead(
     # 通知内部捕获一切异常仅记日志，绝不影响留资结果）
     if is_new:
         await run_in_threadpool(service.notify_new_lead, lead)
+        # 迭代二：招募线站内信（#5 recruit.new_lead 唯一来源；不得再发 #3 customer.new）
+        await run_in_threadpool(
+            emit_recruit_new_lead,
+            db,
+            lead_id=str(lead.id),
+            referrer_employee_id=lead.referrer_employee_id,
+            summary=lead.main_business_area or "",
+        )
         # 「我的客户」新线索通知（customer 模板，与 notify_new_lead 模板不同、
         # 订阅授权独立，两者并存不算重复推送；customer 模板未配置时静默跳过）
         await run_in_threadpool(

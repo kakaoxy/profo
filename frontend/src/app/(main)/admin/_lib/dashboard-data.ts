@@ -149,19 +149,21 @@ export const getDashboardData = cache(async (): Promise<DashboardDataResult> => 
       },
     }),
     client.GET("/api/v1/leads/stats/funnel", {}),
+    // SPEC §4.7 #8：monitor_projects 取 4 个（设计稿 5 列网格 = 4 项目 + 添加卡）
     client.GET("/api/v1/projects", {
       params: {
         query: {
           page: 1,
-          page_size: 10,
+          page_size: 4,
           include_interactions: true,
           monitor_sort: true,
         },
       },
     }),
+    // SPEC §4.7 #9：leads_table 取最近 5 条（设计稿表格 5 行）
     client.GET("/api/v1/leads", {
       params: {
-        query: { page: 1, page_size: 10 },
+        query: { page: 1, page_size: 5 },
       },
     }),
     client.GET("/api/v1/projects", {

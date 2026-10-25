@@ -255,14 +255,18 @@ async def assign_lead_employee(
     lead_id: Annotated[str, Path(description="线索ID")],
     body: LeadAssignRequest,
     db: DbSessionDep,
-    _current_user: RecruitWritePermDep,
+    current_user: RecruitWritePermDep,
 ) -> LeadAssignResponse:
-    """设置无归属线索兜底员工（行级锁在 Service 层，放线程池避免阻塞事件循环）."""
+    """设置无归属线索兜底员工（行级锁在 Service 层，放线程池避免阻塞事件循环）.
+
+    迭代二 D-01：透传操作人用于生成 ``lead.assigned`` 站内信文案（微信侧不变）.
+    """
     result = await run_in_threadpool(
         AdminLeadFlowService(db).assign_employee,
         module=module,
         lead_id=lead_id,
         employee_id=body.employee_id,
+        operator_id=current_user.id,
     )
     return LeadAssignResponse(**result)
 

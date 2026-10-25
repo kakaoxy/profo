@@ -51,6 +51,10 @@ class GrowthOverviewKpiResponse(BaseModel):
     conversion_rate: float | None = Field(
         description="整体转化率（%）＝有效新客 ÷ 分享次数（近 30 天），分享次数为 0 时为 null",
     )
+    share_sourced_leads: int = Field(
+        default=0,
+        description="近 30 天带分享归因（referrer 非空）的线索数（迭代二 D-04，可由现有数据计算）",
+    )
 
 
 class SourceBreakdownItem(BaseModel):

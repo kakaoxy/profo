@@ -16,6 +16,7 @@ from models.common import LeadStatus
 from models.lead import Lead
 from schemas.community_image import CommunityImageListResponse
 from schemas.lead import (
+    LeadAssessmentBacklogResponse,
     LeadCreate,
     LeadFunnelResponse,
     LeadListItem,
@@ -305,6 +306,20 @@ def delete_lead(
     """
     service = LeadService(db)
     service.delete_lead(lead_id)
+
+
+@router.get("/stats/assessment-backlog")
+def get_leads_assessment_backlog(
+    db: DbSessionDep,
+    _current_user: LeadWritePermDep,
+) -> LeadAssessmentBacklogResponse:
+    """待评估积压（工作台 alert_card：数量 / 最久等待 / 涉及负责人）.
+
+    权限沿用 ``lead:write``（与设计稿 alert_card 的 perm 声明一致）；
+    三项指标均可由现有数据计算，不引入新业务概念。
+    """
+    service = LeadService(db)
+    return LeadAssessmentBacklogResponse(**service.get_assessment_backlog())
 
 
 @router.get("/stats/funnel")

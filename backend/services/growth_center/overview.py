@@ -26,7 +26,12 @@ from models.common.base import LeadStatus
 from models.marketing.property_sheet import PropertySheetShareEvent
 from schemas.growth_center import GrowthModule
 from services.growth_center.identity import internal_creator_exists
-from services.growth_center.normalize import Window, resolve_window, today_window
+from services.growth_center.normalize import (
+    REFERRER_FIELD_BY_MODULE,
+    Window,
+    resolve_window,
+    today_window,
+)
 
 # 趋势/占比返回的模块顺序（固定，前端配色依赖）
 _MODULE_ORDER: tuple[GrowthModule, ...] = (
@@ -67,7 +72,54 @@ class GrowthOverviewService:
             "pending_followups": pending,
             "valid_new_customers": valid_new_customers,
             "conversion_rate": conversion_rate,
+            # 迭代二 D-04：带分享归因的线索数（referrer 非空），可由现有数据计算
+            "share_sourced_leads": self._count_share_sourced_leads(window),
         }
+
+    def _count_share_sourced_leads(self, window: Window) -> int:
+        """近 N 天带分享归因的线索数（4 模块 referrer 字段非空合计）.
+
+        referrer 字段名差异由 ``REFERRER_FIELD_BY_MODULE`` 统一维护
+        （leads.referrer_id / project_bookings.referrer_user_id /
+        recruit_leads.referrer_employee_id）。
+
+        Args:
+            window: 统计窗口
+
+        Returns:
+            带归因的线索条数。
+
+        """
+        total = 0
+        for module in _MODULE_ORDER:
+            field_name = REFERRER_FIELD_BY_MODULE[module]
+            if module == GrowthModule.RECRUIT:
+                q = self.db.query(func.count(RecruitLead.id)).filter(
+                    RecruitLead.created_at >= window.start,
+                    RecruitLead.created_at < window.end,
+                    getattr(RecruitLead, field_name).is_not(None),
+                )
+            elif module == GrowthModule.BOOKING:
+                q = self.db.query(func.count(ProjectBooking.id)).filter(
+                    ProjectBooking.created_at >= window.start,
+                    ProjectBooking.created_at < window.end,
+                    getattr(ProjectBooking, field_name).is_not(None),
+                )
+            else:
+                q = self.db.query(func.count(Lead.id)).filter(
+                    Lead.is_deleted.is_(False),
+                    ~internal_creator_exists(),
+                    Lead.created_at >= window.start,
+                    Lead.created_at < window.end,
+                    getattr(Lead, field_name).is_not(None),
+                )
+                q = (
+                    q.filter(Lead.source_property_id.is_(None))
+                    if module == GrowthModule.VALUATION
+                    else q.filter(Lead.source_property_id.isnot(None))
+                )
+            total += int(q.scalar() or 0)
+        return total
 
     # ─── 来源构成 ─────────────────────────────────────────────────────────
 

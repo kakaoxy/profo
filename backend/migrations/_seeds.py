@@ -402,6 +402,15 @@ _PERMISSIONS_SEED: list[dict] = [
         "sort_order": 10,
         "description": "C 端提交估价申请",
     },
+    # 工作台布局管理（迭代二 v97；与 migrations/_workbench.py::WORKBENCH_MANAGE_DEF 逐字段一致）
+    {
+        "code": "workbench:manage",
+        "name": "管理工作台布局",
+        "module": "workbench",
+        "category": "api",
+        "sort_order": 10,
+        "description": "管理角色默认工作台布局（仅 admin）",
+    },
 ]
 
 # 内置角色 → 默认权限集（admin 拥有全部权限）

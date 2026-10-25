@@ -15,10 +15,10 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
-from models import User
 from schemas.growth_center import GrowthModule, UnifiedLeadStatus
 from services.growth_center.flow_matrix import UNIFIED_STATUS_LABELS
 from services.system import subscribe_templates
+from services.system.openid import resolve_user_openids
 from services.system.wechat import WeChatAuthService
 
 logger = logging.getLogger(__name__)
@@ -76,21 +76,8 @@ def _resolve_employee_openids(db: Session, employee_id: str) -> list[str]:
         可发送 openid 列表；无任何可用的 openid 时返回空列表。
 
     """
-    employee = db.query(User).filter(User.id == employee_id).first()
-    if employee is None:
-        return []
-    if employee.wechat_openid:
-        return [employee.wechat_openid]
-    merged = (
-        db.query(User)
-        .filter(
-            User.merged_to_user_id == employee_id,
-            User.status == "merged",
-            User.wechat_openid.isnot(None),
-        )
-        .all()
-    )
-    return [u.wechat_openid for u in merged if u.wechat_openid]
+    # 统一实现见 services/system/openid.py（原 4 套同构逻辑收敛，行为不变）
+    return resolve_user_openids(db, employee_id)
 
 
 def _send_customer_notify(db: Session, lead_id: int | str, referrer_user_id: str | None, summary: str) -> None:

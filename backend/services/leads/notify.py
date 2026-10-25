@@ -12,9 +12,10 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
-from models import User
 from models.lead import Lead
+from services.notification.dual_write import C2AuditDelivery, emit_eval_price_audit
 from services.system import subscribe_templates
+from services.system.openid import resolve_user_openids
 from services.system.wechat import WeChatAuthService
 
 logger = logging.getLogger(__name__)
@@ -43,21 +44,8 @@ def _resolve_creator_openids(db: Session, user_id: str) -> list[str]:
         可发送 openid 列表；无任何可用的 openid 时返回空列表。
 
     """
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        return []
-    if user.wechat_openid:
-        return [user.wechat_openid]
-    merged = (
-        db.query(User)
-        .filter(
-            User.merged_to_user_id == user_id,
-            User.status == "merged",
-            User.wechat_openid.isnot(None),
-        )
-        .all()
-    )
-    return [u.wechat_openid for u in merged if u.wechat_openid]
+    # 统一实现见 services/system/openid.py（原 4 套同构逻辑收敛，行为不变）
+    return resolve_user_openids(db, user_id)
 
 
 def notify_eval_price_changed(
@@ -110,10 +98,27 @@ def notify_eval_price_changed(
             _NOTIFY_FIELD_TIME: {"value": time_text},
         }
 
+        # 迭代二：逐 openid 发送并记录**真实**投递结果（审计 status 不得凭空写 success）
+        deliveries: list[C2AuditDelivery] = []
         for openid in openids:
             try:
-                WeChatAuthService.send_subscribe_message(openid, template_id, data, page=_NOTIFY_PAGE_PATH)
+                errcode, _errmsg = WeChatAuthService.send_subscribe_message(
+                    openid, template_id, data, page=_NOTIFY_PAGE_PATH
+                )
             except Exception:
                 logger.exception("授权价订阅消息发送失败：lead_id=%s, openid=%s", lead.id, openid)
+                deliveries.append(C2AuditDelivery(user_id=lead.creator_id, status="failed", error_code="WECHAT_ERROR"))
+                continue
+            deliveries.append(
+                C2AuditDelivery(
+                    user_id=lead.creator_id,
+                    status="success" if errcode == 0 else "skipped",
+                    error_code=None if errcode == 0 else str(errcode),
+                )
+            )
+
+        # 迭代二：C 端事件通知审计（#12 lead.eval_price_changed；K6 仅落 delivery_logs）
+        for delivery in deliveries:
+            emit_eval_price_audit(db, delivery=delivery)
     except Exception:
         logger.exception("授权价订阅消息通知失败：lead_id=%s", lead.id)

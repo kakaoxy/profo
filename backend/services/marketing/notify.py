@@ -42,6 +42,7 @@ from models import (
     SendStatus,
     User,
 )
+from services.notification.dual_write import C2AuditDelivery
 from services.system import subscribe_templates
 from services.system.subscribe_templates import get_subscribe_templates
 from services.system.wechat import WeChatAuthService, redact_wechat_credentials
@@ -606,6 +607,8 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
     sent_count = 0
     skipped_count = 0
     failed_count = 0
+    # 迭代二：逐收件人真实投递结果（写 delivery_logs 审计用，不硬造 status）
+    c2_deliveries: list[C2AuditDelivery] = []
 
     def _send_one(_idx: int, openid: str) -> tuple[int, str | None]:
         return WeChatAuthService.send_subscribe_message(openid, template_id, data, page=page)
@@ -621,6 +624,7 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
         if isinstance(result, Exception):
             exc = result
             failed_count += 1
+            c2_deliveries.append(C2AuditDelivery(user_id=user_id, status="failed", error_code="WECHAT_ERROR"))
             # 发送失败：留痕 failed，不扣额度（用户未消费）
             # 日志不带 openid 原值（个人标识，改前缀摘要定位）；上游异常已收口为
             # 固定文案，且含凭据的 traceback（包括 __cause__ 链）由日志出口过滤器
@@ -656,9 +660,11 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
                 status=SendStatus.SKIPPED.value,
                 error_msg=f"errcode={errcode} {_errmsg}".strip() if _errmsg else f"errcode={errcode}",
             )
+            c2_deliveries.append(C2AuditDelivery(user_id=user_id, status="skipped", error_code=str(errcode)))
             continue
         # 送达成功：原子扣减额度（quota>0 条件更新，防并发双扣）+ success 留痕
         sent_count += 1
+        c2_deliveries.append(C2AuditDelivery(user_id=user_id, status="success"))
         if _decrement_quota(db, sub_id, L4MarketingSubscription.new_listing_quota):
             _safe_log(
                 db,
@@ -675,6 +681,9 @@ def _notify_projects_published(db: Session, project_id: int) -> None:
                 pid,
                 user_id,
             )
+
+    # 迭代二：C 端事件通知审计（#10 marketing.published；K6 仅落 delivery_logs，不建站内信）
+    _emit_c2_audit(db, project_id=pid, deliveries=c2_deliveries)
 
     # 出口汇总日志：与入口日志成对，一行还原每次推送全貌（成功率/失同步规模）
     logger.info(
@@ -790,6 +799,9 @@ def _notify_project_price_changed(
     # send 返回 (errcode, errmsg)：errmsg 随返回值按收件人对位（非共享快照，并发不串档）
     jobs = list(enumerate(recipients))
 
+    # 迭代二：逐收件人真实投递结果（写 delivery_logs 审计用，不硬造 status）
+    c2_deliveries: list[C2AuditDelivery] = []
+
     # 汇总计数（出口日志用，见函数末尾）
     sent_count = 0
     skipped_count = 0
@@ -809,6 +821,7 @@ def _notify_project_price_changed(
         if isinstance(result, Exception):
             exc = result
             failed_count += 1
+            c2_deliveries.append(C2AuditDelivery(user_id=user_id, status="failed", error_code="WECHAT_ERROR"))
             # 发送失败：留痕 failed（sub_source 区分来源），不扣额度（用户未消费）
             # 日志不带 openid 原值；上游异常已收口为固定文案，traceback（含 __cause__ 链）
             # 由日志出口过滤器统一脱敏，因此可安全用 logger.exception。
@@ -846,9 +859,11 @@ def _notify_project_price_changed(
                 price_change_id=price_change_id,
                 sub_source=channel,
             )
+            c2_deliveries.append(C2AuditDelivery(user_id=user_id, status="skipped", error_code=str(errcode)))
             continue
         # 送达成功：按 channel 路由原子扣减对应账本额度（quota>0 条件更新，防并发双扣）+ success 留痕
         sent_count += 1
+        c2_deliveries.append(C2AuditDelivery(user_id=user_id, status="success"))
         if channel == "project":
             decremented = _decrement_project_quota(db, sub_id)
         else:
@@ -871,6 +886,9 @@ def _notify_project_price_changed(
                 user_id,
             )
 
+    # 迭代二：C 端事件通知审计（#11 marketing.price_changed；K6 仅落 delivery_logs）
+    _emit_c2_audit(db, project_id=pid, deliveries=c2_deliveries)
+
     # 出口汇总日志：与入口日志成对，一行还原每次推送全貌
     logger.info(
         "调价通知推送完成：project_id=%s, 成功=%d, skipped=%d, failed=%d",
@@ -879,3 +897,23 @@ def _notify_project_price_changed(
         skipped_count,
         failed_count,
     )
+
+
+def _emit_c2_audit(db: Session, *, project_id: int, deliveries: list["C2AuditDelivery"]) -> None:
+    """C 端营销事件投递审计（#10/#11，K6：仅落 delivery_logs，不建站内信）.
+
+    status 全部来自发送循环的**真实结果**（success/skipped/failed），
+    不在此写死——迭代二「业务没有的数据不得硬造」约束。
+
+    Args:
+        db: 数据库会话
+        project_id: 营销房源ID（仅日志定位）
+        deliveries: 逐订阅用户的真实投递结果
+
+    """
+    from services.notification.dual_write import emit_marketing_audit
+
+    try:
+        emit_marketing_audit(db, deliveries=deliveries)
+    except Exception:
+        logger.exception("C 端营销通知审计写入失败：project_id=%s", project_id)
