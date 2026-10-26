@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Lead, LeadStatus, FollowUpMethod, FollowUp } from "../types";
+import { Lead, LeadStatus, FollowUpConclusion, FollowUpMethod, FollowUp } from "../types";
 import { getLeadFollowUpsAction } from "../actions";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { DrawerHeader } from "./drawer-parts/drawer-header";
@@ -15,7 +15,12 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onAudit: (leadId: string, status: LeadStatus, evalPrice?: number, reason?: string) => void;
-  onAddFollowUp: (leadId: string, method: FollowUpMethod, content: string) => void;
+  onAddFollowUp: (
+    leadId: string,
+    method: FollowUpMethod,
+    content: string,
+    conclusion?: FollowUpConclusion | null,
+  ) => void;
   onImagesUpdate?: (leadId: string, images: string[]) => void;
 }
 

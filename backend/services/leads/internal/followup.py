@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
-from models.common import FollowUpMethod
+from models.common import FollowUpConclusion, FollowUpMethod
 from models.lead import Lead, LeadFollowUp
 from services.system.exceptions import ResourceNotFoundError
 
@@ -39,6 +39,7 @@ class LeadFollowUpService:
         method: FollowUpMethod,
         content: str,
         created_by_id: str,
+        conclusion: FollowUpConclusion | None = None,
     ) -> LeadFollowUp:
         """创建跟进记录.
 
@@ -47,6 +48,7 @@ class LeadFollowUpService:
             method: 跟进方式
             content: 跟进内容
             created_by_id: 跟进人ID
+            conclusion: 跟进结论（选填，合作模式/价格/两者均未达成一致）
 
         Returns:
             创建的跟进记录对象
@@ -66,6 +68,8 @@ class LeadFollowUpService:
             lead_id=lead_id,
             method=method,
             content=content,
+            # 选填：None 表示「未填写结论」，落库为 NULL（不得用默认值伪造结论）
+            conclusion=conclusion.value if conclusion else None,
             created_by_id=created_by_id,
         )
         self.db.add(db_follow)

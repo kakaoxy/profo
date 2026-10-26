@@ -11,7 +11,7 @@ from fastapi.concurrency import run_in_threadpool
 from dependencies.auth import CurrentCInternalUserDep, CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from models.common import LeadStatus
-from models.lead import Lead
+from models.lead import Lead, LeadFollowUp
 from schemas.lead import (
     HandledAssessmentQueueResponse,
     HandledItem,
@@ -78,6 +78,28 @@ def _get_status_display(status_code: str) -> tuple[str, str]:
     """获取状态显示名称和颜色."""
     display, color = LEAD_STATUS_DISPLAY_MAP.get(status_code, ("未知", "#999999"))
     return display, color
+
+
+def _followup_item(fu: LeadFollowUp) -> PublicFollowupItem:
+    """跟进记录 → C 端响应项（method/conclusion 枚举统一转字符串）.
+
+    单点收敛：员工侧列表、登记后回执、客户侧留痕、详情时间线四处共用一个映射，
+    避免新增字段（如跟进结论）时漏改某一路由导致响应口径漂移。
+
+    Args:
+        fu: 跟进记录 ORM 对象
+
+    Returns:
+        PublicFollowupItem
+
+    """
+    return PublicFollowupItem(
+        id=fu.id,
+        method=fu.method.value if hasattr(fu.method, "value") else str(fu.method),
+        content=fu.content,
+        conclusion=fu.conclusion or None,
+        followed_at=fu.followed_at,
+    )
 
 
 def _lead_source(lead: Lead) -> str:
@@ -169,6 +191,13 @@ def create_lead(
         total_price=body.expected_price,
         expected_price=body.expected_price,
         images=body.images,
+        # 楼盘字典四级地址（与 admin 新增线索同口径）：dict_status 由 Service 推导，
+        # 此处不传；楼栋/户室归属校验与 pending 提交都在 LeadService.create_lead 内完成
+        building_id=body.building_id,
+        room_id=body.room_id,
+        new_community=body.new_community,
+        new_building=body.new_building,
+        new_room=body.new_room,
     )
 
     # 分享归因：referrer 透传 Service，由其校验员工存在、active 且有后台身份；
@@ -584,15 +613,7 @@ def get_lead_followups(
 ) -> list[PublicFollowupItem]:
     """小程序员工侧线索跟进记录（授权详情页「跟进记录」区块）."""
     follow_ups = service.get_lead_followups(lead_id)
-    return [
-        PublicFollowupItem(
-            id=fu.id,
-            method=fu.method.value if hasattr(fu.method, "value") else str(fu.method),
-            content=fu.content,
-            followed_at=fu.followed_at,
-        )
-        for fu in follow_ups
-    ]
+    return [_followup_item(fu) for fu in follow_ups]
 
 
 @router.post(
@@ -617,13 +638,9 @@ async def create_lead_followup(
         lead_id=lead_id,
         method=body.method,
         content=body.content,
+        conclusion=body.conclusion,
     )
-    return PublicFollowupItem(
-        id=fu.id,
-        method=fu.method.value if hasattr(fu.method, "value") else str(fu.method),
-        content=fu.content,
-        followed_at=fu.followed_at,
-    )
+    return _followup_item(fu)
 
 
 # 注意：以下两个端点的路径前缀必须声明在 `GET /{lead_id}` 之前，
@@ -684,13 +701,9 @@ async def create_customer_followup(
         lead_id=lead_id,
         method=body.method,
         content=body.content,
+        conclusion=body.conclusion,
     )
-    return PublicFollowupItem(
-        id=fu.id,
-        method=fu.method.value if hasattr(fu.method, "value") else str(fu.method),
-        content=fu.content,
-        followed_at=fu.followed_at,
-    )
+    return _followup_item(fu)
 
 
 @router.get(
@@ -711,15 +724,7 @@ def get_lead_detail(
     follow_ups = result["follow_ups"]
     eval_histories = result["eval_histories"]
 
-    followup_items = [
-        PublicFollowupItem(
-            id=fu.id,
-            method=fu.method.value if hasattr(fu.method, "value") else str(fu.method),
-            content=fu.content,
-            followed_at=fu.followed_at,
-        )
-        for fu in follow_ups
-    ]
+    followup_items = [_followup_item(fu) for fu in follow_ups]
 
     # 出评估价产生的意见摘要并入跟进时间线，使 C 端详情/Web 有处查看（method 用合成值 evaluation）
     eval_items = [

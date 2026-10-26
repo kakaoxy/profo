@@ -5,7 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from models.common import FollowUpMethod, RenovationStage
+from models.common import FollowUpConclusion, FollowUpMethod, RenovationStage
 from models.marketing.l4_marketing import MarketingProjectStatus, PhotoCategory
 from schemas.reports.market import (
     DistributionResponse,
@@ -369,6 +369,14 @@ class PublicLeadCreate(BaseModel):
     images: list[str] = Field(default_factory=list, max_length=6, description="户型图URL列表")
     referrer: str | None = Field(None, max_length=36, description="分享归属员工ID")
 
+    # ===== 楼盘字典四级地址（与 admin 新增线索同口径：小区必填、楼栋/户室选填）=====
+    building_id: int | None = Field(None, description="字典楼栋ID（选填）")
+    room_id: int | None = Field(None, description="字典户室ID（选填）")
+    # 搜不到时提交新增进审核池（FR-10），与 admin 录入线索走同一条 submit_dict_chain
+    new_community: dict | None = Field(None, description="新增小区载荷 {name,district,business_circle}")
+    new_building: dict | None = Field(None, description="新增楼栋载荷 {name}")
+    new_room: dict | None = Field(None, description="新增户室载荷 {name}")
+
     @field_validator("images")
     @classmethod
     def validate_images(cls, v: list[str]) -> list[str]:
@@ -519,6 +527,11 @@ class PublicCustomerFollowupCreate(BaseModel):
 
     method: FollowUpMethod = Field(description="跟进方式：phone/wechat/face/visit")
     content: str = Field(min_length=1, max_length=500, description="跟进内容（1-500 字）")
+    conclusion: FollowUpConclusion | None = Field(
+        None,
+        description="跟进结论（选填）：mode_disagree=合作模式未达成一致 / "
+        "price_disagree=价格未达成一致 / both_disagree=两者均未达成一致",
+    )
 
     @field_validator("content")
     @classmethod
@@ -537,6 +550,10 @@ class PublicFollowupItem(BaseModel):
     id: str = Field(description="跟进记录ID")
     method: str = Field(description="跟进方式（含合成类型 evaluation=出评估价）")
     content: str = Field(description="跟进内容")
+    conclusion: str | None = Field(
+        None,
+        description="跟进结论：mode_disagree/price_disagree/both_disagree（未填为空）",
+    )
     followed_at: datetime = Field(description="跟进时间")
 
     model_config = ConfigDict(from_attributes=True)
@@ -547,6 +564,11 @@ class PublicFollowupCreate(BaseModel):
 
     method: FollowUpMethod = Field(description="跟进方式：phone/wechat/face/visit")
     content: str = Field(min_length=1, max_length=500, description="跟进内容（1-500 字）")
+    conclusion: FollowUpConclusion | None = Field(
+        None,
+        description="跟进结论（选填）：mode_disagree=合作模式未达成一致 / "
+        "price_disagree=价格未达成一致 / both_disagree=两者均未达成一致",
+    )
 
     @field_validator("content")
     @classmethod

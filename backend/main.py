@@ -49,6 +49,7 @@ from routers.property import building_dict_router, dictionary_link_router
 from routers.public import (
     public_auth_router,
     public_bookings_router,
+    public_building_dict_router,
     public_communities_router,
     public_customers_router,
     public_dicts_router,
@@ -456,6 +457,7 @@ app.include_router(public_dicts_router, prefix=API_V1_PREFIX)
 app.include_router(public_files_router, prefix=API_V1_PREFIX)
 app.include_router(public_key_shares_router, prefix=API_V1_PREFIX)
 app.include_router(public_communities_router, prefix=API_V1_PREFIX)
+app.include_router(public_building_dict_router, prefix=API_V1_PREFIX)
 app.include_router(public_recruit_router, prefix=API_V1_PREFIX)
 app.include_router(public_customers_router, prefix=API_V1_PREFIX)
 app.include_router(admin_recruit_router, prefix=API_V1_PREFIX)

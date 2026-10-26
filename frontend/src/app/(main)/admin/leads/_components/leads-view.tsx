@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { Lead, LeadStatus, FollowUpMethod } from "../types";
+import { Lead, LeadStatus, FollowUpConclusion, FollowUpMethod } from "../types";
 import {
   updateLeadAction,
   addFollowUpAction,
@@ -96,8 +96,13 @@ export function LeadsView({
     }
   };
 
-  const handleAddFollowUp = async (id: string, method: FollowUpMethod, content: string) => {
-    const result = await addFollowUpAction(id, method, content);
+  const handleAddFollowUp = async (
+    id: string,
+    method: FollowUpMethod,
+    content: string,
+    conclusion?: FollowUpConclusion | null,
+  ) => {
+    const result = await addFollowUpAction(id, method, content, conclusion);
     if (result.success) {
       refreshLeads();
       handleSuccess(SUCCESS_MESSAGES.FOLLOW_UP_ADDED);

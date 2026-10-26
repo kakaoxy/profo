@@ -108,3 +108,15 @@ export const FOLLOW_UP_METHODS = {
   face: "面谈记录",
   visit: "带看实勘",
 } as const;
+
+/**
+ * 跟进结论选项（选填）：与业主未谈拢的分歧点.
+ *
+ * 文案口径：「模式」= 合作模式（代理美化 / 收购美化），与价格并列；
+ * 三项为互斥单选，未选表示「本次未记录结论/未出现分歧」。
+ */
+export const FOLLOW_UP_CONCLUSIONS = {
+  mode_disagree: "合作模式未谈拢",
+  price_disagree: "价格未谈拢",
+  both_disagree: "价格与合作模式均未谈拢",
+} as const;

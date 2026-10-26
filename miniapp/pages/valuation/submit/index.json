@@ -1,6 +1,6 @@
 {
   "usingComponents": {
-    "community-search": "/components/community-search/index",
+    "dict-address-picker": "/components/dict-address-picker/index",
     "phone-bind-modal": "/components/phone-bind-modal/index"
   },
   "navigationBarTitleText": "在线预审"

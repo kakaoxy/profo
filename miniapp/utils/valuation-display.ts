@@ -54,6 +54,27 @@ export function followupMethodLabel(method: string): string {
 }
 
 /**
+ * 跟进结论选项（与 admin `FOLLOW_UP_CONCLUSIONS` 文案逐字一致）.
+ *
+ * 口径：「模式」指合作模式（代理美化 / 收购美化），与价格是两条独立分歧轴；
+ * 三项互斥单选，未选即「本次未记录结论」。数组顺序即渲染顺序（模式 → 价格 → 两者）。
+ */
+export const FOLLOWUP_CONCLUSIONS: { value: string; label: string }[] = [
+  { value: "mode_disagree", label: "合作模式未谈拢" },
+  { value: "price_disagree", label: "价格未谈拢" },
+  { value: "both_disagree", label: "价格与合作模式均未谈拢" },
+];
+
+/** 跟进结论中文映射（未知/空返回空串，模板据此不渲染徽标）. */
+export function followupConclusionLabel(conclusion: string | null | undefined): string {
+  if (!conclusion) {
+    return "";
+  }
+  const hit = FOLLOWUP_CONCLUSIONS.find((c) => c.value === conclusion);
+  return hit ? hit.label : "";
+}
+
+/**
  * 跟进记录前端分页切片（基于详情接口内嵌的已倒序 follow_ups）.
  * page 从 1 开始；页码越界或 pageSize < 1 返回空数组.
  */

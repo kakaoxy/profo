@@ -177,6 +177,19 @@ class FollowUpMethod(str, enum.Enum):
     VISIT = "visit"  # 实地带看
 
 
+class FollowUpConclusion(str, enum.Enum):
+    """跟进结论枚举（与业主未谈拢的分歧点，选填）.
+
+    业务口径（2026-10-26 产品确认）：「模式」指**合作模式**（代理美化 / 收购美化），
+    与价格是两条独立的分歧轴——业主可能只在其中一条卡住，也可能两条都卡住。
+    历史记录无该事实时为空（禁止用默认值伪造结论）。
+    """
+
+    MODE_DISAGREE = "mode_disagree"  # 合作模式未达成一致
+    PRICE_DISAGREE = "price_disagree"  # 价格未达成一致
+    BOTH_DISAGREE = "both_disagree"  # 价格与合作模式均未达成一致
+
+
 class ImportTaskStatus(str, enum.Enum):
     """导入任务状态枚举."""
 

@@ -15,6 +15,13 @@ vi.mock("../../utils/url", () => ({
 }));
 vi.mock("../../utils/valuation-display", () => ({
   followupMethodLabel: (m: string) => m,
+  // 跟进结论：页面把 code 映射为中文徽标文案，测试沿用真实映射语义（空值→空串）
+  FOLLOWUP_CONCLUSIONS: [
+    { value: "mode_disagree", label: "合作模式未谈拢" },
+    { value: "price_disagree", label: "价格未谈拢" },
+    { value: "both_disagree", label: "价格与合作模式均未谈拢" },
+  ],
+  followupConclusionLabel: (c: string | null | undefined) => c ?? "",
   formatDate: () => "2026-01-01",
   sliceFollowups: (all: unknown[], page: number, pageSize: number) =>
     all.slice((page - 1) * pageSize, page * pageSize),
@@ -137,6 +144,53 @@ describe("can_follow_up 能力位", () => {
     ctx.submitFollowup();
     expect(ctx.data.formError).toBe("请填写跟进内容");
     expect(pendingReqs().some((r) => (r.opts as AnyRecord).method === "POST")).toBe(false);
+  });
+
+  it("跟进结论：选填、可取消，随 POST 透传；未选时不带 conclusion 字段", async () => {
+    const ctx = createPageHarness({});
+    ctx.onLoad({ id: "d1" });
+    detailGet().resolve(detailFixture());
+    await flush();
+
+    ctx.openFollowupPanel();
+    expect(ctx.data.followupConclusion).toBe("");
+    ctx.onFollowupContentInput({ detail: { value: "业主嫌价格低" } });
+    ctx.onFollowupConclusionTap({ currentTarget: { dataset: { value: "price_disagree" } } });
+    expect(ctx.data.followupConclusion).toBe("price_disagree");
+    // 再次点击同一项 = 取消选择
+    ctx.onFollowupConclusionTap({ currentTarget: { dataset: { value: "price_disagree" } } });
+    expect(ctx.data.followupConclusion).toBe("");
+    ctx.onFollowupConclusionTap({ currentTarget: { dataset: { value: "price_disagree" } } });
+
+    ctx.submitFollowup();
+    const req = followupPost();
+    expect((req.opts.data as AnyRecord).conclusion).toBe("price_disagree");
+    req.resolve({ id: "f2", method: "phone", content: "业主嫌价格低", followed_at: "2026-01-06T00:00:00Z" });
+    await flush();
+    // 提交成功后结论一并复位，避免下一条跟进误带上次结论
+    expect(ctx.data.followupConclusion).toBe("");
+  }, 10_000);
+
+  it("跟进记录渲染结论徽标：有结论→中文文案，存量无结论→空串（不渲染）", async () => {
+    const ctx = createPageHarness({});
+    ctx.onLoad({ id: "d1" });
+    detailGet().resolve(
+      detailFixture({
+        follow_ups: [
+          {
+            id: "f3",
+            method: "phone",
+            content: "价格和模式都没谈拢",
+            conclusion: "both_disagree",
+            followed_at: "2026-01-06T00:00:00Z",
+          },
+          { id: "f1", method: "phone", content: "普通跟进", followed_at: "2026-01-05T00:00:00Z" },
+        ],
+      }),
+    );
+    await flush();
+    expect(ctx.data.allFollowups[0].conclusionText).toBe("both_disagree");
+    expect(ctx.data.allFollowups[1].conclusionText).toBe("");
   });
 
   it("提交 409：关闭面板 toast 承接并重拉详情", async () => {

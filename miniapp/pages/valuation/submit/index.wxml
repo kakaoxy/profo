@@ -30,16 +30,10 @@
 
   <!-- 表单 -->
   <view class="form-page">
-    <!-- 小区名称（复用 community-search 组件，输入即搜索） -->
+    <!-- 小区地址（楼盘字典四级：小区必选，楼栋/户室选填；与 admin 录入线索同口径） -->
     <view class="form-group">
       <text class="form-label">小区名称</text>
-      <community-search
-        placeholder="请输入小区名称搜索"
-        bind:change="onCommunityChange"
-        bind:select="onCommunitySelect"
-        bind:clear="onCommunityClear"
-        bind:usequery="onCommunityUseQuery"
-      />
+      <dict-address-picker bind:change="onDictChange" />
     </view>
 
     <!-- 房源户型（室 / 厅 / 卫） -->

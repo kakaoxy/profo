@@ -9,11 +9,22 @@ export enum LeadStatus {
 
 export type FollowUpMethod = "phone" | "wechat" | "face" | "visit";
 
+/**
+ * 跟进结论（选填）：与业主未谈拢的分歧点.
+ *
+ * 「模式」指合作模式（代理美化 / 收购美化），与价格是两条独立分歧轴，
+ * 因此三项互斥枚举而非布尔组合 —— 一条跟进只记一个结论，避免出现
+ * 「同时点选了价格和模式、但漏点两者组合」这类自相矛盾的数据。
+ */
+export type FollowUpConclusion = "mode_disagree" | "price_disagree" | "both_disagree";
+
 export interface FollowUp {
   id: string;
   leadId: string;
   method: FollowUpMethod;
   content: string;
+  /** 跟进结论（存量记录无该事实时为空） */
+  conclusion?: FollowUpConclusion | null;
   followUpTime: string;
   followedAt?: string; // raw ISO，用于轨迹按时间排序
   createdBy: string;

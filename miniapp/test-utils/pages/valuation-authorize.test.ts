@@ -11,6 +11,12 @@ vi.mock("../../utils/url", () => ({
 }));
 vi.mock("../../utils/valuation-display", () => ({
   formatDate: () => "2026-01-01",
+  FOLLOWUP_CONCLUSIONS: [
+    { value: "mode_disagree", label: "合作模式未谈拢" },
+    { value: "price_disagree", label: "价格未谈拢" },
+    { value: "both_disagree", label: "价格与合作模式均未谈拢" },
+  ],
+  followupConclusionLabel: (c: string | null | undefined) => c ?? "",
 }));
 
 beforeAll(async () => {
@@ -171,6 +177,62 @@ describe("登记跟进（followup）提交链路", () => {
     expect(wxStubs.showToast).toHaveBeenCalledWith({ title: "已登记跟进", icon: "success" });
     await new Promise((r) => setTimeout(r, 650));
     expect(wxStubs.navigateBack).toHaveBeenCalled();
+  }, 10_000);
+
+  it("跟进结论：未选时不带 conclusion 字段；选中后透传，提交后复位", async () => {
+    const ctx = createPageHarness({});
+    enterViewMode(ctx, handledItem("pending_visit", 350));
+
+    ctx.openFollowupPanel();
+    expect(ctx.data.followupConclusion).toBe("");
+    ctx.onFollowupContentInput({ detail: { value: "面谈后仍未谈拢模式" } });
+    ctx.submitFollowup();
+    const first = findReq("/public/leads/my/acquired/h1/follow-ups", "POST");
+    // 未选结论 → 请求体不含 conclusion（后端按未填写处理）
+    expect(first.opts.data).toEqual({ method: "phone", content: "面谈后仍未谈拢模式" });
+    first.resolve({ id: "f10", method: "phone", content: "面谈后仍未谈拢模式", followed_at: "2026-01-06T00:00:00Z" });
+    await flush();
+    await new Promise((r) => setTimeout(r, 650));
+
+    // 第二轮：选中结论后透传
+    resetTestStubs();
+    const ctx2 = createPageHarness({});
+    enterViewMode(ctx2, handledItem("pending_visit", 350));
+    ctx2.openFollowupPanel();
+    ctx2.onFollowupMethodTap({ currentTarget: { dataset: { method: "face" } } });
+    ctx2.onFollowupConclusionTap({ currentTarget: { dataset: { value: "mode_disagree" } } });
+    expect(ctx2.data.followupConclusion).toBe("mode_disagree");
+    ctx2.onFollowupContentInput({ detail: { value: "业主不接受代理模式" } });
+    ctx2.submitFollowup();
+    const second = findReq("/public/leads/my/acquired/h1/follow-ups", "POST");
+    expect(second.opts.data).toEqual({
+      method: "face",
+      content: "业主不接受代理模式",
+      conclusion: "mode_disagree",
+    });
+  }, 15_000);
+
+  it("跟进记录渲染结论徽标：有结论→中文文案，存量无结论→空串（不渲染）", async () => {
+    const ctx = createPageHarness({});
+    enterViewMode(ctx, handledItem("pending_visit", 350));
+    // GET 未显式传 method，按队列顺序取（onLoad 并发发出跟进 + 评估历史两个 GET）
+    const followupsGet = pendingReqs().find((r) => r.opts.url === "/public/leads/my/acquired/h1/follow-ups");
+    if (!followupsGet) {
+      throw new Error("follow-ups GET not found");
+    }
+    followupsGet.resolve([
+      {
+        id: "f1",
+        method: "phone",
+        content: "价格没谈拢",
+        conclusion: "price_disagree",
+        followed_at: "2026-01-06T00:00:00Z",
+      },
+      { id: "f0", method: "wechat", content: "存量记录", followed_at: "2026-01-05T00:00:00Z" },
+    ]);
+    await flush();
+    expect(ctx.data.followups[0].conclusionText).toBe("price_disagree");
+    expect(ctx.data.followups[1].conclusionText).toBe("");
   }, 10_000);
 
   it("空内容阻止提交；409 弹「线索已关闭，无法登记跟进」冲突弹窗", async () => {

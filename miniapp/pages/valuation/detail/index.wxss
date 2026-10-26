@@ -283,6 +283,19 @@ page {
   letter-spacing: -0.1px;
   color: #777b86;
 }
+/* 跟进结论徽标（Apricot 暖色 = 需关注；未记录结论的记录不渲染） */
+.followup__conclusion {
+  display: inline-block;
+  margin-top: 12rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 9999rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 21rpx;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
 .followup__content {
   margin-top: 16rpx;
   font-size: 28rpx;
@@ -431,6 +444,13 @@ page {
   color: #4c4c4c;
   margin-bottom: 16rpx;
 }
+.fld__opt {
+  margin-left: 8rpx;
+  font-size: 20rpx;
+  font-weight: 400;
+  color: #a3a6af;
+}
+
 .chips {
   display: flex;
   flex-wrap: wrap;

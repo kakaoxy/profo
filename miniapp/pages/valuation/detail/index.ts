@@ -12,6 +12,8 @@ import { request } from "../../../utils/request";
 import { getAccessToken, getCAccessToken } from "../../../utils/token";
 import { resolveAssetUrl } from "../../../utils/url";
 import {
+  FOLLOWUP_CONCLUSIONS,
+  followupConclusionLabel,
   followupMethodLabel,
   formatDate,
   sliceFollowups,
@@ -38,6 +40,8 @@ interface DisplayFollowup {
   method: string;
   content: string;
   at: string;
+  /** 跟进结论中文（空串=未记录，模板不渲染徽标）. */
+  conclusionText: string;
 }
 
 /** phone-bind-modal 组件实例上需调用的方法（selectComponent 返回类型默认不含自定义方法）. */
@@ -121,6 +125,9 @@ interface PageData {
   /** 跟进内容（1-500 字）. */
   followupContent: string;
   followupLen: number;
+  /** 跟进结论（选填，空串=未选；取值见 FOLLOWUP_CONCLUSIONS）. */
+  followupConclusion: string;
+  followupConclusionOptions: { value: string; label: string }[];
   /** 提交中. */
   submitting: boolean;
   /** 面板内错误提示. */
@@ -154,6 +161,7 @@ interface PageCustom {
   openFollowupPanel(): void;
   closePanel(): void;
   onFollowupMethodTap(e: WechatMiniprogram.BaseEvent): void;
+  onFollowupConclusionTap(e: WechatMiniprogram.BaseEvent): void;
   onFollowupContentInput(e: WechatMiniprogram.Input): void;
   submitFollowup(): Promise<void>;
 }
@@ -204,6 +212,8 @@ Page<PageData, PageCustom>({
     followupMethod: "phone",
     followupContent: "",
     followupLen: 0,
+    followupConclusion: "",
+    followupConclusionOptions: FOLLOWUP_CONCLUSIONS,
     submitting: false,
     formError: "",
   },
@@ -246,6 +256,7 @@ Page<PageData, PageCustom>({
       method: followupMethodLabel(f.method),
       content: f.content,
       at: formatDate(f.followed_at, true),
+      conclusionText: followupConclusionLabel(f.conclusion),
     }));
     // Hero 元信息：户型 · 面积 · 楼层/朝向 · 业主预期价（空段跳过）
     const floorDisplay = [detail.floor_info, detail.orientation].filter(Boolean).join(" · ");
@@ -510,6 +521,7 @@ Page<PageData, PageCustom>({
       followupMethod: "phone",
       followupContent: "",
       followupLen: 0,
+      followupConclusion: "",
     });
   },
 
@@ -527,6 +539,16 @@ Page<PageData, PageCustom>({
       return;
     }
     this.setData({ followupMethod: method });
+  },
+
+  /** 切换跟进结论（选填）：再次点击同一项即取消选择. */
+  onFollowupConclusionTap(e: WechatMiniprogram.BaseEvent) {
+    const conclusion = e.currentTarget.dataset.value as string;
+    if (!conclusion) {
+      return;
+    }
+    const next = this.data.followupConclusion === conclusion ? "" : conclusion;
+    this.setData({ followupConclusion: next, formError: "" });
   },
 
   onFollowupContentInput(e: WechatMiniprogram.Input) {
@@ -556,9 +578,15 @@ Page<PageData, PageCustom>({
         data: {
           method: this.data.followupMethod,
           content,
+          ...(this.data.followupConclusion ? { conclusion: this.data.followupConclusion } : {}),
         },
       });
-      this.setData({ panelMode: "", followupContent: "", followupLen: 0 });
+      this.setData({
+        panelMode: "",
+        followupContent: "",
+        followupLen: 0,
+        followupConclusion: "",
+      });
       wx.showToast({ title: "已登记跟进", icon: "success" });
       // 重拉详情：跟进记录即时出现，canFollowup/时效基准同步刷新
       await this.loadDetail();

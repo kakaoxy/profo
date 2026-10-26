@@ -147,6 +147,7 @@ from migrations.add_counterparty_type import add_counterparty_type_to_finance_re
 from migrations.add_lead_auditor_index import add_lead_auditor_index
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
 from migrations.add_lead_eval_verdict_fields import add_lead_eval_verdict_fields
+from migrations.add_lead_followup_conclusion import add_lead_followup_conclusion
 from migrations.add_lead_referrer_index import add_lead_referrer_index
 from migrations.add_lead_status_lost_to_competitor import add_lead_status_lost_to_competitor
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
@@ -1258,6 +1259,16 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=True,
         description="竞品边补 is_deleted + 唯一约束重建为部分唯一索引（合并去重改软删，可回迁）",
     ),
+    Migration(
+        version=102,
+        name="add_lead_followup_conclusion",
+        fn=add_lead_followup_conclusion,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="线索跟进记录补 conclusion 列（跟进结论：合作模式/价格/两者均未达成一致，选填）",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1270,7 +1281,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 101）。"""
+"""登记总数（当前 102）。"""
 
-NEXT_VERSION = 102
+NEXT_VERSION = 103
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

@@ -32,6 +32,7 @@ def add_follow_up(
         method=follow_up_in.method,
         content=follow_up_in.content,
         created_by_id=current_user.id,
+        conclusion=follow_up_in.conclusion,
     )
 
 

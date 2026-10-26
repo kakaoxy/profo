@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from constants.role_codes import INTERNAL_ROLE_CODES
 from models import User
-from models.common import FollowUpMethod, LeadStatus
+from models.common import FollowUpConclusion, FollowUpMethod, LeadStatus
 from models.lead import Lead, LeadEvalHistory, LeadFollowUp
 from schemas.growth_center import GrowthModule
 from schemas.lead import LeadAssessmentAuthorizeRequest, LeadCreate, LeadUpdate
@@ -902,7 +902,14 @@ class LeadService:
             raise ResourceNotFoundError(msg)
         return self.followup_service.get_follow_ups(lead_id)
 
-    def create_followup(self, user_id: str, lead_id: str, method: FollowUpMethod, content: str) -> LeadFollowUp:
+    def create_followup(
+        self,
+        user_id: str,
+        lead_id: str,
+        method: FollowUpMethod,
+        content: str,
+        conclusion: FollowUpConclusion | None = None,
+    ) -> LeadFollowUp:
         """员工侧登记跟进（小程序已处理详情页「＋ 登记」）.
 
         权限与同族端点（authorize-assessment / evaluations / follow-ups GET）一致：
@@ -915,6 +922,7 @@ class LeadService:
             lead_id: 线索ID
             method: 跟进方式（phone/wechat/face/visit）
             content: 跟进内容（1-500 字，路由层 Pydantic 已校验）
+            conclusion: 跟进结论（选填，与业主未谈拢的分歧点）
 
         Returns:
             创建的跟进记录对象
@@ -937,7 +945,11 @@ class LeadService:
             msg = "该线索已关闭，无法登记跟进"
             raise ConflictError(msg)
         return self.followup_service.create_follow_up(
-            lead_id=lead_id, method=method, content=content, created_by_id=user_id
+            lead_id=lead_id,
+            method=method,
+            content=content,
+            created_by_id=user_id,
+            conclusion=conclusion,
         )
 
     def get_followup_stats(self, lead_ids: list[str]) -> dict[str, dict[str, Any]]:
@@ -1071,6 +1083,7 @@ class LeadService:
         lead_id: str,
         method: FollowUpMethod,
         content: str,
+        conclusion: FollowUpConclusion | None = None,
     ) -> LeadFollowUp:
         """客户侧（或员工代为）登记跟进，供拨号留痕使用.
 
@@ -1086,6 +1099,7 @@ class LeadService:
             lead_id: 线索ID
             method: 跟进方式
             content: 跟进内容（1-500 字，路由层 Pydantic 已校验并 trim）
+            conclusion: 跟进结论（选填）
 
         Returns:
             创建的跟进记录对象
@@ -1107,6 +1121,7 @@ class LeadService:
             method=method,
             content=content,
             created_by_id=user.id,
+            conclusion=conclusion,
         )
 
     def can_follow_up(self, user: User) -> bool:

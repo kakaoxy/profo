@@ -17,6 +17,7 @@ type AnyRecord = Record<string, any>;
 export const wxStubs = {
   navigateTo: vi.fn(),
   navigateBack: vi.fn(),
+  redirectTo: vi.fn(),
   switchTab: vi.fn(),
   stopPullDownRefresh: vi.fn(),
   showToast: vi.fn(),
@@ -64,15 +65,32 @@ export function createPageHarness(seed: AnyRecord = {}): AnyRecord {
   return {
     ...cfg,
     data: state,
-    /** 模拟微信 setData：顶层合并 + `key[i]` 索引路径局部更新. */
+    /**
+     * 模拟微信 setData：顶层合并 + `key[i]` 索引路径 + `a.b.c` 嵌套路径局部更新.
+     *
+     * 嵌套路径与小程序真实语义一致：中间对象不存在时按需创建，
+     * 只覆盖叶子值而不整体替换父对象（页面普遍用 `form.xxx` 做字段级更新）。
+     */
     setData(patch: AnyRecord) {
       for (const [key, value] of Object.entries(patch)) {
         const m = /^(\w+)\[(\d+)\]$/.exec(key);
         if (m) {
           (state[m[1]] as unknown[])[Number(m[2])] = value;
-        } else {
-          state[key] = value;
+          continue;
         }
+        if (!key.includes(".")) {
+          state[key] = value;
+          continue;
+        }
+        const path = key.split(".");
+        let cursor: AnyRecord = state;
+        for (const seg of path.slice(0, -1)) {
+          if (cursor[seg] == null || typeof cursor[seg] !== "object") {
+            cursor[seg] = {};
+          }
+          cursor = cursor[seg] as AnyRecord;
+        }
+        cursor[path[path.length - 1]] = value;
       }
     },
   };

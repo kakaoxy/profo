@@ -3,11 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { Plus, Gavel, Eye, History } from "lucide-react";
 
-import { Lead, FollowUp, LeadStatus, FollowUpMethod, EvalHistory } from "../../types";
+import { Lead, FollowUp, LeadStatus, FollowUpConclusion, FollowUpMethod, EvalHistory } from "../../types";
 import { safeParseDate } from "@/lib/validators";
 import { safeFormatDate } from "@/lib/formatters";
 import { cn } from "@/lib/utils";
 import { getEvalHistoriesAction } from "../../actions";
+import { FOLLOW_UP_CONCLUSIONS } from "../../constants/ui-labels";
 
 interface LeadTrajectoryTimelineProps {
   lead: Lead;
@@ -22,6 +23,8 @@ type TrailEvent = {
   sortTime: number;
   icon: React.ElementType;
   user?: string;
+  /** 跟进结论（仅跟进事件有） */
+  conclusion?: FollowUpConclusion | null;
   /** 终态节点配色：competitor = 他司已成交（bg-fog/text-rust 系） */
   tone?: "competitor";
 };
@@ -113,6 +116,7 @@ export function LeadTrajectoryTimeline({ lead, followUps }: LeadTrajectoryTimeli
       sortTime: d?.getTime() ?? 0,
       icon: isVisit ? Eye : History,
       user: f.createdBy,
+      conclusion: f.conclusion ?? null,
     });
   });
 
@@ -137,6 +141,7 @@ export function LeadTrajectoryTimeline({ lead, followUps }: LeadTrajectoryTimeli
             icon={e.icon}
             isNewest={i === 0}
             user={e.user}
+            conclusion={e.conclusion}
             tone={e.tone}
           />
         ))}
@@ -152,10 +157,20 @@ interface TimelineItemProps {
   icon: React.ElementType;
   isNewest?: boolean;
   user?: string;
+  conclusion?: FollowUpConclusion | null;
   tone?: "competitor";
 }
 
-function TimelineItem({ title, desc, time, icon: Icon, isNewest, user, tone }: TimelineItemProps) {
+function TimelineItem({
+  title,
+  desc,
+  time,
+  icon: Icon,
+  isNewest,
+  user,
+  conclusion,
+  tone,
+}: TimelineItemProps) {
   return (
     <div className="relative group">
       <div
@@ -188,6 +203,14 @@ function TimelineItem({ title, desc, time, icon: Icon, isNewest, user, tone }: T
           <span className="text-[9px] font-bold text-muted-foreground shrink-0">{time}</span>
         </div>
         <div className="mt-1.5 p-3 bg-fog border border-dove rounded-xl text-xs text-muted-foreground leading-relaxed italic group-hover:border-ink/40 transition-colors">
+          {/* 跟进结论徽标（Apricot 暖色；未填写结论的存量记录不渲染） */}
+          {conclusion ? (
+            <div className="mb-1.5 not-italic">
+              <span className="inline-flex items-center rounded-full bg-apricot-wash px-2 py-0.5 text-[10px] font-medium text-rust">
+                {FOLLOW_UP_CONCLUSIONS[conclusion]}
+              </span>
+            </div>
+          ) : null}
           {desc}
           {user && (
             <div className="mt-1 flex justify-end">

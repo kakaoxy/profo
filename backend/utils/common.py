@@ -256,6 +256,8 @@ class RateLimits:
     # 小区搜索：搜索框防抖后每次击键触发（debounce ~300ms），60/min 偏紧
     PUBLIC_COMMUNITY_SEARCH = "300/minute"
     PUBLIC_COMMUNITY_ANALYSIS = "60/minute"
+    # 楼盘字典 C 端只读（小程序估价表单：楼栋列表/楼层/户室，输入即查 + 级联各一次）
+    PUBLIC_BUILDING_DICT = "300/minute"
     PUBLIC_REGISTER = "10/hour"
     PUBLIC_LOGOUT = "60/minute"
 

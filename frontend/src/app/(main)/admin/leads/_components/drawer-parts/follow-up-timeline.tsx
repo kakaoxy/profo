@@ -1,17 +1,23 @@
 "use client";
 
 import React, { useState } from "react";
-import { Lead, FollowUpMethod, FollowUp, LeadStatus } from "../../types";
+import { Lead, FollowUpMethod, FollowUp, FollowUpConclusion, LeadStatus } from "../../types";
 import { Button } from "@/components/ui/button";
 import { History, Eye, Plus, Gavel, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { safeParseDate } from "@/lib/validators";
 import { getLeadFollowUpsAction } from "../../actions";
+import { FOLLOW_UP_CONCLUSIONS } from "../../constants/ui-labels";
 
 interface FollowUpTimelineProps {
   lead: Lead;
   followUps: FollowUp[];
-  onAddFollowUp: (leadId: string, method: FollowUpMethod, content: string) => void;
+  onAddFollowUp: (
+    leadId: string,
+    method: FollowUpMethod,
+    content: string,
+    conclusion?: FollowUpConclusion | null,
+  ) => void;
   onRefreshFollowUps: (updated: FollowUp[]) => void;
 }
 
@@ -23,6 +29,8 @@ type TrailEvent = {
   sortTime: number;
   icon: React.ElementType;
   user?: string;
+  /** 跟进结论（仅跟进事件有；展示为琥珀色徽标） */
+  conclusion?: FollowUpConclusion | null;
 };
 
 export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
@@ -34,13 +42,16 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
   const [open, setOpen] = useState(true);
   const [followUpMethod, setFollowUpMethod] = useState<FollowUpMethod>("phone");
   const [followUpContent, setFollowUpContent] = useState("");
+  /** 跟进结论（选填）：空串=未选，提交时转 null */
+  const [followUpConclusion, setFollowUpConclusion] = useState<FollowUpConclusion | "">("");
 
   const handleAddFollowUpSubmit = async () => {
     if (!lead || !followUpContent) return;
-    await onAddFollowUp(lead.id, followUpMethod, followUpContent);
+    await onAddFollowUp(lead.id, followUpMethod, followUpContent, followUpConclusion || null);
     const result = await getLeadFollowUpsAction(lead.id);
     if (result.success) onRefreshFollowUps(result.data);
     setFollowUpContent("");
+    setFollowUpConclusion("");
   };
 
   // 合并「收房评估 + 跟进记录」按时间倒序，"线索初始录入"恒为最末（创建最早）
@@ -83,6 +94,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
       sortTime: d?.getTime() ?? 0,
       icon: f.method === "visit" ? Eye : History,
       user: f.createdBy,
+      conclusion: f.conclusion ?? null,
     });
   });
   trailEvents.sort((a, b) => b.sortTime - a.sortTime);
@@ -147,6 +159,32 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
                 记录
               </Button>
             </div>
+            {/* 跟进结论（选填）：与业主未谈拢的分歧点；不选即「本次未记录」 */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-graphite shrink-0">
+                跟进结论
+              </span>
+              <span className="text-[10px] text-dove shrink-0">选填</span>
+              {(Object.keys(FOLLOW_UP_CONCLUSIONS) as FollowUpConclusion[]).map((key) => {
+                const active = followUpConclusion === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => setFollowUpConclusion(active ? "" : key)}
+                    className={cn(
+                      "h-7 rounded-full border px-2.5 text-[11px] font-medium transition-colors",
+                      active
+                        ? "border-ink bg-ink text-white"
+                        : "border-dove/60 bg-fog text-graphite hover:border-ash hover:text-ink",
+                    )}
+                  >
+                    {FOLLOW_UP_CONCLUSIONS[key]}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* 时间线 */}
@@ -160,6 +198,7 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
                 icon={e.icon}
                 isNewest={i === 0}
                 user={e.user}
+                conclusion={e.conclusion}
               />
             ))}
             <TimelineItem
@@ -182,6 +221,7 @@ interface TimelineItemProps {
   icon: React.ElementType;
   isNewest?: boolean;
   user?: string;
+  conclusion?: FollowUpConclusion | null;
 }
 
 const TimelineItem: React.FC<TimelineItemProps> = ({
@@ -191,6 +231,7 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
   icon: Icon,
   isNewest,
   user,
+  conclusion,
 }) => (
   <div className="relative group">
     <div
@@ -214,6 +255,14 @@ const TimelineItem: React.FC<TimelineItemProps> = ({
         <span className="text-xs text-ash shrink-0">{time}</span>
       </div>
       <div className="mt-1.5 p-3 bg-white rounded-inputs shadow-steep text-xs text-graphite leading-relaxed italic group-hover:border-ink/40 transition-colors">
+        {/* 跟进结论徽标：Apricot 暖色（图纸「需关注」语义），存量记录不渲染 */}
+        {conclusion && (
+          <div className="mb-1.5 not-italic">
+            <span className="inline-flex items-center gap-1 rounded-full bg-apricot-wash px-2 py-0.5 text-[10px] font-medium text-rust">
+              {FOLLOW_UP_CONCLUSIONS[conclusion]}
+            </span>
+          </div>
+        )}
         {desc}
         {user && (
           <div className="mt-1 flex justify-end">

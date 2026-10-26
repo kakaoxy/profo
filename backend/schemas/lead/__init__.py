@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from models.common import FollowUpMethod, LeadStatus
+from models.common import FollowUpConclusion, FollowUpMethod, LeadStatus
 from settings import settings
 
 
@@ -18,6 +18,11 @@ class FollowUpBase(BaseModel):
 
     method: FollowUpMethod
     content: str
+    conclusion: FollowUpConclusion | None = Field(
+        None,
+        description="跟进结论（选填）：mode_disagree=合作模式未达成一致 / "
+        "price_disagree=价格未达成一致 / both_disagree=两者均未达成一致",
+    )
 
 
 class FollowUpCreate(FollowUpBase):

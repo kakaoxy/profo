@@ -161,6 +161,13 @@ class LeadFollowUp(Base):
 
     method: Mapped[FollowUpMethod] = mapped_column(SQLEnum(FollowUpMethod), nullable=False, comment="跟进方式")
     content: Mapped[str] = mapped_column(Text, nullable=False, comment="跟进内容")
+    # 跟进结论（选填）：与业主未谈拢的分歧点。可空以兼容存量记录（不得用默认值伪造结论），
+    # 新写入路径由 Pydantic FollowUpConclusion 枚举兜住取值域。
+    conclusion: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+        comment="跟进结论: mode_disagree/price_disagree/both_disagree(未填为 NULL)",
+    )
     followed_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

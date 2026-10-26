@@ -1,0 +1,13 @@
+{
+  "leadId": "2cf77526-8bf4-4a98-b404-c2bad5633bf9",
+  "row": {
+    "method": "phone",
+    "content": "常规回访，无分歧",
+    "conclusion": null,
+    "id": "4b466f3d-6351-4e25-a01f-44188ba77d95",
+    "lead_id": "2cf77526-8bf4-4a98-b404-c2bad5633bf9",
+    "followed_at": "2026-10-26T14:09:39.170897Z",
+    "created_by_id": "admin-user",
+    "created_by_name": "唐"
+  }
+}

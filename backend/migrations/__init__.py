@@ -267,6 +267,7 @@ from migrations.add_counterparty_type import add_counterparty_type_to_finance_re
 from migrations.add_lead_auditor_index import add_lead_auditor_index
 from migrations.add_lead_eval_history_and_expected_price import add_lead_eval_history_and_expected_price
 from migrations.add_lead_eval_verdict_fields import add_lead_eval_verdict_fields
+from migrations.add_lead_followup_conclusion import add_lead_followup_conclusion
 from migrations.add_lead_referrer_index import add_lead_referrer_index
 from migrations.add_lead_status_lost_to_competitor import add_lead_status_lost_to_competitor
 from migrations.add_media_type_column import add_media_type_to_renovation_photos
@@ -501,6 +502,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # v101：竞品边补 is_deleted + 唯一约束重建为部分唯一索引
         # （合并去重改软删，保留 origin 痕迹使解除合并可回迁）
         add_competitor_soft_delete(engine)
+        # v102：线索跟进记录补 conclusion 列（跟进结论：合作模式/价格/两者均未达成一致，选填）
+        add_lead_followup_conclusion(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

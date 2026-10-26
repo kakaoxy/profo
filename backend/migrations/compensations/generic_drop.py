@@ -187,6 +187,10 @@ DROP_SPECS: dict[int, DropSpec] = {
         ),
         notes="CHECK 约束随列 DROP 自动消失（PG 行为），无需单独处理",
     ),
+    102: DropSpec(
+        columns=(("lead_followups", "conclusion"),),
+        notes="删列即丢弃已录入的跟进结论；如需保留数据请用 restore",
+    ),
 }
 
 

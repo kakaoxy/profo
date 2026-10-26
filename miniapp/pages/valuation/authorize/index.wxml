@@ -142,6 +142,7 @@
             <view class="fu__chip">{{item.methodText}}</view>
             <view class="fu__time">{{item.timeText}}</view>
           </view>
+          <view class="fu__conclusion" wx:if="{{item.conclusionText}}">{{item.conclusionText}}</view>
           <view class="fu__tx">{{item.content}}</view>
         </view>
       </view>
@@ -494,6 +495,18 @@
       <view class="chip {{followupMethod === 'wechat' ? 'chip--on' : ''}}" data-method="wechat" bindtap="onFollowupMethodTap">微信</view>
       <view class="chip {{followupMethod === 'face' ? 'chip--on' : ''}}" data-method="face" bindtap="onFollowupMethodTap">面谈</view>
       <view class="chip {{followupMethod === 'visit' ? 'chip--on' : ''}}" data-method="visit" bindtap="onFollowupMethodTap">实地带看</view>
+    </view>
+  </view>
+  <view class="fld">
+    <view class="fld__lb">跟进结论<text class="fld__opt">选填</text></view>
+    <view class="chips">
+      <view
+        wx:for="{{followupConclusionOptions}}"
+        wx:key="value"
+        class="chip {{followupConclusion === item.value ? 'chip--on' : ''}}"
+        data-value="{{item.value}}"
+        bindtap="onFollowupConclusionTap"
+      >{{item.label}}</view>
     </view>
   </view>
   <view class="fld">

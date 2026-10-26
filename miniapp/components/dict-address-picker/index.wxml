@@ -1,0 +1,169 @@
+<!-- 楼盘字典四级地址选择器（C 端估价表单）：小区必选，楼栋/户室选填 -->
+<view class="dict-picker">
+  <!-- 已选摘要（选中即点亮，与 admin 选择器同构） -->
+  <view class="dp-summary">
+    <block wx:if="{{communityName}}">
+      <text class="dp-summary__crumb">{{communityName}}</text>
+      <text class="dp-summary__sep" wx:if="{{buildingNo}}">›</text>
+      <text class="dp-summary__crumb" wx:if="{{buildingNo}}">{{buildingNo}}{{roomNo ? '' : '栋'}}</text>
+      <text class="dp-summary__sep" wx:if="{{roomNo}}">›</text>
+      <text class="dp-summary__crumb" wx:if="{{roomNo}}">{{roomNo}}室</text>
+      <text class="dp-summary__badge" wx:if="{{dictStatus === 'pending'}}">待审核</text>
+    </block>
+    <text class="dp-summary__hint" wx:else>从楼盘字典选择小区</text>
+  </view>
+
+  <!-- 一级：小区搜索 -->
+  <view class="dp-field">
+    <view class="dp-search">
+      <input
+        class="dp-search__input"
+        placeholder="输入小区名称搜索"
+        placeholder-class="dp-search__ph"
+        value="{{communityKeyword}}"
+        bindinput="onCommunityInput"
+      />
+      <view wx:if="{{communityKeyword}}" class="dp-search__clear" bindtap="onCommunityClear">×</view>
+    </view>
+
+    <view wx:if="{{communityDropdown}}" class="dp-dropdown">
+      <view wx:if="{{communitySearching}}" class="dp-dropdown__state">搜索中...</view>
+      <block wx:else>
+        <view wx:if="{{communityResults.length > 0}}" class="dp-dropdown__list">
+          <view
+            class="dp-dropdown__item"
+            wx:for="{{communityResults}}"
+            wx:key="id"
+            data-id="{{item.id}}"
+            data-name="{{item.name}}"
+            data-district="{{item.district}}"
+            data-business="{{item.business_circle}}"
+            bindtap="onCommunityPick"
+          >
+            <view class="dp-dropdown__name">{{item.name}}</view>
+            <view class="dp-dropdown__meta">{{item.district}}{{item.business_circle ? ' · ' + item.business_circle : ''}}</view>
+          </view>
+        </view>
+        <view wx:elif="{{communityKeyword}}" class="dp-dropdown__use" bindtap="onCommunityUseQuery">
+          没有找到？使用「{{communityKeyword}}」作为小区名提交（审核后自动关联）
+        </view>
+        <view wx:else class="dp-dropdown__state">请输入关键词查找小区</view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 二~四级：楼栋 / 楼层 / 户室（选填，选中小区后展开） -->
+  <block wx:if="{{communityName}}">
+    <view class="dp-cascade">
+      <!-- 楼栋 -->
+      <view class="dp-col">
+        <view class="dp-col__head">
+          <text class="dp-col__title">楼栋<text class="dp-col__opt">选填</text></text>
+          <text class="dp-col__count" wx:if="{{visibleBuildings.length}}">{{visibleBuildings.length}}</text>
+        </view>
+        <input
+          class="dp-col__search"
+          placeholder="搜楼栋号"
+          placeholder-class="dp-search__ph"
+          value="{{buildingKeyword}}"
+          bindinput="onBuildingSearch"
+        />
+        <scroll-view class="dp-col__body" scroll-y>
+          <view wx:if="{{buildingsLoading}}" class="dp-col__state">加载中...</view>
+          <block wx:else>
+            <view
+              wx:for="{{visibleBuildings}}"
+              wx:key="id"
+              class="dp-item {{buildingId === item.id ? 'dp-item--on' : ''}} {{item.pending ? 'dp-item--lock' : ''}}"
+              data-id="{{item.id}}"
+              data-no="{{item.building_no}}"
+              data-pending="{{item.pending}}"
+              bindtap="onBuildingPick"
+            >
+              <text>{{item.building_no}}栋</text>
+              <text class="dp-item__tag" wx:if="{{item.pending}}">待审核</text>
+            </view>
+            <view wx:if="{{!visibleBuildings.length}}" class="dp-col__state">暂无楼栋，可手填楼栋号</view>
+          </block>
+        </scroll-view>
+        <view class="dp-col__foot">
+          <input
+            class="dp-col__new"
+            placeholder="新楼栋号"
+            placeholder-class="dp-search__ph"
+            value="{{buildingDraft}}"
+            bindinput="onNewBuildingInput"
+          />
+          <view class="dp-col__add" bindtap="onCreateBuilding">添加</view>
+        </view>
+      </view>
+
+      <!-- 楼层 -->
+      <view class="dp-col">
+        <view class="dp-col__head">
+          <text class="dp-col__title">楼层<text class="dp-col__opt">选填</text></text>
+        </view>
+        <scroll-view class="dp-col__body" scroll-y>
+          <view
+            class="dp-item {{activeFloor === 'all' ? 'dp-item--on' : ''}}"
+            data-floor=""
+            bindtap="onFloorPick"
+          >全部</view>
+          <block wx:if="{{buildingId}}">
+            <view
+              wx:for="{{floors}}"
+              wx:key="label"
+              class="dp-item {{activeFloor === item.key ? 'dp-item--on' : ''}}"
+              data-floor="{{item.key}}"
+              bindtap="onFloorPick"
+            >
+              <text>{{item.label}}</text>
+              <text class="dp-item__count">{{item.count}}户</text>
+            </view>
+            <view wx:if="{{!floors.length}}" class="dp-col__state">请先选择楼栋</view>
+          </block>
+          <view wx:elif="{{!buildingId}}" class="dp-col__state">请先选择楼栋</view>
+        </scroll-view>
+      </view>
+
+      <!-- 户室 -->
+      <view class="dp-col">
+        <view class="dp-col__head">
+          <text class="dp-col__title">户室<text class="dp-col__opt">选填</text></text>
+        </view>
+        <scroll-view class="dp-col__body" scroll-y>
+          <view wx:if="{{roomsLoading}}" class="dp-col__state">加载中...</view>
+          <block wx:elif="{{buildingId}}">
+            <view class="dp-room-grid">
+              <view
+                wx:for="{{visibleRooms}}"
+                wx:key="id"
+                class="dp-room {{roomId === item.id ? 'dp-room--on' : ''}} {{item.pending ? 'dp-room--lock' : ''}}"
+                data-id="{{item.id}}"
+                data-no="{{item.room_no}}"
+                data-pending="{{item.pending}}"
+                bindtap="onRoomPick"
+              >{{item.plate_no}}</view>
+            </view>
+            <view wx:if="{{!visibleRooms.length}}" class="dp-col__state">该层暂无户室</view>
+          </block>
+          <view wx:else class="dp-col__state">请先选择楼栋</view>
+        </scroll-view>
+        <view class="dp-col__foot" wx:if="{{buildingNo}}">
+          <input
+            class="dp-col__new"
+            placeholder="新户室号（如 0403）"
+            placeholder-class="dp-search__ph"
+            value="{{roomDraft}}"
+            bindinput="onNewRoomInput"
+          />
+          <view class="dp-col__add" bindtap="onCreateRoom">添加</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="dp-tip" wx:if="{{dictStatus === 'pending'}}">
+      新小区/楼栋/户室需审核后自动关联，不影响本次提交
+    </view>
+  </block>
+</view>

@@ -4,13 +4,14 @@ import { useState } from "react";
 import { History } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { usePermission } from "@/hooks/use-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { handleError, handleSuccess } from "@/lib/error-handling";
 
-import { FollowUp, FollowUpMethod } from "../../types";
+import { FollowUp, FollowUpConclusion, FollowUpMethod } from "../../types";
 import { addFollowUpAction, getLeadFollowUpsAction } from "../../actions/follow-up-actions";
-import { ERROR_MESSAGES, FOLLOW_UP_METHODS, SUCCESS_MESSAGES } from "../../constants/ui-labels";
+import { ERROR_MESSAGES, FOLLOW_UP_CONCLUSIONS, FOLLOW_UP_METHODS, SUCCESS_MESSAGES } from "../../constants/ui-labels";
 
 interface LeadFollowUpFormProps {
   leadId: string;
@@ -25,6 +26,8 @@ export function LeadFollowUpForm({ leadId, onFollowUpsChange }: LeadFollowUpForm
 
   const [method, setMethod] = useState<FollowUpMethod>("phone");
   const [content, setContent] = useState("");
+  // 跟进结论（选填）：空串 = 本次未记录
+  const [conclusion, setConclusion] = useState<FollowUpConclusion | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!canWrite) return null;
@@ -36,7 +39,7 @@ export function LeadFollowUpForm({ leadId, onFollowUpsChange }: LeadFollowUpForm
     if (!canSubmit) return;
     setIsSubmitting(true);
     try {
-      const result = await addFollowUpAction(leadId, method, trimmed);
+      const result = await addFollowUpAction(leadId, method, trimmed, conclusion || null);
       if (!result.success) {
         handleError(result.error, "LeadFollowUpForm.submit", {
           fallbackMessage: ERROR_MESSAGES.FOLLOW_UP_FAILED,
@@ -45,6 +48,7 @@ export function LeadFollowUpForm({ leadId, onFollowUpsChange }: LeadFollowUpForm
       }
       handleSuccess(SUCCESS_MESSAGES.FOLLOW_UP_ADDED);
       setContent("");
+      setConclusion("");
       const followUpsResult = await getLeadFollowUpsAction(leadId);
       if (followUpsResult.success) onFollowUpsChange(followUpsResult.data);
     } catch {
@@ -99,6 +103,33 @@ export function LeadFollowUpForm({ leadId, onFollowUpsChange }: LeadFollowUpForm
         >
           {isSubmitting ? "提交中..." : "记录"}
         </Button>
+      </div>
+      {/* 跟进结论（选填）：与业主未谈拢的分歧点，不选即本次未记录 */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          跟进结论
+        </span>
+        <span className="text-[10px] text-muted-foreground/60">选填</span>
+        {(Object.keys(FOLLOW_UP_CONCLUSIONS) as FollowUpConclusion[]).map((key) => {
+          const active = conclusion === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              aria-pressed={active}
+              disabled={isSubmitting}
+              onClick={() => setConclusion(active ? "" : key)}
+              className={cn(
+                "h-7 rounded-full border px-2.5 text-[11px] font-medium transition-colors",
+                active
+                  ? "border-ink bg-ink text-white"
+                  : "border-dove bg-fog text-muted-foreground hover:border-ash hover:text-foreground",
+              )}
+            >
+              {FOLLOW_UP_CONCLUSIONS[key]}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

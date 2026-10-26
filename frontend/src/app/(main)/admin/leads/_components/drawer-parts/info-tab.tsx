@@ -10,7 +10,7 @@ import {
   History,
   Layers,
 } from "lucide-react";
-import { Lead, LeadStatus, FollowUp, FollowUpMethod } from "../../types";
+import { Lead, LeadStatus, FollowUp, FollowUpConclusion, FollowUpMethod } from "../../types";
 import { safeFormatDate } from "@/lib/formatters";
 import { KpiRow } from "./kpi-row";
 import { OwnerNotesSection } from "./owner-notes-section";
@@ -22,7 +22,12 @@ interface InfoTabProps {
   lead: Lead;
   onAudit: (leadId: string, status: LeadStatus, evalPrice?: number, reason?: string) => void;
   followUps: FollowUp[];
-  onAddFollowUp: (leadId: string, method: FollowUpMethod, content: string) => void;
+  onAddFollowUp: (
+    leadId: string,
+    method: FollowUpMethod,
+    content: string,
+    conclusion?: FollowUpConclusion | null,
+  ) => void;
   onRefreshFollowUps: (updated: FollowUp[]) => void;
   onImagesUpdate?: (images: string[]) => void;
 }

@@ -5,7 +5,7 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { safeParseDate } from "@/lib/validators";
 import { revalidatePath } from "next/cache";
-import { FollowUpMethod, FollowUp } from "../types";
+import { FollowUpMethod, FollowUp, FollowUpConclusion } from "../types";
 import { ActionResult, extractErrorMessage } from "@/lib/action-result";
 import type { operations } from "@/lib/api-types";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
@@ -20,14 +20,17 @@ const addFollowUpSchema = z.object({
     message: "跟进方式不合法",
   }),
   content: z.string().min(1, "跟进内容不能为空").max(500, "跟进内容最多 500 字"),
+  // 跟进结论为选填：null 表示「本次未记录」，与后端 FollowUpConclusion 枚举值域对齐
+  conclusion: z.enum(["mode_disagree", "price_disagree", "both_disagree"]).nullish(),
 });
 
 export async function addFollowUpAction(
   leadId: string,
   method: FollowUpMethod,
   content: string,
+  conclusion?: FollowUpConclusion | null,
 ): Promise<ActionResult<void>> {
-  const parsed = addFollowUpSchema.safeParse({ leadId, method, content });
+  const parsed = addFollowUpSchema.safeParse({ leadId, method, content, conclusion });
   if (!parsed.success) {
     return {
       success: false,
@@ -46,6 +49,7 @@ export async function addFollowUpAction(
     const payload: FollowUpCreatePayload = {
       method,
       content,
+      ...(parsed.data.conclusion ? { conclusion: parsed.data.conclusion } : {}),
     };
 
     const { error } = await client.POST("/api/v1/leads/{lead_id}/follow-ups", {
@@ -87,6 +91,7 @@ export async function getLeadFollowUpsAction(leadId: string): Promise<ActionResu
       leadId: f.lead_id,
       method: f.method,
       content: f.content,
+      conclusion: f.conclusion ?? null,
       followUpTime: safeParseDate(f.followed_at)?.toLocaleString() ?? "-",
       followedAt: f.followed_at,
       createdBy: f.created_by_name || "Unknown",

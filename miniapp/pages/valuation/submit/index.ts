@@ -79,6 +79,9 @@ interface ValuationForm {
   community_id: string;
   district: string;
   business_area: string;
+  /** 字典楼栋/户室（选填；未命中字典时为 null，新名称由 dictPending 承载） */
+  building_id: number | null;
+  room_id: number | null;
   layout: string;
   area: string;
   orientation: string;
@@ -123,10 +126,7 @@ interface PageData {
 interface PageCustom {
   getToken(): string;
   onInput(e: WechatMiniprogram.Input): void;
-  onCommunityChange(e: WechatMiniprogram.CustomEvent): void;
-  onCommunitySelect(e: WechatMiniprogram.CustomEvent): void;
-  onCommunityUseQuery(e: WechatMiniprogram.CustomEvent): void;
-  onCommunityClear(): void;
+  onDictChange(e: WechatMiniprogram.CustomEvent): void;
   onLayoutInput(e: WechatMiniprogram.Input): void;
   onOrientationTap(e: WechatMiniprogram.BaseEvent): void;
   onChooseImage(): void;
@@ -157,6 +157,12 @@ interface PageCustom {
   subscribeTemplateId: string | null;
   /** 表单校验通过后执行实际提交（订阅授权弹窗结束后由回调进入）. */
   performSubmit(body: PublicLeadCreate): void;
+  /** 字典选择器回传的新增待审载荷（提交线索时一并透传，由后端同事务写审核池）. */
+  dictPending: {
+    newCommunity: { name: string; district?: string | null; business_circle?: string | null } | null;
+    newBuilding: { name: string } | null;
+    newRoom: { name: string } | null;
+  };
 }
 
 /** phone-bind-modal 组件实例上需调用的方法（selectComponent 返回类型默认不含自定义方法）. */
@@ -172,6 +178,8 @@ Page<PageData, PageCustom>({
       community_id: "",
       district: "",
       business_area: "",
+      building_id: null,
+      room_id: null,
       layout: "",
       area: "",
       orientation: "",
@@ -270,6 +278,12 @@ Page<PageData, PageCustom>({
   leadCountTimer: null,
 
   subscribeTemplateId: null,
+
+  dictPending: {
+    newCommunity: null,
+    newBuilding: null,
+    newRoom: null,
+  },
 
   getToken() {
     return getAccessToken();
@@ -381,52 +395,38 @@ Page<PageData, PageCustom>({
   },
 
   /**
-   * 社区搜索组件输入变化：仅同步回显（组件内部已自行管理下拉态），此处按需保留值.
-   * 当前表单不依赖该值展示，仅透传以支持外部受控场景.
+   * 楼盘字典选择器回传（小区/楼栋/户室 + 新增待审载荷）.
+   *
+   * 选择器内部已管理级联与待审标记，这里只做一件事：把它收敛成表单字段。
+   * 行政区/商圈一律以选择器回传值为准（未选字典小区时清空），避免旧值残留。
    */
-  onCommunityChange(e: WechatMiniprogram.CustomEvent) {
-    // 无业务字段需要即时同步，保留钩子便于后续复用
-  },
-
-  /**
-   * 社区搜索组件选中结果：把完整小区信息写入表单.
-   * detail = { id, name, district, business_circle }.
-   */
-  onCommunitySelect(e: WechatMiniprogram.CustomEvent) {
-    const d = e.detail as { id: string; name: string; district: string; business_circle: string };
+  onDictChange(e: WechatMiniprogram.CustomEvent) {
+    const d = e.detail as {
+      communityId: string;
+      communityName: string;
+      district: string;
+      businessCircle: string;
+      buildingId: number | null;
+      buildingNo: string;
+      roomId: number | null;
+      roomNo: string;
+      dictStatus: "linked" | "pending";
+      newCommunity: { name: string; district?: string | null; business_circle?: string | null } | null;
+      newBuilding: { name: string } | null;
+      newRoom: { name: string } | null;
+    };
+    this.dictPending = {
+      newCommunity: d.newCommunity,
+      newBuilding: d.newBuilding,
+      newRoom: d.newRoom,
+    };
     this.setData({
-      "form.community_name": d.name,
-      "form.community_id": d.id,
+      "form.community_name": d.communityName,
+      "form.community_id": d.communityId,
       "form.district": d.district,
-      "form.business_area": d.business_circle,
-    });
-  },
-
-  /**
-   * 搜索无匹配时以当前关键词作为小区名提交（community_id 留空）.
-   * 同步清空 district/business_area：走 usequery 路径的小区没有行政区/商圈数据，
-   * 若不清理，先前选过的小区会遗留旧行政区/商圈并随单提交（见代码审查 🟡-2）.
-   */
-  onCommunityUseQuery(e: WechatMiniprogram.CustomEvent) {
-    const query = (e.detail as { query: string }).query.trim();
-    if (!query) {
-      return;
-    }
-    this.setData({
-      "form.community_name": query,
-      "form.community_id": "",
-      "form.district": "",
-      "form.business_area": "",
-    });
-  },
-
-  /** 清空小区选择：同步清空表单中相关字段. */
-  onCommunityClear() {
-    this.setData({
-      "form.community_name": "",
-      "form.community_id": "",
-      "form.district": "",
-      "form.business_area": "",
+      "form.business_area": d.businessCircle,
+      "form.building_id": d.buildingId,
+      "form.room_id": d.roomId,
     });
   },
 
@@ -633,6 +633,8 @@ Page<PageData, PageCustom>({
       community_id,
       district,
       business_area,
+      building_id,
+      room_id,
       layout,
       area,
       orientation,
@@ -664,11 +666,19 @@ Page<PageData, PageCustom>({
       return;
     }
 
+    // 字典 payload：楼栋/户室优先取已选实表 id；未命中字典时带名称进审核池。
+    // dict_status 由后端 Service 推导（linked / pending / manual），前端不自报。
+    const { newCommunity, newBuilding, newRoom } = this.dictPending;
     const body: PublicLeadCreate = {
       community_name,
       community_id: community_id || undefined,
       district: district || undefined,
       business_area: business_area || undefined,
+      building_id: building_id ?? undefined,
+      room_id: room_id ?? undefined,
+      new_community: newCommunity ?? undefined,
+      new_building: newBuilding ?? undefined,
+      new_room: newRoom ?? undefined,
       layout: layout || undefined,
       area: areaNum,
       floor_info: `${floor}/${total_floor}`,

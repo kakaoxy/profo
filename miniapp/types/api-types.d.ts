@@ -308,6 +308,9 @@ export interface paths {
         /**
          * List Community Images
          * @description 按小区查询户型图列表.
+         *
+         *     S3（SPEC community-merge-union §5.3）：小区不存在或已归档（已并入主档）→ 404，
+         *     与小区详情端点同口径，避免运营从历史链接打开归档子档图库后误判「图片丢了」。
          */
         get: operations["list_community_images_api_v1_admin_communities__community_id__images_get"];
         put?: never;
@@ -316,6 +319,10 @@ export interface paths {
          * @description 上传户型图到指定小区.
          *
          *     速率限制：复用 FILE_UPLOAD（2000/hour）
+         *
+         *     归档（已并入主档）子档禁止上传（SPEC community-merge-union D7 同一不变量：
+         *     写到归档行主档看不到 = 「改了看不见」的静默脏数据）。校验**必须在落盘之前**，
+         *     否则拒绝请求后磁盘会留下孤儿文件。
          */
         post: operations["upload_community_image_api_v1_admin_communities__community_id__images_post"];
         delete?: never;
@@ -5700,6 +5707,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/building-dictionary/communities/{community_id}/buildings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * C端楼栋列表
+         * @description 按小区查询楼栋（自然序分页，含待审楼栋标记），无需登录
+         */
+        get: operations["list_public_buildings_api_v1_public_building_dictionary_communities__community_id__buildings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/building-dictionary/buildings/{building_id}/floors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * C端楼层分组
+         * @description 楼栋楼层分组（名义 ∪ 实际 ∪ 待审，未分层置底），无需登录
+         */
+        get: operations["get_public_floor_groups_api_v1_public_building_dictionary_buildings__building_id__floors_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/building-dictionary/buildings/{building_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * C端楼栋详情（户室）
+         * @description 楼栋户室分页（含待审户室标记），无需登录
+         */
+        get: operations["get_public_building_detail_api_v1_public_building_dictionary_buildings__building_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/recruit/campaigns/latest": {
         parameters: {
             query?: never;
@@ -9675,6 +9742,16 @@ export interface components {
             current_avg_price: number;
         };
         /**
+         * FollowUpConclusion
+         * @description 跟进结论枚举（与业主未谈拢的分歧点，选填）.
+         *
+         *     业务口径（2026-10-26 产品确认）：「模式」指**合作模式**（代理美化 / 收购美化），
+         *     与价格是两条独立的分歧轴——业主可能只在其中一条卡住，也可能两条都卡住。
+         *     历史记录无该事实时为空（禁止用默认值伪造结论）。
+         * @enum {string}
+         */
+        FollowUpConclusion: "mode_disagree" | "price_disagree" | "both_disagree";
+        /**
          * FollowUpCreate
          * @description 创建跟进记录请求.
          */
@@ -9682,6 +9759,8 @@ export interface components {
             method: components["schemas"]["FollowUpMethod"];
             /** Content */
             content: string;
+            /** @description 跟进结论（选填）：mode_disagree=合作模式未达成一致 / price_disagree=价格未达成一致 / both_disagree=两者均未达成一致 */
+            conclusion?: components["schemas"]["FollowUpConclusion"] | null;
         };
         /**
          * FollowUpMethod
@@ -9697,6 +9776,8 @@ export interface components {
             method: components["schemas"]["FollowUpMethod"];
             /** Content */
             content: string;
+            /** @description 跟进结论（选填）：mode_disagree=合作模式未达成一致 / price_disagree=价格未达成一致 / both_disagree=两者均未达成一致 */
+            conclusion?: components["schemas"]["FollowUpConclusion"] | null;
             /** Id */
             id: string;
             /** Lead Id */
@@ -17227,6 +17308,8 @@ export interface components {
              * @description 跟进内容（1-500 字）
              */
             content: string;
+            /** @description 跟进结论（选填）：mode_disagree=合作模式未达成一致 / price_disagree=价格未达成一致 / both_disagree=两者均未达成一致 */
+            conclusion?: components["schemas"]["FollowUpConclusion"] | null;
         };
         /**
          * PublicDictItemResponse
@@ -17331,6 +17414,8 @@ export interface components {
              * @description 跟进内容（1-500 字）
              */
             content: string;
+            /** @description 跟进结论（选填）：mode_disagree=合作模式未达成一致 / price_disagree=价格未达成一致 / both_disagree=两者均未达成一致 */
+            conclusion?: components["schemas"]["FollowUpConclusion"] | null;
         };
         /**
          * PublicFollowupItem
@@ -17352,6 +17437,11 @@ export interface components {
              * @description 跟进内容
              */
             content: string;
+            /**
+             * Conclusion
+             * @description 跟进结论：mode_disagree/price_disagree/both_disagree（未填为空）
+             */
+            conclusion?: string | null;
             /**
              * Followed At
              * Format: date-time
@@ -17509,6 +17599,37 @@ export interface components {
              * @description 分享归属员工ID
              */
             referrer?: string | null;
+            /**
+             * Building Id
+             * @description 字典楼栋ID（选填）
+             */
+            building_id?: number | null;
+            /**
+             * Room Id
+             * @description 字典户室ID（选填）
+             */
+            room_id?: number | null;
+            /**
+             * New Community
+             * @description 新增小区载荷 {name,district,business_circle}
+             */
+            new_community?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * New Building
+             * @description 新增楼栋载荷 {name}
+             */
+            new_building?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * New Room
+             * @description 新增户室载荷 {name}
+             */
+            new_room?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * PublicLeadDetail
@@ -32616,6 +32737,114 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicCommunityAnalysisResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_public_buildings_api_v1_public_building_dictionary_communities__community_id__buildings_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+                /** @description 楼栋号搜索 */
+                keyword?: string | null;
+            };
+            header?: never;
+            path: {
+                /** @description 小区ID */
+                community_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdBuildingListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_floor_groups_api_v1_public_building_dictionary_buildings__building_id__floors_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdFloorGroup"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_building_detail_api_v1_public_building_dictionary_buildings__building_id__get: {
+        parameters: {
+            query?: {
+                /** @description 户室页码 */
+                room_page?: number;
+                /** @description 每页户室数（默认 200，上限 500） */
+                room_page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 楼栋ID */
+                building_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BdBuildingDetail"];
                 };
             };
             /** @description Validation Error */
