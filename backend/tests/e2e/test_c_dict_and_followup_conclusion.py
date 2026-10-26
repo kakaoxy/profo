@@ -9,6 +9,7 @@
        （与 admin 录入线索同一条 submit_dict_chain，同事务）
 - d. 老口径（纯自由文本、无字典字段）仍可提交 → dict_status=manual（向后兼容）
 - e. 楼栋不属于所选小区 → 400（validate_dict_ownership 单点生效）
+- k. new_* 载荷缺有效名称 → 400（不得 500；submit_dict_chain 名称单点校验回归）
 
 需求 2（跟进结论：合作模式 / 价格 / 两者均未谈拢）
 - f. admin 端点写入结论并可回读；未填结论 → NULL
@@ -108,11 +109,12 @@ def require_env(name: str) -> str:
 
 
 # C 端创建线索限流（RateLimits.PUBLIC_LEAD_CREATE = 10/hour，按客户端 IP 计数）。
-# 本脚本要连做 3 次 C 端提交，开发期反复跑很容易触顶；触顶时 429 会掩盖真实断言。
+# 本脚本要连做 3 次 C 端提交 + 1 次缺名拒绝（k 组），开发期反复跑很容易触顶；
+# 触顶时 429 会掩盖真实断言。
 _C_LEAD_LIMIT_KEY_TPL = "LIMITS:LIMITER/{ip}//api/v1/public/leads/10/1/hour"
 
 
-def ensure_c_lead_quota(needed: int = 3) -> None:
+def ensure_c_lead_quota(needed: int = 4) -> None:
     """确保 C 端提交额度足够（**仅本机开发环境**会清理限流桶）.
 
     为什么允许清桶：slowapi 的 moving-window 桶是 Redis 里的一个 list，
@@ -531,6 +533,31 @@ def main() -> None:
     )
     check("j1. 客户侧写入 201", s, 201)
     check("j2. 回执带结论", (fu_j or {}).get("conclusion"), "mode_disagree")
+
+    # ==================== k. 新增载荷缺有效名称 → 400（回归：曾 500） ====================
+    print("\n=== k. new_* 载荷缺有效名称 → 400 ===")
+    # 回归背景：submit_dict_chain 曾对空 name 构造 BdPendingSubmitRequest 抛
+    # pydantic.ValidationError（未注册 handler）→ 500。修复后应返回业务 400，
+    # 且整单回滚（不落线索、不落 pending，无需清理）。
+    s, bad_k = req(
+        "POST",
+        "/public/leads",
+        {
+            "community_name": "__E2E_缺名小区__",
+            "new_community": {"district": "浦东新区"},
+            "floor_info": "5/18层",
+            "layout": "2室1厅",
+            "area": 75.0,
+        },
+        token=c_token,
+    )
+    check("k1. 缺 name 被拒 400（不得 500）", s, 400)
+    check_truthy(
+        "k2. 错误信息指明名称缺失",
+        "名称" in str((bad_k or {}).get("message", "")),
+        str(bad_k)[:100],
+    )
+    RESULTS["k_blank_name"] = {"status": s, "body": bad_k}
 
     # ==================== 汇总与清理 ====================
     print("\n=== 清理 ===")

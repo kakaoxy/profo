@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 
 _KIND_VALUES = frozenset(e.value for e in BdEntryKind)
 
+# 新增条目名称上限（与 schemas/building_dict.py::BdPendingSubmitRequest.name.max_length 逐字一致）
+_MAX_PENDING_NAME_LENGTH = 200
+
 
 class DictSubmitService:
     """录入端提交服务（进审核池）."""
@@ -319,6 +322,31 @@ def get_dict_submit_service() -> DictSubmitService:
     return _service
 
 
+def _extract_pending_name(payload: dict, *fallback_keys: str) -> str:
+    """从新增载荷提取名称并校验（缺失/空白/超长 → 业务 ValidationError）.
+
+    为什么在链路层校验：submit_dict_chain 的调用方（leads/projects/marketing）
+    都以裸 dict 透传 new_*（Pydantic 只保证是 object），name 缺失或为空白时
+    会在构造 BdPendingSubmitRequest(min_length=1) 处抛 pydantic.ValidationError
+    —— 未注册对应 handler，最终以 500 暴露给用户（C 端可复现）。
+    此处单点校验使三条业务链路统一返回 400，并兜住 200 字上限。
+    """
+    raw = ""
+    for key in ("name", *fallback_keys):
+        value = payload.get(key)
+        if value:
+            raw = str(value).strip()
+            break
+    if not raw:
+        msg = "新增小区/楼栋/户室必须提供非空名称"
+        raise ValidationError(msg)
+    # 与 BdPendingSubmitRequest.name 的 max_length 对齐（那里是 Pydantic 声明，这里取值校验）
+    if len(raw) > _MAX_PENDING_NAME_LENGTH:
+        msg = "新增名称过长（最多 200 字）"
+        raise ValidationError(msg)
+    return raw
+
+
 def submit_dict_chain(
     db: Session,
     *,
@@ -363,7 +391,7 @@ def submit_dict_chain(
             db,
             BdPendingSubmitRequest(
                 kind="community",
-                name=str(new_community.get("name") or "").strip(),
+                name=_extract_pending_name(new_community),
                 community_payload=new_community,
                 source_type=biz_type,
                 source_id=biz_id,
@@ -383,7 +411,7 @@ def submit_dict_chain(
             db,
             BdPendingSubmitRequest(
                 kind="building",
-                name=str(new_building.get("name") or new_building.get("building_no") or "").strip(),
+                name=_extract_pending_name(new_building, "building_no"),
                 parent_kind=building_parent_kind,
                 parent_id=building_parent_id,
                 source_type=biz_type,
@@ -404,7 +432,7 @@ def submit_dict_chain(
             db,
             BdPendingSubmitRequest(
                 kind="room",
-                name=str(new_room.get("name") or new_room.get("room_no") or "").strip(),
+                name=_extract_pending_name(new_room, "room_no"),
                 parent_kind=room_parent_kind,
                 parent_id=room_parent_id,
                 source_type=biz_type,

@@ -73,7 +73,7 @@
           <block wx:else>
             <view
               wx:for="{{visibleBuildings}}"
-              wx:key="id"
+              wx:key="key"
               class="dp-item {{buildingId === item.id ? 'dp-item--on' : ''}} {{item.pending ? 'dp-item--lock' : ''}}"
               data-id="{{item.id}}"
               data-no="{{item.building_no}}"
@@ -137,7 +137,7 @@
             <view class="dp-room-grid">
               <view
                 wx:for="{{visibleRooms}}"
-                wx:key="id"
+                wx:key="key"
                 class="dp-room {{roomId === item.id ? 'dp-room--on' : ''}} {{item.pending ? 'dp-room--lock' : ''}}"
                 data-id="{{item.id}}"
                 data-no="{{item.room_no}}"

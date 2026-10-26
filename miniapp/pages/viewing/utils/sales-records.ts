@@ -6,6 +6,10 @@
  * SalesRecordResponse 的字段提示。这里集中做一次类型收窄/兜底映射，
  * 替换散落各页面的 `as SalesRecordResponse[]` / `as { record_type?: string }`
  * 强转，避免字段漂移（见代码审查 🟡-?）。
+ *
+ * 只映射 SalesRecordResponse 真实存在的字段；customer_phone/customer_info/
+ * record_time/feedback/result/related_agent 为「幽灵字段」——后端无落库列、
+ * 不随响应返回（见后端 SalesRecordCreate docstring），历史映射已删除。
  */
 import type { components } from "../../../types/api-types";
 
@@ -39,16 +43,9 @@ export function parseSalesRecords(
       project_id: str(r.project_id) ?? "",
       record_type: (str(r.record_type) ?? "viewing") as RecordType,
       customer_name: str(r.customer_name),
-      customer_phone: str(r.customer_phone),
-      customer_info:
-        (r.customer_info as SalesRecordResponse["customer_info"]) ?? undefined,
       record_date: str(r.record_date) ?? "",
-      record_time: str(r.record_time),
       price: r.price != null ? String(r.price) : undefined,
       notes: str(r.notes),
-      feedback: str(r.feedback),
-      result: str(r.result),
-      related_agent: str(r.related_agent),
       created_at: str(r.created_at) ?? "",
       operator: (r.operator as SalesRecordResponse["operator"]) ?? undefined,
     });

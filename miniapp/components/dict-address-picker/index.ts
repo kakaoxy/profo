@@ -59,6 +59,8 @@ interface BuildingOption {
   building_no: string;
   pending: boolean;
   pending_id: number | null;
+  /** wxml wx:key（pending 楼栋 id 恒为 0，不能用 id，否则多条待审时 key 重复） */
+  key: string;
 }
 
 /** 户室候选项 */
@@ -68,6 +70,8 @@ interface RoomOption {
   floor: number | null;
   plate_no: string;
   pending: boolean;
+  /** wxml wx:key（同上：pending 户室 id 恒为 0） */
+  key: string;
 }
 
 /** 楼层分组（展示层聚合，非独立实体） */
@@ -524,6 +528,8 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
             building_no: b.building_no,
             pending: b.pending,
             pending_id: b.pending_id ?? null,
+            // 实表楼栋 id 唯一；pending 楼栋以「p+楼栋号」区分（同名 pending 由 uq_pending_open 防重）
+            key: b.pending ? `p${b.building_no}` : `b${b.id}`,
           }));
           this.setData({
             buildings: list,
@@ -553,6 +559,8 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
               floor: r.floor ?? null,
               plate_no: r.plate_no,
               pending: r.pending,
+              // 实表户室 id 唯一；pending 户室以「p+户室号」区分
+              key: r.pending ? `p${r.room_no}` : `r${r.id}`,
             });
           });
           if (detail.room_has_more && page < ROOM_MAX_PAGES) {
