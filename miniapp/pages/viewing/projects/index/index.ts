@@ -15,7 +15,7 @@ import { pad2 } from "../../../../utils/format";
 import { createProjectListPage } from "../../utils/project-list-page";
 import type { BaseDisplayItem, ProjectListState } from "../../utils/project-list-page";
 import { parseSalesRecords } from "../../utils/sales-records";
-import { cycleStart, isInCycle } from "../../../../utils/cycle-period";
+import { cycleStart, isInCycle } from "../../utils/cycle-period";
 
 /** 增量徽标文案：恒显示 +N（含 +0，与项目卡角标同色同字号）；≥100 显示 +99+ 防三列挤压（设计稿 STATES 表）. */
 function deltaText(n: number): string {
