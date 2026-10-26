@@ -35,3 +35,12 @@ export type BdFloorGroup = Omit<Schemas["BdFloorGroup"], "floor"> & { floor: num
 
 /** 小区户型图（复用现有 /admin/communities/{id}/images 端点，FR-20） */
 export type BdCommunityImageItem = Schemas["CommunityImageResponse"];
+
+/**
+ * 合并影响预览（SPEC community-merge-union §5.1）与合并回执。
+ * profile_item.before/after 为 unknown（后端画像字段类型不一：文本/数组/数字），
+ * 展示前须经 formatPreviewValue 收窄。
+ */
+export type CommunityMergePreview = Schemas["CommunityMergePreviewResponse"];
+export type CommunityMergeProfileItem = Schemas["CommunityMergeProfileItem"];
+export type CommunityMergeResponse = Schemas["CommunityMergeResponse"];

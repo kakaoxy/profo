@@ -1,9 +1,9 @@
 """迁移注册表：``_run_all_migrations`` 顶层调用单元的版本化登记（迭代一 T1.2）。
 
 **权威口径**
-- ``version`` = ``1..97``，严格按 ``migrations/__init__.py::_run_all_migrations``
+- ``version`` = ``1..101``，严格按 ``migrations/__init__.py::_run_all_migrations``
   的**当前调用顺序**编号（实测 94 项，非计划稿的 77/80；见总纲 §1 B1/B8）。
-- 新增迁移**只能追加**在 ``MIGRATIONS`` 末尾，``version`` 从 ``NEXT_VERSION``（98）起
+- 新增迁移**只能追加**在 ``MIGRATIONS`` 末尾，``version`` 从 ``NEXT_VERSION``（102）起
   严格递增，禁止插入历史中间序号，禁止复用已删除版本号。
 - 粒度 = 一次顶层 ``fn(engine)`` 调用；wrapper 内部子步骤（如
   ``create_marketing_project_subscription_table`` 内的 ``add_last_subscribed_at_*``）
@@ -43,7 +43,13 @@ from migrations._bd_room_floor_backfill import backfill_bd_room_floor
 from migrations._biz_dicts import create_biz_dict_items_table
 from migrations._building_dictionary import run_building_dictionary_migrations
 from migrations._clear_wechat_session_key import clear_wechat_session_key
+from migrations._community_competitor_soft_delete import add_competitor_soft_delete
 from migrations._community_images import create_community_images_table
+from migrations._community_merge import (
+    add_community_merge_origin_columns,
+    backfill_merged_community_profiles,
+)
+from migrations._community_merge_profile_union import backfill_merged_community_property_types
 from migrations._customer_follow_ups import create_customer_follow_ups_table
 from migrations._finance import (
     add_cashflow_category_enum_values,
@@ -1210,6 +1216,48 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=False,
         description="迭代二：workbench:manage 权限点 + 授予 admin",
     ),
+    Migration(
+        version=98,
+        name="add_community_merge_origin_columns",
+        fn=add_community_merge_origin_columns,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="小区合并可逆：户型图/待审条目/竞品边补 origin_community_id + 索引",
+    ),
+    Migration(
+        version=99,
+        name="backfill_merged_community_profiles",
+        fn=backfill_merged_community_profiles,
+        kind="data",
+        risk="B",
+        backup="table",
+        backup_tables=("communities",),
+        reversible=False,
+        description="存量已合并子档画像回填主档（COALESCE 主档优先，幂等）",
+    ),
+    Migration(
+        version=100,
+        name="backfill_merged_community_property_types",
+        fn=backfill_merged_community_property_types,
+        kind="data",
+        risk="B",
+        backup="table",
+        backup_tables=("communities",),
+        reversible=False,
+        description="修正 v99 口径漂移：存量已合并主档的物业类型按运行时并集补齐（幂等）",
+    ),
+    Migration(
+        version=101,
+        name="add_competitor_soft_delete",
+        fn=add_competitor_soft_delete,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="竞品边补 is_deleted + 唯一约束重建为部分唯一索引（合并去重改软删，可回迁）",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1222,7 +1270,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 97）。"""
+"""登记总数（当前 101）。"""
 
-NEXT_VERSION = 98
+NEXT_VERSION = 102
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

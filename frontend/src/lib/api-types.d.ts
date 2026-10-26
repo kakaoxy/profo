@@ -194,6 +194,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/communities/merge/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Merge Communities
+         * @description 合并影响预览（只读、零副作用，SPEC `community-merge-union` §5.1）.
+         *
+         *     与 ``POST /communities/merge`` **共用**同一套画像并集纯函数，因此
+         *     「预览说会补什么」与「实际补了什么」不可能漂移。
+         *
+         *     权限与限流与合并同口径：``property:governance`` + ``COMMUNITY_MERGE``。
+         */
+        post: operations["preview_merge_communities_api_v1_admin_communities_merge_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/communities/merge": {
         parameters: {
             query?: never;
@@ -8528,6 +8553,147 @@ export interface components {
             data_as_of?: string | null;
         };
         /**
+         * CommunityMergeChildPreview
+         * @description 合并预览：单个子档的资产与数据情况.
+         */
+        CommunityMergeChildPreview: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Building Count
+             * @default 0
+             */
+            building_count: number;
+            /**
+             * Room Count
+             * @default 0
+             */
+            room_count: number;
+            /**
+             * Linked Document Count
+             * @default 0
+             */
+            linked_document_count: number;
+            /**
+             * Image Count
+             * @default 0
+             */
+            image_count: number;
+            /**
+             * Open Pending Count
+             * @default 0
+             */
+            open_pending_count: number;
+            /**
+             * Competitor Edge Count
+             * @default 0
+             */
+            competitor_edge_count: number;
+            /**
+             * Archived Children Count
+             * @default 0
+             */
+            archived_children_count: number;
+            /**
+             * Alias Count
+             * @default 0
+             */
+            alias_count: number;
+        };
+        /**
+         * CommunityMergeCounts
+         * @description 合并预览：将随迁的资产计数汇总.
+         */
+        CommunityMergeCounts: {
+            /**
+             * Properties
+             * @default 0
+             */
+            properties: number;
+            /**
+             * Buildings
+             * @default 0
+             */
+            buildings: number;
+            /**
+             * Rooms
+             * @default 0
+             */
+            rooms: number;
+            /**
+             * Documents
+             * @default 0
+             */
+            documents: number;
+            /**
+             * Images
+             * @default 0
+             */
+            images: number;
+            /**
+             * Pending Entries
+             * @default 0
+             */
+            pending_entries: number;
+            /**
+             * Competitor Edges
+             * @default 0
+             */
+            competitor_edges: number;
+            /**
+             * Archived Children
+             * @default 0
+             */
+            archived_children: number;
+            /**
+             * Aliases
+             * @default 0
+             */
+            aliases: number;
+        };
+        /**
+         * CommunityMergePreviewResponse
+         * @description 合并影响预览响应（只读、零副作用，SPEC §5.1）.
+         */
+        CommunityMergePreviewResponse: {
+            primary: components["schemas"]["CommunitySearchResponse"];
+            /** Children */
+            children?: components["schemas"]["CommunityMergeChildPreview"][];
+            /** Profile */
+            profile?: components["schemas"]["CommunityMergeProfileItem"][];
+            counts?: components["schemas"]["CommunityMergeCounts"];
+            /** Warnings */
+            warnings?: string[];
+        };
+        /**
+         * CommunityMergeProfileItem
+         * @description 合并预览：单个画像字段的变化行.
+         */
+        CommunityMergeProfileItem: {
+            /**
+             * Field
+             * @description 画像字段名
+             */
+            field: string;
+            /**
+             * Before
+             * @description 主档当前值
+             */
+            before?: unknown;
+            /**
+             * After
+             * @description 合并后的值
+             */
+            after?: unknown;
+            /**
+             * Source
+             * @description 取值来源：kept / union / child:<id>
+             */
+            source: string;
+        };
+        /**
          * CommunityMergeRequest
          * @description 小区合并请求.
          */
@@ -8546,6 +8712,9 @@ export interface components {
         /**
          * CommunityMergeResponse
          * @description 小区合并响应.
+         *
+         *     v1.10（SPEC `community-merge-union`）：追加画像补入与资产随迁回执。
+         *     全部为默认值，解除合并（unmerge）复用本模型时自动为空/0，向后兼容。
          */
         CommunityMergeResponse: {
             /** Success */
@@ -8554,6 +8723,40 @@ export interface components {
             affected_properties: number;
             /** Message */
             message: string;
+            /**
+             * Profile Filled
+             * @description 本次由子档补入的画像字段
+             */
+            profile_filled?: string[];
+            /**
+             * Images Moved
+             * @description 随迁的户型图张数
+             * @default 0
+             */
+            images_moved: number;
+            /**
+             * Pending Entries Moved
+             * @description 改指主档的待审条目数
+             * @default 0
+             */
+            pending_entries_moved: number;
+            /**
+             * Competitor Edges Moved
+             * @description 改指主档的竞品关系数
+             * @default 0
+             */
+            competitor_edges_moved: number;
+            /**
+             * Archived Children Reparented
+             * @description 层级压平改指主档的后代小区数
+             * @default 0
+             */
+            archived_children_reparented: number;
+            /**
+             * Warnings
+             * @description 需运营知晓的降级说明
+             */
+            warnings?: string[];
         };
         /**
          * CommunityResponse
@@ -21877,6 +22080,53 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["DictionaryResponse"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_merge_communities_api_v1_admin_communities_merge_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommunityMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityMergePreviewResponse"];
+                };
+            };
+            /** @description 主档/子档不存在或已归档 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 缺少 property:governance 权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -173,6 +173,31 @@ class DictWriteService(DictRenameMixin):
 
     # ---------- FR-06 楼栋补录 ----------
 
+    def _ensure_community_writable(self, db: Session, community: Community) -> None:
+        """归档（已并入主档）小区禁止补录楼栋/户室（SPEC `community-merge-union` §4.8/D7）.
+
+        原实现只校验「小区存在」，于是可以对一个 `is_active=false` 的子档继续补录，
+        楼栋/户室落进归档行后**主档永远看不到**（详情 404、`merged_children` 只吐计数）
+        ——与 `patch_community` / `rename_community` 已有的 409 守卫同口径。
+
+        Args:
+            db: 数据库会话
+            community: 目标小区
+
+        Raises:
+            ConflictError: 小区已归档/已并入主档
+
+        """
+        if community.is_active:
+            return
+        merged_into_id = community.merged_into_id
+        parent = db.query(Community).filter(Community.id == merged_into_id).first() if merged_into_id else None
+        if parent is not None:
+            msg = f"该小区已并入「{parent.name}」，请在主档补录楼栋/户室（或先解除合并）"
+        else:
+            msg = "该小区已归档（is_active=false），不可补录；如需维护请先解除合并"
+        raise ConflictError(msg)
+
     def _retry_buildings_one_by_one(
         self,
         db: Session,
@@ -238,6 +263,7 @@ class DictWriteService(DictRenameMixin):
         if not community:
             msg = "小区不存在"
             raise ResourceNotFoundError(msg)
+        self._ensure_community_writable(db, community)
 
         # BR-29 量词归一（尾部单个「号」剥离）：把运营输入「21号」落库为「21」，
         # 展示层后缀感知会再补回「号」，避免拼成「21号号」。区间展开后可能归一成
@@ -364,6 +390,9 @@ class DictWriteService(DictRenameMixin):
         if not building:
             msg = "楼栋不存在"
             raise ResourceNotFoundError(msg)
+        parent_community = db.query(Community).filter(Community.id == building.community_id).first()
+        if parent_community is not None:
+            self._ensure_community_writable(db, parent_community)
 
         floors = expand_range(body.floor)
         # 户号尾号按左操作数宽度补零（`01-08` → 01..08）

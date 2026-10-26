@@ -53,6 +53,15 @@ class CommunityImage(Base):
     description: Mapped[str | None] = mapped_column(String(200), nullable=True, comment="描述")
     sort_order: Mapped[int] = mapped_column(Integer, default=0, comment="排序")
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, comment="逻辑删除标记")
+    # 小区合并可逆标记（v98，SPEC community-merge-union §4.4/D6）：
+    # 合并时改挂主档的户型图记下原归属小区，解除合并据此回迁。
+    # 因撞 uq_community_image_url 被去重软删（is_deleted=True）的行同样带此标记，
+    # 解除合并时一并复活回原子档。
+    origin_community_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="合并前原归属小区ID(仅合并迁移过的户型图有值，解除合并时据此可逆)",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -72,6 +81,8 @@ class CommunityImage(Base):
         Index("idx_community_image_community", "community_id", "is_deleted"),
         # 按来源房源查询（去重 / 历史数据归类脚本）
         Index("idx_community_image_source", "source", "source_property_id"),
+        # 合并可逆回迁（v98）：解除合并按 origin 批量归位
+        Index("idx_community_image_origin", "origin_community_id"),
     )
 
     def __repr__(self) -> str:

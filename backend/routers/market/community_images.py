@@ -45,7 +45,12 @@ def list_community_images(
     community_id: Annotated[str, Path(description="小区ID")],
     pagination: PaginationDep,
 ) -> CommunityImageListResponse:
-    """按小区查询户型图列表."""
+    """按小区查询户型图列表.
+
+    S3（SPEC community-merge-union §5.3）：小区不存在或已归档（已并入主档）→ 404，
+    与小区详情端点同口径，避免运营从历史链接打开归档子档图库后误判「图片丢了」。
+    """
+    service.ensure_active_community(db=db, community_id=community_id)
     return service.list_by_community(
         db=db,
         community_id=community_id,
@@ -71,7 +76,13 @@ def upload_community_image(
     """上传户型图到指定小区.
 
     速率限制：复用 FILE_UPLOAD（2000/hour）
+
+    归档（已并入主档）子档禁止上传（SPEC community-merge-union D7 同一不变量：
+    写到归档行主档看不到 = 「改了看不见」的静默脏数据）。校验**必须在落盘之前**，
+    否则拒绝请求后磁盘会留下孤儿文件。
     """
+    service.ensure_active_community(db=db, community_id=community_id, for_write=True)
+
     # 复用通用上传逻辑：保存文件 + 生成缩略图
     upload_result: FileUploadResponse = save_upload_file(
         file=file,

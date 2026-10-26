@@ -3,12 +3,16 @@
 /**
  * 合并弹层（FR-14 / Task 8.1：搜索-勾选-合并 + 影响预览）.
  *
- * 全库按名/地址检索（覆盖名字差异巨大的同一小区）→ 勾选目标主档 →
- * 影响预览（别名吸纳/关联改指/图片归属/楼栋户室归并计数）→
- * 调现有 POST /admin/communities/merge（零改动）。
+ * 全库按名/地址检索（覆盖名字差异巨大的同一小区）→ 勾选要并入的档案 →
+ * **真实影响预览**（调 POST /admin/communities/merge/preview，与合并共用同一套
+ * 画像并集纯函数，保证「预览说补什么」＝「实际补什么」）→ 确认合并。
+ *
+ * 修复背景（SPEC community-merge-union）：原实现预览是 5 条**静态文案**，
+ * 而「画像取最大合集 / 图片随主档收敛」后端根本没做，运营在「b 信息完整、
+ * a 名字正确」场景下合并后看不到 b 的画像，误判为数据丢失。
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,7 +28,7 @@ import { Input } from "@/components/ui/input";
 import { client } from "@/lib/api-client";
 import { cn } from "@/lib/utils";
 
-import type { BdCommunityListItem } from "./types";
+import type { BdCommunityListItem, CommunityMergePreview } from "./types";
 
 interface MergeDialogProps {
   open: boolean;
@@ -34,12 +38,39 @@ interface MergeDialogProps {
   onMerged?: () => void;
 }
 
+/** 画像字段的中文名（仅本弹层使用，不抽 util） */
+const PROFILE_LABELS: Record<string, string> = {
+  district: "行政区",
+  business_circle: "板块",
+  ring: "环线",
+  property_types: "物业类型",
+  era_from: "建成年代起",
+  era_to: "建成年代止",
+  developer: "开发商",
+  property_mgmt: "物业公司",
+  address: "地址",
+  lng: "经度",
+  lat: "纬度",
+  city_id: "城市ID",
+};
+
+/** 预览值 → 可读文本（数组拼接、空值置「—」） */
+function formatPreviewValue(value: unknown): string {
+  if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) return "—";
+  if (Array.isArray(value)) return value.join("、");
+  return String(value);
+}
+
 export function MergeDialog({ open, onOpenChange, primaryId, primaryName, onMerged }: MergeDialogProps) {
   const [keyword, setKeyword] = useState("");
   const [results, setResults] = useState<BdCommunityListItem[]>([]);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  /** 合并影响预览（真实数据；null=未加载/加载失败 → 降级为静态文案） */
+  const [preview, setPreview] = useState<CommunityMergePreview | null>(null);
+  const [previewing, setPreviewing] = useState(false);
+  const previewSeq = useRef(0);
 
   const search = useCallback(async (kw: string) => {
     if (!kw.trim()) {
@@ -69,21 +100,61 @@ export function MergeDialog({ open, onOpenChange, primaryId, primaryName, onMerg
       setKeyword("");
       setResults([]);
       setChecked(new Set());
+      setPreview(null);
     }
   }, [open]);
+
+  /** 勾选变化 → 防抖拉取真实影响预览（失败静默降级为静态文案，不阻塞合并） */
+  useEffect(() => {
+    if (!open || checked.size === 0) {
+      setPreview(null);
+      return;
+    }
+    const ids = [...checked];
+    const seq = ++previewSeq.current;
+    setPreviewing(true);
+    const timer = setTimeout(async () => {
+      const { data, error } = await client.POST("/api/v1/admin/communities/merge/preview", {
+        body: { primary_id: primaryId, merge_ids: ids },
+      });
+      // 过期响应（用户又改了勾选）直接丢弃
+      if (seq !== previewSeq.current) return;
+      setPreviewing(false);
+      if (error || !data) {
+        setPreview(null);
+        return;
+      }
+      setPreview(data);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [checked, open, primaryId]);
 
   const handleMerge = useCallback(async () => {
     if (checked.size === 0) return;
     setSubmitting(true);
     try {
-      const { error } = await client.POST("/api/v1/admin/communities/merge", {
+      const { data, error } = await client.POST("/api/v1/admin/communities/merge", {
         body: { primary_id: primaryId, merge_ids: [...checked] },
       });
       if (error) {
         toast.error("合并失败，请检查后重试");
         return;
       }
-      toast.success(`已合并 ${checked.size} 个小区到「${primaryName}」`);
+      // 回执带上「实际补入」，与预览同口径
+      const filled = data?.profile_filled?.length ?? 0;
+      const movedImages = data?.images_moved ?? 0;
+      const summary = [
+        filled > 0 ? `补入画像 ${filled} 项` : null,
+        movedImages > 0 ? `迁移户型图 ${movedImages} 张` : null,
+      ]
+        .filter(Boolean)
+        .join("、");
+      toast.success(
+        `已合并 ${checked.size} 个小区到「${primaryName}」${summary ? `（${summary}）` : ""}`,
+      );
+      for (const warning of data?.warnings ?? []) {
+        toast.warning(warning);
+      }
       onOpenChange(false);
       onMerged?.();
     } finally {
@@ -175,17 +246,87 @@ export function MergeDialog({ open, onOpenChange, primaryId, primaryName, onMerg
           )}
         </div>
 
-        {/* 合并影响预览 */}
+        {/* 合并影响预览（SPEC community-merge-union §6.1：真实数据优先，失败降级静态文案） */}
         {checked.size > 0 ? (
-          <div className="rounded-xl bg-apricot-wash/50 p-3 text-[13px] text-rust">
-            <p className="font-medium">合并影响预览（{checked.size} 个小区）</p>
-            <ul className="mt-1 list-inside list-disc text-graphite">
-              <li>被并小区名转为主档别名（吸纳）</li>
-              <li>关联项目/线索/营销改指主档（{totalLinked} 个已关联单据）</li>
-              <li>户型图片随主档收敛</li>
-              <li>楼栋 {totalBuildings} / 户室 {totalRooms.toLocaleString()} 归并到主档名下</li>
-              <li>被并小区软归档（可解除合并恢复）</li>
-            </ul>
+          <div className="max-h-72 overflow-y-auto rounded-xl bg-apricot-wash/50 p-3 text-[13px] text-rust">
+            <p className="flex items-center gap-1.5 font-medium">
+              合并影响预览（{checked.size} 个小区）
+              {previewing ? <Loader2 className="size-3.5 animate-spin text-graphite" /> : null}
+            </p>
+            {preview ? (
+              <div className="mt-1.5 flex flex-col gap-2">
+                {/* ① 将补入的画像——报障场景的关键：让用户合并前就看清「b 的信息会不会进 a」 */}
+                {(() => {
+                  const changed = (preview.profile ?? []).filter(
+                    (row) => row.source !== "kept" && row.source !== "unchanged",
+                  );
+                  if (changed.length === 0) {
+                    return (
+                      <p className="text-[12px] text-graphite">
+                        画像：主档已有信息将全部保留，子档无可补入项（主档非空值不被覆盖）。
+                      </p>
+                    );
+                  }
+                  return (
+                    <div>
+                      <p className="text-[12px] font-medium text-ink">
+                        将补入画像 {changed.length} 项（主档已有值不覆盖）
+                      </p>
+                      <ul className="mt-1 flex flex-col gap-0.5">
+                        {changed.map((row) => (
+                          <li key={row.field} className="text-[12px] leading-relaxed text-graphite">
+                            <span className="text-ink">{PROFILE_LABELS[row.field] ?? row.field}</span>
+                            ：{formatPreviewValue(row.before)}
+                            <span className="mx-1 text-dove">→</span>
+                            <span className="text-ink">{formatPreviewValue(row.after)}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
+                {/* ② 将随迁/改指的资产 */}
+                {(() => {
+                  const counts = preview.counts;
+                  if (!counts) return null;
+                  const lines = [
+                    `楼栋 ${counts.buildings} / 户室 ${counts.rooms.toLocaleString()} 归并到主档名下`,
+                    `户型图 ${counts.images} 张随主档收敛`,
+                    `关联单据 ${counts.documents} 张改指主档（房源 ${counts.properties} 套）`,
+                    `待审楼栋/户室 ${counts.pending_entries} 条改指主档`,
+                    `竞品关系 ${counts.competitor_edges} 条改指主档`,
+                    counts.archived_children > 0
+                      ? `已并入这 ${checked.size} 个小区的 ${counts.archived_children} 个后代一并改指主档`
+                      : null,
+                    `被并小区名转为主档别名 ${counts.aliases} 个（旧名仍可搜索）`,
+                  ].filter(Boolean);
+                  return (
+                    <ul className="list-inside list-disc gap-0.5 text-[12px] leading-relaxed text-graphite">
+                      {lines.map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
+                      <li>被并小区软归档（可解除合并恢复）</li>
+                    </ul>
+                  );
+                })()}
+                {/* ③ 告警（超长地址、年代交叉、坐标越界） */}
+                {(preview.warnings?.length ?? 0) > 0 ? (
+                  <ul className="list-inside list-disc text-[12px] leading-relaxed">
+                    {preview.warnings?.map((w) => (
+                      <li key={w}>{w}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : (
+              <ul className="mt-1 list-inside list-disc text-graphite">
+                <li>被并小区名转为主档别名（吸纳）</li>
+                <li>关联项目/线索/营销改指主档（{totalLinked} 个已关联单据）</li>
+                <li>户型图片随主档收敛</li>
+                <li>楼栋 {totalBuildings} / 户室 {totalRooms.toLocaleString()} 归并到主档名下</li>
+                <li>被并小区软归档（可解除合并恢复）</li>
+              </ul>
+            )}
           </div>
         ) : null}
 

@@ -206,6 +206,23 @@ class _BadEntry:
 _ZipEntry: TypeAlias = tuple[str, Iterable[str] | _BadEntry]
 
 
+class SkippedArchivedCommunityError(Exception):
+    """导入命中「已归档（已并入主档）」小区时抛出（SPEC `community-merge-union` §4.8）.
+
+    作为独立异常而非 409：导入是批量后台任务，抛业务异常会中断整包；
+    调用方捕获后记入 ``failed_rows``（失败明细 CSV），其余小区继续导入。
+    """
+
+    def __init__(self, community_name: str, parent_name: str | None) -> None:
+        """初始化异常."""
+        self.community_name = community_name
+        self.parent_name = parent_name
+        target = f"「{parent_name}」" if parent_name else "主档"
+        super().__init__(
+            f"小区「{community_name}」已并入{target}（归档），请在主档补录；本次导入已跳过该小区",
+        )
+
+
 class DictImportStats:
     """导入对账三计数."""
 
@@ -318,6 +335,21 @@ def load_community_by_copy(
     room_rows = rooms or []
     stats = DictImportStats()
     with engine.begin() as conn:
+        # 0. 归档（已并入主档）小区禁止再导入（SPEC `community-merge-union` §4.8/D7）：
+        #    原实现 ON CONFLICT(name) DO UPDATE 会把楼栋/户室继续落进归档行，
+        #    主档永远看不到（实测「导入后主档楼栋数 0、归档行 +1」）。
+        #    抛专用异常由导入循环记入 failed_rows，不中断整包。
+        archived = conn.execute(
+            text("SELECT merged_into_id FROM communities WHERE name = :name AND is_active = false"),
+            {"name": community_name},
+        ).first()
+        if archived is not None:
+            parent_name = conn.execute(
+                text("SELECT name FROM communities WHERE id = :pid"),
+                {"pid": archived[0]},
+            ).scalar()
+            raise SkippedArchivedCommunityError(community_name, parent_name)
+
         # 1. communities upsert（source=import 废止 → 不写 source；画像列 COALESCE 保留已有值）
         #    id 为应用层 UUID（ORM default），COPY 链路需显式生成
         row = conn.execute(
@@ -751,6 +783,12 @@ class DictImportProcessor:
                     total_communities,
                 )
                 break
+            except SkippedArchivedCommunityError as e:
+                # 已并入主档的归档小区：跳过该小区（不落楼栋/户室），记入失败明细，
+                # 其余小区继续导入（SPEC §4.8/D7）
+                community_name = community_name or f"第 {idx} 个条目"
+                logger.warning("导入跳过已归档小区: %s", e)
+                failed_rows.append({"community": community_name, "error": str(e)[:500]})
             except Exception as e:
                 community_name = community_name or f"第 {idx} 个条目"
                 logger.exception("小区装载失败: %s", community_name)

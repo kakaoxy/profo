@@ -18,6 +18,7 @@ from dependencies.common import PaginationDep
 from schemas.community import (
     CommunityCreateRequest,
     CommunityListResponse,
+    CommunityMergePreviewResponse,
     CommunityMergeRequest,
     CommunityMergeResponse,
     CommunityResponse,
@@ -28,7 +29,7 @@ from schemas.community import (
 from services.market import CommunityMerger, get_community_service
 from services.market.community_service import CommunityQueryService
 from services.system.exceptions import ServiceException, ValidationError
-from utils.common import RateLimits, limiter
+from utils.common import RateLimits, get_login_user_identifier, limiter
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,47 @@ def get_business_circles(
     return service.query_business_circles(db=db, district=district, search=search, limit=limit)
 
 
+@router.post(
+    "/communities/merge/preview",
+    responses={400: {"description": "主档/子档不存在或已归档"}, 403: {"description": "缺少 property:governance 权限"}},
+)
+# 独立额度 + 按用户计数：预览每次勾选都触发，与 COMMUNITY_MERGE 同桶会让运营
+# 「预览几次就再也合并不了」（20/hour 还是整个 NAT 共享的 IP 桶）。
+@limiter.limit(RateLimits.COMMUNITY_MERGE_PREVIEW, key_func=get_login_user_identifier)
+def preview_merge_communities(
+    request: Request,
+    merge_request: CommunityMergeRequest,
+    db: DbSessionDep,
+    _current_user: PropertyGovernancePermDep,
+) -> CommunityMergePreviewResponse:
+    """合并影响预览（只读、零副作用，SPEC `community-merge-union` §5.1）.
+
+    与 ``POST /communities/merge`` **共用**同一套画像并集纯函数，因此
+    「预览说会补什么」与「实际补了什么」不可能漂移。
+
+    权限与限流与合并同口径：``property:governance`` + ``COMMUNITY_MERGE``。
+    """
+    logger.info(
+        "收到小区合并预览请求: primary_id=%s, merge_ids=%s",
+        merge_request.primary_id,
+        merge_request.merge_ids,
+    )
+    merger = CommunityMerger()
+    try:
+        return merger.preview_merge(
+            primary_id=merge_request.primary_id,
+            merge_ids=merge_request.merge_ids,
+            db=db,
+        )
+    except ValueError as e:
+        logger.warning("小区合并预览校验失败: %s", e)
+        raise ValidationError(str(e)) from e
+    except Exception:
+        logger.exception("小区合并预览发生未知错误")
+        msg = "预览失败，请稍后重试"
+        raise ServiceException(msg) from None
+
+
 @router.post("/communities/merge")
 @limiter.limit(RateLimits.COMMUNITY_MERGE)
 def merge_communities(
@@ -132,7 +174,21 @@ def merge_communities(
             action="community_merge",
             resource_type="community",
             resource_id=str(merge_request.primary_id),
-            after={"merge_ids": merge_request.merge_ids},
+            after={
+                "merge_ids": merge_request.merge_ids,
+                "profile_filled": result.profile_filled,
+                "profile_before": result.profile_before,
+                "profile_after": result.profile_after,
+                "images_moved": result.images_moved,
+                "pending_entries_moved": result.pending_entries_moved,
+                "competitor_edges_moved": result.competitor_edges_moved,
+                "archived_children_reparented": result.archived_children_reparented,
+                # 被压平的孙档名单：层级压平后原归属无法再查（SPEC §9 L2），
+                # 这份名单是解除合并后人工重建层级的唯一依据，必须进审计。
+                # 仅落审计，不回 API 响应（回执契约保持不变）。
+                "archived_children_reparented_detail": result.archived_children_reparented_detail,
+                "warnings": result.warnings,
+            },
             request=request,
         )
 
@@ -141,6 +197,12 @@ def merge_communities(
             success=True,
             affected_properties=result.affected_properties,
             message=result.message,
+            profile_filled=result.profile_filled,
+            images_moved=result.images_moved,
+            pending_entries_moved=result.pending_entries_moved,
+            competitor_edges_moved=result.competitor_edges_moved,
+            archived_children_reparented=result.archived_children_reparented,
+            warnings=result.warnings,
         )
 
     except ValueError as e:

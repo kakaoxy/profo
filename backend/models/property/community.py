@@ -14,6 +14,7 @@ from sqlalchemy import (
     Integer,
     String,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -155,6 +156,24 @@ class CommunityCompetitor(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="主小区ID")
     competitor_community_id: Mapped[str] = mapped_column(String(36), nullable=False, comment="竞品小区ID")
+    # 小区合并可逆标记（v98，SPEC community-merge-union §4.5）：
+    # 合并时改指主档的竞品边记下原 owner 小区，解除合并据此回迁。
+    # 仅 owner 侧记标记（被引用方归属不属于本小区数据，见 SPEC §9 L3）。
+    origin_community_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="合并前原 owner 小区ID(仅合并迁移过的竞品边有值，解除合并时据此可逆)",
+    )
+    # 逻辑删除（v101）：合并时「改指后与主档已有边重复」的子档边不再物理删除，
+    # 而是标记 ``origin_community_id`` + 本列置真后保留，解除合并时复活回子档。
+    # 物理删除后该边无任何痕迹，解除合并无法恢复（实测：子档边永久丢失）。
+    is_deleted: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        server_default=text("false"),
+        nullable=False,
+        comment="逻辑删除标记(合并去重保留可逆痕迹，查询须过滤)",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -162,7 +181,23 @@ class CommunityCompetitor(Base):
         comment="创建时间",
     )
 
-    __table_args__ = (UniqueConstraint("community_id", "competitor_community_id", name="uq_community_competitor"),)
+    __table_args__ = (
+        # 部分唯一索引（v101 起）：仅约束未删除的边。
+        # 必须带 WHERE is_deleted = false——否则被合并去重软删的子档边仍占着
+        # (community_id, competitor_community_id) 这一对，解除合并时复活会撞唯一约束。
+        # 历史数据库由迁移 v101 把原 UNIQUE 约束重建为该部分唯一索引。
+        Index(
+            "uq_community_competitor",
+            "community_id",
+            "competitor_community_id",
+            unique=True,
+            postgresql_where=text("is_deleted = false"),
+        ),
+        # 合并可逆回迁（v98）：解除合并按 origin 批量归位
+        Index("idx_community_competitor_origin", "origin_community_id"),
+        # 按小区查询未删除竞品边（get_competitors / 竞品雷达的主查询路径）
+        Index("idx_community_competitor_owner_active", "community_id", "is_deleted"),
+    )
 
     def __repr__(self) -> str:
         """返回字符串表示."""

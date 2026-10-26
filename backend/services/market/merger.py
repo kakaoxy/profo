@@ -1,17 +1,31 @@
 """小区合并服务.
 
-处理小区的合并逻辑，包括别名迁移、房源更新及状态变更.
+处理小区的合并逻辑，包括画像合集、别名迁移、资产随迁、房源更新及状态变更.
+
+**口径来源**：SPEC `docs/To-Do/2026-10-26-楼盘字典-小区合并信息合集-SPEC.md`。
+合并的目标是「取两个小区信息的最大合集」——主档名称永不被覆盖（D2），主档非空画像
+永不被覆盖（D1），子档的户型图/待审条目/竞品边随主档收敛并可用 ``origin_community_id``
+在解除合并时归位（D6/D9）。
+
+[拆分说明] 本文件只保留「合并/解除合并事务流 + 别名 + 归档」；同质能力拆到
+共享同一事务边界的 Mixin（AGENTS「单文件 >500 行必须拆分」）：
+- ``merge_asset_mixin.MergeAssetMixin``：画像并集 + 户型图/待审条目/竞品边随迁与回迁；
+- ``merge_dict_tree_mixin.MergeDictTreeMixin``：字典楼栋树与业务单据的对称改指（H3）；
+- ``merge_preview_mixin.MergePreviewMixin``：只读影响预览。
 """
 
 import logging
 from datetime import datetime, timezone
 
-from sqlalchemy import or_, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from models import BdRoom, L4MarketingProject, Lead, Project
+from models import L4MarketingProject, Lead, Project
 from models.property import Community, CommunityAlias, PropertyCurrent
+from services.market.community_profile_merge import ProfileUnion
+from services.market.merge_asset_mixin import MergeAssetMixin
+from services.market.merge_dict_tree_mixin import MergeDictTreeMixin
+from services.market.merge_preview_mixin import MergePreviewMixin
 
 logger = logging.getLogger(__name__)
 
@@ -19,17 +33,44 @@ logger = logging.getLogger(__name__)
 class MergeResult:
     """合并结果值对象."""
 
-    def __init__(self, *, success: bool, affected_properties: int, message: str) -> None:
+    def __init__(
+        self,
+        *,
+        success: bool,
+        affected_properties: int,
+        message: str,
+        profile_filled: list[str] | None = None,
+        images_moved: int = 0,
+        pending_entries_moved: int = 0,
+        competitor_edges_moved: int = 0,
+        archived_children_reparented: int = 0,
+        archived_children_reparented_detail: list[dict[str, str]] | None = None,
+        warnings: list[str] | None = None,
+        profile_before: dict | None = None,
+        profile_after: dict | None = None,
+    ) -> None:
         """初始化合并结果."""
         self.success = success
         self.affected_properties = affected_properties
         self.message = message
+        self.profile_filled = profile_filled or []
+        self.images_moved = images_moved
+        self.pending_entries_moved = pending_entries_moved
+        self.competitor_edges_moved = competitor_edges_moved
+        self.archived_children_reparented = archived_children_reparented
+        # 被压平的孙档名单（仅进审计，不进 API 回执）：层级压平后原归属不可再查，
+        # 这份名单是解除合并后人工重建层级的唯一依据（SPEC §9 L2 的缓解）。
+        self.archived_children_reparented_detail = archived_children_reparented_detail or []
+        self.warnings = warnings or []
+        self.profile_before = profile_before or {}
+        self.profile_after = profile_after or {}
 
 
-class CommunityMerger:
+class CommunityMerger(MergeAssetMixin, MergeDictTreeMixin, MergePreviewMixin):
     """小区数据治理服务.
 
     负责处理小区的合并逻辑，包括别名迁移、房源更新及状态变更.
+    附属数据随迁/回迁与只读预览由三个 Mixin 装配（见模块头「拆分说明」）。
     """
 
     ALIAS_SOURCE_MERGE = "merge_operation"
@@ -39,11 +80,11 @@ class CommunityMerger:
     # 让 validate_dict_ownership 把单据永久判为不可编辑。
     _DICT_DOC_MODELS: tuple[type, ...] = (Project, Lead, L4MarketingProject)
 
-    def merge_communities(self, primary_id: int, merge_ids: list[int], db: Session) -> MergeResult:
+    def merge_communities(self, primary_id: str, merge_ids: list[str], db: Session) -> MergeResult:
         """执行小区合并的主流程."""
         try:
             primary_community = self._validate_communities(primary_id, merge_ids, db)
-            merge_communities = db.query(Community).filter(Community.id.in_(merge_ids)).all()
+            merge_communities = self._load_children(merge_ids, db)
 
             affected_count = self._count_affected_properties(merge_ids, db)
             logger.info(
@@ -53,6 +94,8 @@ class CommunityMerger:
                 affected_count,
             )
 
+            # ① 画像合集（P0）：主档非空值不覆盖，只填空（SPEC D1）
+            profile = self._merge_community_profile(primary_community, merge_communities)
             self._process_aliases(primary_community, merge_communities, db)
             self._migrate_properties(primary_id, merge_ids, db)
             # H3：字典楼栋树跟随小区合并迁移（否则主档看不到被并小区楼栋，
@@ -61,18 +104,43 @@ class CommunityMerger:
             # H3 配套：单据小区改指主档（否则楼栋已迁主档、单据仍指向归档小区，
             # 归属校验把单据判为脏关联 → 三模块单据此后任何编辑都 400）
             doc_count = self._migrate_business_docs(primary_id, merge_ids, db)
-            self._archive_communities(primary_community, merge_communities)
+            # ② 待审条目 / ③ 户型图 / ④ 竞品边随主档收敛（SPEC §4.3-4.5）
+            pending_moved = self._migrate_pending_entries(primary_community, merge_communities, db)
+            image_stats = self._migrate_community_images(primary_community, merge_communities, db)
+            competitor_moved = self._migrate_competitors(primary_community, merge_communities, db)
+            reparented_detail = self._archive_communities(primary_community, merge_communities, db)
             self._refresh_primary_stats(primary_community, db)
 
             db.commit()
 
-            success_msg = (
-                f"成功合并 {len(merge_ids)} 个小区到 '{primary_community.name}'，"
-                f"共迁移 {affected_count} 套房源、{dict_stats['buildings']} 个字典楼栋、"
-                f"{doc_count} 张关联单据改指主档"
+            success_msg = self._compose_success_message(
+                primary_community.name,
+                len(merge_ids),
+                affected_count,
+                dict_stats["buildings"],
+                doc_count,
+                profile,
+                image_stats,
+                pending_moved,
+                competitor_moved,
             )
             logger.info(success_msg)
-            return MergeResult(success=True, affected_properties=affected_count, message=success_msg)
+            return MergeResult(
+                success=True,
+                affected_properties=affected_count,
+                message=success_msg,
+                profile_filled=profile.filled,
+                images_moved=image_stats["moved"],
+                pending_entries_moved=pending_moved,
+                competitor_edges_moved=competitor_moved,
+                archived_children_reparented=len(reparented_detail),
+                archived_children_reparented_detail=reparented_detail,
+                warnings=profile.warnings,
+                # 快照取自并集结果本身（内部在改写主档**之前**捕获）；
+                # 在这里重新 getattr 会得到「改后」的值，before 就失真了。
+                profile_before=profile.before,
+                profile_after=profile.after,
+            )
 
         except SQLAlchemyError:
             db.rollback()
@@ -146,6 +214,11 @@ class CommunityMerger:
             #     否则单据小区为主档、楼栋已归位被并小区 → 同样成为不可编辑死单据）
             restored_docs = self._restore_business_docs(merged_id, primary_id, restored_building_ids, db)
 
+            # 3c. 户型图 / 待审条目 / 竞品边回迁（与 merge 的改指对称，SPEC §4.7）
+            restored_images = self._restore_community_images(merged_id, primary_id, db)
+            restored_pending = self._restore_pending_entries(merged_id, primary_id, db)
+            restored_competitors = self._restore_competitors(merged_id, primary_id, db)
+
             # 4. 主档计数刷新
             self._refresh_primary_stats(primary, db)
             db.commit()
@@ -153,7 +226,9 @@ class CommunityMerger:
             success_msg = (
                 f"已解除合并：'{merged.name}' 恢复独立小区"
                 f"（原关联房源 {affected_count} 套、字典楼栋 {len(restored_building_ids)} 个、"
-                f"关联单据 {restored_docs} 张已归位；如需把房源拆回请人工迁移）"
+                f"关联单据 {restored_docs} 张、户型图 {restored_images} 张、"
+                f"待审条目 {restored_pending} 条、竞品关系 {restored_competitors} 条已归位；"
+                f"如需把房源拆回请人工迁移）"
             )
             logger.info(success_msg)
             return MergeResult(success=True, affected_properties=affected_count, message=success_msg)
@@ -169,34 +244,51 @@ class CommunityMerger:
             logger.exception("解除合并未预期错误")
             return MergeResult(success=False, affected_properties=0, message="系统内部错误")
 
-    def _validate_communities(self, primary_id: int, merge_ids: list[int], db: Session) -> Community:
+    def _validate_communities(
+        self,
+        primary_id: str,
+        merge_ids: list[str],
+        db: Session,
+        *,
+        for_update: bool = True,
+    ) -> Community:
         """验证主小区和待合并小区是否存在且有效.
 
         使用 with_for_update 加行级锁，防止并发合并导致房源归属不一致。
+
+        Args:
+            primary_id: 主档 ID
+            merge_ids: 待并入 ID 列表
+            db: 数据库会话
+            for_update: 是否加行锁。**只有写路径（合并）可以为 True** ——
+                预览端点每次勾选都会触发，给它加 FOR UPDATE 等于用读接口
+                长期持住主档 + 全部子档的行锁，会把并发的真实合并挡住
+                （也直接违反 SPEC §5.1「只读、零副作用」的契约）。
+                预览传 False：校验规则完全一致，只是不锁行。
+
+        Raises:
+            ValueError: 主档或子档不存在/已归档
+
         """
-        primary = (
-            db.query(Community)
-            .filter(
-                Community.id == primary_id,
-                Community.is_active.is_(True),
-            )
-            .with_for_update()
-            .first()
+        primary_query = db.query(Community).filter(
+            Community.id == primary_id,
+            Community.is_active.is_(True),
         )
+        child_query = db.query(Community).filter(
+            Community.id.in_(merge_ids),
+            Community.is_active.is_(True),
+        )
+        if for_update:
+            primary_query = primary_query.with_for_update()
+            child_query = child_query.with_for_update()
+
+        primary = primary_query.first()
 
         if not primary:
             msg = f"主小区 ID {primary_id} 不存在或已被删除"
             raise ValueError(msg)
 
-        existing = (
-            db.query(Community)
-            .filter(
-                Community.id.in_(merge_ids),
-                Community.is_active.is_(True),
-            )
-            .with_for_update()
-            .all()
-        )
+        existing = child_query.all()
 
         if len(existing) != len(merge_ids):
             msg = "提供的合并列表中包含无效或已删除的小区 ID"
@@ -204,7 +296,28 @@ class CommunityMerger:
 
         return primary
 
-    def _count_affected_properties(self, merge_ids: list[int], db: Session) -> int:
+    @staticmethod
+    def _load_children(merge_ids: list[str], db: Session) -> list[Community]:
+        """按**请求顺序**加载子档（合并与预览必须同序）.
+
+        画像并集是「先到先得」（主档优先 → 第一个有值的子档优先，SPEC D1/Q2）。
+        ``IN`` 查询返回的是数据库任意序，若合并按它执行、预览按 ``merge_ids``
+        排序执行，两个子档持有同一空字段时两边会取到**不同子档的值** —— 正是
+        本修复要杜绝的「预览说补 A、实际补 B」。故两侧共用本方法定序。
+
+        Args:
+            merge_ids: 请求中的子档 ID 列表（顺序即优先级）
+            db: 数据库会话
+
+        Returns:
+            按 ``merge_ids`` 顺序排列的子档列表
+
+        """
+        rows = db.query(Community).filter(Community.id.in_(merge_ids)).all()
+        order = {cid: idx for idx, cid in enumerate(merge_ids)}
+        return sorted(rows, key=lambda c: order.get(c.id, len(order)))
+
+    def _count_affected_properties(self, merge_ids: list[str], db: Session) -> int:
         """统计将被迁移的房源数量."""
         return (
             db.query(PropertyCurrent)
@@ -214,6 +327,38 @@ class CommunityMerger:
             )
             .count()
         )
+
+    def _compose_success_message(
+        self,
+        primary_name: str,
+        merge_count: int,
+        affected_count: int,
+        building_count: int,
+        doc_count: int,
+        profile: ProfileUnion,
+        image_stats: dict[str, int],
+        pending_moved: int,
+        competitor_moved: int,
+    ) -> str:
+        """拼接合并成功文案（含画像补入摘要，供前端 toast 直接展示）."""
+        base = (
+            f"成功合并 {merge_count} 个小区到 '{primary_name}'，"
+            f"共迁移 {affected_count} 套房源、{building_count} 个字典楼栋、"
+            f"{doc_count} 张关联单据改指主档"
+        )
+        extras: list[str] = []
+        if profile.filled:
+            extras.append(f"补入画像 {len(profile.filled)} 项（{'/'.join(profile.filled)}）")
+        if image_stats["moved"]:
+            deduped = image_stats["deduped"]
+            extras.append(f"迁移户型图 {image_stats['moved']} 张" + (f"（{deduped} 张因重复软删）" if deduped else ""))
+        if pending_moved:
+            extras.append(f"{pending_moved} 条待审条目改指主档")
+        if competitor_moved:
+            extras.append(f"{competitor_moved} 条竞品关系改指主档")
+        if not extras:
+            return base
+        return base + "；" + "、".join(extras)
 
     def _process_aliases(self, primary: Community, merge_communities: list[Community], db: Session) -> None:
         """处理别名逻辑.
@@ -291,7 +436,7 @@ class CommunityMerger:
             else:
                 alias.community_id = new_community_id
 
-    def _migrate_properties(self, primary_id: int, merge_ids: list[int], db: Session) -> None:
+    def _migrate_properties(self, primary_id: str, merge_ids: list[str], db: Session) -> None:
         """批量更新房源的归属小区."""
         db.query(PropertyCurrent).filter(
             PropertyCurrent.community_id.in_(merge_ids),
@@ -301,214 +446,69 @@ class CommunityMerger:
             synchronize_session=False,
         )
 
-    def _migrate_dict_buildings(self, primary_id: int, merge_ids: list[int], db: Session) -> dict[str, int]:
-        """字典楼栋树跟随合并迁移（H3 修复，与 _migrate_properties 同事务）.
+    def _archive_communities(
+        self,
+        primary: Community,
+        communities: list[Community],
+        db: Session,
+    ) -> list[dict[str, str]]:
+        """软删除被合并的小区，并把它们的后代一并改指本主档（SPEC §4.6）.
 
-        - 主档须按楼栋号看得到被并小区的楼栋（总览/详情/FR-14 数据情况）；
-        - 不迁移的话，被并小区虽已 is_active=False，仍是 bd_buildings 的持有者，
-          且 delete_community 拦不住「本小区已被并入别处」→ 整树物理删除不可恢复。
+        v1.9：写入 ``merged_into_id``（合并信息区块与解除合并依据，SRS §8）。
 
-        uq(community_id, building_no) 冲突（主档已有同号楼栋）的楼栋不迁移，
-        保留在原小区（其归属在解除合并时自然还原），避免整笔事务失败。
-        origin_community_id 记录原归属，供 unmerge 可逆回迁。
+        **链式合并压缩层级**：B→A 后再 A→C 时，若只把 A 指向 C，B 仍指向已归档的 A
+        → C 的 ``merged_children`` 看不到 B，且无法从 C 直接解除 B（实测 400）。
+        故把「已并入本批子档」的后代统一改指新主档，层级压平。
 
-        冲突比较不能只看主档存量：同批多个被并小区之间也可能同号（真实数据里
-        ``01``/``02`` 等楼栋号在 19.6k 个小区中重复率极高）。原实现只做
-        ``NOT EXISTS(主档同号)``，同批两行同号时会双双通过检查 → 同一 UPDATE
-        内两行都改判主档 → 撞 ``uq_bd_buildings_no`` 使整笔合并回滚（线上表现为
-        合并永远 400「数据库操作失败」）。故追加同批内「同号只迁移 id 最小的一行」
-        判定（同一语句内子查询看到的是语句开始时的快照，结果确定）。
+        **为什么要返回名单而不只是计数**（SPEC §9 L2）：压平后 ``B.merged_into_id``
+        指向 C，A 上不再留任何「B 曾属于我」的痕迹，解除合并**无法**据此还原层级，
+        也没有别的依据可查——层级关系就此永久丢失。把被改指的后代 ``(id, name)``
+        落进合并审计后，至少可从审计日志人工重建，把 L2 从「不可逆」降为「可人工修复」。
+        维护者注意：不要在压平后再查询后代名单（更新后它们已指向主档，查不到原归属）。
 
-        Returns:
-            {"buildings": 迁移楼栋数, "rooms": 随之迁移的户室数}
-
-        """
-        from models import BdBuilding
-
-        # 一条 SQL 完成迁移（避免逐楼栋往返）：主档已有同号、或同批中已有更小的
-        # 同号行被迁移的那批留在原小区
-        result = db.execute(
-            text(
-                """
-                UPDATE bd_buildings b
-                   SET community_id = :primary_id,
-                       origin_community_id = b.community_id,
-                       updated_at = now()
-                 WHERE b.community_id = ANY(:merge_ids)
-                   AND NOT EXISTS (
-                       SELECT 1 FROM bd_buildings p
-                        WHERE p.community_id = :primary_id
-                          AND p.building_no = b.building_no
-                   )
-                   AND NOT EXISTS (
-                       SELECT 1 FROM bd_buildings s
-                        WHERE s.community_id = ANY(:merge_ids)
-                          AND s.building_no = b.building_no
-                          AND s.id < b.id
-                   )
-                """
-            ),
-            {"primary_id": str(primary_id), "merge_ids": [str(i) for i in merge_ids]},
-        )
-        moved = result.rowcount or 0
-        room_count = (
-            db.query(BdRoom)
-            .filter(
-                BdRoom.building_id.in_(
-                    db.query(BdBuilding.id).filter(
-                        BdBuilding.community_id == str(primary_id),
-                        BdBuilding.origin_community_id.in_([str(i) for i in merge_ids]),
-                    )
-                )
-            )
-            .count()
-        )
-        logger.info("小区合并：字典楼栋迁移 %d 个（户室 %d 个随之改归主档）", moved, room_count)
-        return {"buildings": moved, "rooms": room_count}
-
-    def _restore_dict_buildings(self, merged_id: str, primary_id: str, db: Session) -> list[int]:
-        """解除合并：把合并时改指主档的字典楼栋按 origin_community_id 回迁原本小区.
-
-        只回迁带 origin_community_id == 本被并小区 的楼栋（merge 迁移才有标记），
-        手工改归主档的楼栋不回迁。
+        Args:
+            primary: 主档
+            communities: 本批被并小区
+            db: 数据库会话
 
         Returns:
-            本次回迁的楼栋 id 列表（供引用单据同步拆回）。
+            被改指的后代小区名单 ``[{"id": ..., "name": ...}]``（链式合并时非空）；
+            长度即原返回值语义上的「改指条数」
 
-        """
-        result = db.execute(
-            text(
-                """
-                UPDATE bd_buildings
-                   SET community_id = origin_community_id,
-                       origin_community_id = NULL,
-                       updated_at = now()
-                 WHERE community_id = :primary_id
-                   AND origin_community_id = :merged_id
-             RETURNING id
-                """
-            ),
-            {"primary_id": str(primary_id), "merged_id": str(merged_id)},
-        )
-        restored = [int(r[0]) for r in result.all()]
-        if restored:
-            logger.info("解除合并：字典楼栋回迁 %d 个到小区 %s", len(restored), merged_id)
-        return restored
-
-    def _migrate_business_docs(self, primary_id: int, merge_ids: list[int], db: Session) -> int:
-        """单据小区改指主档（H3 配套修复）.
-
-        合并把字典楼栋改判主档后，若引用了这些楼栋的单据仍指向被并（已归档）小区，
-        就形成「单据小区 ≠ 楼栋小区」——三模块创建/编辑链路的
-        ``validate_dict_ownership`` 会以「字典楼栋不属于所选小区」400 挡住此后
-        任何编辑（含只改状态/发布态），单据永久不可编辑，只能人工先把小区改对。
-        故与楼栋迁移同事务把 projects/leads/l4_marketing_projects 的
-        ``community_id`` 一并改判主档（楼栋/户室 id 不变，仍指向已随迁的实表行）。
-
-        只改指「小区级单据」与「楼栋已随迁的单据」：楼栋号撞号被留在原小区的
-        那批（见 ``_migrate_dict_buildings``）引用的单据保持原小区，否则又会
-        造出新的「单据小区 ≠ 楼栋小区」脏关联（正好是本方法要消除的问题）。
-
-        ``community_name`` 冗余列按既有口径保留原值（与 dictionary_link_service
-        绑定口径一致：不改写来源单据的小区名冗余）。
-
-        Returns:
-            改指的关联单据张数。
-
-        """
-        merged_strs = [str(i) for i in merge_ids]
-        primary_str = str(primary_id)
-        moved_building_ids = [
-            int(r[0])
-            for r in db.execute(
-                text("SELECT id FROM bd_buildings WHERE community_id = :p AND origin_community_id = ANY(:m)"),
-                {"p": primary_str, "m": merged_strs},
-            ).all()
-        ]
-        total = 0
-        for model in self._DICT_DOC_MODELS:
-            # 1. 未选楼栋/户室的小区级单据：无归属可比对，直接随小区改指
-            total += int(
-                db.query(model)
-                .filter(
-                    model.community_id.in_(merged_strs),
-                    model.building_id.is_(None),
-                    model.room_id.is_(None),
-                )
-                .update(
-                    {model.community_id: primary_str, model.updated_at: datetime.now(timezone.utc)},
-                    synchronize_session=False,
-                )
-                or 0
-            )
-            if not moved_building_ids:
-                continue
-            # 2. 引用了「已随迁楼栋」的单据（楼栋直连或经户室反查）
-            rooms_of_moved = db.query(BdRoom.id).filter(BdRoom.building_id.in_(moved_building_ids))
-            total += int(
-                db.query(model)
-                .filter(
-                    model.community_id.in_(merged_strs),
-                    or_(
-                        model.building_id.in_(moved_building_ids),
-                        model.room_id.in_(rooms_of_moved.scalar_subquery()),
-                    ),
-                )
-                .update(
-                    {model.community_id: primary_str, model.updated_at: datetime.now(timezone.utc)},
-                    synchronize_session=False,
-                )
-                or 0
-            )
-        if total:
-            logger.info("小区合并：%d 张关联单据改指主档（项目/线索/营销）", total)
-        return total
-
-    def _restore_business_docs(
-        self, merged_id: str, primary_id: str, restored_building_ids: list[int], db: Session
-    ) -> int:
-        """解除合并：把引用了回迁楼栋的单据一并拆回被并小区.
-
-        只拆引用 ``_restore_dict_buildings`` 本次回迁楼栋的单据（主档自身单据、
-        以及引用撞号留在原小区楼栋的单据都不受影响），与 merge 的改指对称。
-
-        ⚠️ 未覆盖：合并时被改指主档的「小区级单据」（未选楼栋/户室）不在此拆回——
-        它们与哪些楼栋一起回迁没有可判定依据，沿用既有口径「房源类需人工迁移」。
-        """
-        if not restored_building_ids:
-            return 0
-        total = 0
-        for model in self._DICT_DOC_MODELS:
-            room_ids_of_restored = db.query(BdRoom.id).filter(BdRoom.building_id.in_(restored_building_ids))
-            restored = (
-                db.query(model)
-                .filter(
-                    model.community_id == primary_id,
-                    or_(
-                        model.building_id.in_(restored_building_ids),
-                        model.room_id.in_(room_ids_of_restored.scalar_subquery()),
-                    ),
-                )
-                .update(
-                    {model.community_id: merged_id, model.updated_at: datetime.now(timezone.utc)},
-                    synchronize_session=False,
-                )
-            )
-            total += int(restored or 0)
-        if total:
-            logger.info("解除合并：%d 张关联单据拆回被并小区 %s", total, merged_id)
-        return total
-
-    def _archive_communities(self, primary: Community, communities: list[Community]) -> None:
-        """软删除被合并的小区.
-
-        v1.9：同时写入 merged_into_id（字典合并信息区块与解除合并依据，SRS §8）。
         """
         now = datetime.now(timezone.utc)
+        child_ids = [c.id for c in communities]
+        reparented: list[dict[str, str]] = []
         for c in communities:
             c.is_active = False
             c.merged_into_id = primary.id
             c.updated_at = now
+
+        if child_ids:
+            # 先取名单再更新：更新后 merged_into_id 已改指主档，按原条件再也查不到
+            descendants = (
+                db.query(Community)
+                .filter(
+                    Community.merged_into_id.in_(child_ids),
+                    Community.id.notin_([primary.id, *child_ids]),
+                )
+                .all()
+            )
+            if descendants:
+                reparented = [{"id": str(row.id), "name": row.name} for row in descendants]
+                db.query(Community).filter(
+                    Community.id.in_([row.id for row in descendants]),
+                ).update(
+                    {Community.merged_into_id: primary.id, Community.updated_at: now},
+                    synchronize_session=False,
+                )
+        if reparented:
+            logger.info(
+                "小区合并：%d 个后代归档小区改指主档（层级压平）%s",
+                len(reparented),
+                ", ".join(f"{item['name']}({item['id']})" for item in reparented[:20]),
+            )
+        return reparented
 
     def _refresh_primary_stats(self, primary: Community, db: Session) -> None:
         """重新计算主小区的统计数据."""

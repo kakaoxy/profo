@@ -4,6 +4,7 @@
 """
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
@@ -63,11 +64,70 @@ class CommunityMergeRequest(BaseModel):
 
 
 class CommunityMergeResponse(BaseModel):
-    """小区合并响应."""
+    """小区合并响应.
+
+    v1.10（SPEC `community-merge-union`）：追加画像补入与资产随迁回执。
+    全部为默认值，解除合并（unmerge）复用本模型时自动为空/0，向后兼容。
+    """
 
     success: bool
     affected_properties: int
     message: str
+    # 本次由子档补入主档的画像字段（SPEC D1：主档非空值不覆盖）
+    profile_filled: list[str] = Field(default_factory=list, description="本次由子档补入的画像字段")
+    images_moved: int = Field(default=0, description="随迁的户型图张数")
+    pending_entries_moved: int = Field(default=0, description="改指主档的待审条目数")
+    competitor_edges_moved: int = Field(default=0, description="改指主档的竞品关系数")
+    archived_children_reparented: int = Field(default=0, description="层级压平改指主档的后代小区数")
+    warnings: list[str] = Field(default_factory=list, description="需运营知晓的降级说明")
+
+
+class CommunityMergeProfileItem(BaseModel):
+    """合并预览：单个画像字段的变化行."""
+
+    field: str = Field(description="画像字段名")
+    before: Any = Field(default=None, description="主档当前值")
+    after: Any = Field(default=None, description="合并后的值")
+    source: str = Field(description="取值来源：kept / union / child:<id>")
+
+
+class CommunityMergeChildPreview(BaseModel):
+    """合并预览：单个子档的资产与数据情况."""
+
+    id: str
+    name: str
+    building_count: int = 0
+    room_count: int = 0
+    linked_document_count: int = 0
+    image_count: int = 0
+    open_pending_count: int = 0
+    competitor_edge_count: int = 0
+    archived_children_count: int = 0
+    alias_count: int = 0
+
+
+class CommunityMergeCounts(BaseModel):
+    """合并预览：将随迁的资产计数汇总."""
+
+    properties: int = 0
+    buildings: int = 0
+    rooms: int = 0
+    documents: int = 0
+    images: int = 0
+    pending_entries: int = 0
+    competitor_edges: int = 0
+    archived_children: int = 0
+    aliases: int = 0
+
+
+class CommunityMergePreviewResponse(BaseModel):
+    """合并影响预览响应（只读、零副作用，SPEC §5.1）."""
+
+    primary: "CommunitySearchResponse"
+    children: list[CommunityMergeChildPreview] = Field(default_factory=list)
+    profile: list[CommunityMergeProfileItem] = Field(default_factory=list)
+    counts: CommunityMergeCounts = Field(default_factory=CommunityMergeCounts)
+    warnings: list[str] = Field(default_factory=list)
 
 
 class CommunityUnmergeRequest(BaseModel):
@@ -129,6 +189,10 @@ __all__ = [
     "CommunityAliasResponse",
     "CommunityCreateRequest",
     "CommunityListResponse",
+    "CommunityMergeChildPreview",
+    "CommunityMergeCounts",
+    "CommunityMergePreviewResponse",
+    "CommunityMergeProfileItem",
     "CommunityMergeRequest",
     "CommunityMergeResponse",
     "CommunityResponse",

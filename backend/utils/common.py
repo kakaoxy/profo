@@ -200,6 +200,11 @@ class RateLimits:
     # ==================== 市场情报模块 ====================
     # COMMUNITY_MERGE 为高危操作，保持严格
     COMMUNITY_MERGE = "20/hour"
+    # 合并影响预览：只读零副作用，但**每次勾选都会触发**（弹层防抖 300ms）。
+    # 绝不能与 COMMUNITY_MERGE 同桶——否则运营光是预览就把额度吃光，
+    # 真要合并时被 429 挡住（功能性阻断）。按登录用户计数（M8 口径，
+    # 办公室共享 NAT 出口时同事之间互不挤占），额度对齐低频写操作。
+    COMMUNITY_MERGE_PREVIEW = "200/hour"
     COMMUNITY_CREATE = "1000/hour"
     COMMUNITY_UPDATE = "1000/hour"
     # 小区户型图库：上传复用 FILE_UPLOAD，删除/编辑低频

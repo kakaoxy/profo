@@ -73,6 +73,8 @@ class NeighborhoodRadarService:
             for c in db.query(CommunityCompetitor)
             .filter(
                 CommunityCompetitor.community_id == community_id,
+                # v101：合并去重的边以 is_deleted 保留（供解除合并复活），查询必须过滤
+                CommunityCompetitor.is_deleted.is_(False),
             )
             .all()
         ]

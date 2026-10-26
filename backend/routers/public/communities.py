@@ -50,7 +50,12 @@ def list_community_images(
     page: Annotated[int, Query(ge=1, description="页码")] = 1,
     page_size: Annotated[int, Query(ge=1, le=100, description="每页数量")] = 100,
 ) -> CommunityImageListResponse:
-    """查询小区户型图列表（公开端点）."""
+    """查询小区户型图列表（公开端点）.
+
+    S3（SPEC community-merge-union §5.3）：小区不存在或已归档 → 404，
+    C 端不应看到已并入主档的子档图库。
+    """
+    CommunityImageService.ensure_active_community(db=db, community_id=community_id)
     return CommunityImageService.list_by_community(
         db=db,
         community_id=community_id,

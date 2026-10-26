@@ -16,20 +16,68 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from models.property import CommunityImage, CommunityImageSource
+from models.property import Community, CommunityImage, CommunityImageSource
 from schemas.community_image import (
     CommunityImageCreate,
     CommunityImageListResponse,
     CommunityImageResponse,
     CommunityImageUpdate,
 )
-from services.system.exceptions import ResourceNotFoundError, ServiceException, ValidationError
+from services.system.exceptions import (
+    ConflictError,
+    ResourceNotFoundError,
+    ServiceException,
+    ValidationError,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class CommunityImageService:
     """小区户型图库服务."""
+
+    @staticmethod
+    def ensure_active_community(db: Session, community_id: str, *, for_write: bool = False) -> None:
+        """校验小区存在且未归档（已并入主档的子档不可读写图库）.
+
+        S3（SPEC `community-merge-union` §5.3 / D7）：与小区画像、楼栋补录的既有
+        守卫同口径 —— **读** 404（历史链接不该看到归档子档），**写** 409 并给出
+        主档名（「改了看不见」的静默脏数据要挡住并指路）。
+
+        **为什么不放进 ``list_by_community``**：该方法还被
+        ``GET /leads/{id}/community-images`` 复用，那里依赖宽松语义（线索未选小区
+        或小区已归档时返回空列表，前端提示「请先选择小区」）；在服务层抛 404 会
+        改坏线索链路，故守卫落在调用方。
+
+        Args:
+            db: 数据库会话
+            community_id: 小区ID
+            for_write: True=写操作（409 + 主档名），False=读操作（404）
+
+        Raises:
+            ResourceNotFoundError: 小区不存在或已归档且为读操作 → 404
+            ConflictError: 小区已归档且为写操作 → 409（提示去主档维护）
+
+        """
+        community = db.query(Community).filter(Community.id == community_id).first()
+        if community is None:
+            msg = "小区不存在"
+            raise ResourceNotFoundError(msg)
+        if community.is_active:
+            return
+        parent = (
+            db.query(Community).filter(Community.id == community.merged_into_id).first()
+            if community.merged_into_id
+            else None
+        )
+        if not for_write:
+            msg = "小区不存在或已并入主档"
+            raise ResourceNotFoundError(msg)
+        if parent is not None:
+            msg = f"该小区已并入「{parent.name}」，请在主档维护户型图（或先解除合并）"
+        else:
+            msg = "该小区已归档（is_active=false），不可上传户型图；如需维护请先解除合并"
+        raise ConflictError(msg)
 
     @staticmethod
     def list_by_community(
@@ -48,6 +96,9 @@ class CommunityImageService:
 
         Returns:
             CommunityImageListResponse: 分页列表响应
+
+        Raises:
+            ResourceNotFoundError: 小区不存在或已归档
 
         """
         base_filter = (

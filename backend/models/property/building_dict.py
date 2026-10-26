@@ -214,6 +214,13 @@ class BdPendingEntry(Base):
         nullable=True,
         comment="唯一性判定用归属小区(合并/改名不影响；父级 pending 小区时为 NULL)",
     )
+    # 小区合并可逆标记（v98，SPEC community-merge-union §4.3）：
+    # 合并时改指主档的待审楼栋/户室记下原归属小区，解除合并据此回迁。
+    origin_community_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="合并前原归属小区ID(仅合并迁移过的待审条目有值，解除合并时据此可逆)",
+    )
     # 创建来源冗余（v1.7 泛化）
     source_type: Mapped[str | None] = mapped_column(
         String(20), nullable=True, comment="创建来源类型(project/lead/marketing/property/admin)"
@@ -277,6 +284,8 @@ class BdPendingEntry(Base):
         Index("idx_bd_pending_community", "community_id"),
         Index("idx_bd_pending_parent", "parent_kind", "parent_id"),
         Index("idx_bd_pending_scope", "community_scope"),
+        # 合并可逆回迁（v98）：解除合并按 origin 批量归位
+        Index("idx_bd_pending_origin", "origin_community_id"),
     )
 
     def __repr__(self) -> str:

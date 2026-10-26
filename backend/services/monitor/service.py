@@ -224,6 +224,8 @@ class MonitorService:
             db.query(CommunityCompetitor)
             .filter(
                 CommunityCompetitor.community_id == community_id,
+                # v101：合并去重的边以 is_deleted 保留（供解除合并复活），查询必须过滤
+                CommunityCompetitor.is_deleted.is_(False),
             )
             .all()
         )
@@ -290,20 +292,41 @@ class MonitorService:
             .filter(
                 CommunityCompetitor.community_id == community_id,
                 CommunityCompetitor.competitor_community_id == competitor_id,
+                CommunityCompetitor.is_deleted.is_(False),
             )
             .first()
         )
-        if not exists:
-            new_comp = CommunityCompetitor(community_id=community_id, competitor_community_id=competitor_id)
-            db.add(new_comp)
+        if exists:
+            return False
+        # v101：同一对 (owner, competitor) 可能有一条「合并去重软删」的行。
+        # 用户此刻显式重新添加 → 复活它并清掉合并标记（这条关系此后归当前小区，
+        # 不再随解除合并回迁），避免同一对键无限堆积软删行。
+        soft_deleted = (
+            db.query(CommunityCompetitor)
+            .filter(
+                CommunityCompetitor.community_id == community_id,
+                CommunityCompetitor.competitor_community_id == competitor_id,
+                CommunityCompetitor.is_deleted.is_(True),
+            )
+            .first()
+        )
+        if soft_deleted is not None:
+            soft_deleted.is_deleted = False
+            soft_deleted.origin_community_id = None
             db.commit()
             return True
-        return False
+        new_comp = CommunityCompetitor(community_id=community_id, competitor_community_id=competitor_id)
+        db.add(new_comp)
+        db.commit()
+        return True
 
     def remove_competitor(self, community_id: str, competitor_id: str) -> bool:
         """移除竞品小区，返回是否成功移除.
 
         内部自动提交事务.
+
+        **只删未删除的行**：``is_deleted=true`` 的行是合并去重留下的可逆痕迹，
+        删掉它会让解除合并无法把子档的竞品关系还原（v101）。
         """
         db = self.db
         result = (
@@ -311,6 +334,7 @@ class MonitorService:
             .filter(
                 CommunityCompetitor.community_id == community_id,
                 CommunityCompetitor.competitor_community_id == competitor_id,
+                CommunityCompetitor.is_deleted.is_(False),
             )
             .delete(synchronize_session=False)
         )

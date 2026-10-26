@@ -158,7 +158,13 @@ from migrations._building_dictionary import run_building_dictionary_migrations
 
 # 子模块迁移函数
 from migrations._clear_wechat_session_key import clear_wechat_session_key
+from migrations._community_competitor_soft_delete import add_competitor_soft_delete
 from migrations._community_images import create_community_images_table
+from migrations._community_merge import (
+    add_community_merge_origin_columns,
+    backfill_merged_community_profiles,
+)
+from migrations._community_merge_profile_union import backfill_merged_community_property_types
 from migrations._customer_follow_ups import create_customer_follow_ups_table
 from migrations._finance import (
     add_cashflow_category_enum_values,
@@ -485,6 +491,16 @@ def _run_all_migrations(engine: Engine) -> None:
         create_user_preferences_table(engine)
         # v97：迭代二 workbench:manage 权限点 + 授予 admin
         seed_workbench_manage_permission(engine)
+        # v98：小区合并可逆标记——community_images / bd_pending_entries /
+        # community_competitors 补 origin_community_id 列与索引（幂等）
+        add_community_merge_origin_columns(engine)
+        # v99：存量归档子档画像回填到主档（COALESCE 主档优先，幂等）
+        backfill_merged_community_profiles(engine)
+        # v100：v99 口径漂移修正——物业类型按运行时「主档 + 子档并集」补齐（幂等）
+        backfill_merged_community_property_types(engine)
+        # v101：竞品边补 is_deleted + 唯一约束重建为部分唯一索引
+        # （合并去重改软删，保留 origin 痕迹使解除合并可回迁）
+        add_competitor_soft_delete(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise
