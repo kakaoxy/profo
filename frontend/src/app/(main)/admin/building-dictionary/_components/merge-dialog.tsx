@@ -90,6 +90,9 @@ export function MergeDialog({ open, onOpenChange, primaryId, primaryName, onMerg
             .filter((c) => c.id !== primaryId),
         );
       }
+    } catch {
+      // 网络层异常（openapi-fetch 仅对 HTTP 响应返回 error，断网/超时会 throw）：
+      // 保持当前结果不动，避免 unhandled rejection
     } finally {
       setSearching(false);
     }
@@ -114,17 +117,25 @@ export function MergeDialog({ open, onOpenChange, primaryId, primaryName, onMerg
     const seq = ++previewSeq.current;
     setPreviewing(true);
     const timer = setTimeout(async () => {
-      const { data, error } = await client.POST("/api/v1/admin/communities/merge/preview", {
-        body: { primary_id: primaryId, merge_ids: ids },
-      });
-      // 过期响应（用户又改了勾选）直接丢弃
-      if (seq !== previewSeq.current) return;
-      setPreviewing(false);
-      if (error || !data) {
+      try {
+        const { data, error } = await client.POST("/api/v1/admin/communities/merge/preview", {
+          body: { primary_id: primaryId, merge_ids: ids },
+        });
+        // 过期响应（用户又改了勾选）直接丢弃
+        if (seq !== previewSeq.current) return;
+        setPreviewing(false);
+        if (error || !data) {
+          setPreview(null);
+          return;
+        }
+        setPreview(data);
+      } catch {
+        // 网络层异常：不复位会留下永转的 spinner（setPreviewing(true) 已执行）；
+        // 过期请求丢弃，由新一轮 effect 接管状态
+        if (seq !== previewSeq.current) return;
+        setPreviewing(false);
         setPreview(null);
-        return;
       }
-      setPreview(data);
     }, 300);
     return () => clearTimeout(timer);
   }, [checked, open, primaryId]);
@@ -157,6 +168,9 @@ export function MergeDialog({ open, onOpenChange, primaryId, primaryName, onMerg
       }
       onOpenChange(false);
       onMerged?.();
+    } catch {
+      // 网络层异常（断网/超时 throw，非 HTTP 错误响应）：与 error 分支同反馈
+      toast.error("合并失败，请检查网络后重试");
     } finally {
       setSubmitting(false);
     }
