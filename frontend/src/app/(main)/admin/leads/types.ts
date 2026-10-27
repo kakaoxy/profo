@@ -18,6 +18,15 @@ export type FollowUpMethod = "phone" | "wechat" | "face" | "visit";
  */
 export type FollowUpConclusion = "mode_disagree" | "price_disagree" | "both_disagree";
 
+/** 列表内嵌的最近一条跟进摘要（LeadListItem.latest_follow_up，无跟进为空不伪造） */
+export interface LeadLatestFollowUp {
+  method: FollowUpMethod;
+  content: string;
+  conclusion?: FollowUpConclusion | null;
+  followedAt: string;
+  createdByName?: string | null;
+}
+
 export interface FollowUp {
   id: string;
   leadId: string;
@@ -95,6 +104,8 @@ export interface Lead {
   referrerId?: string;
   referrerName?: string;
   lastFollowUpAt?: string;
+  /** 最近一条跟进摘要（结论/内容/方式/时间/跟进人），无跟进为空——列表两列跟进信息的数据源 */
+  latestFollowUp?: LeadLatestFollowUp | null;
   createdAt: string;
 }
 

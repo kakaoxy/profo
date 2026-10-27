@@ -447,6 +447,72 @@ class LeadQueryService:
         ).all()
         return {lead_id: {"last_follow_up_at": last_at, "follow_up_count": count} for lead_id, last_at, count in rows}
 
+    def get_latest_follow_ups(self, lead_ids: list[str]) -> dict[str, dict[str, Any]]:
+        """按线索ID批量取每条线索最近一条跟进记录（单次窗口函数查询，无 N+1）.
+
+        实现用 `row_number() over(partition_by=..., order_by=...)` 窗口函数
+        （仓库既有范式：同文件 get_latest_eval_verdicts / services/marketing/subscription.py）。
+
+        取数口径（与 docs/To-Do/2026-10-27-线索列表跟进迭代-SPEC.md §3.2 一致）：
+        - 最近一条 = ORDER BY followed_at DESC, id DESC 的第一条；不用 max(id) 代替时间；
+        - conclusion 取该条记录原值可为 None，不回退到上一条有结论的记录
+          （否则「最近一次谈了什么」会被历史结论污染）；
+        - content 回全文，截断由前端 CSS line-clamp 做。
+
+        Args:
+            lead_ids: 线索ID列表（空列表直接返回空字典，不发查询）
+
+        Returns:
+            dict[lead_id] -> {"method": str, "content": str, "conclusion": str|None,
+            "followed_at": datetime, "created_by_name": str|None}；
+            无跟进记录的线索不出现在结果中（调用方用 ``.get(id)`` 回退）。
+
+        """
+        if not lead_ids:
+            return {}
+        latest = (
+            self.db.query(
+                LeadFollowUp.lead_id,
+                LeadFollowUp.method,
+                LeadFollowUp.content,
+                LeadFollowUp.conclusion,
+                LeadFollowUp.followed_at,
+                User.nickname.label("created_by_name"),
+                func.row_number()
+                .over(
+                    partition_by=LeadFollowUp.lead_id,
+                    order_by=(desc(LeadFollowUp.followed_at), desc(LeadFollowUp.id)),
+                )
+                .label("rn"),
+            )
+            .outerjoin(User, User.id == LeadFollowUp.created_by_id)
+            .filter(LeadFollowUp.lead_id.in_(lead_ids))
+            .subquery()
+        )
+
+        rows = (
+            self.db.query(
+                latest.c.lead_id,
+                latest.c.method,
+                latest.c.content,
+                latest.c.conclusion,
+                latest.c.followed_at,
+                latest.c.created_by_name,
+            )
+            .filter(latest.c.rn == 1)
+            .all()
+        )
+        return {
+            row.lead_id: {
+                "method": row.method,
+                "content": row.content,
+                "conclusion": row.conclusion,
+                "followed_at": row.followed_at,
+                "created_by_name": row.created_by_name,
+            }
+            for row in rows
+        }
+
     def get_handled(
         self,
         user_id: str,

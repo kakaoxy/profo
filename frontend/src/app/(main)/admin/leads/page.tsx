@@ -59,6 +59,9 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   ]);
 
   const leads: Lead[] = (listRes.data?.items || []).map(mapBackendToFrontend);
+  // 列表接口失败时不再静默当空列表（否则错误会被误渲染成「这个筛选下没有线索」），
+  // 改由 LeadsView 渲染错误态（保留页头/工具栏，可重试）
+  const listError = Boolean(listRes.error);
   const total = listRes.data?.total ?? 0;
   const stats: LeadStatsResponse = (statsRes.data as LeadStatsResponse | null) ?? {
     pending_assessment: 0,
@@ -78,6 +81,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
         initialLeads={leads}
         total={total}
         stats={stats}
+        listError={listError}
         initialSelectedLeadId={params.leadId}
         creatorId={params.creator_id}
         creatorName={creatorName}

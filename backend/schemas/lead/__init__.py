@@ -41,6 +41,27 @@ class FollowUpResponse(FollowUpBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class LeadFollowUpSummary(BaseModel):
+    """列表内嵌的最近一条跟进摘要.
+
+    取数口径（LeadQueryService.get_latest_follow_ups）：
+    最近一条 = ORDER BY followed_at DESC, id DESC 的第一条（不用 max(id) 代替时间）；
+    conclusion 取该条记录原值可为 None，不得回退到上一条有结论的记录；
+    content 回全文，截断由前端 CSS line-clamp 做（保证 title 悬停全文完整）。
+    无跟进记录时该字段整体为 None（不得伪造）。
+    """
+
+    method: FollowUpMethod
+    content: str
+    conclusion: FollowUpConclusion | None = Field(
+        None,
+        description="跟进结论（选填）：mode_disagree=合作模式未达成一致 / "
+        "price_disagree=价格未达成一致 / both_disagree=两者均未达成一致",
+    )
+    followed_at: datetime
+    created_by_name: str | None = None
+
+
 # ----------------------
 # Price History Schemas
 # ----------------------
@@ -271,6 +292,10 @@ class LeadListItem(BaseModel):
     referrer_name: str | None = None
     source_property_id: int | None = None
     last_follow_up_at: datetime | None = None
+    latest_follow_up: LeadFollowUpSummary | None = Field(
+        None,
+        description="最近一条跟进摘要（结论/内容/方式/时间/跟进人），无跟进为空",
+    )
     created_at: datetime
     updated_at: datetime
 
@@ -478,6 +503,7 @@ __all__ = [
     "LeadCreate",
     "LeadEvalHistoryCreate",
     "LeadEvalHistoryResponse",
+    "LeadFollowUpSummary",
     "LeadFunnelResponse",
     "LeadListItem",
     "LeadResponse",

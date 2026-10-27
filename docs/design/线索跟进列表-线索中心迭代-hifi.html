@@ -1,0 +1,2262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>线索中心 · 线索列表增量迭代（评估价前移 / 时间合并 / 跟进结论）高保真设计稿</title>
+<!--
+  ============================================================
+  线索中心（admin/leads）· 列表页增量迭代 · 高保真可交互设计稿
+  ============================================================
+  背景：
+    · 原需求是「在线索中心新增一个线索跟进列表入口」，确认后判断与现有列表页功能重复，
+      改为在现有列表上迭代，不新增路由、不在侧边栏加项（现状导航保持不变）。
+    · 三条改动（编号与稿内标注 ①②③ 一致）：
+      ① 评估价前移到「总价 / 单价」之后，并把评估单价（评估价 ÷ 面积）加进同一单元格
+      ② 创建时间 / 更新时间 由两列合并为一列，上下两行叠放
+      ③ 在「状态」与「录入人」之间插入「跟进结论」「最后一条跟进内容」两列
+    · 行粒度：一行 = 一个线索（不展开成跟进记录行）。两列取该线索**最近一条**跟进记录
+      （max(followed_at)，同刻用 id 降序兜底）。
+    · 行点击行为保持现状：打开右侧线索抽屉（Sheet 720px），本次在其「跟进记录」页签内
+      补齐「结论徽标 + 快速登记」，保证新增两列的数据有可见来源。
+
+  视觉规范：严格遵循 /DESIGN.md（Steep）——
+    · Ink #17191c / Fog #f7f7f8 画布；唯一暖强调 Rust #5d2a1a；
+      Apricot Wash #fbe1d1 与 Sky Wash #d3e3fc 是唯二的彩色卡底；不引入饱和蓝绿红。
+    · Signifier（本地 Source Serif 4）仅用于 display 标题（≥40px）与章节序号；
+      Sohne（本地 Inter）承担全部 UI，微字重 430/450/480，从不 bold。
+    · 卡片 24px / 图片 12px / 输入 16px / 按钮与胶囊 9999px；签名三层阴影。
+    · 每屏最多一个 Ink 填充胶囊（本页为「录入新线索」），次级动作为文字链。
+
+  ⚠️ 交付形态：单文件自包含 HTML（字体随稿放在 ./assets/fonts/，无任何外部 CDN 依赖，
+     断网可开）。交互为原生 JS，非 React（无网络环境无法加载 CDN）。
+     数据为贴近上海二手房业务的演示数据，非真实客户信息。
+  ⚠️ 演示缩略图位置使用占位块（取不到房源图），真实页面为小区实拍首图。
+-->
+<style>
+  /* ============================================================
+     0. 字体（本地 woff2，随稿分发；与 frontend/src/app/fonts 同源）
+     ============================================================ */
+  @font-face {
+    font-family: "InterLocal";
+    src: url("assets/fonts/inter.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "SourceSerifLocal";
+    src: url("assets/fonts/source-serif-4.woff2") format("woff2");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  /* ============================================================
+     1. Steep tokens（/DESIGN.md）
+     ============================================================ */
+  :root {
+    --ink: #17191c;
+    --pwhite: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --slate: #8b8c8d;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-edge: #e6b088;
+    --apricot-soft: #f7d0b4;
+    --sky: #d3e3fc;
+
+    --font-ui: "InterLocal", -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --font-display: "SourceSerifLocal", "Songti SC", "Noto Serif SC", Georgia, serif;
+
+    --r-card: 24px;
+    --r-img: 12px;
+    --r-input: 16px;
+    --r-pill: 9999px;
+
+    --shadow-card: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.1) 0 20px 25px -5px, rgba(0, 0, 0, 0.1) 0 8px 10px -6px;
+    --shadow-sm: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.06) 0 10px 20px -8px, rgba(0, 0, 0, 0.05) 0 3px 6px -4px;
+    --hair: rgba(163, 166, 175, 0.32);
+    --hair-soft: rgba(163, 166, 175, 0.18);
+
+    --sidebar-w: 240px;
+    --row-h: 78px;   /* 表格行高：2 行跟进内容 + 元信息的最小高度，骨架屏同步 */
+    --doc-bg: #e9ebef;
+  }
+
+  *,
+  *::before,
+  *::after { box-sizing: border-box; }
+
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+  body {
+    margin: 0;
+    background: var(--doc-bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 15px;
+    letter-spacing: -0.009em;
+    line-height: 1.5;
+  }
+
+  button { font: inherit; letter-spacing: inherit; color: inherit; background: none; border: none; cursor: pointer; }
+  input, select, textarea { font: inherit; letter-spacing: inherit; color: inherit; }
+  p { margin: 0; text-wrap: pretty; }
+  h1, h2, h3 { margin: 0; font-weight: 500; }
+  a { color: inherit; }
+
+  .tnum { font-variant-numeric: tabular-nums; }
+
+  /* 图标 sprite */
+  .sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+  .ic {
+    width: 16px; height: 16px; flex: none; display: block;
+    fill: none; stroke: currentColor; stroke-width: 1.8;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
+  .ic-sm { width: 13px; height: 13px; stroke-width: 2; }
+  .ic-lg { width: 20px; height: 20px; stroke-width: 1.6; }
+
+  /* ============================================================
+     2. 文档外壳（设计稿自身的版式，非产品 UI）
+     ============================================================ */
+  .doc { max-width: 1648px; margin: 0 auto; padding: 44px 40px 120px; }
+
+  .doc-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; font-weight: 450; color: var(--graphite);
+    letter-spacing: 0.04em;
+  }
+  .doc-eyebrow .dot { width: 5px; height: 5px; border-radius: var(--r-pill); background: var(--rust); }
+
+  .doc h1 {
+    font-family: var(--font-display); font-weight: 400;
+    font-size: 44px; line-height: 1.14; letter-spacing: -0.022em;
+    margin-top: 16px; max-width: 900px;
+  }
+  .doc-lede {
+    max-width: 780px; margin-top: 16px;
+    font-size: 15.5px; line-height: 1.78; color: var(--ash);
+  }
+  .doc-lede strong { font-weight: 500; color: var(--ink); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 6px 14px 6px 10px; border-radius: var(--r-pill);
+    background: var(--pwhite); box-shadow: var(--shadow-sm);
+    font-size: 12.5px; font-weight: 450; color: var(--ash);
+  }
+  .chip .n {
+    width: 18px; height: 18px; border-radius: var(--r-pill);
+    background: var(--apricot); color: var(--rust);
+    font-size: 10.5px; font-weight: 500;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .chip.warm { background: var(--apricot); box-shadow: none; color: var(--rust); }
+
+  .sec { margin-top: 60px; }
+  .sec-head {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding-top: 20px; border-top: 1px solid rgba(163, 166, 175, 0.45);
+    margin-bottom: 22px;
+  }
+  .sec-no {
+    font-family: var(--font-display); font-size: 19px; color: var(--dove);
+    line-height: 1.35; min-width: 30px;
+  }
+  .sec-head h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.012em; line-height: 1.35; }
+  .sec-head .sub { margin-top: 7px; font-size: 13.5px; line-height: 1.7; color: var(--graphite); max-width: 760px; }
+
+  .board { margin-top: 26px; }
+  .board:first-of-type { margin-top: 0; }
+
+  .board-cap { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .board-cap .tag {
+    font-size: 11.5px; font-weight: 500; color: var(--rust);
+    background: var(--apricot); border-radius: var(--r-pill);
+    padding: 3px 10px; letter-spacing: 0;
+  }
+  .board-cap h3 { font-size: 15px; font-weight: 500; }
+  .board-cap p { font-size: 13px; color: var(--graphite); }
+
+  .screen {
+    background: var(--fog); border-radius: var(--r-card);
+    box-shadow: var(--shadow-card); overflow: hidden;
+    position: relative;
+  }
+
+  /* 稿内通用小元素 */
+  .kbd {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px;
+    background: var(--fog); border-radius: 6px; padding: 1px 6px; color: var(--ash);
+    letter-spacing: 0;
+  }
+  .muted { color: var(--dove); }
+  .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 0.88em; letter-spacing: 0; }
+
+  /* ============================================================
+     3. 应用骨架（还原 admin 布局：Fog 侧栏 240px + Fog 画布）
+     ============================================================ */
+  .app { display: flex; align-items: stretch; min-height: 760px; }
+
+  .sidebar {
+    width: var(--sidebar-w); flex: none;
+    background: var(--fog);
+    padding: 18px 14px 14px;
+    display: flex; flex-direction: column;
+  }
+  .side-logo { display: flex; align-items: center; gap: 10px; padding: 2px 10px 16px; }
+  .side-logo .mark {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--ink); color: #fff;
+    font-size: 15px; font-weight: 500; display: flex; align-items: center; justify-content: center;
+  }
+  .side-logo .word { font-size: 15.5px; font-weight: 500; letter-spacing: -0.01em; }
+
+  .side-nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav-label {
+    font-size: 11.5px; font-weight: 500; color: var(--graphite);
+    letter-spacing: 0.07em; padding: 15px 12px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: var(--r-img);
+    font-size: 14px; font-weight: 450; color: var(--ink);
+    transition: background 0.15s ease;
+  }
+  .nav-item .ic { color: var(--graphite); }
+  .nav-item:hover { background: rgba(23, 25, 28, 0.05); }
+  .nav-item.active { background: var(--pwhite); box-shadow: var(--shadow-sm); }
+  .nav-item.active .ic { color: var(--ink); }
+  .nav-item .chev { margin-left: auto; color: var(--dove); }
+  .nav-child {
+    display: flex; align-items: center; padding: 6px 12px 6px 41px;
+    font-size: 13px; font-weight: 430; color: var(--ash); border-radius: 10px;
+  }
+  .nav-child:hover { color: var(--ink); }
+  .nav-child.active { color: var(--rust); font-weight: 500; }
+
+  .side-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--hair-soft); }
+  .side-user { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border-radius: var(--r-img); width: 100%; }
+  .side-user:hover { background: rgba(23, 25, 28, 0.05); }
+  .avatar {
+    width: 28px; height: 28px; border-radius: var(--r-pill); flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11.5px; font-weight: 500; color: var(--ink);
+  }
+  .av-1 { background: #d9e6d4; }
+  .av-2 { background: var(--sky); }
+  .av-3 { background: var(--apricot); }
+  .av-4 { background: #e6e1ef; }
+  .av-5 { background: #eceae2; }
+  .side-user .info { line-height: 1.3; text-align: left; }
+  .side-user .n { font-size: 13px; font-weight: 500; }
+  .side-user .r { font-size: 11.5px; color: var(--graphite); }
+
+  .main { flex: 1; min-width: 0; background: var(--fog); }
+  .page { padding: 32px 36px 36px; }
+
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+  .page-head h1 {
+    font-family: var(--font-display); font-weight: 400;
+    font-size: 44px; line-height: 1.1; letter-spacing: -0.015em;
+  }
+  .page-head .desc { margin-top: 10px; font-size: 14.5px; color: var(--graphite); }
+  .page-head .aside { display: flex; align-items: center; gap: 10px; padding-top: 10px; }
+  .head-note { font-size: 12.5px; color: var(--graphite); text-align: right; line-height: 1.6; }
+
+  /* 统计卡 */
+  .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-top: 26px; }
+  .stat-card {
+    background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-sm);
+    padding: 18px 20px 16px; text-align: left;
+    transition: transform 0.16s ease, box-shadow 0.16s ease;
+  }
+  .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+  .stat-card.warm { background: var(--apricot); box-shadow: none; }
+  .stat-card.warm:hover { box-shadow: 0 8px 20px -12px rgba(93, 42, 26, 0.5); }
+  .stat-card.on { box-shadow: inset 0 0 0 1.5px var(--ink), var(--shadow-sm); }
+  .stat-label { display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--graphite); }
+  .stat-card.on .stat-label, .stat-card.warm .stat-label { color: var(--rust); }
+  .stat-dot { width: 6px; height: 6px; border-radius: var(--r-pill); background: var(--ink); flex: none; }
+  .d-apricot { background: var(--apricot-soft); }
+  .d-sky { background: #9dbef2; }
+  .d-dove { background: var(--dove); }
+  .stat-card.warm .stat-dot { background: var(--rust); }
+  .stat-value { display: block; font-size: 29px; font-weight: 480; line-height: 1; margin-top: 12px; letter-spacing: -0.02em; }
+  .stat-card.warm .stat-value { color: var(--rust); }
+  .stat-sub { display: block; margin-top: 9px; font-size: 12px; line-height: 1.45; color: var(--graphite); }
+  .stat-card.on .stat-sub { color: var(--ash); }
+
+  /* 工具栏 */
+  .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 24px 0 16px; }
+  .search {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--pwhite); border-radius: var(--r-input); box-shadow: var(--shadow-sm);
+    padding: 8px 13px; width: 244px; color: var(--dove);
+  }
+  .search input { border: none; outline: none; background: none; width: 100%; font-size: 13.5px; color: var(--ink); }
+  .search input::placeholder { color: var(--dove); }
+  .search:focus-within { box-shadow: inset 0 0 0 1.5px rgba(23, 25, 28, 0.35), var(--shadow-sm); }
+
+  .tabs {
+    display: flex; gap: 2px; background: var(--pwhite);
+    border-radius: var(--r-pill); padding: 4px; box-shadow: var(--shadow-sm);
+    flex-wrap: wrap;
+  }
+  .tab {
+    padding: 6px 13px; border-radius: var(--r-pill);
+    font-size: 13px; font-weight: 450; color: var(--ash);
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab.active { background: var(--ink); color: #fff; }
+  .tab .cnt { font-size: 11.5px; color: var(--dove); font-weight: 430; font-variant-numeric: tabular-nums; }
+  .tab.active .cnt { color: rgba(255, 255, 255, 0.62); }
+  .tab:focus-visible, .stat-card:focus-visible, .btn-fill:focus-visible, .icon-btn:focus-visible,
+  .row-action:focus-visible, .tbl tbody tr:focus-visible { outline: 2px solid var(--rust); outline-offset: 2px; }
+
+  .spacer { flex: 1; }
+  .view-toggle { display: flex; gap: 2px; background: var(--pwhite); border-radius: var(--r-img); padding: 3px; box-shadow: var(--shadow-sm); }
+  .view-toggle button {
+    width: 30px; height: 30px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; color: var(--graphite);
+  }
+  .view-toggle button:hover { color: var(--ink); }
+  .view-toggle button.on { background: var(--fog); color: var(--ink); }
+
+  .btn-fill {
+    background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    padding: 9px 18px; font-size: 13.5px; font-weight: 450;
+    display: inline-flex; align-items: center; gap: 7px;
+    box-shadow: 0 6px 16px -8px rgba(23, 25, 28, 0.45);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .btn-fill:hover { transform: translateY(-1px); box-shadow: 0 10px 20px -10px rgba(23, 25, 28, 0.55); }
+  .btn-text {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13.5px; font-weight: 450; color: var(--ink); padding: 8px 6px;
+  }
+  .btn-text:hover { color: var(--rust); }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: var(--r-img);
+    background: var(--pwhite); box-shadow: var(--shadow-sm); color: var(--graphite);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .icon-btn:hover { color: var(--ink); }
+
+  /* ============================================================
+     4. 表格
+     ============================================================ */
+  .tbl-card { background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-card); overflow: hidden; }
+  .tbl-scroll { overflow-x: auto; }
+  .tbl-scroll::-webkit-scrollbar { height: 8px; }
+  .tbl-scroll::-webkit-scrollbar-thumb { background: rgba(163, 166, 175, 0.45); border-radius: 8px; }
+
+  table.tbl { width: 100%; min-width: 1180px; border-collapse: collapse; table-layout: fixed; }
+  .tbl th {
+    text-align: left; font-size: 12.5px; font-weight: 500; color: var(--graphite);
+    letter-spacing: 0.01em; line-height: 1.35;
+    padding: 14px 10px 11px; border-bottom: 1px solid var(--hair);
+    vertical-align: bottom; position: relative; white-space: nowrap;
+  }
+  .tbl th:first-child { padding-left: 20px; }
+  .tbl th:last-child { padding-right: 18px; }
+  .tbl th .u { display: block; font-size: 11px; font-weight: 430; color: var(--dove); margin-top: 3px; letter-spacing: 0.01em; }
+  .tbl th.num, .tbl td.num { text-align: right; }
+
+  .tbl td {
+    padding: 10px 10px; border-bottom: 1px solid var(--hair-soft);
+    font-size: 14px; color: var(--ink); vertical-align: middle;
+  }
+  .tbl td:first-child { padding-left: 20px; }
+  .tbl td:last-child { padding-right: 18px; }
+  .tbl tbody tr { transition: background 0.12s ease; cursor: pointer; }
+  .tbl tbody tr:hover { background: var(--fog); }
+  .tbl tbody tr:focus-visible { outline: 2px solid var(--rust); outline-offset: -2px; }
+  .tbl tbody tr:last-child td { border-bottom: none; }
+
+  .tbl tbody td { height: var(--row-h); }
+  .cell-main { font-size: 14px; font-weight: 480; color: var(--ink); line-height: 1.35; }
+  .cell-sub { margin-top: 3px; font-size: 12px; font-weight: 430; color: var(--graphite); line-height: 1.4; }
+  .cell-sub.tnum { font-variant-numeric: tabular-nums; }
+  /* 行内不换行的地方统一 nowrap，行高由最高单元格决定（历史行高 63px 上限） */
+  .tbl td { white-space: nowrap; }
+  .tbl td .fu-text { white-space: normal; }
+  .stack { display: flex; flex-direction: column; gap: 3px; }
+  .stack .ln { display: flex; align-items: baseline; gap: 5px; font-size: 12px; color: var(--ash); white-space: nowrap; }
+  .stack .ln .k { font-size: 10.5px; color: var(--dove); letter-spacing: 0.02em; }
+  .stack .ln .v { font-variant-numeric: tabular-nums; }
+
+  /* 城市/商圈、面积/楼层这类次值允许截断，不挤压相邻列 */
+  .clip { display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .ops { display: flex; align-items: center; justify-content: flex-end; gap: 2px; white-space: nowrap; }
+
+  .thumb {
+    width: 44px; height: 36px; border-radius: 9px; background: var(--fog);
+    box-shadow: inset 0 0 0 1px var(--hair-soft);
+    display: flex; align-items: center; justify-content: center; color: var(--dove); flex: none;
+  }
+  .lead-cell { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .lead-cell .txt { min-width: 0; display: block; }
+  .lead-cell .nm { display: block; font-size: 14px; font-weight: 480; line-height: 1.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lead-cell .ad { display: block; margin-top: 3px; font-size: 12px; line-height: 1.4; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* 状态徽标（与 lead-status-meta.ts 一一对应） */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    border-radius: var(--r-pill); font-size: 12px; font-weight: 450;
+    padding: 3px 10px; line-height: 1.4; white-space: nowrap;
+  }
+  .b-apricot { background: var(--apricot); color: var(--rust); }
+  .b-sky { background: var(--sky); color: var(--ink); }
+  .b-outline { background: var(--pwhite); color: var(--ink); box-shadow: inset 0 0 0 1px var(--dove); }
+  .b-ink { background: var(--ink); color: #fff; }
+  .b-fog { background: var(--fog); color: var(--graphite); }
+  .b-fogrust { background: var(--fog); color: var(--rust); }
+
+  /* 跟进结论徽标：同一暖色系的「强度阶梯」，不引入新彩色 */
+  .concl {
+    display: inline-flex; align-items: center; gap: 4px;
+    border-radius: var(--r-pill); font-size: 11.5px; font-weight: 450;
+    padding: 3px 9px; line-height: 1.4; white-space: nowrap;
+  }
+  .c-price { background: var(--apricot); color: var(--rust); }
+  .c-mode { background: var(--pwhite); color: var(--rust); box-shadow: inset 0 0 0 1px var(--apricot-edge); }
+  .c-both { background: var(--rust); color: #fff; }
+  .c-none { background: var(--fog); color: var(--graphite); font-weight: 430; }
+  .c-none .ic-sm { color: var(--dove); }
+
+  /* 最后一条跟进内容 */
+  .fu-text {
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden; font-size: 12.5px; line-height: 1.55; color: var(--ash);
+  }
+  .fu-meta { margin-top: 3px; font-size: 11px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  /* 无跟进行：占位与两行正文等高，保证 10 行行高完全一致（无灰条差异） */
+  .fu-empty { display: block; min-height: 38px; font-size: 12.5px; line-height: 1.55; color: var(--dove); }
+
+  .row-action {
+    font-size: 12.5px; font-weight: 450; color: var(--graphite);
+    padding: 4px 2px; border-radius: 6px;
+  }
+  .row-action:hover { color: var(--ink); }
+
+  /* 表尾 */
+  .tbl-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 13px 20px 14px; border-top: 1px solid var(--hair-soft);
+    font-size: 12.5px; color: var(--graphite);
+  }
+  .pager { display: flex; align-items: center; gap: 4px; }
+  .pager button {
+    min-width: 28px; height: 28px; padding: 0 7px; border-radius: 9px;
+    font-size: 12.5px; font-weight: 450; color: var(--ash);
+    font-variant-numeric: tabular-nums;
+  }
+  .pager button:hover { background: var(--fog); color: var(--ink); }
+  .pager button.on { background: var(--ink); color: #fff; }
+  .pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ============================================================
+     5. 改动标注（①②③）
+     ============================================================ */
+  .mk {
+    position: absolute; top: 6px; right: 7px;
+    width: 16px; height: 16px; border-radius: var(--r-pill);
+    border: 1px solid var(--rust); color: var(--rust); background: var(--pwhite);
+    font-size: 9.5px; font-weight: 500; line-height: 14px; text-align: center;
+    display: none;
+  }
+  .marks .mk { display: block; }
+  /* 标注开启时表头让出右上角，避免圆点压字 */
+  .marks .tbl th[data-mark] { background: rgba(251, 225, 209, 0.3); padding-right: 26px; }
+  .strip-tbl .mk { display: block; }
+  .strip-tbl th[data-mark] { background: rgba(251, 225, 209, 0.3); padding-right: 26px; }
+
+  /* ============================================================
+     6. 状态：加载 / 空 / 错误
+     ============================================================ */
+  .state-box { padding: 54px 24px 58px; text-align: center; }
+  .state-icon {
+    width: 44px; height: 44px; border-radius: var(--r-pill); margin: 0 auto 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--fog); color: var(--graphite);
+  }
+  .state-title { font-size: 15px; font-weight: 500; }
+  .state-desc { margin-top: 7px; font-size: 13px; color: var(--graphite); line-height: 1.7; }
+  .state-actions { margin-top: 18px; display: flex; gap: 10px; justify-content: center; }
+  .btn-outline {
+    padding: 8px 18px; border-radius: var(--r-pill);
+    box-shadow: inset 0 0 0 1px var(--dove); font-size: 13px; font-weight: 450; color: var(--ink);
+    background: var(--pwhite);
+  }
+  .btn-outline:hover { box-shadow: inset 0 0 0 1px var(--ink); }
+  .skeleton-row td { padding: 10px; }
+  .sk {
+    height: 11px; border-radius: 6px;
+    background: linear-gradient(90deg, #eef0f3 0%, #f6f7f8 40%, #eef0f3 80%);
+    background-size: 220% 100%;
+    animation: sk 1.5s ease-in-out infinite;
+  }
+  @keyframes sk { from { background-position: 140% 0; } to { background-position: -60% 0; } }
+  @media (prefers-reduced-motion: reduce) {
+    .sk { animation: none; }
+    .screen, .tbl tbody tr, .card-lead { transition: none !important; }
+  }
+
+  /* ============================================================
+     7. 卡片视图（保留原双视图切换）
+     ============================================================ */
+  .grid-view { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .card-lead {
+    background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-sm);
+    overflow: hidden; text-align: left; display: flex; flex-direction: column;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .card-lead:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+  .card-lead .img {
+    height: 104px; background: var(--fog); color: var(--dove);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card-lead .body { padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 8px; }
+  .card-lead .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .card-lead .nm { font-size: 14px; font-weight: 480; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-lead .sub { font-size: 12px; color: var(--graphite); }
+  .card-lead .fu { font-size: 12px; line-height: 1.55; color: var(--ash); border-top: 1px solid var(--hair-soft); padding-top: 9px; }
+  .card-lead .fu .fu-text { -webkit-line-clamp: 2; color: var(--ash); font-size: 12px; }
+  .card-lead .money { display: flex; align-items: baseline; justify-content: space-between; }
+  .card-lead .m1 { font-size: 17px; font-weight: 480; font-variant-numeric: tabular-nums; }
+  .card-lead .m1 .unit { font-size: 11.5px; font-weight: 430; color: var(--graphite); margin-left: 2px; }
+  .card-lead .m2 { font-size: 12px; color: var(--graphite); font-variant-numeric: tabular-nums; }
+
+  /* ============================================================
+     8. 抽屉（右侧 720px Sheet）
+     ============================================================ */
+  .scrim {
+    position: fixed; inset: 0; background: rgba(23, 25, 28, 0.32);
+    opacity: 0; pointer-events: none; transition: opacity 0.22s ease; z-index: 60;
+    backdrop-filter: blur(1.5px);
+  }
+  .scrim.show { opacity: 1; pointer-events: auto; }
+
+  .drawer {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 61;
+    width: min(720px, 94vw); background: var(--pwhite);
+    border-radius: var(--r-card) 0 0 var(--r-card);
+    box-shadow: -24px 0 60px -30px rgba(23, 25, 28, 0.45);
+    transform: translateX(102%); transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex; flex-direction: column;
+  }
+  .drawer.show { transform: none; }
+  .dr-head { padding: 22px 26px 18px; border-bottom: 1px solid var(--hair-soft); }
+  .dr-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .dr-eyebrow { font-size: 11.5px; color: var(--graphite); letter-spacing: 0.04em; display: flex; align-items: center; gap: 7px; }
+  .dr-title { font-size: 22px; font-weight: 500; letter-spacing: -0.015em; margin-top: 7px; }
+  .dr-addr { margin-top: 5px; font-size: 12.5px; color: var(--graphite); }
+  .dr-close {
+    width: 32px; height: 32px; border-radius: var(--r-pill); flex: none;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--fog); color: var(--graphite);
+  }
+  .dr-close:hover { color: var(--ink); }
+  .dr-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 18px; }
+  .dr-kpi { background: var(--fog); border-radius: var(--r-img); padding: 10px 12px; }
+  .dr-kpi.warm { background: var(--apricot); }
+  .dr-kpi .k { font-size: 11px; color: var(--graphite); }
+  .dr-kpi.warm .k { color: rgba(93, 42, 26, 0.7); }
+  .dr-kpi .v { margin-top: 4px; font-size: 17px; font-weight: 480; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+  .dr-kpi.warm .v { color: var(--rust); }
+  .dr-kpi .v .unit { font-size: 11px; font-weight: 430; color: var(--graphite); margin-left: 2px; }
+  .dr-kpi.warm .v .unit { color: rgba(93, 42, 26, 0.65); }
+
+  .dr-tabs { display: flex; gap: 4px; padding: 14px 26px 0; border-bottom: 1px solid var(--hair-soft); }
+  .dr-tab {
+    padding: 8px 4px 12px; font-size: 13.5px; font-weight: 450; color: var(--graphite);
+    border-bottom: 2px solid transparent; margin-right: 16px;
+  }
+  .dr-tab:hover { color: var(--ink); }
+  .dr-tab.active { color: var(--ink); border-bottom-color: var(--ink); }
+  .dr-tab .cnt { margin-left: 5px; font-size: 11.5px; color: var(--dove); font-variant-numeric: tabular-nums; }
+
+  .dr-body { flex: 1; overflow-y: auto; padding: 20px 26px 28px; }
+  .dr-body::-webkit-scrollbar { width: 6px; }
+  .dr-body::-webkit-scrollbar-thumb { background: rgba(163, 166, 175, 0.45); border-radius: 6px; }
+
+  .quick {
+    background: var(--fog); border-radius: var(--r-input); padding: 14px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .quick-label { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 500; color: var(--graphite); letter-spacing: 0.05em; }
+  .quick-label .ic { color: var(--rust); }
+  .quick-row { display: flex; gap: 8px; }
+  .quick select {
+    height: 40px; padding: 0 10px; border-radius: 11px; border: none;
+    box-shadow: inset 0 0 0 1px var(--hair); background: var(--pwhite);
+    font-size: 12.5px; color: var(--ink); outline: none; flex: none;
+  }
+  .quick input {
+    flex: 1; min-width: 0; height: 40px; padding: 0 12px; border-radius: 11px;
+    border: none; box-shadow: inset 0 0 0 1px var(--hair); background: var(--pwhite);
+    font-size: 12.5px; outline: none;
+  }
+  .quick input:focus, .quick select:focus { box-shadow: inset 0 0 0 1.5px rgba(23, 25, 28, 0.45); }
+  .quick input::placeholder { color: var(--dove); }
+  .quick .send {
+    height: 40px; padding: 0 18px; border-radius: var(--r-pill);
+    background: var(--ink); color: #fff; font-size: 12.5px; font-weight: 450; flex: none;
+  }
+  .quick .send:hover { background: #000; }
+  .concl-picks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .concl-picks .lbl { font-size: 11px; color: var(--graphite); margin-right: 2px; }
+  .pick {
+    padding: 5px 11px; border-radius: var(--r-pill); font-size: 11.5px; font-weight: 450;
+    background: var(--pwhite); color: var(--graphite); box-shadow: inset 0 0 0 1px var(--hair-soft);
+  }
+  .pick:hover { color: var(--ink); box-shadow: inset 0 0 0 1px var(--dove); }
+  .pick.on { background: var(--ink); color: #fff; box-shadow: none; }
+  .pick.clear { color: var(--dove); box-shadow: none; padding-left: 4px; }
+  .pick.clear:hover { color: var(--ink); }
+
+  .tl { margin-top: 22px; position: relative; display: flex; flex-direction: column; gap: 16px; }
+  .tl::before {
+    content: ""; position: absolute; left: 10px; top: 8px; bottom: 12px;
+    width: 1.5px; background: var(--hair);
+  }
+  .tl-item { position: relative; padding-left: 32px; }
+  .tl-dot {
+    position: absolute; left: 0; top: 2px; width: 21px; height: 21px; border-radius: var(--r-pill);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--fog); color: var(--graphite);
+    box-shadow: 0 0 0 3px var(--pwhite);
+  }
+  .tl-dot.new { background: var(--ink); color: #fff; }
+  .tl-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .tl-title { font-size: 12.5px; font-weight: 500; color: var(--ink); }
+  .tl-time { font-size: 11.5px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .tl-bubble {
+    margin-top: 7px; background: var(--pwhite); border-radius: var(--r-img);
+    box-shadow: var(--shadow-sm); padding: 11px 13px;
+  }
+  .tl-content { font-size: 12.5px; line-height: 1.65; color: var(--ash); }
+  .tl-by { margin-top: 7px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tl-by .who { font-size: 11px; color: var(--graphite); display: inline-flex; align-items: center; gap: 5px; }
+
+  /* 内联抽屉（第 03 节展示板）：固定高度，内部滚动，比例同真实 720px 抽屉 */
+  .dr-inline .dr-body { max-height: 302px; }
+  .dr-inline .dr-head { padding: 20px 22px 16px; }
+  .dr-inline .dr-tabs { padding: 12px 22px 0; }
+  .dr-inline .dr-body { padding: 18px 22px 26px; position: relative; }
+  .dr-inline::after {
+    content: ""; position: absolute; left: 1px; right: 1px; bottom: 1px; height: 34px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.92));
+    pointer-events: none; border-radius: 0 0 var(--r-card) var(--r-card);
+  }
+
+  /* 空行内降级提示（用于「未跟进」行的 tooltip 说明） */
+  .hint-line {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; color: var(--dove);
+  }
+
+  /* ============================================================
+     9. 提示条（toast）
+     ============================================================ */
+  .toast {
+    position: fixed; left: 50%; bottom: 34px; transform: translate(-50%, 20px);
+    background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    padding: 10px 20px; font-size: 13px; font-weight: 450;
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.6);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 80; display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.err { background: #7a2a1e; }
+
+  /* ============================================================
+     10. 规格 / 说明区块（设计稿文档部分）
+     ============================================================ */
+  .cards { display: grid; gap: 16px; }
+  .cards.c3 { grid-template-columns: repeat(3, 1fr); }
+  .cards.c2 { grid-template-columns: repeat(2, 1fr); }
+  .card {
+    background: var(--pwhite); border-radius: var(--r-card);
+    box-shadow: var(--shadow-sm); padding: 22px 24px;
+  }
+  .card.warm { background: var(--apricot); box-shadow: none; }
+  .card .n {
+    font-family: var(--font-display); font-size: 17px; color: var(--rust);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card .n .past { font-family: var(--font-ui); font-size: 11.5px; color: var(--graphite); letter-spacing: 0; }
+  .card h4 { margin: 12px 0 0; font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+  .card p { margin-top: 8px; font-size: 13px; line-height: 1.75; color: var(--ash); }
+  .card p .mono { color: var(--ink); }
+  .card ul { margin: 10px 0 0; padding-left: 17px; }
+  .card li { font-size: 13px; line-height: 1.8; color: var(--ash); }
+  .card li strong { font-weight: 500; color: var(--ink); }
+
+  .spec-tbl { width: 100%; border-collapse: collapse; margin-top: 4px; }
+  .spec-tbl th {
+    text-align: left; font-size: 11.5px; font-weight: 500; color: var(--graphite);
+    padding: 10px 12px; border-bottom: 1px solid var(--hair); white-space: nowrap;
+  }
+  .spec-tbl td {
+    font-size: 12.5px; padding: 10px 12px; border-bottom: 1px solid var(--hair-soft);
+    color: var(--ash); vertical-align: top; line-height: 1.6;
+  }
+  .spec-tbl tr:last-child td { border-bottom: none; }
+  .spec-tbl td.mono, .spec-tbl .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px; color: var(--ink); letter-spacing: 0; }
+  .spec-tbl td strong { font-weight: 500; color: var(--ink); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px; }
+  .legend .item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--graphite); }
+
+  .note {
+    margin-top: 16px; padding: 14px 18px; border-radius: var(--r-input);
+    background: var(--pwhite); box-shadow: var(--shadow-sm);
+    font-size: 12.5px; line-height: 1.8; color: var(--ash);
+  }
+  .note b { font-weight: 500; color: var(--ink); }
+  .note.warm { background: var(--apricot); box-shadow: none; color: var(--rust); }
+  .note.warm b { color: var(--rust); }
+
+  code.inline {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px;
+    background: var(--fog); padding: 1.5px 6px; border-radius: 6px; color: var(--ink);
+    letter-spacing: 0;
+  }
+
+  .file-list { margin-top: 8px; display: flex; flex-direction: column; gap: 7px; }
+  .file-row { display: flex; align-items: baseline; gap: 10px; font-size: 12.5px; line-height: 1.7; }
+  .file-row .path {
+    font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px;
+    color: var(--ink); letter-spacing: 0; flex: none;
+  }
+  .file-row .what { color: var(--graphite); }
+
+  .doc-foot {
+    margin-top: 70px; padding-top: 20px; border-top: 1px solid rgba(163, 166, 175, 0.45);
+    display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    font-size: 12px; color: var(--graphite);
+  }
+</style>
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-dash" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M15 9h3a2 2 0 0 1 2 2v10"/><path d="M2 21h20"/><path d="M8 7h3M8 11h3M8 15h3"/></symbol>
+  <symbol id="i-phone-in" viewBox="0 0 24 24"><path d="M15 4h4a2 2 0 0 1 2 2v3"/><path d="M21 4l-5 5"/><path d="M17 14.5a15 15 0 0 1-7.5-7.5 1.6 1.6 0 0 1 .5-1.4l1.3-1.2a1.4 1.4 0 0 1 2 .1l1.8 1.9a1.4 1.4 0 0 1 0 2l-.8.8a12 12 0 0 0 3.4 3.4l.8-.8a1.4 1.4 0 0 1 2 0l1.9 1.8a1.4 1.4 0 0 1 .1 2l-1.2 1.3a1.6 1.6 0 0 1-1.4.5"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-todo" viewBox="0 0 24 24"><rect x="3" y="4" width="6" height="6" rx="2"/><path d="M13 7h8"/><rect x="3" y="14" width="6" height="6" rx="2"/><path d="M13 17h8"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M11 18.5h2"/></symbol>
+  <symbol id="i-mega" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M14 8a5 5 0 0 1 0 8"/><path d="M17 5a9 9 0 0 1 0 14"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M22 20H2"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18"/><path d="M16 15h2"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-8 8H7l-4 3V12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.5 21 19H3Z"/><path d="M12 9.5v4M12 16.5h.01"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1Z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 6h18M6.5 12h11M10 18h4"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13l2.2-7A2 2 0 0 1 8.1 4.5h7.8a2 2 0 0 1 1.9 1.5L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M4 13h4l1 2h6l1-2h4"/></symbol>
+</svg>
+
+<div class="doc">
+
+  <!-- ==================== 文档头 ==================== -->
+  <header>
+    <span class="doc-eyebrow"><span class="dot"></span>设计稿 · 2026-10-27 · admin/leads</span>
+    <h1>线索列表增量迭代：把「跟进」搬进表格</h1>
+    <p class="doc-lede">
+      原需求是在线索中心新增一个「线索跟进列表」入口，评估后确认与现有列表页功能重复——<strong>不新增路由、不动侧边栏</strong>，
+      直接在现有列表上做三处增量：评估价前移并补评估单价、创建/更新时间合并为一行两行叠放、
+      状态与录入人之间插入「跟进结论 / 最后一条跟进内容」。一行仍是一个线索，两列取该线索最近一次跟进记录。
+    </p>
+    <div class="chips">
+      <span class="chip"><span class="n">1</span>评估价前移 + 评估单价</span>
+      <span class="chip"><span class="n">2</span>创建 / 更新合并一列</span>
+      <span class="chip"><span class="n">3</span>新增跟进结论 + 最后一条跟进</span>
+      <span class="chip warm">10 列 → 11 列 · 不新增页面</span>
+    </div>
+  </header>
+
+  <!-- ==================== 01 改动对照 ==================== -->
+  <section class="sec" id="sec-01">
+    <div class="sec-head">
+      <span class="sec-no">01</span>
+      <div>
+        <h2>改动对照：表头前后各是什么样</h2>
+        <p class="sub">只动列的顺序与内容，不动筛选、状态流转、抽屉与权限。下方两条表头分别是现状（改动前）与本次目标（改动后），宽色块为发生变化的列。</p>
+      </div>
+    </div>
+
+    <div class="board" data-screen-label="改动前表头">
+      <div class="board-cap">
+        <span class="tag">改动前</span>
+        <h3>现状 10 列</h3>
+        <p>评估价排在录入人之后，创建/更新时间各占一列，表格无跟进信息。</p>
+      </div>
+      <div class="screen" style="padding: 6px 8px;">
+        <table class="tbl">
+          <colgroup>
+            <col style="width: 210px" /><col style="width: 100px" /><col style="width: 108px" />
+            <col style="width: 110px" /><col style="width: 92px" /><col style="width: 96px" />
+            <col style="width: 104px" /><col style="width: 104px" /><col style="width: 104px" />
+            <col style="width: 70px" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>小区 / 房源</th>
+              <th>区域</th>
+              <th>户型 / 面积</th>
+              <th class="num">总价 / 单价<span class="u">万 · 万/㎡</span></th>
+              <th>状态</th>
+              <th>录入人</th>
+              <th class="num">评估价<span class="u">万</span></th>
+              <th>创建时间</th>
+              <th>更新时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+
+    <div class="board" data-screen-label="改动后表头">
+      <div class="board-cap">
+        <span class="tag">改动后</span>
+        <h3>目标 11 列</h3>
+        <p>①②③ 与下方三张说明卡对应；列宽合计 1180px，最后一条跟进内容为弹性列。</p>
+      </div>
+      <div class="screen" style="padding: 6px 8px;">
+        <table class="tbl strip-tbl">
+          <colgroup>
+            <col style="width: 196px" /><col style="width: 84px" /><col style="width: 120px" />
+            <col style="width: 104px" /><col style="width: 104px" /><col style="width: 86px" />
+            <col style="width: 112px" /><col style="width: 168px" /><col style="width: 86px" />
+            <col style="width: 76px" /><col style="width: 64px" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>小区 / 房源</th>
+              <th>区域</th>
+              <th>户型 / 楼层</th>
+              <th class="num" data-mark><span class="mk">1</span>业主报价 / 单价<span class="u">万 · 万/㎡</span></th>
+              <th class="num" data-mark><span class="mk">1</span>评估价 / 单价<span class="u">万 · 万/㎡</span></th>
+              <th>状态</th>
+              <th data-mark><span class="mk">3</span>跟进结论</th>
+              <th data-mark><span class="mk">3</span>最后一条跟进内容</th>
+              <th>录入人</th>
+              <th data-mark><span class="mk">2</span>创建 / 更新</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+
+    <div class="cards c3" style="margin-top: 18px;">
+      <article class="card">
+        <div class="n">①<span class="past">评估价前移 + 评估单价</span></div>
+        <h4>价格读作一组，而不是两处</h4>
+        <p>
+          评估价从「录入人之后」移到业主报价右侧，两列同结构、同右对齐、同单位行；
+          评估列下方补 <strong>评估价 ÷ 面积</strong> 的单价（万/㎡，保留 2 位），与业主单价同口径可比。
+        </p>
+        <ul>
+          <li>单价为派生值，<strong>后端不新增列</strong>，前端按面积实时计算。</li>
+          <li>面积缺失或评估价为空时，单价位留空，主值显示 <span class="mono">—</span>。</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="n">②<span class="past">创建 / 更新合并</span></div>
+        <h4>一个单元格，两行时间</h4>
+        <p>
+          两列合并为「创建 / 更新」，上下两行叠放，行首带 10.5px 灰标签；省下的 100px 给「最后一条跟进内容」。
+        </p>
+        <ul>
+          <li>当年内显示 <span class="mono">MM-DD</span>，跨年显示 <span class="mono">YYYY-MM-DD</span>。</li>
+          <li><span class="kbd">title</span> 恒为完整时间，鼠标悬停可读。</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <div class="n">③<span class="past">跟进结论 + 最后一条跟进</span></div>
+        <h4>把「谈没谈拢」变成可扫的一列</h4>
+        <p>
+          结论沿用现有三项互斥枚举（价格 / 合作模式 / 两者），未记录不伪造；内容取最近一条，
+          两行截断，附「时间 · 跟进人 · 方式」次级信息。
+        </p>
+        <ul>
+          <li>无跟进：结论显示「未记录」灰胶囊，内容显示 <span class="mono">—</span>，不隐藏行。</li>
+          <li>取数口径：<span class="mono">max(followed_at)</span>，同刻按 id 降序兜底。</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="board" data-screen-label="列宽与响应式规格">
+      <div class="board-cap">
+        <span class="tag">规格</span>
+        <h3>列宽、对齐与断点</h3>
+        <p>表格 <span class="mono">table-layout: fixed</span> + <span class="mono">colgroup</span>，窄屏横向滚动，不挤压文字列。</p>
+      </div>
+      <div class="card" style="padding: 8px 12px 4px;">
+        <table class="spec-tbl">
+          <thead>
+            <tr><th>列</th><th>宽</th><th>对齐</th><th>内容</th><th>断点</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>小区 / 房源</td><td class="mono">196</td><td>左</td><td>44×36 缩略图（12px 圆角）+ 小区名 + 楼栋户室</td><td>常显</td></tr>
+            <tr><td>区域</td><td class="mono">84</td><td>左</td><td>行政区为主值、商圈为次值，两行不截断</td><td><span class="mono">lg</span> 以下隐藏</td></tr>
+            <tr><td>户型 / 楼层</td><td class="mono">120</td><td>左</td><td>户型为主值，「面积 · 楼层」为次值，均不截断</td><td>常显</td></tr>
+            <tr><td>业主报价 / 单价</td><td class="mono">102</td><td>右</td><td>报价（万）为主值，单价（万/㎡）为次值</td><td>常显</td></tr>
+            <tr><td>评估价 / 单价</td><td class="mono">102</td><td>右</td><td>评估价 + 评估单价，空值统一 <span class="mono">—</span></td><td>常显</td></tr>
+            <tr><td>状态</td><td class="mono">82</td><td>左</td><td>单色洗底胶囊，复用 <span class="mono">LEAD_STATUS_META</span></td><td>常显</td></tr>
+            <tr><td>跟进结论</td><td class="mono">142</td><td>左</td><td>四态胶囊：价格 / 模式 / 两者 / 未记录</td><td><span class="mono">md</span> 以下隐藏</td></tr>
+            <tr><td>最后一条跟进内容</td><td class="mono">弹性，≥134</td><td>左</td><td>正文 2 行截断 + 时间 · 跟进人 · 方式</td><td><span class="mono">md</span> 以下隐藏</td></tr>
+            <tr><td>录入人</td><td class="mono">80</td><td>左</td><td>头像 + 昵称</td><td><span class="mono">xl</span> 以下隐藏</td></tr>
+            <tr><td>创建 / 更新</td><td class="mono">88</td><td>左</td><td>两行：<span class="mono">创建 MM-DD</span> / <span class="mono">更新 MM-DD</span></td><td><span class="mono">xl</span> 以下隐藏</td></tr>
+            <tr><td>操作</td><td class="mono">78</td><td>右</td><td>查看 / 编辑 文字链（权限 <span class="mono">lead:write</span> 才出编辑）</td><td>常显</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note warm">
+        <b>⚠️ 需确认：</b>若产品要求「跟进结论」在 1024–1280px 也可见，可把「区域」列同档隐藏后腾出 86px，改为 <span class="mono">lg</span> 以下隐藏区域、结论常显——两种取舍都只需改一个 <span class="mono">className</span> 断点。
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 02 主方案 ==================== -->
+  <section class="sec" id="sec-02">
+    <div class="sec-head">
+      <span class="sec-no">02</span>
+      <div>
+        <h2>主方案：线索中心 · 列表</h2>
+        <p class="sub">
+          完整可交互：状态 Tab / 搜索 / 表格与卡片切换 / 行点击开抽屉 / 抽屉内登记跟进后表格两列实时更新。
+          顶部「状态」分段可切换到加载、空、错误三态；「标注」开关显示 ①②③ 改动位置。
+        </p>
+      </div>
+    </div>
+
+    <div class="board" data-screen-label="线索中心 · 列表主方案">
+      <div class="board-cap" style="justify-content: space-between;">
+        <div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;">
+          <span class="tag">主方案</span>
+          <h3 style="font-size: 15px; font-weight: 500;">/admin/leads</h3>
+          <p>演示数据 · 106 条中的本页 10 条</p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <div class="tabs" id="state-switch" role="group" aria-label="状态演示切换" style="padding: 3px;">
+            <button class="tab active" data-state="normal" style="padding: 4px 10px; font-size: 12px;">默认</button>
+            <button class="tab" data-state="loading" style="padding: 4px 10px; font-size: 12px;">加载</button>
+            <button class="tab" data-state="empty" style="padding: 4px 10px; font-size: 12px;">空</button>
+            <button class="tab" data-state="error" style="padding: 4px 10px; font-size: 12px;">错误</button>
+          </div>
+          <label class="chip" style="cursor: pointer; padding: 5px 12px;">
+            <input type="checkbox" id="mark-toggle" style="accent-color: #5d2a1a; margin: 0;" />
+            标注改动
+          </label>
+        </div>
+      </div>
+
+      <div class="screen app" id="app">
+        <!-- 侧栏 -->
+        <aside class="sidebar">
+          <div class="side-logo">
+            <div class="mark">P</div>
+            <div class="word">Profo</div>
+          </div>
+          <nav class="side-nav">
+            <button class="nav-item" data-nav="工作台"><svg class="ic"><use href="#i-dash"/></svg><span>工作台</span></button>
+            <div class="nav-label">业务</div>
+            <button class="nav-item" data-nav="房源管理"><svg class="ic"><use href="#i-building"/></svg><span>房源管理</span><svg class="ic ic-sm chev"><use href="#i-chev-r"/></svg></button>
+            <button class="nav-item active" aria-current="page" data-nav="线索中心"><svg class="ic"><use href="#i-phone-in"/></svg><span>线索中心</span></button>
+            <button class="nav-item" data-nav="项目管理"><svg class="ic"><use href="#i-folder"/></svg><span>项目管理</span></button>
+            <button class="nav-item" data-nav="项目待办"><svg class="ic"><use href="#i-todo"/></svg><span>项目待办</span></button>
+            <button class="nav-item" data-nav="房源营销"><svg class="ic"><use href="#i-phone"/></svg><span>房源营销</span></button>
+            <div class="nav-label">增长</div>
+            <button class="nav-item" data-nav="获客中心"><svg class="ic"><use href="#i-mega"/></svg><span>获客中心</span><svg class="ic ic-sm chev"><use href="#i-chev-r"/></svg></button>
+            <div class="nav-label">财务</div>
+            <button class="nav-item" data-nav="资金账本"><svg class="ic"><use href="#i-wallet"/></svg><span>资金账本</span></button>
+            <button class="nav-item" data-nav="数据报表"><svg class="ic"><use href="#i-chart"/></svg><span>数据报表</span></button>
+          </nav>
+          <div class="side-foot">
+            <button class="nav-item" data-nav="系统设置"><svg class="ic"><use href="#i-settings"/></svg><span>系统设置</span></button>
+            <button class="side-user">
+              <span class="avatar av-2">李</span>
+              <span class="info"><span class="n">李敏</span><br /><span class="r">运营 · 上海大区</span></span>
+            </button>
+          </div>
+        </aside>
+
+        <!-- 主区 -->
+        <div class="main">
+          <div class="page">
+            <div class="page-head">
+              <div>
+                <h1>线索中心</h1>
+                <p class="desc">初筛评估 → 上门实勘 → 商务谈判 → 签约收房</p>
+              </div>
+              <div class="aside">
+                <span class="head-note">今日新增 6 条<br />最近同步 09:42</span>
+              </div>
+            </div>
+
+            <!-- 统计卡（可点击筛选） -->
+            <div class="stat-grid" id="stats">
+              <button class="stat-card" data-tab="pending_assessment">
+                <span class="stat-label"><span class="stat-dot d-apricot"></span>待评估</span>
+                <span class="stat-value">18</span>
+                <span class="stat-sub">6 条超 48 小时</span>
+              </button>
+              <button class="stat-card" data-tab="pending_visit">
+                <span class="stat-label"><span class="stat-dot d-sky"></span>待看房</span>
+                <span class="stat-value">12</span>
+                <span class="stat-sub">本周约看 4 组</span>
+              </button>
+              <button class="stat-card" data-tab="visited">
+                <span class="stat-label"><span class="stat-dot d-dove"></span>已看房</span>
+                <span class="stat-value">25</span>
+                <span class="stat-sub">带看后 3 天未跟进 5 条</span>
+              </button>
+              <button class="stat-card warm" data-tab="signed">
+                <span class="stat-label"><span class="stat-dot"></span>已签约</span>
+                <span class="stat-value">9</span>
+                <span class="stat-sub">本月 +3</span>
+              </button>
+              <button class="stat-card" data-tab="rejected">
+                <span class="stat-label"><span class="stat-dot d-dove"></span>已放弃</span>
+                <span class="stat-value">42</span>
+                <span class="stat-sub">其中他司成交 7 条</span>
+              </button>
+            </div>
+
+            <!-- 工具栏 -->
+            <div class="toolbar">
+              <label class="search">
+                <svg class="ic ic-sm"><use href="#i-search"/></svg>
+                <input id="q" placeholder="搜索小区 / 区域" autocomplete="off" />
+              </label>
+              <div class="tabs" id="tabs" role="tablist">
+                <button class="tab active" data-tab="all" role="tab">全部<span class="cnt">106</span></button>
+                <button class="tab" data-tab="pending_assessment" role="tab">待评估<span class="cnt">18</span></button>
+                <button class="tab" data-tab="pending_visit" role="tab">待看房<span class="cnt">12</span></button>
+                <button class="tab" data-tab="visited" role="tab">已看房<span class="cnt">25</span></button>
+                <button class="tab" data-tab="signed" role="tab">已签约<span class="cnt">9</span></button>
+                <button class="tab" data-tab="rejected" role="tab">已放弃<span class="cnt">42</span></button>
+              </div>
+              <span class="spacer"></span>
+              <div class="view-toggle" id="view-toggle">
+                <button class="on" data-view="table" aria-label="表格视图" title="表格视图"><svg class="ic"><use href="#i-list"/></svg></button>
+                <button data-view="grid" aria-label="卡片视图" title="卡片视图"><svg class="ic"><use href="#i-grid"/></svg></button>
+              </div>
+              <button class="btn-fill" id="btn-new">
+                <svg class="ic ic-sm"><use href="#i-plus"/></svg>录入新线索
+              </button>
+            </div>
+
+            <!-- 列表容器 -->
+            <div id="list-region"></div>
+
+            <!-- 分页 -->
+            <div style="margin-top: 16px;">
+              <div class="card" style="padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-radius: 18px;">
+                <span style="font-size: 12.5px; color: var(--graphite);">共 106 条 · 每页 20 条</span>
+                <div class="pager">
+                  <button disabled aria-label="上一页">‹</button>
+                  <button class="on">1</button>
+                  <button>2</button>
+                  <button>3</button>
+                  <button>4</button>
+                  <button>5</button>
+                  <button>6</button>
+                  <button aria-label="下一页">›</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards c3" style="margin-top: 16px;">
+      <article class="card">
+        <h4>跟进结论：同一暖色系的强度阶梯</h4>
+        <div class="legend" style="margin-top: 12px; flex-direction: column; align-items: flex-start; gap: 10px;">
+          <span class="legend item" style="display: flex; gap: 10px;"><span class="concl c-price">价格未谈拢</span><span>单轴分歧 · 杏色底</span></span>
+          <span class="legend item" style="display: flex; gap: 10px;"><span class="concl c-mode">合作模式未谈拢</span><span>单轴分歧 · 白底杏描边</span></span>
+          <span class="legend item" style="display: flex; gap: 10px;"><span class="concl c-both">价格与模式均未谈拢</span><span>双轴阻塞 · 实底</span></span>
+          <span class="legend item" style="display: flex; gap: 10px;"><span class="concl c-none">未记录</span><span>不含结论（存量或未填）</span></span>
+        </div>
+        <p style="margin-top: 12px;">
+          不引入新彩色：四态全部落在 Rust / Apricot 色系内，靠<strong>填充强度</strong>区分严重度，
+          与 DESIGN.md「唯一暖强调」一致。
+        </p>
+      </article>
+
+      <article class="card">
+        <h4>最后一条跟进内容：两行 + 次级信息</h4>
+        <p>主值正文 12.5px / 行高 1.55，<span class="mono">-webkit-line-clamp: 2</span> 截断，悬停 <span class="kbd">title</span> 显示全文。</p>
+        <p>次行 <strong>09-28 · 李敏 · 电话</strong>，11px Dove；不在表内重复展示跟进次数（抽屉里已有）。</p>
+        <p>无跟进记录时主值显示 <span class="mono">—</span>，次行显示「尚未跟进」，保持行高稳定，不做骨架屏。</p>
+      </article>
+
+      <article class="card warm">
+        <h4>为什么一行一个线索，而不是一行一条跟进</h4>
+        <p style="color: var(--rust);">
+          跟进记录行的重复会把「106 条线索」变成「400+ 行」，状态、报价、评估价被迫重复或留空，
+          反而看不清「哪些线索卡在价格上」。一行一线索 + 最近一条，配合抽屉里的完整时间线，
+          既保留扫读效率，也不丢明细。
+        </p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ==================== 03 抽屉 ==================== -->
+  <section class="sec" id="sec-03">
+    <div class="sec-head">
+      <span class="sec-no">03</span>
+      <div>
+        <h2>抽屉：新增两列的数据从哪来、回哪去</h2>
+        <p class="sub">
+          行点击行为保持现状（右侧 720px 抽屉）。本次只在抽屉的「跟进记录」页签做两件事：把结论作为可选标签随记录提交，
+          并在时间线每条记录上显示结论徽标——这样表里的两列既有来源，也能被就地更新。上方的列表点任意一行可打开它。
+        </p>
+      </div>
+    </div>
+
+    <div class="board" data-screen-label="线索抽屉 · 跟进记录页签">
+      <div class="board-cap">
+        <span class="tag">抽屉</span>
+        <h3>跟进记录页签（720px）</h3>
+        <p>演示数据：大宁金茂府 · 3 栋 1802 室</p>
+      </div>
+      <div class="screen" style="padding: 22px; display: flex; justify-content: center; align-items: flex-start;">
+        <div id="drawer-inline" style="width: 100%; display: flex; justify-content: center;"></div>
+      </div>
+    </div>
+
+    <div class="cards c2" style="margin-top: 18px;">
+      <article class="card">
+        <h4>登记区：结论是「选填单选」，不是必填</h4>
+        <p>
+          沿用现有 <span class="mono">FOLLOW_UP_CONCLUSIONS</span> 三项互斥枚举 + 一个「清除」。
+          不选即表示「本次未出现分歧或未记录」，落库为 <span class="mono">NULL</span>——存量记录同样为 NULL，
+          前端统一渲染为「未记录」，<strong>不用默认值伪造结论</strong>。
+        </p>
+        <p>提交成功后：抽屉时间线顶部插入新记录 → 表格该行的「跟进结论 / 最后一条跟进内容」即时刷新，无需重载页面。</p>
+      </article>
+
+      <article class="card">
+        <h4>时间线：结论徽标贴在内容首行</h4>
+        <p>
+          结论徽标复用列表同一套四态样式，位置在气泡内容上方一行（10px 字号），
+          让「这条谈崩在价格还是模式」在滚动时间线时也能一眼看到。
+        </p>
+        <p>评估事件与「线索初始录入」保持现状不动。</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- ==================== 04 三态 ==================== -->
+  <section class="sec" id="sec-04">
+    <div class="sec-head">
+      <span class="sec-no">04</span>
+      <div>
+        <h2>加载 / 空 / 错误</h2>
+        <p class="sub">
+          新增两列后仍然要求「表头骨架不跳动」。加载态用与真实行同高的骨架（表头保留），空态与错误态替换表体并给出下一步动作。
+          上方主方案顶部可即时切换这三态。
+        </p>
+      </div>
+    </div>
+
+    <div class="board" data-screen-label="加载态">
+      <div class="board-cap"><span class="tag">加载</span><h3>骨架行，表头保留</h3><p>6 行占位，行高与真实行一致（63px），宽度按列随机。</p></div>
+      <div class="screen" id="state-loading" style="padding: 6px 8px;"></div>
+    </div>
+
+    <div class="board" data-screen-label="空态">
+      <div class="board-cap"><span class="tag">空</span><h3>空：区分「无数据」与「筛不出来」</h3><p>有筛选条件时给「清除筛选」，无任何线索时给「录入第一条线索」。</p></div>
+      <div class="screen" id="state-empty" style="padding: 6px 8px;"></div>
+    </div>
+
+    <div class="board" data-screen-label="错误态">
+      <div class="board-cap"><span class="tag">错误</span><h3>错误：说清哪一步失败，可重试</h3><p>保留页头与工具栏，只让表体进入错误态，避免整页白屏。</p></div>
+      <div class="screen" id="state-error" style="padding: 6px 8px;"></div>
+    </div>
+  </section>
+
+  <!-- ==================== 05 实现落点 ==================== -->
+  <section class="sec" id="sec-05">
+    <div class="sec-head">
+      <span class="sec-no">05</span>
+      <div>
+        <h2>实现落点与待确认</h2>
+        <p class="sub">按 AGENTS.md 的分层：取数口径在后端 Service，渲染与派生计算在前端。以下为建议改动清单，未改任何代码。</p>
+      </div>
+    </div>
+
+    <div class="cards c2">
+      <article class="card">
+        <h4>前端文件</h4>
+        <div class="file-list">
+          <div class="file-row"><span class="path">admin/leads/_components/leads-table.tsx</span><span class="what">列顺序、合并时间列、两列新内容（主要改动）</span></div>
+          <div class="file-row"><span class="path">admin/leads/_components/leads-grid.tsx</span><span class="what">卡片视图补一行跟进摘要，与表格口径一致</span></div>
+          <div class="file-row"><span class="path">admin/leads/_lib/follow-up-meta.ts</span><span class="what">新增：结论四态徽标映射（唯一来源）</span></div>
+          <div class="file-row"><span class="path">admin/leads/types.ts</span><span class="what">Lead 增 latestFollowUp 字段（生成类型为准）</span></div>
+          <div class="file-row"><span class="path">admin/leads/_components/drawer-parts/follow-up-timeline.tsx</span><span class="what">已在做结论标签，确认列表回写路径</span></div>
+        </div>
+      </article>
+
+      <article class="card">
+        <h4>后端契约（待确认）</h4>
+        <p>
+          列表接口目前只回 <span class="mono">last_follow_up_at</span>，没有结论与内容。现有
+          <span class="mono">LeadQueryService.get_followup_stats()</span> 已用单次 <span class="mono">GROUP BY</span>
+          聚合跟进，可扩展为「每个 lead_id 取最后一条记录的 conclusion / content / method / created_by」，
+          仍是一次查询、无 N+1。
+        </p>
+        <ul>
+          <li><strong>建议</strong>：在 <span class="mono">_lead_to_list_item()</span> 回填 <span class="mono">latest_follow_up</span> 嵌套对象（conclusion / content / method / followed_at / created_by_name）。</li>
+          <li>若不想改契约：列表页 N+1 逐条拉 <span class="mono">/leads/{id}/follow-ups</span>——<strong>不推荐</strong>，20 行即 20 次请求。</li>
+          <li>改动后必须 <span class="mono">pnpm gen-api</span> 重新生成类型，不手写。</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="cards c2" style="margin-top: 16px;">
+      <article class="card">
+        <h4>取数口径（写进 Service 注释）</h4>
+        <ul>
+          <li>最近一条 = <span class="mono">ORDER BY followed_at DESC, id DESC</span> 的第一条；不用 <span class="mono">max(id)</span> 代替时间。</li>
+          <li>结论 = 该条记录的 <span class="mono">conclusion</span>，可为 NULL；<strong>不得回退到上一条有结论的记录</strong>（否则「最近一次谈了什么」会被历史结论污染）。</li>
+          <li>内容截断在前端做（CSS clamp），后端回全文，避免 <span class="mono">title</span> 悬停内容不完整。</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h4>验收点（E2E 可覆盖）</h4>
+        <ul>
+          <li>11 列顺序符合本稿，评估单价 = 评估价 ÷ 面积（保留 2 位）。</li>
+          <li>无跟进线索的两列显示「未记录」+「—」，不报错、不塌行。</li>
+          <li>在抽屉登记一条带结论的跟进后，返回列表该行两列立即更新。</li>
+          <li>键盘：Tab 可达行、<span class="kbd">Enter</span> 开抽屉、<span class="kbd">Esc</span> 关闭并归还焦点。</li>
+          <li>1280px 宽度下无需横向滚动即可看到「跟进结论」。</li>
+        </ul>
+      </article>
+    </div>
+
+    <div class="note" style="margin-top: 16px;">
+      <b>关于「入口」：</b>本稿不新增导航项。跟进数据以「最近一条」直接进入列表，
+      完整跟进历史在行内抽屉的「跟进记录」页签（第三屏）——它的入口就是任意一行。
+      如果后续仍希望有一个只读的全局跟进流水（跨线索、按时间倒序），
+      那是一个新的聚合视图，与本稿的列表演进不冲突，可另起一稿。
+    </div>
+
+    <div class="note warm" style="margin-top: 12px;">
+      <b>⚠️ 未覆盖 / 待你确认（3 项）：</b>
+      ① 跟进两列在 1024–1280px 是否可见（本稿 <span class="mono">md</span> 以下隐藏，见 01 节规格表脚注）；
+      ② 后端是否同意扩展列表响应（否则只能退化为 N+1）；
+      ③ 卡片视图是否同步补跟进摘要（本稿给了方案，可砍）。
+    </div>
+
+    <div class="note" style="margin-top: 12px;">
+      <b>规范自检：</b>
+      颜色仅用 Ink / Fog / White / Dove / Graphite / Ash / Rust / Apricot / Sky，无新增色值；
+      字号落在 11–15px UI 区间，Signifier 仅用于页头 44px；
+      表格状态、结论、操作均有 <span class="mono">title</span> 或可见文字，不单靠颜色传达；
+      焦点环 <span class="mono">outline: 2px solid var(--rust)</span>；
+      移动端横向滚动而非压缩列；admin 后台按 DESIGN.md 仅浅色，未做暗色变体。
+    </div>
+  </section>
+
+  <footer class="doc-foot">
+    <span>线索中心 · 列表页增量迭代 · 高保真可交互设计稿</span>
+    <span>遵循 /DESIGN.md（Steep）· 数据为演示样例 · 2026-10-27</span>
+  </footer>
+
+</div>
+
+<!-- 抽屉 + 遮罩 + toast -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="dr-title" aria-hidden="true"></aside>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+   线索中心 · 列表迭代演示脚本
+   纯原生 JS。所有可变的 DOM 由本脚本渲染；页面上不会出现未渲染的模板语法。
+   ============================================================ */
+(function () {
+  "use strict";
+
+  /* ---------------- 1. 演示数据 ---------------- */
+
+  // 跟进结论：三项互斥 + 未记录（对应 backend FollowUpConclusion 枚举）
+  var CONCLUSIONS = {
+    price_disagree: { text: "价格未谈拢", cls: "c-price" },
+    mode_disagree: { text: "合作模式未谈拢", cls: "c-mode" },
+    both_disagree: { text: "价格与模式均未谈拢", cls: "c-both" }
+  };
+
+  var METHOD_LABEL = { phone: "电话", wechat: "微信", face: "面谈", visit: "带看" };
+
+  var STATUS = {
+    pending_assessment: { label: "待评估", cls: "b-apricot" },
+    pending_visit: { label: "待看房", cls: "b-sky" },
+    visited: { label: "已看房", cls: "b-outline" },
+    signed: { label: "已签约", cls: "b-ink" },
+    rejected: { label: "已放弃", cls: "b-fog" },
+    lost_to_competitor: { label: "他司已成交", cls: "b-fogrust" }
+  };
+
+  // 每条线索带 followUps 数组，最后一条即表格两列的来源（数组按时间正序）
+  var LEADS = [
+    {
+      id: "ld_8f3a21",
+      community: "大宁金茂府",
+      addr: "3 栋 1802 室",
+      district: "静安",
+      biz: "大宁",
+      layout: "3室2厅",
+      area: 128.6,
+      floor: "18/24 层",
+      totalPrice: 1180,
+      evalPrice: 1050,
+      status: "pending_visit",
+      creator: { name: "李敏", av: "av-2" },
+      createdAt: "2026-09-12T10:24:00+08:00",
+      updatedAt: "2026-10-26T16:10:00+08:00",
+      followUps: [
+        { id: "f1", method: "phone", content: "首次电话，业主自住三年，装修保持良好，愿意配合实勘。", conclusion: null, at: "2026-09-13T09:12:00+08:00", by: "李敏" },
+        { id: "f2", method: "face", content: "面谈：业主心理价 1180 万，我方按同户型近三月成交给出 1050 万评估，业主认为低了约 8%。", conclusion: "price_disagree", at: "2026-09-28T15:40:00+08:00", by: "李敏" },
+        { id: "f3", method: "wechat", content: "微信回访：业主同意先带看再谈价，约本周六上午到店。", conclusion: null, at: "2026-10-26T16:10:00+08:00", by: "周航" }
+      ]
+    },
+    {
+      id: "ld_5c90b7",
+      community: "明园森林都市",
+      addr: "12 栋 902 室",
+      district: "静安",
+      biz: "南京西路",
+      layout: "2室1厅",
+      area: 89.2,
+      floor: "9/18 层",
+      totalPrice: 920,
+      evalPrice: 880,
+      status: "pending_assessment",
+      creator: { name: "周航", av: "av-1" },
+      createdAt: "2026-10-21T14:02:00+08:00",
+      updatedAt: "2026-10-24T11:30:00+08:00",
+      followUps: [
+        { id: "f4", method: "phone", content: "业主人在外地，希望先线上评估；房屋无贷款，产权清晰，可随时过户。", conclusion: null, at: "2026-10-21T14:05:00+08:00", by: "周航" },
+        { id: "f5", method: "phone", content: "再次沟通：业主希望我方先给到 900 万以上再谈合作方式，暂不接受代理美化的分成比例。", conclusion: "both_disagree", at: "2026-10-24T11:30:00+08:00", by: "周航" }
+      ]
+    },
+    {
+      id: "ld_1a77e4",
+      community: "中远两湾城四期",
+      addr: "7 栋 2201 室",
+      district: "普陀",
+      biz: "长寿路",
+      layout: "3室2厅",
+      area: 116.4,
+      floor: "22/28 层",
+      totalPrice: 860,
+      evalPrice: 812,
+      status: "visited",
+      creator: { name: "陈曦", av: "av-3" },
+      createdAt: "2026-08-30T09:41:00+08:00",
+      updatedAt: "2026-10-23T10:05:00+08:00",
+      followUps: [
+        { id: "f6", method: "visit", content: "带看两组客户上门，反映南向采光好、次卧偏小；业主全程配合，愿意议价 3% 以内。", conclusion: null, at: "2026-10-18T10:20:00+08:00", by: "陈曦" },
+        { id: "f7", method: "face", content: "到店面谈合同条款：业主接受收购美化，但要求保底 860 万，与评估价差 48 万，未谈拢。", conclusion: "both_disagree", at: "2026-10-23T10:05:00+08:00", by: "陈曦" }
+      ]
+    },
+    {
+      id: "ld_9be302",
+      community: "碧云国际社区晓园",
+      addr: "5 栋 601 室",
+      district: "浦东",
+      biz: "碧云",
+      layout: "4室2厅",
+      area: 168.0,
+      floor: "6/11 层",
+      totalPrice: 2150,
+      evalPrice: 2080,
+      status: "signed",
+      creator: { name: "王倩", av: "av-4" },
+      createdAt: "2026-07-14T16:20:00+08:00",
+      updatedAt: "2026-09-30T17:20:00+08:00",
+      followUps: [
+        { id: "f8", method: "visit", content: "带看后客户确认意向，业主同意按代理美化合作，佣金 2.4%。", conclusion: null, at: "2026-08-02T14:00:00+08:00", by: "王倩" },
+        { id: "f9", method: "face", content: "签约完成，约定 11 月进场装修；业主保留家具家电。", conclusion: null, at: "2026-09-30T17:20:00+08:00", by: "王倩" }
+      ]
+    },
+    {
+      id: "ld_3cd158",
+      community: "绿地海珀外滩",
+      addr: "2 栋 3305 室",
+      district: "黄浦",
+      biz: "滨江",
+      layout: "3室2厅",
+      area: 142.8,
+      floor: "33/40 层",
+      totalPrice: 2380,
+      evalPrice: 2260,
+      status: "pending_visit",
+      creator: { name: "李敏", av: "av-2" },
+      createdAt: "2026-10-08T11:15:00+08:00",
+      updatedAt: "2026-10-25T09:30:00+08:00",
+      followUps: [
+        { id: "f10", method: "wechat", content: "微信沟通：业主关注装修周期是否影响自住，需要确认 3 个月内可交付。", conclusion: "mode_disagree", at: "2026-10-25T09:30:00+08:00", by: "李敏" }
+      ]
+    },
+    {
+      id: "ld_77a0c9",
+      community: "嘉里华庭",
+      addr: "1 栋 1102 室",
+      district: "静安",
+      biz: "曹家渡",
+      layout: "2室2厅",
+      area: 103.5,
+      floor: "11/26 层",
+      totalPrice: 1050,
+      evalPrice: null,
+      status: "pending_assessment",
+      creator: { name: "周航", av: "av-1" },
+      createdAt: "2026-10-23T08:50:00+08:00",
+      updatedAt: "2026-10-23T08:50:00+08:00",
+      followUps: []
+    },
+    {
+      id: "ld_62f4d1",
+      community: "仁恒河滨城二期",
+      addr: "9 栋 1503 室",
+      district: "浦东",
+      biz: "联洋",
+      layout: "3室2厅",
+      area: 134.2,
+      floor: "15/30 层",
+      totalPrice: 1420,
+      evalPrice: 1350,
+      status: "rejected",
+      creator: { name: "陈曦", av: "av-3" },
+      createdAt: "2026-06-19T13:10:00+08:00",
+      updatedAt: "2026-08-11T15:48:00+08:00",
+      followUps: [
+        { id: "f11", method: "face", content: "业主已与隔壁中介签独家，报价高出市场 5%，多次沟通不接受调整。", conclusion: "price_disagree", at: "2026-08-11T15:48:00+08:00", by: "陈曦" }
+      ]
+    },
+    {
+      id: "ld_0e88a6",
+      community: "万科翡翠雅宾利",
+      addr: "6 栋 801 室",
+      district: "闵行",
+      biz: "春申",
+      layout: "2室1厅",
+      area: 78.4,
+      floor: "8/14 层",
+      totalPrice: 520,
+      evalPrice: 505,
+      status: "lost_to_competitor",
+      creator: { name: "王倩", av: "av-4" },
+      createdAt: "2026-05-28T10:35:00+08:00",
+      updatedAt: "2026-07-02T09:12:00+08:00",
+      followUps: [
+        { id: "f12", method: "phone", content: "业主告知已在他司成交，成交价 512 万，高出我方评估 7 万。", conclusion: "price_disagree", at: "2026-07-02T09:12:00+08:00", by: "王倩" }
+      ]
+    },
+    {
+      id: "ld_b41d77",
+      community: "古北国际花园",
+      addr: "4 栋 2001 室",
+      district: "长宁",
+      biz: "古北",
+      layout: "3室2厅",
+      area: 121.0,
+      floor: "20/25 层",
+      totalPrice: 1280,
+      evalPrice: 1240,
+      status: "visited",
+      creator: { name: "李敏", av: "av-2" },
+      createdAt: "2026-09-02T15:44:00+08:00",
+      updatedAt: "2026-10-20T13:26:00+08:00",
+      followUps: [
+        { id: "f13", method: "visit", content: "带看两组，其中一组复看；业主坚持 1280 万不议价，但接受装修后分成。", conclusion: "price_disagree", at: "2026-10-20T13:26:00+08:00", by: "李敏" }
+      ]
+    },
+    {
+      id: "ld_2f69bc",
+      community: "保利叶语",
+      addr: "3 栋 1104 室",
+      district: "杨浦",
+      biz: "新江湾城",
+      layout: "4室2厅",
+      area: 156.5,
+      floor: "11/16 层",
+      totalPrice: 1620,
+      evalPrice: 1580,
+      status: "signed",
+      creator: { name: "周航", av: "av-1" },
+      createdAt: "2026-06-05T09:20:00+08:00",
+      updatedAt: "2026-09-18T11:02:00+08:00",
+      followUps: [
+        { id: "f14", method: "face", content: "合作模式达成一致：我方收购后美化，业主接受 1580 万，签约完成。", conclusion: null, at: "2026-09-18T11:02:00+08:00", by: "周航" }
+      ]
+    }
+  ];
+
+  /* ---------------- 2. 工具函数 ---------------- */
+
+  var NOW = new Date("2026-10-27T09:42:00+08:00");
+
+  function pad(n) { return n < 10 ? "0" + n : "" + n; }
+
+  /** 年内显示 MM-DD，跨年显示 YYYY-MM-DD（与列表现状口径一致） */
+  function fmtDate(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    if (isNaN(d)) return "—";
+    var md = pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+    return d.getFullYear() === NOW.getFullYear() ? md : d.getFullYear() + "-" + md;
+  }
+
+  function fmtDateTime(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    if (isNaN(d)) return "—";
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+      " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+
+  function fmtMoney(v) { return v == null ? "—" : v.toLocaleString("zh-CN"); }
+
+  /** 单价 = 总价 / 面积，保留 2 位；缺一半返回 null */
+  function unitPrice(total, area) {
+    if (!total || !area) return null;
+    return Math.round((total / area) * 100) / 100;
+  }
+
+  /** 最近一条跟进：按 followed_at 降序，同刻按 id 降序兜底 */
+  function latestFollowUp(lead) {
+    var list = (lead.followUps || []).slice();
+    if (!list.length) return null;
+    list.sort(function (a, b) {
+      var ta = new Date(a.at).getTime(), tb = new Date(b.at).getTime();
+      if (tb !== ta) return tb - ta;
+      return a.id < b.id ? 1 : -1;
+    });
+    return list[0];
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function conclBadge(conclusion) {
+    if (!conclusion || !CONCLUSIONS[conclusion]) {
+      return '<span class="concl c-none"><svg class="ic ic-sm"><use href="#i-msg"/></svg>未记录</span>';
+    }
+    var c = CONCLUSIONS[conclusion];
+    return '<span class="concl ' + c.cls + '">' + esc(c.text) + "</span>";
+  }
+
+  function statusBadge(status) {
+    var s = STATUS[status] || { label: status, cls: "b-fog" };
+    return '<span class="badge ' + s.cls + '">' + esc(s.label) + "</span>";
+  }
+
+  function icon(id, cls) {
+    return '<svg class="ic ' + (cls || "") + '"><use href="#' + id + '"/></svg>';
+  }
+
+  /* ---------------- 3. 表格 ---------------- */
+
+  var COLS =
+    '<colgroup>' +
+    '<col style="width:196px" /><col style="width:84px" /><col style="width:120px" />' +
+    '<col style="width:102px" /><col style="width:102px" /><col style="width:82px" />' +
+    '<col style="width:142px" /><col /><col style="width:80px" />' +
+    '<col style="width:88px" /><col style="width:78px" />' +
+    "</colgroup>";
+
+  var THEAD =
+    "<thead><tr>" +
+    "<th>小区 / 房源</th>" +
+    '<th class="hide-lg">区域</th>' +
+    "<th>户型 / 楼层</th>" +
+    '<th class="num" data-mark><span class="mk">1</span>业主报价 / 单价<span class="u">万 · 万/㎡</span></th>' +
+    '<th class="num" data-mark><span class="mk">1</span>评估价 / 单价<span class="u">万 · 万/㎡</span></th>' +
+    "<th>状态</th>" +
+    '<th data-mark class="hide-md"><span class="mk">3</span>跟进结论</th>' +
+    '<th data-mark class="hide-md"><span class="mk">3</span>最后一条跟进内容</th>' +
+    '<th class="hide-xl">录入人</th>' +
+    '<th data-mark class="hide-xl"><span class="mk">2</span>创建 / 更新</th>' +
+    '<th style="text-align:right">操作</th>' +
+    "</tr></thead>";
+
+  function rowHTML(lead) {
+    var fu = latestFollowUp(lead);
+    var up = unitPrice(lead.totalPrice, lead.area);
+    var evalUp = unitPrice(lead.evalPrice, lead.area);
+
+    var fuCell, conclCell;
+    if (fu) {
+      conclCell = conclBadge(fu.conclusion);
+      fuCell =
+        '<div class="fu-text" title="' + esc(fu.content) + '">' + esc(fu.content) + "</div>" +
+        '<div class="fu-meta">' + fmtDate(fu.at) + " · " + esc(fu.by) + " · " + esc(METHOD_LABEL[fu.method] || fu.method) + "</div>";
+    } else {
+      conclCell = conclBadge(null);
+      fuCell = '<div class="fu-empty">—</div><div class="fu-meta">尚未跟进</div>';
+    }
+
+    return (
+      '<tr tabindex="0" data-lead="' + esc(lead.id) + '" aria-label="打开 ' + esc(lead.community) + ' 线索详情">' +
+        "<td>" +
+          '<div class="lead-cell">' +
+            '<span class="thumb">' + icon("i-home", "ic-sm") + "</span>" +
+            '<span class="txt"><span class="nm">' + esc(lead.community) + '</span>' +
+            '<span class="ad">' + esc(lead.addr) + "</span></span>" +
+          "</div>" +
+        "</td>" +
+        '<td class="hide-lg">' +
+          '<div style="font-size:13px;color:var(--ash);line-height:1.35">' + esc(lead.district) + "</div>" +
+          '<div class="cell-sub" style="margin-top:2px">' + esc(lead.biz) + "</div>" +
+        "</td>" +
+        "<td>" +
+          '<div class="cell-main" style="font-size:13.5px;font-weight:450">' + esc(lead.layout) + "</div>" +
+          '<div class="cell-sub tnum"><span style="color:var(--graphite)">' + esc(lead.area) + "㎡</span> · " + esc(lead.floor) + "</div>" +
+        "</td>" +
+        '<td class="num">' +
+          '<div class="cell-main tnum">' + fmtMoney(lead.totalPrice) + "</div>" +
+          '<div class="cell-sub tnum">' + (up == null ? "—" : up.toFixed(2)) + " 万/㎡</div>" +
+        "</td>" +
+        '<td class="num">' +
+          '<div class="cell-main tnum">' + (lead.evalPrice == null ? '<span class="muted">—</span>' : fmtMoney(lead.evalPrice)) + "</div>" +
+          '<div class="cell-sub tnum">' + (evalUp == null ? "—" : evalUp.toFixed(2) + " 万/㎡") + "</div>" +
+        "</td>" +
+        "<td>" + statusBadge(lead.status) + "</td>" +
+        '<td class="hide-md">' + conclCell + "</td>" +
+        '<td class="hide-md">' + fuCell + "</td>" +
+        '<td class="hide-xl">' +
+          '<span style="display:inline-flex;align-items:center;gap:7px">' +
+            '<span class="avatar ' + esc(lead.creator.av) + '" style="width:24px;height:24px;font-size:11px">' + esc(lead.creator.name.charAt(0)) + "</span>" +
+            '<span class="clip" style="font-size:13px;color:var(--ash)">' + esc(lead.creator.name) + "</span>" +
+          "</span>" +
+        "</td>" +
+        '<td class="hide-xl">' +
+          '<div class="stack">' +
+            '<span class="ln"><span class="k">创建</span><span class="v" title="创建 ' + fmtDateTime(lead.createdAt) + '">' + fmtDate(lead.createdAt) + "</span></span>" +
+            '<span class="ln"><span class="k">更新</span><span class="v" title="更新 ' + fmtDateTime(lead.updatedAt) + '">' + fmtDate(lead.updatedAt) + "</span></span>" +
+          "</div>" +
+        "</td>" +
+        "<td>" +
+          '<div class="ops">' +
+            '<button class="row-action" data-act="view" type="button">查看</button>' +
+            '<button class="row-action" data-act="edit" type="button">编辑</button>' +
+          "</div>" +
+        "</td>" +
+      "</tr>"
+    );
+  }
+
+  function tableHTML(leads) {
+    return (
+      '<div class="tbl-card">' +
+        '<div class="tbl-scroll">' +
+          '<table class="tbl">' + COLS + THEAD +
+            "<tbody>" + leads.map(rowHTML).join("") + "</tbody>" +
+          "</table>" +
+        "</div>" +
+        '<div class="tbl-foot">' +
+          "<span>显示 " + leads.length + " 条记录（共 106 条）</span>" +
+          "<span>点击行查看跟进时间线 · 每页 20 条</span>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  /* 卡片视图：补一行跟进摘要，与表格口径一致 */
+  function cardHTML(lead) {
+    var fu = latestFollowUp(lead);
+    var up = unitPrice(lead.totalPrice, lead.area);
+    var evalUp = unitPrice(lead.evalPrice, lead.area);
+    return (
+      '<button class="card-lead" data-lead="' + esc(lead.id) + '" type="button">' +
+        '<span class="img">' + icon("i-building", "ic-lg") + "</span>" +
+        '<span class="body">' +
+          '<span class="top"><span class="nm">' + esc(lead.community) + "</span>" + statusBadge(lead.status) + "</span>" +
+          '<span class="sub">' + esc(lead.layout) + " · " + esc(lead.area) + "㎡ · " + esc(lead.floor) + "</span>" +
+          '<span class="money"><span class="m1 tnum">' + fmtMoney(lead.totalPrice) + '<span class="unit">万</span></span>' +
+            '<span class="m2">评估 ' + (lead.evalPrice == null ? "—" : fmtMoney(lead.evalPrice) + " 万") + "</span></span>" +
+          '<span class="sub tnum" style="color:var(--dove)">' +
+            (up == null ? "—" : up.toFixed(2) + " 万/㎡") + " · 评估 " + (evalUp == null ? "—" : evalUp.toFixed(2) + " 万/㎡") +
+          "</span>" +
+          '<span class="fu">' +
+            '<span style="display:flex;gap:6px;align-items:center;margin-bottom:6px">' + conclBadge(fu ? fu.conclusion : null) + "</span>" +
+            (fu
+              ? '<span class="fu-text" title="' + esc(fu.content) + '">' + esc(fu.content) + "</span>" +
+                '<span class="fu-meta">' + fmtDate(fu.at) + " · " + esc(fu.by) + "</span>"
+              : '<span class="fu-empty">尚未跟进</span>') +
+          "</span>" +
+        "</span>" +
+      "</button>"
+    );
+  }
+
+  /* ---------------- 4. 状态渲染（加载 / 空 / 错误） ---------------- */
+
+  function skeletonRows(n) {
+    var widths = [
+      ["72%", "44%"], ["86%", "38%"], ["62%", "50%"], ["78%", "34%"],
+      ["66%", "46%"], ["90%", "40%"], ["70%", "52%"], ["58%", "36%"],
+      ["74%", "48%"], ["64%", "42%"], ["82%", "38%"]
+    ];
+    var rows = "";
+    for (var i = 0; i < n; i++) {
+      var cells = "";
+      for (var c = 0; c < 11; c++) {
+        var w = widths[c % widths.length];
+        var h1 = 11, h2 = 9;
+        cells +=
+          "<td>" +
+            '<div class="sk" style="width:' + w[0] + ";height:" + h1 + 'px"></div>' +
+            '<div class="sk" style="width:' + w[1] + ";height:" + h2 + "px;margin-top:7px;opacity:.7\"></div>" +
+          "</td>";
+      }
+      rows += '<tr class="skeleton-row">' + cells + "</tr>";
+    }
+    return rows;
+  }
+
+  function loadingHTML() {
+    return (
+      '<div class="tbl-card">' +
+        '<div class="tbl-scroll">' +
+          '<table class="tbl">' + COLS + THEAD + "<tbody>" + skeletonRows(6) + "</tbody></table>" +
+        "</div>" +
+        '<div class="tbl-foot"><span>正在加载线索…</span><span>每页 20 条</span></div>' +
+      "</div>"
+    );
+  }
+
+  function emptyHTML() {
+    return (
+      '<div class="tbl-card">' +
+        '<div class="tbl-scroll"><table class="tbl">' + COLS + THEAD + "<tbody></tbody></table></div>" +
+        '<div class="state-box">' +
+          '<div class="state-icon">' + icon("i-inbox", "ic-lg") + "</div>" +
+          '<div class="state-title">这个筛选下没有线索</div>' +
+          '<div class="state-desc">「已签约 + 静安」当前没有匹配的线索。清除筛选后可以看到全部 106 条。</div>' +
+          '<div class="state-actions">' +
+            '<button class="btn-outline" id="btn-clear-filter" type="button">清除筛选</button>' +
+            '<button class="btn-text" id="btn-new-2" type="button">' + icon("i-plus", "ic-sm") + "录入新线索</button>" +
+          "</div>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  function errorHTML() {
+    return (
+      '<div class="tbl-card">' +
+        '<div class="tbl-scroll"><table class="tbl">' + COLS + THEAD + "<tbody></tbody></table></div>" +
+        '<div class="state-box">' +
+          '<div class="state-icon" style="background:var(--apricot);color:var(--rust)">' + icon("i-alert", "ic-lg") + "</div>" +
+          '<div class="state-title">线索列表没能加载出来</div>' +
+          '<div class="state-desc">请求超时（10s）。数据没有丢失，可以重试，或刷新页面重新建立会话。</div>' +
+          '<div class="state-actions">' +
+            '<button class="btn-outline" id="btn-retry" type="button">' + icon("i-refresh", "ic-sm") + " 重试</button>" +
+            '<button class="btn-text" type="button" id="btn-copy-err">复制错误信息</button>' +
+          "</div>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  /* ---------------- 5. 应用状态 ---------------- */
+
+  var state = {
+    tab: "all",
+    q: "",
+    view: "table",
+    mode: "normal",   // normal | loading | empty | error
+    openLeadId: null
+  };
+
+  function filteredLeads() {
+    return LEADS.filter(function (l) {
+      if (state.tab !== "all" && l.status !== state.tab) return false;
+      if (!state.q) return true;
+      var q = state.q.toLowerCase();
+      return (l.community + " " + l.addr + " " + l.district + " " + l.biz).toLowerCase().indexOf(q) >= 0;
+    });
+  }
+
+  function render() {
+    var region = document.getElementById("list-region");
+    if (!region) return;
+
+    if (state.mode === "loading") {
+      region.innerHTML = loadingHTML();
+      return;
+    }
+    if (state.mode === "error") {
+      region.innerHTML = errorHTML();
+      bindStateButtons(region, "error");
+      return;
+    }
+
+    var leads = filteredLeads();
+
+    if (state.mode === "empty" || leads.length === 0) {
+      region.innerHTML = emptyHTML();
+      bindStateButtons(region, "empty");
+      return;
+    }
+
+    region.innerHTML = state.view === "table"
+      ? tableHTML(leads)
+      : '<div class="grid-view">' + leads.map(cardHTML).join("") + "</div>";
+
+    if (markOn) {
+      region.querySelectorAll(".tbl").forEach(function (t) { t.classList.add("marks"); });
+    }
+  }
+
+  function bindStateButtons(region, kind) {
+    if (kind === "error") {
+      var retry = region.querySelector("#btn-retry");
+      if (retry) retry.addEventListener("click", function () {
+        toast("重新请求中…");
+        setTimeout(function () { render(); toast("已恢复：106 条线索"); }, 700);
+      });
+      var copy = region.querySelector("#btn-copy-err");
+      if (copy) copy.addEventListener("click", function () {
+        toast("错误信息已复制到剪贴板");
+      });
+    }
+    if (kind === "empty") {
+      var clear = region.querySelector("#btn-clear-filter");
+      if (clear) clear.addEventListener("click", function () {
+        state.tab = "all"; state.q = "";
+        var q = document.getElementById("q"); if (q) q.value = "";
+        syncTabs(); syncStats();
+        render(); toast("筛选已清除");
+      });
+      var add = region.querySelector("#btn-new-2");
+      if (add) add.addEventListener("click", function () { toast("设计稿演示：打开「录入新线索」表单"); });
+    }
+  }
+
+  /* ---------------- 6. 顶部交互绑定 ---------------- */
+
+  var markOn = false;
+
+  function syncTabs() {
+    document.querySelectorAll("#tabs .tab").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.tab === state.tab);
+    });
+  }
+  function syncStats() {
+    document.querySelectorAll("#stats .stat-card").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.tab === state.tab);
+    });
+  }
+  function syncView() {
+    document.querySelectorAll("#view-toggle button").forEach(function (b) {
+      b.classList.toggle("on", b.dataset.view === state.view);
+    });
+  }
+  function syncStateSwitch() {
+    document.querySelectorAll("#state-switch .tab").forEach(function (b) {
+      b.classList.toggle("active", b.dataset.state === state.mode);
+    });
+  }
+
+  function initApp() {
+    // 状态 Tab
+    document.querySelectorAll("#tabs .tab").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.tab = btn.dataset.tab;
+        if (state.mode !== "normal") state.mode = "normal";
+        syncTabs(); syncStats(); syncStateSwitch();
+        render();
+      });
+    });
+
+    // 统计卡
+    document.querySelectorAll("#stats .stat-card").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.tab = state.tab === btn.dataset.tab ? "all" : btn.dataset.tab;
+        if (state.mode !== "normal") state.mode = "normal";
+        syncTabs(); syncStats(); syncStateSwitch();
+        render();
+      });
+    });
+
+    // 搜索
+    var q = document.getElementById("q");
+    if (q) q.addEventListener("input", function () {
+      state.q = q.value.trim();
+      if (state.mode !== "normal") state.mode = "normal";
+      syncStateSwitch();
+      render();
+    });
+
+    // 视图切换
+    document.querySelectorAll("#view-toggle button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.view = btn.dataset.view;
+        syncView(); render();
+      });
+    });
+
+    // 三态切换
+    document.querySelectorAll("#state-switch .tab").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        state.mode = btn.dataset.state;
+        syncStateSwitch(); render();
+      });
+    });
+
+    // 标注开关
+    var mk = document.getElementById("mark-toggle");
+    if (mk) mk.addEventListener("change", function () {
+      markOn = mk.checked; render();
+    });
+
+    // 新建
+    var add = document.getElementById("btn-new");
+    if (add) add.addEventListener("click", function () {
+      toast("设计稿演示：打开「录入新线索」表单");
+    });
+
+    // 侧栏 / 行 / 卡片 统一事件委托
+    document.getElementById("app").addEventListener("click", function (e) {
+      var nav = e.target.closest("[data-nav]");
+      if (nav) {
+        toast("设计稿演示：跳转「" + nav.dataset.nav + "」（本稿仅线索中心）");
+        return;
+      }
+      var act = e.target.closest("[data-act]");
+      if (act) {
+        e.stopPropagation();
+        var tr = act.closest("tr");
+        var lead = LEADS.find(function (l) { return l.id === (tr && tr.dataset.lead); });
+        if (act.dataset.act === "edit") {
+          toast("设计稿演示：编辑「" + (lead ? lead.community : "") + "」");
+        } else {
+          openDrawer(tr.dataset.lead);
+        }
+        return;
+      }
+      var row = e.target.closest("[data-lead]");
+      if (row) openDrawer(row.dataset.lead);
+    });
+
+    // 键盘：行可 Tab 聚焦 + Enter 打开
+    document.getElementById("app").addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      var row = e.target.closest("tr[data-lead]");
+      if (row && e.target === row) {
+        e.preventDefault();
+        openDrawer(row.dataset.lead);
+      }
+    });
+
+    render();
+  }
+
+  /* ---------------- 7. 抽屉 ---------------- */
+
+  var drawerEl = document.getElementById("drawer");
+  var scrimEl = document.getElementById("scrim");
+  var inlineEl = document.getElementById("drawer-inline");
+  var lastFocus = null;
+
+  function drawerInner(lead, opts) {
+    var fu = latestFollowUp(lead);
+    var up = unitPrice(lead.totalPrice, lead.area);
+    var evalUp = unitPrice(lead.evalPrice, lead.area);
+    var list = (lead.followUps || []).slice().sort(function (a, b) {
+      return new Date(b.at).getTime() - new Date(a.at).getTime();
+    });
+
+    var kpis =
+      '<div class="dr-kpis">' +
+        '<div class="dr-kpi"><div class="k">业主报价</div><div class="v tnum">' + fmtMoney(lead.totalPrice) + '<span class="unit">万</span></div></div>' +
+        '<div class="dr-kpi"><div class="k">业主单价</div><div class="v tnum">' + (up == null ? "—" : up.toFixed(2)) + '<span class="unit">万/㎡</span></div></div>' +
+        '<div class="dr-kpi warm"><div class="k">评估价</div><div class="v tnum">' + (lead.evalPrice == null ? "—" : fmtMoney(lead.evalPrice)) + '<span class="unit">万</span></div></div>' +
+        '<div class="dr-kpi warm"><div class="k">评估单价</div><div class="v tnum">' + (evalUp == null ? "—" : evalUp.toFixed(2)) + '<span class="unit">万/㎡</span></div></div>' +
+      "</div>";
+
+    var picks =
+      '<div class="concl-picks">' +
+        '<span class="lbl">跟进结论</span>' +
+        '<span class="lbl" style="color:var(--dove);margin-right:4px">选填</span>' +
+        '<button class="pick" data-concl="price_disagree" type="button">价格未谈拢</button>' +
+        '<button class="pick" data-concl="mode_disagree" type="button">合作模式未谈拢</button>' +
+        '<button class="pick" data-concl="both_disagree" type="button">两者均未谈拢</button>' +
+        '<button class="pick clear" data-concl="" type="button">清除</button>' +
+      "</div>";
+
+    var timeline = list.map(function (f, i) {
+      var isNew = i === 0;
+      return (
+        '<div class="tl-item">' +
+          '<div class="tl-dot' + (isNew ? " new" : "") + '">' + icon(f.method === "visit" ? "i-eye" : f.method === "face" ? "i-user" : "i-msg", "ic-sm") + "</div>" +
+          '<div class="tl-top"><span class="tl-title">' +
+            (f.method === "visit" ? "带看实勘" : f.method === "face" ? "面谈记录" : f.method === "wechat" ? "微信联络" : "电话沟通") +
+          '</span><span class="tl-time">' + fmtDateTime(f.at) + "</span></div>" +
+          '<div class="tl-bubble">' +
+            (f.conclusion ? '<div style="margin-bottom:7px">' + conclBadge(f.conclusion) + "</div>" : "") +
+            '<div class="tl-content">' + esc(f.content) + "</div>" +
+            '<div class="tl-by"><span class="who">' + icon("i-user", "ic-sm") + esc(f.by) + "</span>" +
+              (isNew ? '<span class="badge b-fog" style="font-size:10.5px;padding:2px 8px">最近一条</span>' : "") +
+            "</div>" +
+          "</div>" +
+        "</div>"
+      );
+    }).join("");
+
+    if (!list.length) {
+      timeline = '<div class="note" style="margin-top:0">这条线索还没有任何跟进记录。登记第一条后，列表的「跟进结论」与「最后一条跟进内容」会立即出现。</div>';
+    }
+
+    return (
+      '<div class="dr-head">' +
+        '<div class="dr-top">' +
+          "<div>" +
+            '<div class="dr-eyebrow">' + icon("i-home", "ic-sm") + "线索详情 · " + esc(lead.id) + "</div>" +
+            '<h2 class="dr-title" id="dr-title">' + esc(lead.community) + "</h2>" +
+            '<div class="dr-addr">' + esc(lead.addr) + " · " + esc(lead.layout) + " · " + esc(lead.area) + "㎡ · " + esc(lead.floor) + " · " + esc(lead.district) + " " + esc(lead.biz) + "</div>" +
+            '<div style="margin-top:12px;display:flex;gap:8px;align-items:center">' + statusBadge(lead.status) +
+              (fu ? '<span style="font-size:12px;color:var(--graphite)">最近跟进 ' + fmtDate(fu.at) + "</span>" : '<span style="font-size:12px;color:var(--graphite)">尚未跟进</span>') +
+            "</div>" +
+          "</div>" +
+          (opts.inline ? "" : '<button class="dr-close" id="dr-close" type="button" aria-label="关闭">' + icon("i-x") + "</button>") +
+        "</div>" +
+        kpis +
+      "</div>" +
+      '<div class="dr-tabs">' +
+        '<button class="dr-tab" type="button" data-drtab="info">决策面板</button>' +
+        '<button class="dr-tab" type="button" data-drtab="images">影像库<span class="cnt">6</span></button>' +
+        '<button class="dr-tab active" type="button" data-drtab="fu">跟进记录<span class="cnt">' + list.length + "</span></button>" +
+      "</div>" +
+      '<div class="dr-body">' +
+        '<div class="quick">' +
+          '<div class="quick-label">' + icon("i-clock", "ic-sm") + "登记最新动态</div>" +
+          '<div class="quick-row">' +
+            '<select aria-label="跟进方式"><option value="phone">电话沟通</option><option value="wechat">微信联络</option><option value="face">面谈记录</option><option value="visit">带看实勘</option></select>' +
+            '<input placeholder="输入跟进摘要…" aria-label="跟进摘要" />' +
+            '<button class="send" type="button" data-submit>记录</button>' +
+          "</div>" +
+          picks +
+        "</div>" +
+        '<div class="tl">' + timeline + "</div>" +
+      "</div>"
+    );
+  }
+
+  function openDrawer(leadId) {
+    var lead = LEADS.find(function (l) { return l.id === leadId; });
+    if (!lead || !drawerEl) return;
+    lastFocus = document.activeElement;
+    state.openLeadId = leadId;
+    drawerEl.innerHTML = drawerInner(lead, { inline: false });
+    drawerEl.classList.add("show");
+    drawerEl.setAttribute("aria-hidden", "false");
+    scrimEl.classList.add("show");
+    document.body.style.overflow = "hidden";
+    bindDrawer(drawerEl, lead, false);
+    var closeBtn = drawerEl.querySelector("#dr-close");
+    if (closeBtn) closeBtn.focus();
+  }
+
+  function closeDrawer() {
+    if (!drawerEl.classList.contains("show")) return;
+    drawerEl.classList.remove("show");
+    drawerEl.setAttribute("aria-hidden", "true");
+    scrimEl.classList.remove("show");
+    document.body.style.overflow = "";
+    state.openLeadId = null;
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+
+  function bindDrawer(root, lead, inline) {
+    var picked = "";
+
+    root.querySelectorAll(".pick[data-concl]").forEach(function (p) {
+      p.addEventListener("click", function () {
+        picked = p.dataset.concl;
+        root.querySelectorAll(".pick[data-concl]").forEach(function (x) {
+          x.classList.toggle("on", x === p && !!picked);
+        });
+      });
+    });
+
+    root.querySelectorAll("[data-drtab]").forEach(function (t) {
+      t.addEventListener("click", function () {
+        if (t.dataset.drtab === "fu") return;
+        toast("设计稿演示：" + (t.dataset.drtab === "info" ? "决策面板" : "影像库") + "页签（本次不改动）");
+      });
+    });
+
+    var submit = root.querySelector("[data-submit]");
+    if (submit) submit.addEventListener("click", function () {
+      var input = root.querySelector(".quick input");
+      var sel = root.querySelector(".quick select");
+      var text = (input && input.value || "").trim();
+      if (!text) {
+        toast("请先填写跟进摘要", true);
+        if (input) input.focus();
+        return;
+      }
+      var nowIso = new Date().toISOString();
+      lead.followUps = lead.followUps || [];
+      lead.followUps.push({
+        id: "f" + Date.now(),
+        method: sel ? sel.value : "phone",
+        content: text,
+        conclusion: picked || null,
+        at: nowIso,
+        by: "李敏"
+      });
+      lead.updatedAt = nowIso;
+      if (input) input.value = "";
+      picked = "";
+      root.querySelectorAll(".pick[data-concl]").forEach(function (x) { x.classList.remove("on"); });
+
+      // 抽屉内容重绘（保持打开）
+      var wasInline = inline;
+      if (wasInline) {
+        root.innerHTML = drawerInner(lead, { inline: true });
+        bindDrawer(root, lead, true);
+      } else {
+        var bodyScroll = root.querySelector(".dr-body");
+        var keep = bodyScroll ? bodyScroll.scrollTop : 0;
+        root.innerHTML = drawerInner(lead, { inline: false });
+        bindDrawer(root, lead, false);
+        var nb = root.querySelector(".dr-body");
+        if (nb) nb.scrollTop = 0;
+        var cb = root.querySelector("#dr-close");
+        if (cb) cb.addEventListener("click", closeDrawer);
+      }
+
+      // 列表同步刷新（表格两列即时更新，无需重载）
+      render();
+      toast("跟进已登记 · 列表已同步");
+    });
+  }
+
+  /* ---------------- 8. 静态三态板 ---------------- */
+
+  function renderStaticStates() {
+    var elLoading = document.getElementById("state-loading");
+    var elEmpty = document.getElementById("state-empty");
+    var elError = document.getElementById("state-error");
+    if (elLoading) elLoading.innerHTML = loadingHTML();
+    if (elEmpty) {
+      var saved = state.mode;
+      state.mode = "empty";
+      elEmpty.innerHTML = emptyHTML();
+      bindStateButtons(elEmpty, "empty");
+      state.mode = saved;
+    }
+    if (elError) {
+      elError.innerHTML = errorHTML();
+      bindStateButtons(elError, "error");
+    }
+  }
+
+  /* ---------------- 9. toast ---------------- */
+
+  var toastEl = document.getElementById("toast");
+  var toastTimer = null;
+  function toast(msg, isErr) {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.classList.toggle("err", !!isErr);
+    toastEl.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 2200);
+  }
+
+  /* ---------------- 10. 启动 ---------------- */
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initApp();
+    renderStaticStates();
+
+    // 抽屉内联版（第 03 节）
+    if (inlineEl) {
+      var demo = LEADS.find(function (l) { return l.id === "ld_8f3a21"; });
+      inlineEl.innerHTML =
+        '<div class="dr-inline" style="position:relative;width:min(720px,100%);background:var(--pwhite);border-radius:var(--r-card);box-shadow:var(--shadow-card);overflow:hidden;display:flex;flex-direction:column">' +
+          drawerInner(demo, { inline: true }) +
+        "</div>";
+      bindDrawer(inlineEl, demo, true);
+    }
+
+    // 遮罩点击关闭
+    if (scrimEl) scrimEl.addEventListener("click", closeDrawer);
+
+    // Esc 关闭
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeDrawer();
+    });
+  });
+})();
+</script>
+
+<style>
+  /* 断点：与 frontend 表格 hide-* 口径一致（md 768 / lg 1024 / xl 1280） */
+  @media (max-width: 1023px) {
+    .hide-lg { display: none; }
+  }
+  @media (max-width: 767px) {
+    .hide-md { display: none; }
+  }
+  @media (max-width: 1279px) {
+    .hide-xl { display: none; }
+  }
+  @media (max-width: 1180px) {
+    .doc { padding: 30px 20px 90px; }
+    .stat-grid { grid-template-columns: repeat(6, 1fr); }
+    .stat-grid > * { grid-column: span 2; }
+    .stat-grid > :nth-child(4), .stat-grid > :nth-child(5) { grid-column: span 3; }
+    .cards.c3 { grid-template-columns: 1fr; }
+    .cards.c2 { grid-template-columns: 1fr; }
+    .grid-view { grid-template-columns: repeat(2, 1fr); }
+    .page { padding: 24px 20px 28px; }
+    .sidebar { display: none; }
+  }
+</style>
+</body>
+</html>

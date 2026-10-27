@@ -5,11 +5,13 @@ import Image from "next/image";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Home, Pencil, Trash2 } from "lucide-react";
+import { MapPin, Home, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { isValidUrl } from "@/lib/validators";
 import { Lead } from "../types";
 import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
+import { getFollowUpConclusionMeta } from "../_lib/follow-up-meta";
+import { safeFormatDate } from "@/lib/formatters";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,11 +29,10 @@ import { PERMISSION_CODES } from "@/lib/auth/permissions";
 interface LeadsGridProps {
   leads: Lead[];
   onOpenDetail: (id: string) => void;
-  onEdit: (lead: Lead) => void;
   onDelete: (id: string) => void;
 }
 
-export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdit, onDelete }) => {
+export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onDelete }) => {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {leads.map((lead) => {
@@ -74,18 +75,6 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
                 className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={(e) => e.stopPropagation()}
               >
-                <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 bg-pure-white/90 backdrop-blur-sm rounded-full text-graphite hover:text-ink hover:bg-fog"
-                    onClick={() => onEdit(lead)}
-                    aria-label="编辑线索"
-                  >
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
-                </HasPermission>
-
                 <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
@@ -187,6 +176,37 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onEdi
                     </span>
                   )}
                 </div>
+              </div>
+
+              {/* 跟进摘要（设计稿②增量：卡片视图与表格取数口径一致） */}
+              <div className="mt-3 border-t border-dove pt-3">
+                <div className="mb-1.5">
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "px-2.5 py-0.5 text-[11.5px]",
+                      getFollowUpConclusionMeta(lead.latestFollowUp?.conclusion).badgeClass,
+                    )}
+                  >
+                    {getFollowUpConclusionMeta(lead.latestFollowUp?.conclusion).label}
+                  </Badge>
+                </div>
+                {lead.latestFollowUp ? (
+                  <>
+                    <p
+                      title={lead.latestFollowUp.content}
+                      className="line-clamp-2 text-xs leading-relaxed text-ash"
+                    >
+                      {lead.latestFollowUp.content}
+                    </p>
+                    <p className="mt-1 text-[11px] tabular-nums text-dove">
+                      {safeFormatDate(lead.latestFollowUp.followedAt, "MM-dd")} ·{" "}
+                      {lead.latestFollowUp.createdByName || "—"}
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-xs leading-relaxed text-dove">尚未跟进</p>
+                )}
               </div>
             </div>
           </Card>

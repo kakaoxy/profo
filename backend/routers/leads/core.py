@@ -18,6 +18,7 @@ from schemas.community_image import CommunityImageListResponse
 from schemas.lead import (
     LeadAssessmentBacklogResponse,
     LeadCreate,
+    LeadFollowUpSummary,
     LeadFunnelResponse,
     LeadListItem,
     LeadResponse,
@@ -68,6 +69,7 @@ def _lead_to_list_item(
     names: dict[str, Any] | None = None,
     db: Session | None = None,
     verdict: dict[str, Any] | None = None,
+    followup: dict[str, Any] | None = None,
 ) -> LeadListItem:
     """将 Lead ORM 对象转换为 LeadListItem.
 
@@ -76,6 +78,8 @@ def _lead_to_list_item(
         names: 字典解析名称映射（doc_id → DocDictNames）；列表路径由调用方批量传入避免 N+1
         db: 数据库会话；names 为 None 时单条现场解析用（非列表路径）
         verdict: 最新评估结论（condition_score / expected_sale_days）；列表路径由调用方批量传入
+        followup: 最近一条跟进摘要（get_latest_follow_ups 的单行结果）；
+            列表路径由调用方批量传入，无跟进为 None（不得伪造）
 
     """
     safe_images = [img for img in (lead.images or []) if isinstance(img, str) and len(img) < _MAX_IMAGE_LENGTH]
@@ -118,6 +122,17 @@ def _lead_to_list_item(
         referrer_name=lead.referrer.nickname if lead.referrer else None,
         source_property_id=lead.source_property_id,
         last_follow_up_at=lead.last_follow_up_at,
+        latest_follow_up=(
+            LeadFollowUpSummary(
+                method=followup["method"],
+                content=followup["content"],
+                conclusion=followup["conclusion"],
+                followed_at=followup["followed_at"],
+                created_by_name=followup["created_by_name"],
+            )
+            if followup
+            else None
+        ),
         created_at=lead.created_at,
         updated_at=lead.updated_at,
     )
@@ -155,7 +170,17 @@ def get_leads(
     dict_names = BuildingDictReadService().resolve_doc_names(db, [_lead_dict_key(lead) for lead in result["items"]])
     # 最新评估结论批量解析（单次窗口函数查询，无 N+1）
     verdicts = service.query_service.get_latest_eval_verdicts([lead.id for lead in result["items"]])
-    items = [_lead_to_list_item(lead, names=dict_names, verdict=verdicts.get(lead.id)) for lead in result["items"]]
+    # 最近一条跟进摘要批量解析（单次窗口函数查询，无 N+1）
+    followups = service.query_service.get_latest_follow_ups([lead.id for lead in result["items"]])
+    items = [
+        _lead_to_list_item(
+            lead,
+            names=dict_names,
+            verdict=verdicts.get(lead.id),
+            followup=followups.get(lead.id),
+        )
+        for lead in result["items"]
+    ]
 
     return PaginatedLeadListResponse(
         items=items,

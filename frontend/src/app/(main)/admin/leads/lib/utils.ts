@@ -1,7 +1,15 @@
 import { Lead, LeadStatus } from "../types";
+import type { LeadLatestFollowUp } from "../types";
 import { components } from "@/lib/api-types";
 
-type BackendLead = components["schemas"]["LeadResponse"];
+import type { FollowUpConclusion } from "../types";
+
+/**
+ * 列表项与详情项共同的后端形态：详情（LeadResponse）不回 latest_follow_up
+ * （仅列表 LeadListItem 回填），此处取交集避免对详情路径伪造空摘要。
+ */
+type BackendLead = Omit<components["schemas"]["LeadListItem"], "latest_follow_up"> &
+  Partial<Pick<components["schemas"]["LeadListItem"], "latest_follow_up">>;
 
 export function mapBackendToFrontend(backendLead: BackendLead): Lead {
   return {
@@ -36,6 +44,16 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
     referrerId: backendLead.referrer_id ?? undefined,
     referrerName: backendLead.referrer_name ?? undefined,
     lastFollowUpAt: backendLead.last_follow_up_at ?? undefined,
+    latestFollowUp: backendLead.latest_follow_up
+      ? ({
+          method: backendLead.latest_follow_up.method,
+          content: backendLead.latest_follow_up.content,
+          conclusion: (backendLead.latest_follow_up.conclusion ??
+            null) as FollowUpConclusion | null,
+          followedAt: backendLead.latest_follow_up.followed_at,
+          createdByName: backendLead.latest_follow_up.created_by_name ?? null,
+        } satisfies LeadLatestFollowUp)
+      : null,
     createdAt: backendLead.created_at ?? "",
   };
 }

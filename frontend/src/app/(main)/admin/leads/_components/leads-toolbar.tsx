@@ -129,26 +129,33 @@ export function LeadsToolbar({
       {/* Right: Actions */}
       <div className="flex w-full lg:w-auto gap-3 items-center">
         {/* View Mode Toggle */}
-        <div className="flex items-center gap-1 rounded-xl bg-pure-white p-[3px] shadow-steep-sm">
+        {/* 视图切换：纯图标双按钮（设计稿 02 节形态，30px 方形，激活 bg-fog） */}
+        <div className="flex items-center gap-0.5 rounded-xl bg-pure-white p-[3px] shadow-steep-sm">
           <button
+            type="button"
+            aria-label="表格视图"
+            aria-pressed={viewMode === "table"}
+            title="表格视图"
             className={cn(
-              "flex items-center justify-center px-3 py-1.5 rounded-[9px] text-xs font-medium transition-colors cursor-pointer",
+              "flex h-[30px] w-[30px] items-center justify-center rounded-[9px] transition-colors cursor-pointer",
               viewMode === "table" ? "bg-fog text-ink" : "text-graphite hover:text-ink",
             )}
             onClick={() => onViewModeChange("table")}
           >
-            <List className="h-3.5 w-3.5 mr-1.5" />
-            列表
+            <List className="h-4 w-4" />
           </button>
           <button
+            type="button"
+            aria-label="卡片视图"
+            aria-pressed={viewMode === "grid"}
+            title="卡片视图"
             className={cn(
-              "flex items-center justify-center px-3 py-1.5 rounded-[9px] text-xs font-medium transition-colors cursor-pointer",
+              "flex h-[30px] w-[30px] items-center justify-center rounded-[9px] transition-colors cursor-pointer",
               viewMode === "grid" ? "bg-fog text-ink" : "text-graphite hover:text-ink",
             )}
             onClick={() => onViewModeChange("grid")}
           >
-            <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
-            网格
+            <LayoutGrid className="h-4 w-4" />
           </button>
         </div>
 

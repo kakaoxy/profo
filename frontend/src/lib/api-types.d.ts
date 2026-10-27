@@ -13106,6 +13106,30 @@ export interface components {
             evaluated_at: string;
         };
         /**
+         * LeadFollowUpSummary
+         * @description 列表内嵌的最近一条跟进摘要.
+         *
+         *     取数口径（LeadQueryService.get_latest_follow_ups）：
+         *     最近一条 = ORDER BY followed_at DESC, id DESC 的第一条（不用 max(id) 代替时间）；
+         *     conclusion 取该条记录原值可为 None，不得回退到上一条有结论的记录；
+         *     content 回全文，截断由前端 CSS line-clamp 做（保证 title 悬停全文完整）。
+         *     无跟进记录时该字段整体为 None（不得伪造）。
+         */
+        LeadFollowUpSummary: {
+            method: components["schemas"]["FollowUpMethod"];
+            /** Content */
+            content: string;
+            /** @description 跟进结论（选填）：mode_disagree=合作模式未达成一致 / price_disagree=价格未达成一致 / both_disagree=两者均未达成一致 */
+            conclusion?: components["schemas"]["FollowUpConclusion"] | null;
+            /**
+             * Followed At
+             * Format: date-time
+             */
+            followed_at: string;
+            /** Created By Name */
+            created_by_name?: string | null;
+        };
+        /**
          * LeadFunnelResponse
          * @description 线索漏斗统计响应.
          */
@@ -13219,6 +13243,8 @@ export interface components {
             source_property_id?: number | null;
             /** Last Follow Up At */
             last_follow_up_at?: string | null;
+            /** @description 最近一条跟进摘要（结论/内容/方式/时间/跟进人），无跟进为空 */
+            latest_follow_up?: components["schemas"]["LeadFollowUpSummary"] | null;
             /**
              * Created At
              * Format: date-time

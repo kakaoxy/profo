@@ -150,6 +150,9 @@
   --color-slate: #8b8c8d;
   --color-rust: #5d2a1a;
   --color-apricot-wash: #fbe1d1;
+  /* Apricot 同色系加深描边（DESIGN.md Warm Ladder ③ 交易费用描边）——跟进结论
+     「合作模式未谈拢」徽标（白底杏描边态）专用，非新增色值 */
+  --color-apricot-edge: #e6b088;
   --color-sky-wash: #d3e3fc;
 
   /* Steep Design System — Typography */
