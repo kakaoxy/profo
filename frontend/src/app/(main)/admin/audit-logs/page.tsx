@@ -2,12 +2,14 @@ import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 
 import { getOperationLogsAction } from "./actions/audit-log-actions";
+import { getUsersSimpleAction } from "../users/actions/user-actions";
 import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import { AuditLogsClient } from "./_components/audit-logs-client";
 
 /**
  * 审计日志页面（Server Component）。
  * 仅具备 operation_log:read 权限的用户可访问（PATH_PERMISSION_MAP 在 layout 层拦截）。
+ * 操作人下拉数据来自 /users/simple（登录态即可访问），与日志列表并行请求，消除瀑布。
  */
 export default async function AuditLogsPage(props: {
   searchParams: Promise<{
@@ -30,26 +32,32 @@ export default async function AuditLogsPage(props: {
   const start_time = searchParams.start_time ? `${searchParams.start_time}T00:00:00` : undefined;
   const end_time = searchParams.end_time ? `${searchParams.end_time}T23:59:59` : undefined;
 
-  const result = await getOperationLogsAction({
-    page,
-    page_size,
-    user_id,
-    action,
-    resource_type,
-    start_time,
-    end_time,
-  });
+  // 无依赖请求必须并行（AGENTS §2 消除请求瀑布）；人员列表失败不阻塞日志页，降级为空下拉
+  const [logsResult, usersResult] = await Promise.all([
+    getOperationLogsAction({ page, page_size, user_id, action, resource_type, start_time, end_time }),
+    getUsersSimpleAction(),
+  ]);
 
-  if (!result.success) {
-    return <div className="p-4 text-error">获取审计日志失败: {result.message}</div>;
+  if (!logsResult.success) {
+    return <div className="p-4 text-error">获取审计日志失败: {logsResult.message}</div>;
   }
+
+  // getUsersSimpleAction 无显式返回类型注解，data/nickname 需显式兜底（undefined → null）
+  const operators =
+    usersResult.success && usersResult.data
+      ? usersResult.data.items.map((u) => ({
+          id: u.id,
+          nickname: u.nickname ?? null,
+          username: u.username,
+        }))
+      : [];
 
   return (
     <div className="min-h-screen bg-fog">
       <PageContainer className="flex flex-col gap-6">
         <PageHeader
           title="审计日志"
-          description="记录后台关键操作，支持按用户、动作与资源类型追溯"
+          description="后台每一步操作都有记录：谁改的、改了什么、什么时候改的"
         />
 
         <Suspense
@@ -60,7 +68,8 @@ export default async function AuditLogsPage(props: {
           }
         >
           <AuditLogsClient
-            initialData={result.data}
+            initialData={logsResult.data}
+            operators={operators}
             filters={{
               user_id,
               action,

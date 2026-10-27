@@ -31,10 +31,10 @@ import type { OperationLogListResponse, OperationLogResponse } from "../actions/
 // ─── 筛选选项常量 ─────────────────────────────────────────────────────────────
 
 const ACTION_OPTIONS = [
-  { value: "create", label: "创建" },
-  { value: "update", label: "更新" },
+  { value: "create", label: "新增" },
+  { value: "update", label: "修改" },
   { value: "delete", label: "删除" },
-  { value: "sensitive_data_access", label: "敏感数据访问" },
+  { value: "sensitive_data_access", label: "查看敏感信息" },
   { value: "assign_permissions", label: "分配权限" },
   { value: "assign_role", label: "分配角色" },
   { value: "remove_role", label: "移除角色" },
@@ -44,7 +44,8 @@ const ACTION_OPTIONS = [
   { value: "revoke", label: "撤销" },
 ] as const;
 
-const RESOURCE_TYPE_OPTIONS = [
+// 仅高频类型进筛选下拉；全部已知类型的展示标签必须完整（见下方映射）
+const RESOURCE_TYPE_FILTER_OPTIONS = [
   { value: "user", label: "用户" },
   { value: "role", label: "角色" },
   { value: "permission", label: "权限" },
@@ -56,17 +57,43 @@ const RESOURCE_TYPE_OPTIONS = [
   { value: "owner_bank_card", label: "业主银行卡" },
 ] as const;
 
+// 展示用标签映射：覆盖全部真实写入的 resource_type（含筛选下拉未收录的低频类型）
+const RESOURCE_TYPE_LABELS: Record<string, string> = {
+  user: "用户",
+  role: "角色",
+  permission: "权限",
+  project: "项目",
+  project_sales: "项目销售",
+  project_document: "项目文书",
+  project_renovation: "项目装修",
+  project_finance: "项目账本",
+  owner_bank_card: "业主银行卡",
+  auth: "账号",
+  community: "小区",
+  property: "房源",
+  building_dict: "楼盘字典",
+  building_dict_pending: "字典审核",
+  building_dict_config: "字典配置",
+  fund_account: "资金账户",
+  fund_account_adjustment: "资金调整",
+  api_key: "API密钥",
+  biz_dict_item: "业务字典",
+  lead_evaluator_contact: "评估人联系方式",
+  workbench: "工作台",
+  system: "系统",
+};
+
 const ALL_VALUE = "all";
 
 // ─── 辅助函数 ─────────────────────────────────────────────────────────────────
 
-/** 截断 UUID 等长字符串，保留前 8 位用于表格展示。 */
+/** 未知类型兜底：截断 UUID 等长字符串，保留前 8 位。 */
 function truncateId(id: string | null | undefined): string {
   if (!id) return "-";
   return id.length > 8 ? `${id.slice(0, 8)}…` : id;
 }
 
-/** 根据操作类型返回对应 Badge 变体。 */
+/** 根据动作类型返回对应 Badge 变体。 */
 function getActionBadgeVariant(
   action: string,
 ): "default" | "secondary" | "destructive" | "outline" {
@@ -86,24 +113,25 @@ function getActionBadgeVariant(
   }
 }
 
-/** 根据 action 值返回中文标签。 */
+/** 根据动作值返回中文标签。 */
 function getActionLabel(action: string): string {
   return ACTION_OPTIONS.find((o) => o.value === action)?.label ?? action;
 }
 
-/** 根据 resource_type 值返回中文标签。 */
+/** 根据对象类型返回中文标签，未知类型显示原值。 */
 function getResourceTypeLabel(resourceType: string): string {
-  return RESOURCE_TYPE_OPTIONS.find((o) => o.value === resourceType)?.label ?? resourceType;
+  return RESOURCE_TYPE_LABELS[resourceType] ?? resourceType;
 }
 
-// ─── before/after 变更展示子组件 ──────────────────────────────────────────────
+// ─── 变更详情子组件 ───────────────────────────────────────────────────────────
 
 /**
  * 以 JSON 形式展示变更前/后快照。
- * - 两者均为空 → 显示「无变更记录」
- * - 仅 before（如 delete）→ 只展示变更前
- * - 仅 after（如 create）→ 只展示变更后
+ * - 两者均为空 → 显示「这条记录没有内容变化」
+ * - 仅 before（如删除）→ 只展示变更前
+ * - 仅 after（如新增）→ 只展示变更后
  * - 两者均有 → 并排展示
+ * ⚠️ 快照 JSON 的键名仍是后端字段名（技术快照），中文化属于独立迭代，不在本次范围。
  */
 function ChangesDisplay({
   before,
@@ -113,7 +141,7 @@ function ChangesDisplay({
   after: Record<string, unknown> | null;
 }) {
   if (!before && !after) {
-    return <span className="text-sm text-graphite">无变更记录</span>;
+    return <span className="text-sm text-graphite">这条记录没有内容变化</span>;
   }
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -141,6 +169,8 @@ function ChangesDisplay({
 
 interface AuditLogsClientProps {
   initialData: OperationLogListResponse;
+  /** 操作人下拉数据（服务端取自 /users/simple） */
+  operators: { id: string; nickname: string | null; username: string }[];
   filters: {
     user_id?: string;
     action?: string;
@@ -150,7 +180,7 @@ interface AuditLogsClientProps {
   };
 }
 
-export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) {
+export function AuditLogsClient({ initialData, operators, filters }: AuditLogsClientProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -219,24 +249,33 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
       >
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-graphite">操作者用户ID</label>
-            <Input
-              value={userId}
-              onChange={(e) => setUserId(e.target.value)}
-              placeholder="输入用户ID"
-              className="h-9 w-56"
-              autoComplete="off"
-            />
+            <label className="text-xs text-graphite">操作人</label>
+            <Select
+              value={userId || ALL_VALUE}
+              onValueChange={(v) => setUserId(v === ALL_VALUE ? "" : v)}
+            >
+              <SelectTrigger className="h-9 w-[180px]">
+                <SelectValue placeholder="全部人员" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_VALUE}>全部人员</SelectItem>
+                {operators.map((o) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.nickname ? `${o.nickname}（${o.username}）` : o.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-graphite">操作类型</label>
+            <label className="text-xs text-graphite">动作</label>
             <Select value={action} onValueChange={setAction}>
               <SelectTrigger className="h-9 w-[160px]">
-                <SelectValue placeholder="全部操作" />
+                <SelectValue placeholder="全部动作" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_VALUE}>全部操作</SelectItem>
+                <SelectItem value={ALL_VALUE}>全部动作</SelectItem>
                 {ACTION_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>
                     {o.label}
@@ -247,14 +286,14 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="text-xs text-graphite">资源类型</label>
+            <label className="text-xs text-graphite">对象</label>
             <Select value={resourceType} onValueChange={setResourceType}>
               <SelectTrigger className="h-9 w-[160px]">
-                <SelectValue placeholder="全部资源" />
+                <SelectValue placeholder="全部对象" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value={ALL_VALUE}>全部资源</SelectItem>
-                {RESOURCE_TYPE_OPTIONS.map((o) => (
+                <SelectItem value={ALL_VALUE}>全部对象</SelectItem>
+                {RESOURCE_TYPE_FILTER_OPTIONS.map((o) => (
                   <SelectItem key={o.value} value={o.value}>
                     {o.label}
                   </SelectItem>
@@ -308,19 +347,18 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
           <TableHeader>
             <TableRow>
               <TableHead className="w-[160px]">时间</TableHead>
-              <TableHead className="w-[120px]">操作者</TableHead>
-              <TableHead className="w-[110px]">操作</TableHead>
-              <TableHead className="w-[110px]">资源类型</TableHead>
-              <TableHead className="w-[120px]">资源ID</TableHead>
+              <TableHead className="w-[140px]">操作人</TableHead>
+              <TableHead className="w-[120px]">动作</TableHead>
+              <TableHead className="w-[240px]">对象</TableHead>
               <TableHead className="w-[140px]">IP</TableHead>
-              <TableHead className="w-[100px]">变更详情</TableHead>
+              <TableHead className="w-[100px]">详情</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {initialData.items.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center text-graphite">
-                  暂无审计日志
+                <TableCell colSpan={6} className="h-24 text-center text-graphite">
+                  没有找到相关记录，试试调整筛选条件或时间范围
                 </TableCell>
               </TableRow>
             ) : (
@@ -333,8 +371,11 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
                       <TableCell className="text-sm text-graphite">
                         {safeFormatDate(log.created_at, "yyyy-MM-dd HH:mm:ss")}
                       </TableCell>
-                      <TableCell className="text-sm font-mono" title={log.user_id ?? undefined}>
-                        {truncateId(log.user_id)}
+                      <TableCell
+                        className={cn("text-sm", !log.operator_name && "font-mono")}
+                        title={log.user_id ?? undefined}
+                      >
+                        {log.operator_name ?? (log.user_id ? truncateId(log.user_id) : "—")}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getActionBadgeVariant(log.action)}>
@@ -342,10 +383,18 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{getResourceTypeLabel(log.resource_type)}</Badge>
-                      </TableCell>
-                      <TableCell className="text-sm font-mono" title={log.resource_id ?? undefined}>
-                        {truncateId(log.resource_id)}
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline">{getResourceTypeLabel(log.resource_type)}</Badge>
+                          <span
+                            className={cn(
+                              "text-sm truncate max-w-[160px]",
+                              !log.resource_name && "font-mono",
+                            )}
+                            title={log.resource_id ?? undefined}
+                          >
+                            {log.resource_name ?? (log.resource_id ? truncateId(log.resource_id) : "—")}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm text-graphite">{log.ip ?? "-"}</TableCell>
                       <TableCell>
@@ -368,7 +417,7 @@ export function AuditLogsClient({ initialData, filters }: AuditLogsClientProps) 
                     </TableRow>
                     {isExpanded && (
                       <TableRow>
-                        <TableCell colSpan={7} className="bg-fog/60">
+                        <TableCell colSpan={6} className="bg-fog/60">
                           <ChangesDisplay before={log.before ?? null} after={log.after ?? null} />
                         </TableCell>
                       </TableRow>

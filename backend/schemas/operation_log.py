@@ -13,9 +13,12 @@ class OperationLogResponse(BaseModel):
 
     id: UUID4 = Field(description="日志ID")
     user_id: str | None = Field(None, description="操作者用户ID(逻辑外键)")
+    # 可读名称由 Router 层批量解析后填充；用户/资源已删除或类型未注册时为 None
+    operator_name: str | None = Field(None, description="操作人可读名称(昵称优先，无则用户名)")
     action: str = Field(description="操作类型：create/update/delete/sensitive_data_access等")
     resource_type: str = Field(description="资源类型：user/role/permission/project等")
     resource_id: str | None = Field(None, description="资源ID")
+    resource_name: str | None = Field(None, description="资源可读名称(项目名/角色名等)，无法解析时为None")
     ip: str | None = Field(None, description="操作者IP地址(IPv4/IPv6)")
     user_agent: str | None = Field(None, description="User-Agent")
     before: dict[str, Any] | None = Field(None, description="变更前快照")

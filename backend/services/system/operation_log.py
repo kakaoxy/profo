@@ -4,6 +4,7 @@
 """
 
 import logging
+import uuid
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -11,7 +12,16 @@ from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from models.project import (
+    FinanceRecord,
+    Project,
+    ProjectDocument,
+    ProjectOwner,
+    ProjectRenovation,
+    ProjectSale,
+)
 from models.system import OperationLog
+from models.user.user import Role, User
 from settings import settings
 from utils.common import _get_client_ip
 
@@ -193,6 +203,117 @@ class OperationLogService:
             "login_failure_count": int(login_failure_count),
             "action_distribution": [{"action": action, "count": int(cnt)} for action, cnt in rows],
         }
+
+
+def _safe_uuid(value: str | None) -> uuid.UUID | None:
+    """operation_logs.resource_id 是 String(36)，查询 Uuid 主键列前必须转成 uuid.UUID.
+
+    PostgreSQL 不存在 uuid↔varchar 隐式转换，直接传 str 会报错；
+    历史脏值/非法值返回 None 跳过，不让解析失败影响主流程。
+    """
+    if not value:
+        return None
+    try:
+        return uuid.UUID(value)
+    except ValueError:
+        return None
+
+
+def _collect_ids(logs: list[OperationLog], resource_type: str) -> set[uuid.UUID]:
+    """收集指定 resource_type 的全部合法 UUID 资源ID，非法值跳过。"""
+    return {
+        u
+        for u in (_safe_uuid(log.resource_id) for log in logs if log.resource_type == resource_type and log.resource_id)
+        if u is not None
+    }
+
+
+def resolve_operator_names(db: Session, logs: list[OperationLog]) -> dict[str, str]:
+    """批量解析操作人可读名称（昵称优先，无昵称用用户名）.
+
+    一次 IN 查询 users 表，返回 {user_id: 名称}；已删除用户不出现在结果中。
+    """
+    user_ids = {log.user_id for log in logs if log.user_id}
+    if not user_ids:
+        return {}
+    rows = db.query(User.id, User.nickname, User.username).filter(User.id.in_(user_ids)).all()
+    return {row.id: (row.nickname or row.username) for row in rows}
+
+
+def resolve_resource_names(db: Session, logs: list[OperationLog]) -> dict[str, dict[str, str]]:
+    """按 resource_type 分组批量解析资源可读名称.
+
+    每个类型至多一次 IN 查询（子资源经 project_id 二跳 join 项目名），
+    每页 20 条日志的解析开销恒定，无 N+1。
+    返回 {resource_type: {resource_id: 名称}}；未注册类型不出现在结果中。
+    """
+    if not logs:
+        return {}
+
+    result: dict[str, dict[str, str]] = {}
+
+    # ── 字符串主键表（无需 UUID 转换）──
+    user_ids = {log.resource_id for log in logs if log.resource_type == "user" and log.resource_id}
+    if user_ids:
+        rows = db.query(User.id, User.nickname, User.username).filter(User.id.in_(user_ids)).all()
+        result["user"] = {r.id: (r.nickname or r.username) for r in rows}
+
+    role_ids = {log.resource_id for log in logs if log.resource_type == "role" and log.resource_id}
+    if role_ids:
+        rows = db.query(Role.id, Role.name).filter(Role.id.in_(role_ids)).all()
+        result["role"] = {r.id: r.name for r in rows}
+
+    # ── Uuid 主键表（str → uuid.UUID 后才能 IN）──
+    project_ids = _collect_ids(logs, "project")
+    if project_ids:
+        rows = db.query(Project.id, Project.name).filter(Project.id.in_(project_ids)).all()
+        result["project"] = {str(r.id): r.name for r in rows}
+
+    sale_ids = _collect_ids(logs, "project_sales")
+    if sale_ids:
+        rows = (
+            db.query(ProjectSale.id, Project.name)
+            .join(Project, Project.id == ProjectSale.project_id)
+            .filter(ProjectSale.id.in_(sale_ids))
+            .all()
+        )
+        result["project_sales"] = {str(r.id): r.name for r in rows}
+
+    renovation_ids = _collect_ids(logs, "project_renovation")
+    if renovation_ids:
+        rows = (
+            db.query(ProjectRenovation.id, Project.name)
+            .join(Project, Project.id == ProjectRenovation.project_id)
+            .filter(ProjectRenovation.id.in_(renovation_ids))
+            .all()
+        )
+        result["project_renovation"] = {str(r.id): r.name for r in rows}
+
+    finance_ids = _collect_ids(logs, "project_finance")
+    if finance_ids:
+        rows = (
+            db.query(FinanceRecord.id, Project.name)
+            .join(Project, Project.id == FinanceRecord.project_id)
+            .filter(FinanceRecord.id.in_(finance_ids))
+            .all()
+        )
+        result["project_finance"] = {str(r.id): r.name for r in rows}
+
+    document_ids = _collect_ids(logs, "project_document")
+    if document_ids:
+        rows = (
+            db.query(ProjectDocument.id, ProjectDocument.document_name)
+            .filter(ProjectDocument.id.in_(document_ids))
+            .all()
+        )
+        result["project_document"] = {str(r.id): r.document_name for r in rows}
+
+    owner_ids = _collect_ids(logs, "owner_bank_card")
+    if owner_ids:
+        rows = db.query(ProjectOwner.id, ProjectOwner.owner_name).filter(ProjectOwner.id.in_(owner_ids)).all()
+        result["owner_bank_card"] = {str(r.id): r.owner_name for r in rows if r.owner_name}
+
+    return result
 
 
 # 全局服务实例

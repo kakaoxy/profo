@@ -3985,6 +3985,7 @@ export interface paths {
          * @description 分页查询操作审计日志.
          *
          *     支持按 user_id/action/resource_type/时间范围筛选，按 created_at 倒序排列。
+         *     每条日志附带 operator_name / resource_name 两个可读名称字段（批量解析，无 N+1）。
          *     需要 ``operation_log:read`` 权限。
          */
         get: operations["list_operation_logs_api_v1_operation_logs_get"];
@@ -14808,6 +14809,11 @@ export interface components {
              */
             user_id?: string | null;
             /**
+             * Operator Name
+             * @description 操作人可读名称(昵称优先，无则用户名)
+             */
+            operator_name?: string | null;
+            /**
              * Action
              * @description 操作类型：create/update/delete/sensitive_data_access等
              */
@@ -14822,6 +14828,11 @@ export interface components {
              * @description 资源ID
              */
             resource_id?: string | null;
+            /**
+             * Resource Name
+             * @description 资源可读名称(项目名/角色名等)，无法解析时为None
+             */
+            resource_name?: string | null;
             /**
              * Ip
              * @description 操作者IP地址(IPv4/IPv6)

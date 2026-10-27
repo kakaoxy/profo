@@ -13,6 +13,7 @@ from schemas.operation_log import (
     OperationLogSummaryResponse,
 )
 from services.system import operation_log_service
+from services.system.operation_log import resolve_operator_names, resolve_resource_names
 
 router = APIRouter(prefix="/operation-logs", tags=["operation-logs"])
 
@@ -47,6 +48,7 @@ def list_operation_logs(
     """分页查询操作审计日志.
 
     支持按 user_id/action/resource_type/时间范围筛选，按 created_at 倒序排列。
+    每条日志附带 operator_name / resource_name 两个可读名称字段（批量解析，无 N+1）。
     需要 ``operation_log:read`` 权限。
     """
     total, logs = operation_log_service.list_operation_logs(
@@ -59,8 +61,19 @@ def list_operation_logs(
         page=pagination.page,
         page_size=pagination.page_size,
     )
+    operator_names = resolve_operator_names(db, logs)
+    resource_names = resolve_resource_names(db, logs)
+    items = [
+        OperationLogResponse.model_validate(log).model_copy(
+            update={
+                "operator_name": operator_names.get(log.user_id) if log.user_id else None,
+                "resource_name": resource_names.get(log.resource_type, {}).get(log.resource_id or ""),
+            },
+        )
+        for log in logs
+    ]
     return OperationLogListResponse(
-        items=[OperationLogResponse.model_validate(log) for log in logs],
+        items=items,
         total=total,
         page=pagination.page,
         page_size=pagination.page_size,
