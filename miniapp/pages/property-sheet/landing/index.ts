@@ -63,7 +63,7 @@ interface PageData {
   contactFallbackChar: string;
   /** 是否命中内部分享人（显示「分享人」Rust 角标；否则无角标）. */
   contactIsReferrer: boolean;
-  /** 联系卡副文案：is_referrer「扫码进入 · 已自动关联分享人」/「官方置业顾问」. */
+  /** 联系卡副文案：is_referrer「扫码进入 · 已自动关联分享人」/「专属置业顾问」. */
   contactSubText: string;
   hasPhone: boolean;
   hasWechat: boolean;
@@ -113,7 +113,8 @@ Page<PageData, PageCustom>({
     contactAvatarUrl: "",
     contactFallbackChar: "",
     contactIsReferrer: false,
-    contactSubText: "官方置业顾问",
+    // 广告法自查 P2-03：「官方」易被理解为政府/平台官方，改「专属」
+    contactSubText: "专属置业顾问",
     hasPhone: false,
     hasWechat: false,
   },

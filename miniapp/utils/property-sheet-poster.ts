@@ -540,14 +540,16 @@ export function buildSheetPosterLayout(opts: {
   const brand: SheetPosterBrand = {
     dot: { cx: SHEET_POSTER_SAFE_MARGIN + 5, cy: brandMainY + 14, r: 5, color: COLOR_RUST },
     main: {
-      text: "专注上海老破小",
+      // 广告法自查 P2-05：「老破小」为房源品类贬称，改为中性描述
+      text: "专注上海存量住宅改造",
       x: SHEET_POSTER_SAFE_MARGIN + 20,
       y: brandMainY,
       font: "500 28px sans-serif",
       color: COLOR_INK,
     },
     sub: {
-      text: "所见即所得 · 每套皆标杆",
+      // 广告法自查 P1-01：「每套皆标杆」为全体性断言，改为可证实的表述
+      text: "实景拍摄 · 过程可查",
       x: SHEET_POSTER_SAFE_MARGIN + 20,
       y: brandMainY + 28 + 8,
       font: "400 22px sans-serif",

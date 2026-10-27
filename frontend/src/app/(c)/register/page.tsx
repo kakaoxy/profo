@@ -253,11 +253,11 @@ export default function CRegisterPage() {
               />
               <label className="text-sm text-ash leading-tight" htmlFor="terms">
                 {cLocale.register.termsPrefix}{" "}
-                <Link href="#" className="text-rust font-medium hover:underline">
+                <Link href="/terms" className="text-rust font-medium hover:underline">
                   {cLocale.register.termsText}
                 </Link>{" "}
                 {cLocale.register.termsJoin}{" "}
-                <Link href="#" className="text-rust font-medium hover:underline">
+                <Link href="/privacy" className="text-rust font-medium hover:underline">
                   {cLocale.register.privacyText}
                 </Link>
               </label>
@@ -287,7 +287,7 @@ export default function CRegisterPage() {
         {/* Bottom Footer */}
         <div className="mt-auto pt-8 flex flex-wrap justify-center gap-4">
           <Link
-            href="#"
+            href="/about"
             className="text-[12px] leading-4 font-medium text-graphite hover:text-ink uppercase"
           >
             {cLocale.register.aboutUs}

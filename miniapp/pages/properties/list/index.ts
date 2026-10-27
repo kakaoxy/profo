@@ -261,7 +261,8 @@ Page<PageData, PageCustom>({
     // 户型段：baths=0 时省略「0卫」，避免出现「3室0卫」
     const layoutPart = p.baths > 0 ? `${p.rooms}室${p.baths}卫` : `${p.rooms}室`;
     // 基础信息行：空值段直接跳过，避免连续分隔符「· ·」（orientation 空串见 DB 61% 记录）
-    const meta = [layoutPart, p.orientation, p.floor_display, `${p.build_area}㎡`]
+    // 广告法自查 P0-04：面积需标明建筑面积口径（build_area 即建筑面积）
+    const meta = [layoutPart, p.orientation, p.floor_display, `建面 ${p.build_area}㎡`]
       .filter(Boolean)
       .join(" · ");
 

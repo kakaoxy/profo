@@ -47,12 +47,12 @@ Page<PageData, PageCustom>({
       },
       {
         q: "真的免费送装修，有隐藏条件吗？",
-        a: "未售出则装修无偿赠送，写在合同里，没有额外收费或隐藏条件。",
+        a: "合同写明：未售出则装修赠送及归属规则按合同条款执行，无额外收费或隐藏条件。",
         open: false,
       },
       {
         q: "65天不能看房，值不值？",
-        a: "装修期专职团队全包，换来的是更好卖相与更高的成交价，业主零投入、零操心。",
+        a: "装修期专职团队全包，换来的是更好卖相与更高的成交预期；装修款由公司垫付，业主不出装修款。",
         open: false,
       },
       {
@@ -112,14 +112,14 @@ Page<PageData, PageCustom>({
   },
   onShareAppMessage() {
     return {
-      title: "零现金焕新，全流程托管，点击了解您的房价",
+      title: "不先拘装修款，商定目标价再卖房",
       path: "/pages/about/index/index",
       imageUrl: "/assets/share.jpg",
     };
   },
   onShareTimeline() {
     return {
-      title: "零现金焕新，全流程托管，点击了解您的房价",
+      title: "不先拘装修款，商定目标价再卖房",
       query: "",
       imageUrl: "/assets/share.jpg",
     };

@@ -77,6 +77,11 @@ export function SystemEstimateCard({
         <span className="ml-auto text-[12px] text-graphite">{createdAt}</span>
       </div>
 
+      {/* 广告法自查 P1-03：无评估资质，明确标注非专业评估报告 */}
+      <p className="mb-3 text-[11px] leading-relaxed text-graphite">
+        {cLocale.leads.systemEstimate.disclaimer}
+      </p>
+
       {evalPrice !== null ? (
         <>
           <div className="rounded-inputs bg-white/60 p-5">

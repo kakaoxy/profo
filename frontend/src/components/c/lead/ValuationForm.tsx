@@ -282,7 +282,7 @@ export function ValuationForm({ initialReferrer }: { initialReferrer?: string })
             <textarea
               name="remarks"
               rows={3}
-              placeholder="补充说明，如装修情况、学区等"
+              placeholder="补充说明，如装修情况、看房时间等"
               className="w-full p-3 sm:p-4 rounded-inputs border border-dove/30 bg-white text-base text-ink placeholder:text-graphite outline-none focus:border-rust transition-colors"
               value={formData.remarks}
               onChange={(e) => updateField("remarks", e.target.value)}

@@ -161,7 +161,7 @@
       <view class="spec-list">
         <view class="spec-row"><text class="spec-label">小区</text><text class="spec-value">{{community_name}}</text></view>
         <view class="spec-row" wx:if="{{layout}}"><text class="spec-label">户型</text><text class="spec-value">{{layout}}</text></view>
-        <view class="spec-row" wx:if="{{area}}"><text class="spec-label">面积</text><text class="spec-value">{{area}}</text></view>
+        <view class="spec-row" wx:if="{{area}}"><text class="spec-label">建筑面积</text><text class="spec-value">{{area}}</text></view>
         <view class="spec-row" wx:if="{{floor_display}}"><text class="spec-label">楼层/朝向</text><text class="spec-value">{{floor_display}}</text></view>
         <view class="spec-row" wx:if="{{remarks}}"><text class="spec-label">留言</text><text class="spec-value">{{remarks}}</text></view>
         <view class="spec-row"><text class="spec-label">提交时间</text><text class="spec-value">{{created_at}}</text></view>

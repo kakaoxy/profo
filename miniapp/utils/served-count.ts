@@ -1,12 +1,15 @@
 /**
- * 累计服务人数（平台 total_sold）加载与缓动动画：供 about / projects/list 等多页面复用.
+ * 累计成交套数（平台 total_sold）加载与缓动动画：供 about / projects/list 等多页面复用.
  * 复用方式：页面方法内以 `this` 作为 ServedCountContext 传入，保持接口类型不变.
+ *
+ * 广告法自查 P1-08：total_sold 为已售房源条数，展示口径统一为「累计成交 X 套」，
+ * 不得渲染为「服务 X 组家庭」（一套房 ≠ 一组家庭）。
  */
 import type { components } from "../types/api-types";
 import { request } from "./request";
 import { formatThousands } from "./format";
 
-/** 平台统计（取 total_sold 作为累计服务人数）. */
+/** 平台统计（取 total_sold 作为累计成交套数）. */
 type PublicPlatformStats = components["schemas"]["PublicPlatformStats"];
 
 /** 使用本模块功能的页面实例所需具备的字段. */

@@ -243,7 +243,7 @@ export function CampaignFormDialog({
               分享标题<span className="text-rust ml-0.5">*</span>
             </label>
             <Input
-              placeholder="分享卡片标题，如：零现金焕新，全流程托管"
+              placeholder="分享卡片标题，如：不先掏装修款，商定目标价再卖房"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={100}

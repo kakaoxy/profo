@@ -115,7 +115,7 @@ export interface CalcResult {
   taxTotal: number;
   /** 毛利（未扣税）. */
   gross: number;
-  /** 预计净利润. */
+  /** 模拟净利润（示例测算，不构成收益承诺）. */
   net: number;
   /** 初始投入（买进价 − 贷款金额 + 装修费 + 买进佣金）. */
   invest: number;
@@ -223,6 +223,6 @@ export function buildCopyText(i: CalcInput, r: CalcResult, buyCommTxt: string, s
     `贷款利息：${fw(r.interest)} 万 · 装修 ${fw(i.reno)} 万 · 名额费 ${fw(i.quota)} 万${i.extra ? ` · 额外成本 ${fw(i.extra)} 万` : ""}`,
     `佣金（买 ${buyCommTxt} / 卖 ${sellCommTxt}）：${fw(r.buyComm + r.sellComm)} 万`,
     `初始投入 ${fw(r.invest)} 万 · 税费合计 ${fw(r.taxTotal)} 万 · 总成本 ${fw(r.costTotal)} 万`,
-    `★ 预计净利润 ${fw(r.net)} 万（利润率 ${r.margin.toFixed(1)}%，年化 ${r.annual.toFixed(1)}%）`,
+    `★ 模拟净利润 ${fw(r.net)} 万（利润率 ${r.margin.toFixed(1)}%，年化 ${r.annual.toFixed(1)}%）`,
   ].join("\n");
 }

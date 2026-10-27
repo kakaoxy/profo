@@ -615,8 +615,7 @@ export default function AboutPage() {
                 communityName={project.community_name ?? null}
                 layout={project.layout}
                 area={project.area}
-                totalPrice={project.total_price}
-                unitPrice={project.unit_price}
+                soldPrice={project.sold_price ?? null}
                 title={project.title}
                 coverImage={project.cover_image ?? null}
                 soldDays={project.sold_days ?? null}

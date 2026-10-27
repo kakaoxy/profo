@@ -192,10 +192,13 @@
 
     <button class="reset-btn" bindtap="onReset">恢复默认口径（首套 · 30年 · LPR−45bp）</button>
 
+    <!-- 贷款服务说明（广告法自查 P1-05：《房地产广告发布规定》第十七条） -->
+    <view class="loan-disc">本页为按揭测算工具，不构成贷款要约；不绑定特定银行，实际额度、利率与年期以合作银行审批结果为准。</view>
+
     <!-- 底部行动按钮：贷款专家咨询 + 了解购房流程（spec K11） -->
     <view class="cta-row">
       <button class="cta-btn cta-btn--ghost" bindtap="onCallTap">
-        <text class="cta-ic">☎</text>贷款专家咨询
+        <text class="cta-ic">☎</text>贷款业务咨询
       </button>
       <button class="cta-btn cta-btn--pri" bindtap="onSimulatorTap">
         <text class="cta-ic">→</text>了解购房流程

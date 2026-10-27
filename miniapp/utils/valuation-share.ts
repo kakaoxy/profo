@@ -19,8 +19,11 @@ export interface ValuationQuery {
   referrer: string;
 }
 
-/** 分享卡片标题/图片（与 about 服务页分享卡片一致，保证分享内容统一）. */
-export const VALUATION_SHARE_TITLE = "零现金焕新，全流程托管，点击了解您的房价";
+/** 分享卡片标题/图片（与 about 服务页分享卡片一致，保证分享内容统一）.
+ *
+ * 广告法自查 P0-01：不得使用「零现金焕新」等零成本承诺表述。
+ */
+export const VALUATION_SHARE_TITLE = "不先拘装修款，商定目标价再卖房";
 export const VALUATION_SHARE_IMAGE = "/assets/share.jpg";
 
 /**

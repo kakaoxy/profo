@@ -391,8 +391,8 @@ export const ROLES: Record<RoleKey, Role> = {
 /** 贷款方式（20260901 上海按揭政策表：首付 / 利率随方式与套数区域差异化）. */
 export const LOAN_TYPES: Record<LoanTypeKey, { k: LoanTypeKey; name: string; short: string; desc: string }> = {
   comm: { k: "comm", name: "纯商贷", short: "商贷", desc: "额度按房款算，无上限" },
-  combo: { k: "combo", name: "组合贷", short: "组合", desc: "公积金 + 商贷，多数家庭首选" },
-  gjj: { k: "gjj", name: "纯公积金", short: "公积金", desc: "利率最低，但额度有限：首套家庭 200 万 / 二套 160 万，缴交补充公积金各 +40 万" },
+  combo: { k: "combo", name: "组合贷", short: "组合", desc: "公积金 + 商贷，多数家庭常见选择" },
+  gjj: { k: "gjj", name: "纯公积金", short: "公积金", desc: "利率较低，但额度有限：首套家庭 200 万 / 二套 160 万，缴交补充公积金各 +40 万" },
 };
 
 /**

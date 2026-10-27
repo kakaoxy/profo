@@ -32,6 +32,7 @@ import {
   parseRecruitQuery,
   parseSceneCode,
   RECRUIT_LANDING_CONTENT,
+  RECRUIT_RISK_NOTE,
 } from "../../../utils/recruit-logic";
 import type { RecruitLandingContent, RecruitSource } from "../../../utils/recruit-logic";
 import { createPosterTempFile, savePosterToAlbum } from "../../../utils/recruit-poster-render";
@@ -60,6 +61,8 @@ interface PageData {
   landing: RecruitLandingContent;
   // 数据卡当前滚动值（从 0 滚动到 target）
   statValues: number[];
+  // 招募风险提示（广告法自查 P0-05：第二十五条强制要求）
+  recruitRiskNote: string;
   // 活动（仅用于归因 + 导航栏标题）
   campaignId: string;
   campaign: RecruitCampaignDetailResponse | null;
@@ -140,6 +143,8 @@ Page<PageData, PageCustom>({
   data: {
     landing: RECRUIT_LANDING_CONTENT,
     statValues: RECRUIT_LANDING_CONTENT.stats.map(() => 0),
+    // 招募风险提示（广告法自查 P0-05：第二十五条强制要求）
+    recruitRiskNote: RECRUIT_RISK_NOTE,
     campaignId: "",
     campaign: null,
     loading: false,
@@ -592,7 +597,11 @@ Page<PageData, PageCustom>({
    */
   animateStats() {
     this.clearStatAnim();
+    // stats 为空（未接入真实统计接口）时无数据卡，跳过动画（广告法自查 P0-05）
     const targets = RECRUIT_LANDING_CONTENT.stats.map((s) => s.target);
+    if (targets.length === 0) {
+      return;
+    }
     const startTime = Date.now();
     let prevValues: number[] = [];
     const tick = () => {

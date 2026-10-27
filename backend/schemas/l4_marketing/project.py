@@ -7,6 +7,7 @@ from typing import Any
 
 from pydantic import UUID4, BaseModel, ConfigDict, Field, field_validator
 
+from constants.compliance import find_banned_words
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 
 from .media import L4MarketingMediaCreate, L4MarketingMediaResponse
@@ -68,7 +69,7 @@ class L4MarketingProjectBase(BaseModel):
     area: Decimal = Field(gt=0, decimal_places=2, description="面积(m²)，保留两位小数")
     total_price: Decimal = Field(gt=0, decimal_places=2, description="总价(万元)，保留两位小数")
 
-    # 营销信息
+    # 营销信息（title/tags/decoration_style 为对外展示文案，需过合规词表校验）
     title: str = Field(min_length=1, max_length=255, description="标题，最大长度255")
     images: list[str] = Field(default_factory=list, description="图片URL列表")
     sort_order: int = Field(default=0, ge=0, description="排序权重，默认0")
@@ -78,6 +79,34 @@ class L4MarketingProjectBase(BaseModel):
         default=None,
         description="各改造阶段完成日期，格式: {stage: 'YYYY-MM-DD'}",
     )
+
+    @field_validator("title", "decoration_style")
+    @classmethod
+    def validate_compliance_single(cls, v: str | None) -> str | None:
+        """合规校验：单值文案命中敏感词表即 422（广告法自查报告 §6.1）.
+
+        覆盖 title / decoration_style 两个对外展示的运营自由输入字段。
+        """
+        if v is None:
+            return None
+        hits = find_banned_words(v)
+        if hits:
+            word, reason = hits[0]
+            msg = f"文案包含违禁词「{word}」：{reason}，请改写后再保存"
+            raise ValueError(msg)
+        return v
+
+    @field_validator("tags")
+    @classmethod
+    def validate_compliance_tags(cls, v: list[str]) -> list[str]:
+        """合规校验：标签列表逐项过敏感词表（广告法自查报告 §6.1）."""
+        for tag in v:
+            hits = find_banned_words(tag)
+            if hits:
+                word, reason = hits[0]
+                msg = f"标签「{tag}」包含违禁词「{word}」：{reason}，请改写后再保存"
+                raise ValueError(msg)
+        return v
 
     # 状态
     publish_status: PublishStatus = Field(default=PublishStatus.DRAFT, description="发布状态: 草稿/发布")
@@ -133,7 +162,7 @@ class L4MarketingProjectUpdate(BaseModel):
     area: Decimal | None = Field(default=None, gt=0, decimal_places=2)
     total_price: Decimal | None = Field(default=None, gt=0, decimal_places=2)
 
-    # 营销信息
+    # 营销信息（title/tags/decoration_style 更新时同样需过合规词表校验）
     title: str | None = Field(default=None, min_length=1, max_length=255)
     images: list[str] | None = Field(default=None, description="图片URL列表")
     sort_order: int | None = Field(default=None, ge=0)
@@ -143,6 +172,33 @@ class L4MarketingProjectUpdate(BaseModel):
         default=None,
         description="各改造阶段完成日期，格式: {stage: 'YYYY-MM-DD'}",
     )
+
+    @field_validator("title", "decoration_style")
+    @classmethod
+    def validate_compliance_single_update(cls, v: str | None) -> str | None:
+        """合规校验：单值文案命中敏感词表即 422（与 Create 同口径）."""
+        if v is None:
+            return None
+        hits = find_banned_words(v)
+        if hits:
+            word, reason = hits[0]
+            msg = f"文案包含违禁词「{word}」：{reason}，请改写后再保存"
+            raise ValueError(msg)
+        return v
+
+    @field_validator("tags")
+    @classmethod
+    def validate_compliance_tags_update(cls, v: list[str] | None) -> list[str] | None:
+        """合规校验：标签列表逐项过敏感词表（与 Create 同口径；None=不更新）."""
+        if v is None:
+            return None
+        for tag in v:
+            hits = find_banned_words(tag)
+            if hits:
+                word, reason = hits[0]
+                msg = f"标签「{tag}」包含违禁词「{word}」：{reason}，请改写后再保存"
+                raise ValueError(msg)
+        return v
 
     # 状态
     publish_status: PublishStatus | None = Field(default=None, description="发布状态: 草稿/发布")

@@ -73,8 +73,8 @@ describe("buildSheetPosterLayout 基础尺寸与文案", () => {
     expect(layout.head.titleLines.map((l) => l.text)).toEqual(["美房宝品质二手房"]);
     expect(layout.head.titleLines[0].font).toContain("serif");
     expect(layout.head.pill.text.text).toBe("精选好房");
-    expect(layout.brand.main.text).toBe("专注上海老破小");
-    expect(layout.brand.sub.text).toBe("所见即所得 · 每套皆标杆");
+    expect(layout.brand.main.text).toBe("专注上海存量住宅改造");
+    expect(layout.brand.sub.text).toBe("实景拍摄 · 过程可查");
     expect(layout.qr.caption.text).toBe("扫码看全部房源");
     expect(layout.brand.dot.color.toLowerCase()).toBe("#5d2a1a");
   });

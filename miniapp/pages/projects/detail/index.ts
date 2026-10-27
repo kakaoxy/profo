@@ -109,6 +109,10 @@ type LoanCardView = {
 interface PageData {
   id: number | null;
   detail: PublicProjectDetail | null;
+  /** 价格展示值：已售且有成交价取 sold_price，否则 total_price（广告法自查 P0-02）. */
+  priceDisplay: number | null;
+  /** 价格口径标注：「成交价」/「挂牌价」；空串不渲染. */
+  priceScopeText: string;
   /** 贷款参考卡（默认口径计算；total_price 缺失/≤0 时整卡隐藏）. */
   loanCard: LoanCardView | null;
   contact: PublicConsultantContact | null;
@@ -313,6 +317,8 @@ Page<PageData, Custom>({
   data: {
     id: null,
     detail: null,
+    priceDisplay: null,
+    priceScopeText: "",
     loanCard: null,
     contact: null,
     stages: [],
@@ -499,6 +505,8 @@ Page<PageData, Custom>({
       error: false,
       notFound: false,
       detail: null,
+    priceDisplay: null,
+    priceScopeText: "",
     });
     try {
       // 详情与顾问联系方式并行拉取，避免请求瀑布；
@@ -556,8 +564,17 @@ Page<PageData, Custom>({
               url,
               poster: "",
             }));
+      // 广告法自查 P0-02：已售且有真实成交价（sold_price）→ 按成交价口径展示；
+      // 其余情况展示营销表价格并标注「挂牌价」（该字段实为签约价/挂牌价，非成交价）
+      const isSold = resolvedDetail.project_status === "已售";
+      const soldPrice = resolvedDetail.sold_price ?? null;
+      const priceDisplay = soldPrice ?? resolvedDetail.total_price;
+      const priceScopeText = soldPrice != null ? "成交价" : "挂牌价";
+
       this.setData({
         detail: resolvedDetail,
+        priceDisplay,
+        priceScopeText,
         contact,
         stages,
         gallery,

@@ -94,7 +94,15 @@ export interface RecruitLandingContent {
   reviews: RecruitReview[];
 }
 
-/** 落地页固定营销内容（文案严格对照设计稿，硬编码不从后端读取）. */
+/** 落地页固定营销内容（广告法自查 P0-05 整改版）.
+ *
+ * 合规约定（违反即拦截，详见 docs/Done/2026-10-27-C端文案广告法自查报告.md）：
+ * - 招募页属《广告法》第二十五条招商广告：禁止保本/保收益/秒结等保证性承诺，
+ *   禁止利用受益者（具名店长）名义作推荐，页面底部须保留风险提示；
+ * - 统计数字禁止硬编码（第十一条：数据须真实且标明出处），未接入真实统计前
+ *   只能使用定性描述；
+ * - 禁用「最快/绝不/硬核」等绝对化用语（第九条(三)）。
+ */
 export const RECRUIT_LANDING_CONTENT: RecruitLandingContent = {
   hero: {
     title: "你缺客户吗？",
@@ -103,11 +111,8 @@ export const RECRUIT_LANDING_CONTENT: RecruitLandingContent = {
     closerPrefix: "的",
     closerBold: "\u201C神仙客户\u201D",
   },
-  stats: [
-    { target: 300, suffix: "+", unit: "人", label: "已合作经纪人" },
-    { target: 15, unit: "个", label: "覆盖商圈" },
-    { yen: "¥", target: 1000, suffix: "W+", label: "累计佣金" },
-  ],
+  // 未接入真实统计接口前不展示数字类宣称（原「300+人/15个商圈/¥1000W+佣金」无出处，已下线）
+  stats: [],
   painTitle: "我们懂你的每一个痛点",
   painSub: "你说，我们就到",
   pains: [
@@ -115,29 +120,29 @@ export const RECRUIT_LANDING_CONTENT: RecruitLandingContent = {
       q: "客户聊半天约不出来？",
       aBefore: "随时看房，",
       aBold: "业主有空我们就到",
-      aAfter: "，全城覆盖，快速响应。",
+      aAfter: "，全城覆盖，及时响应。",
       warm: false,
     },
     {
       q: "客户看半天不出价？",
       aBefore: "",
-      aBold: "最快 2 小时出价",
-      aAfter: "，绝不拖延，书面报价单，透明可查。",
+      aBold: "一般 2 小时内反馈",
+      aAfter: "，书面报价单，透明可查。",
       warm: true,
     },
     {
       q: "客户看中了，跟业主约不上时间？",
       aBefore: "我们随时配合面谈，",
       aBold: "你说几点就几点",
-      aAfter: "，7×12 小时在线响应。",
+      aAfter: "，工作时间在线响应。",
       warm: false,
     },
   ],
   whyTitle: "为什么选择跟我们合作？",
-  whySub: "四个硬核承诺",
+  whySub: "四项合作保障",
   whys: [
-    { num: "01", title: "1% 佣金秒结", desc: "交房即到账，不拖不欠" },
-    { num: "02", title: "快速响应", desc: "7×12 小时在线" },
+    { num: "01", title: "佣金 1%", desc: "按合同约定周期结算" },
+    { num: "02", title: "及时响应", desc: "工作时间在线" },
     { num: "03", title: "快出价不反复", desc: "书面报价透明可查" },
     { num: "04", title: "装修代卖", desc: "一站式赋能房源" },
   ],
@@ -146,29 +151,20 @@ export const RECRUIT_LANDING_CONTENT: RecruitLandingContent = {
   flow: [
     { name: "推荐房源", desc: "分享你手头匹配的客户房源" },
     { name: "实地看房", desc: "业主配合，随时带看" },
-    { name: "快速报价", desc: "2 小时内书面出价，不反复" },
+    { name: "快速报价", desc: "一般 2 小时内书面出价，不反复" },
     { name: "签约收房", desc: "流程规范，权属清晰" },
-    { name: "佣金到账", desc: "1% 秒结，交房即付" },
+    { name: "佣金结算", desc: "佣金 1%，按合同约定周期结算" },
   ],
-  reviewTitle: "合作伙伴怎么说？",
-  reviewSub: "真实经纪人口碑",
-  reviews: [
-    {
-      stars: 5,
-      text: "不跳单，结佣快，装得好，卖得快",
-      avatar: "洪",
-      name: "洪店长",
-      role: "浦东金杨 · 资深店长",
-    },
-    {
-      stars: 5,
-      text: "以前最怕客户约了不看，看了不谈，谈了不买，跟你们合作省心太多了！",
-      avatar: "李",
-      name: "李店长",
-      role: "宝山张庙 · 资深经纪人",
-    },
-  ],
+  reviewTitle: "合作说明",
+  reviewSub: "佣金与结算规则",
+  // 具名店长证言已下线（第二十五条(二)：禁止利用受益者名义作推荐；
+  // 无书面授权另有姓名权风险）。此区改为合作规则说明。
+  reviews: [],
 };
+
+/** 招募页底部风险提示（第二十五条强制要求：招商广告须有风险提示）. */
+export const RECRUIT_RISK_NOTE =
+  "合作说明：佣金比例与结算周期以双方签署的合作协议为准；房源能否成交受市场、价格、权属等因素影响，本公司不对具体收益作出承诺。";
 
 /**
  * 解析 onLoad 分享/进入参数.

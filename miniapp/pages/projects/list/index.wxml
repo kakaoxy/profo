@@ -2,14 +2,14 @@
   <!-- 顶部品牌区 -->
   <view class="hero">
     <view class="hero-title">发现理想居所</view>
-    <view class="hero-desc">实景交付、改造溯源、成交价真实可验，每一套都是品质标杆。</view>
+    <view class="hero-desc">实景交付、改造溯源，过往案例挂牌信息可查。</view>
     <view class="hero-tags">
       <view class="tag tag-primary">精装实景交付</view>
-      <view class="tag tag-muted">成交价真实可验</view>
+      <view class="tag tag-muted">改造过程可查</view>
       <!-- 累计服务人数标签（可点击，跳转过往案例） -->
       <view class="tag tag-served" wx:if="{{servedCountVisible}}" hover-class="tag-served--hover" bindtap="onServedTagTap">
-        <block wx:if="{{servedCountLoading}}">累计服务···组家庭</block>
-        <block wx:else>累计服务<text class="tag-served__num">{{servedCountDisplay}}</text>组家庭</block>
+        <block wx:if="{{servedCountLoading}}">累计成交···套</block>
+        <block wx:else>累计成交<text class="tag-served__num">{{servedCountDisplay}}</text>套</block>
         <text class="tag-served__arrow">›</text>
       </view>
     </view>

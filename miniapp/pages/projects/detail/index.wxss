@@ -313,6 +313,25 @@
   font-weight: 500;
 }
 
+/* 价格口径标注（广告法自查 P0-02）：小号灰字 chip，紧跟价格 */
+.price-scope {
+  margin-left: 12rpx;
+  align-self: flex-end;
+  font-size: 20rpx;
+  padding: 2rpx 12rpx;
+  border-radius: 9999rpx;
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--graphite);
+}
+
+/* 价格有效期说明（广告法自查 P1-04） */
+.price-note {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: var(--graphite);
+}
+
 .loan-tip {
   margin-top: 10rpx;
   font-size: 22rpx;

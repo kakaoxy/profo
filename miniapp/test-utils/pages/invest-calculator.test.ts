@@ -260,7 +260,7 @@ describe("重置与复制", () => {
     expect(lines[5]).toBe("贷款利息：36.60 万 · 装修 0.00 万 · 名额费 0.00 万");
     expect(lines[6]).toBe("佣金（买 1% / 卖 1%）：13.50 万");
     expect(lines[7]).toBe("初始投入 126.00 万 · 税费合计 13.50 万 · 总成本 663.60 万");
-    expect(lines[8]).toBe("★ 预计净利润 86.40 万（利润率 68.6%，年化 27.4%）");
+    expect(lines[8]).toBe("★ 模拟净利润 86.40 万（利润率 68.6%，年化 27.4%）");
     // 复制后按钮置「已复制 ✓」，1.6s 后复原
     expect(inst.data.copyDone).toBe(true);
     vi.runAllTimers();

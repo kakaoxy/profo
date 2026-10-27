@@ -160,6 +160,7 @@ export default function ProjectDetailPage() {
       <section className="mx-auto max-w-300 px-4 pt-6">
         <PropertyGrid
           totalPrice={data.total_price}
+          soldPrice={data.sold_price ?? null}
           unitPrice={data.unit_price}
           orientation={data.orientation}
           floorInfo={data.floor_info}
@@ -167,6 +168,10 @@ export default function ProjectDetailPage() {
           layout={data.layout}
           area={data.area}
         />
+        {/* 广告法自查 P1-04：价格有效期说明（《房地产广告发布规定》第十条） */}
+        <p className="mt-3 px-1 text-[12px] leading-relaxed text-graphite">
+          {cLocale.projects.priceNote}
+        </p>
       </section>
 
       {/* Renovation timeline section */}

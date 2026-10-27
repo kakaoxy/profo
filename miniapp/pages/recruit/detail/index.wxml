@@ -76,8 +76,8 @@
         </view>
       </view>
 
-      <!-- 2. 数据展示卡（浮起压在 Hero 下方，数字从 0 滚动到 target） -->
-      <view class="stats-card">
+      <!-- 2. 数据展示卡（仅接入真实统计接口后展示；硬编码数字已下线，广告法自查 P0-05） -->
+      <view class="stats-card" wx:if="{{landing.stats.length > 0}}">
         <view wx:for="{{landing.stats}}" wx:key="label" class="stat">
           <view class="stat-num">
             <text wx:if="{{item.yen}}" class="stat-yen">{{item.yen}}</text>
@@ -145,8 +145,8 @@
         </view>
       </view>
 
-      <!-- 6. 评价卡（band-fog） -->
-      <view class="gap-section review-section band-fog">
+      <!-- 6. 合作说明（原具名店长证言已下线，广告法自查 P0-05） -->
+      <view class="gap-section review-section band-fog" wx:if="{{landing.reviews.length > 0}}">
         <view class="sec-title">{{landing.reviewTitle}}</view>
         <view class="sec-sub">{{landing.reviewSub}}</view>
         <view class="review-list">
@@ -164,6 +164,13 @@
             </view>
           </view>
         </view>
+      </view>
+
+      <!-- 6.5 合作规则说明（替代具名证言区） -->
+      <view class="gap-section review-section band-fog" wx:if="{{landing.reviews.length === 0}}">
+        <view class="sec-title">{{landing.reviewTitle}}</view>
+        <view class="sec-sub">{{landing.reviewSub}}</view>
+        <view class="risk-note">{{recruitRiskNote}}</view>
       </view>
 
       <!-- 7. 报名区 -->

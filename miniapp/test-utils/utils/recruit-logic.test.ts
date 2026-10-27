@@ -10,6 +10,7 @@ import {
   parseSceneCode,
   RECRUIT_LANDING_CONTENT,
   RECRUIT_LEAD_STATUS_CHIPS,
+  RECRUIT_RISK_NOTE,
   toMyLeadDisplayItem,
   applyLeadPhone,
   type RecruitMyLeadItem,
@@ -107,20 +108,10 @@ describe("RECRUIT_LANDING_CONTENT", () => {
     expect(hero.closerBold).toContain("神仙客户");
   });
 
-  it("数据卡含 3 项（经纪人 / 商圈 / 佣金），target 为数值用于滚动", () => {
+  it("数据卡为空（硬编码统计已下线，广告法自查 P0-05）", () => {
     const { stats } = RECRUIT_LANDING_CONTENT;
-    expect(stats).toHaveLength(3);
-    expect(stats[0].target).toBe(300);
-    expect(stats[0].suffix).toBe("+");
-    expect(stats[0].unit).toBe("人");
-    expect(stats[0].label).toBe("已合作经纪人");
-    expect(stats[1].target).toBe(15);
-    expect(stats[1].unit).toBe("个");
-    expect(stats[1].label).toBe("覆盖商圈");
-    expect(stats[2].yen).toBe("¥");
-    expect(stats[2].target).toBe(1000);
-    expect(stats[2].suffix).toBe("W+");
-    expect(stats[2].label).toBe("累计佣金");
+    // 接入真实统计接口前不展示数字类宣称（300+人/15个商圈/¥1000W+佣金均无出处）
+    expect(stats).toHaveLength(0);
   });
 
   it("痛点含 3 项且仅中项 warm=true", () => {
@@ -137,21 +128,27 @@ describe("RECRUIT_LANDING_CONTENT", () => {
     expect(whys.every((w) => w.title && w.desc)).toBe(true);
   });
 
-  it("流程含 5 步", () => {
+  it("流程含 5 步且无保证性承诺用语", () => {
     const { flow } = RECRUIT_LANDING_CONTENT;
     expect(flow).toHaveLength(5);
     expect(flow[0].name).toBe("推荐房源");
-    expect(flow[4].name).toBe("佣金到账");
+    expect(flow[4].name).toBe("佣金结算");
     expect(flow.every((f) => f.name && f.desc)).toBe(true);
+    const allText = flow.map((f) => `${f.name}${f.desc}`).join("");
+    expect(allText).not.toMatch(/秒结|秒付|交房即付|不拖不欠/);
   });
 
-  it("评价含 2 条且 stars=5", () => {
+  it("痛点/优势/流程文案无绝对化与保证性用语（广告法自查 P0-05）", () => {
+    const { pains, whys } = RECRUIT_LANDING_CONTENT;
+    const allText = JSON.stringify({ pains, whys, flow: RECRUIT_LANDING_CONTENT.flow });
+    expect(allText).not.toMatch(/最快|绝不|硬核|秒结|不拖不欠|7×12/);
+  });
+
+  it("具名店长证言已下线且风险提示非空（广告法自查 P0-05）", () => {
     const { reviews } = RECRUIT_LANDING_CONTENT;
-    expect(reviews).toHaveLength(2);
-    expect(reviews.every((r) => r.stars === 5)).toBe(true);
-    expect(reviews[0].name).toBe("洪店长");
-    expect(reviews[1].name).toBe("李店长");
-    expect(reviews.every((r) => r.avatar && r.text && r.role)).toBe(true);
+    expect(reviews).toHaveLength(0);
+    expect(RECRUIT_RISK_NOTE).toContain("不对具体收益作出承诺");
+    expect(RECRUIT_RISK_NOTE).toContain("以双方签署的合作协议为准");
   });
 
   it("区段标题字段齐全", () => {
@@ -159,7 +156,7 @@ describe("RECRUIT_LANDING_CONTENT", () => {
     expect(painTitle).toBe("我们懂你的每一个痛点");
     expect(whyTitle).toBe("为什么选择跟我们合作？");
     expect(flowTitle).toBe("合作流程");
-    expect(reviewTitle).toBe("合作伙伴怎么说？");
+    expect(reviewTitle).toBe("合作说明");
   });
 });
 

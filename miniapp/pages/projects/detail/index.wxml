@@ -68,7 +68,9 @@
       <!-- 标题区 -->
       <view class="detail-head">
         <view class="detail-price-row">
-          <view class="detail-price">¥ {{detail.total_price}} 万</view>
+          <!-- 广告法自查 P0-02：已售且有真实成交价显示成交价口径；否则标注挂牌价 -->
+          <view class="detail-price">¥ {{priceDisplay}} 万</view>
+          <view wx:if="{{priceScopeText}}" class="price-scope">{{priceScopeText}}</view>
           <!-- 调价提醒（房源级订阅，涨降都推）：subscribe_enabled=false 整体隐藏；已订阅反白态点击即取消 -->
           <button
             wx:if="{{priceAlertEnabled}}"
@@ -94,6 +96,9 @@
         </view>
       </view>
 
+      <!-- 价格有效期说明（广告法自查 P1-04：《房地产广告发布规定》第十条） -->
+      <view class="price-note">价格为挂牌价，可能随市场调整，请以最新报价与实地看房为准</view>
+
       <!-- 基础信息 -->
       <view class="info-grid">
         <view class="info-item">
@@ -109,7 +114,7 @@
           <view class="info-value">{{detail.layout}}</view>
         </view>
         <view class="info-item">
-          <view class="info-label">面积</view>
+          <view class="info-label">建筑面积</view>
           <view class="info-value">{{detail.area}}㎡</view>
         </view>
         <view class="info-item">
@@ -141,7 +146,8 @@
           </view>
         </view>
         <view class="loan-sum"><text class="loan-sum-b">首套</text> · {{loanCard.sumText}} · 年利率 <text class="loan-sum-b">{{loanCard.rateText}}</text></view>
-        <view class="loan-tip">以等额本息估算，实际以银行审批为准</view>
+        <!-- 广告法自查 P1-05：载明不绑定特定银行，额度年期以审批为准 -->
+        <view class="loan-tip">以等额本息估算，不绑定特定银行，实际额度、利率与年期以银行审批为准</view>
       </view>
 
       <!-- 改造过程 -->

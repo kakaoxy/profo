@@ -3,6 +3,7 @@
 职责: 处理C端公开项目相关的数据库查询.
 """
 
+import uuid
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import Integer, and_, case, cast, desc, func, or_
@@ -15,6 +16,7 @@ from models import (
     L4MarketingPriceChange,
     L4MarketingProject,
     ProjectBooking,
+    ProjectSale,
     ProjectShareEvent,
     ProjectVisit,
     User,
@@ -278,8 +280,15 @@ class PublicProjectService:
         max_floor: int | None = None,
         page: int = 1,
         page_size: int | None = None,
-    ) -> tuple[list[L4MarketingProject], int]:
-        """获取已成交的房源案例列表."""
+    ) -> tuple[list[L4MarketingProject], int, dict[uuid.UUID, ProjectSale]]:
+        """获取已成交的房源案例列表.
+
+        Returns:
+            (items, total, sales_map)：sales_map 为 L3 项目ID → 销售交易记录，
+            供 C 端展示真实成交价/成交周期（广告法自查 P0-02/P0-03 方案 A）；
+            未关联内部项目或无销售记录的房源不在 map 中。
+
+        """
         effective_page_size = page_size if page_size is not None else settings.default_page_size
         query = self.db.query(L4MarketingProject).filter(
             L4MarketingProject.project_status == MarketingProjectStatus.SOLD.value,
@@ -300,7 +309,28 @@ class PublicProjectService:
             .all()
         )
 
-        return items, total
+        return items, total, self._load_project_sales(items)
+
+    def _load_project_sales(
+        self,
+        items: list[L4MarketingProject],
+    ) -> dict[uuid.UUID, ProjectSale]:
+        """批量加载页面内已售房源关联的销售交易记录（单次 in_ 查询，避免 N+1）.
+
+        仅取未软删记录；L3 project_id 为空或无销售记录的房源不进 map。
+        """
+        project_ids = [i.project_id for i in items if i.project_id]
+        if not project_ids:
+            return {}
+        sales = (
+            self.db.query(ProjectSale)
+            .filter(
+                ProjectSale.project_id.in_(project_ids),
+                ProjectSale.is_deleted.is_(False),
+            )
+            .all()
+        )
+        return {s.project_id: s for s in sales}
 
     def get_project_detail(self, marketing_project_id: int) -> L4MarketingProject | None:
         """获取已发布且未删除的项目详情（C 端读口径，与列表/写入口径一致）."""
@@ -326,6 +356,20 @@ class PublicProjectService:
             )
             .order_by(L4MarketingMedia.sort_order)
             .all()
+        )
+
+    def get_project_sale(self, project_id: uuid.UUID) -> ProjectSale | None:
+        """获取 L3 项目的销售交易记录（详情页真实成交价用，广告法自查 P0-02）.
+
+        仅取未软删记录；无销售记录返回 None。
+        """
+        return (
+            self.db.query(ProjectSale)
+            .filter(
+                ProjectSale.project_id == project_id,
+                ProjectSale.is_deleted.is_(False),
+            )
+            .first()
         )
 
     def get_consultant(self, consultant_id: str) -> User | None:

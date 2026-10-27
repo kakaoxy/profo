@@ -539,7 +539,7 @@ export interface NegoR1Option {
 export const NEGO_R1: Record<"hard" | "soft" | "chat", NegoR1Option> = {
   hard: { k: "hard", chip: 0.06, label: "直接还价 -6%", d: "第一天就摆底线，能行就签。", note: "越线大概率被叫停" },
   soft: { k: "soft", chip: 0.03, label: "试探出价 -3%", d: "礼貌试探，先看看房东的反应。", note: "留有余地" },
-  chat: { k: "chat", chip: 0, label: "先聊聊，为什么卖？", d: "不问价，先听故事。", note: "急售的房东最好谈" },
+  chat: { k: "chat", chip: 0, label: "先聊聊，为什么卖？", d: "不问价，先听故事。", note: "急于出售的业主通常议价空间更大" },
 };
 
 /** 第二轮砍价选项. */

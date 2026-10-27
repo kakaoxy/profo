@@ -18390,9 +18390,14 @@ export interface components {
             area: number;
             /**
              * Total Price
-             * @description 总价(万元)
+             * @description 营销表总价(万元)，签约价或挂牌价，非成交价
              */
             total_price: number;
+            /**
+             * Sold Price
+             * @description 真实成交价(万元，仅已售房源有值)
+             */
+            sold_price?: number | null;
             /**
              * Unit Price
              * @description 单价(万元/m²)
@@ -18729,6 +18734,11 @@ export interface components {
         /**
          * PublicSoldProjectItem
          * @description C端已售项目项.
+         *
+         *     广告法自查 P0-02/P0-03（方案 A：数据对齐）：
+         *     - ``sold_price`` 取 ProjectSale.sold_price（真实成交价）；无销售记录或未录成交价时为 null，
+         *       前端不得用 ``total_price``（营销表价，实为签约价/挂牌价）冒充成交价展示；
+         *     - ``sold_days`` 取 sold_date - listing_date；任一日期缺失时为 null，前端不渲染成交周期。
          */
         PublicSoldProjectItem: {
             /**
@@ -18753,9 +18763,14 @@ export interface components {
             area: number;
             /**
              * Total Price
-             * @description 总价(万元)
+             * @description 营销表总价(万元)，签约价或挂牌价，非成交价
              */
             total_price: number;
+            /**
+             * Sold Price
+             * @description 真实成交价(万元，取自销售交易记录)，无则 null
+             */
+            sold_price?: number | null;
             /**
              * Unit Price
              * @description 单价(万元/m²)
@@ -18778,7 +18793,7 @@ export interface components {
             cover_thumbnail_url?: string | null;
             /**
              * Sold Days
-             * @description 成交天数
+             * @description 成交天数(sold_date-listing_date)，无则 null
              */
             sold_days?: number | null;
             /**

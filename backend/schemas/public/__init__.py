@@ -276,7 +276,10 @@ class PublicProjectDetail(BaseModel):
     orientation: str = Field(description="朝向")
     floor_info: str = Field(description="楼层信息")
     area: float = Field(description="面积(m²)")
-    total_price: float = Field(description="总价(万元)")
+    total_price: float = Field(description="营销表总价(万元)，签约价或挂牌价，非成交价")
+    # 广告法自查 P0-02：已售房源的真实成交价（ProjectSale.sold_price）；
+    # 已售且无销售记录/未录成交价为 null（前端显示「价格面议」），未售房源恒为 null
+    sold_price: float | None = Field(None, description="真实成交价(万元，仅已售房源有值)")
     unit_price: float = Field(description="单价(万元/m²)")
     title: str = Field(description="标题")
     images: list[str] = Field(default_factory=list, description="图片URL列表")
@@ -308,18 +311,25 @@ class PublicConsultantContact(BaseModel):
 
 
 class PublicSoldProjectItem(BaseModel):
-    """C端已售项目项."""
+    """C端已售项目项.
+
+    广告法自查 P0-02/P0-03（方案 A：数据对齐）：
+    - ``sold_price`` 取 ProjectSale.sold_price（真实成交价）；无销售记录或未录成交价时为 null，
+      前端不得用 ``total_price``（营销表价，实为签约价/挂牌价）冒充成交价展示；
+    - ``sold_days`` 取 sold_date - listing_date；任一日期缺失时为 null，前端不渲染成交周期。
+    """
 
     id: int = Field(description="项目ID")
     community_name: str | None = Field(None, description="小区名称")
     layout: str = Field(description="户型")
     area: float = Field(description="面积(m²)")
-    total_price: float = Field(description="总价(万元)")
+    total_price: float = Field(description="营销表总价(万元)，签约价或挂牌价，非成交价")
+    sold_price: float | None = Field(None, description="真实成交价(万元，取自销售交易记录)，无则 null")
     unit_price: float = Field(description="单价(万元/m²)")
     title: str = Field(description="标题")
     cover_image: str | None = Field(None, description="封面图URL")
     cover_thumbnail_url: str | None = Field(None, description="封面缩略图URL")
-    sold_days: int | None = Field(None, description="成交天数")
+    sold_days: int | None = Field(None, description="成交天数(sold_date-listing_date)，无则 null")
     decoration_style: str | None = Field(None, description="装修风格")
 
     model_config = ConfigDict(from_attributes=True)

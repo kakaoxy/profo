@@ -96,7 +96,7 @@ export function ProjectCard({
           </h3>
 
           <p className="mt-1.5 text-sm text-graphite">
-            {area}㎡ · {orientation}
+            建筑面积 {area}㎡ · {orientation}
           </p>
 
           {tags.length > 0 && (
@@ -114,7 +114,8 @@ export function ProjectCard({
               <span className="text-xl font-medium text-ink">{totalPrice}</span>
               <span className="text-sm text-graphite">万</span>
             </div>
-            <p className="mt-0.5 text-xs text-graphite">{unitPrice}元/㎡</p>
+            {/* 广告法自查 P0-08：后端 unit_price 单位为万元/㎡，渲染为「X万/㎡」而非「X元/㎡」 */}
+            <p className="mt-0.5 text-xs text-graphite">{unitPrice}万/㎡</p>
           </div>
         </div>
       </div>

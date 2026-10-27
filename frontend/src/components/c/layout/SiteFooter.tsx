@@ -95,9 +95,7 @@ export function SiteFooter() {
               </li>
               <li className="flex items-start gap-2">
                 <Phone className="mt-0.5 h-4 w-4 shrink-0 text-white/40" />
-                <span className="text-sm text-white/60">
-                  {cLocale.common.contact.hotlinePlaceholder}
-                </span>
+                <span className="text-sm text-white/60">{cLocale.common.contact.hotline}</span>
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-4 w-4 shrink-0 text-white/40" />

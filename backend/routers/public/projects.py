@@ -119,7 +119,7 @@ def get_sold_projects(
 ) -> PublicSoldProjectListResponse:
     """获取已成交的房源案例列表."""
     svc = PublicProjectService(db)
-    items, total = svc.get_sold_projects(
+    items, total, sales_map = svc.get_sold_projects(
         keyword=keyword,
         min_floor=min_floor,
         max_floor=max_floor,
@@ -132,10 +132,16 @@ def get_sold_projects(
     for item in items:
         cover_image, cover_thumbnail_url = cover_map[item.id]
 
-        sold_days = None
-        if item.updated_at and item.created_at:
-            delta = item.updated_at - item.created_at
-            sold_days = delta.days
+        # 广告法自查 P0-02/P0-03（方案 A：数据对齐）：
+        # - 成交价只取 ProjectSale.sold_price，无真实成交价则不下发（前端显示「价格面议」），
+        #   禁止再用营销表 total_price（签约价/挂牌价）冒充成交价；
+        # - 成交周期只取 sold_date - listing_date，任一为空则不下发（前端不渲染周期 chip），
+        #   禁止再用 updated_at - created_at 推算。
+        sale = sales_map.get(item.project_id) if item.project_id else None
+        sold_price = float(sale.sold_price) if sale and sale.sold_price is not None else None
+        sold_days: int | None = None
+        if sale and sale.sold_date and sale.listing_date:
+            sold_days = max((sale.sold_date - sale.listing_date).days, 0)
 
         result_items.append(
             PublicSoldProjectItem(
@@ -144,6 +150,7 @@ def get_sold_projects(
                 layout=item.layout,
                 area=float(item.area),
                 total_price=float(item.total_price),
+                sold_price=sold_price,
                 unit_price=float(item.unit_price),
                 title=item.title,
                 cover_image=cover_image,
@@ -306,6 +313,10 @@ def get_project_detail(
     if not project_images:
         project_images = [m.file_url for m in media_items if m.media_type == "image" and m.file_url]
 
+    # 广告法自查 P0-02：已售房源附真实成交价（取自销售交易记录）；无则 null（前端显示「价格面议」）
+    sale = svc.get_project_sale(project.project_id) if project.project_id else None
+    sold_price = float(sale.sold_price) if sale and sale.sold_price is not None else None
+
     return PublicProjectDetail(
         id=project.id,
         community_name=project.community_name,
@@ -314,6 +325,7 @@ def get_project_detail(
         floor_info=project.floor_info,
         area=float(project.area),
         total_price=float(project.total_price),
+        sold_price=sold_price,
         unit_price=float(project.unit_price),
         title=project.title,
         images=project_images,

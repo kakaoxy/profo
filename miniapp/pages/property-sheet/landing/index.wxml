@@ -23,7 +23,7 @@
     <!-- Hero：杏色光晕暖卡 -->
     <view class="hero">
       <view class="hero-title">TA 为您精选了 {{heroCount}} 套好房</view>
-      <view class="hero-sub">所见即所得，每套皆标杆</view>
+      <view class="hero-sub">实景拍摄，改造过程可查</view>
     </view>
 
     <!-- 分享人联系卡：命中分享人显示 Rust 角标，否则回退默认顾问 -->

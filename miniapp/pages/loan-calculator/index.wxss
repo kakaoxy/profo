@@ -563,6 +563,16 @@
   border: none;
 }
 
+/* 贷款服务说明（广告法自查 P1-05）：灰字小号说明，不抢视觉 */
+.loan-disc {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: var(--graphite);
+  text-align: center;
+  padding: 0 32rpx;
+}
+
 /* 底部行动按钮：咨询（fog 幽灵钮）+ 购房流程（ink 主钮）— spec K11 */
 .cta-row {
   display: flex;

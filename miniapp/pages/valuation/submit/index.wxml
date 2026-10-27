@@ -3,13 +3,13 @@
   <view class="form-head">
     <view class="head-row">
       <text class="chip chip-apricot chip--bordered">免费估价</text>
-      <!-- 累计估价报告计数 banner -->
+      <!-- 累计估价记录计数 banner（广告法自查 P1-07：口径与后端一致，不称「人已获取」） -->
       <view class="lead-count-banner" wx:if="{{leadCountVisible}}">
-        <block wx:if="{{leadCountLoading}}">···人已获取估价报告</block>
-        <block wx:else><text class="lead-count-banner__num">{{leadCountDisplay}}</text>人已获取估价报告</block>
+        <block wx:if="{{leadCountLoading}}">已有···条估价记录</block>
+        <block wx:else>已有<text class="lead-count-banner__num">{{leadCountDisplay}}</text>条估价记录</block>
       </view>
     </view>
-    <view class="form-title">在线估价，先看你的房子有没有溢价空间</view>
+    <view class="form-title">在线估价，先看你的房子适合什么卖法</view>
     <view class="form-sub">线上提交房源信息，我们先做初步估价。合适的会联系你安排上门看房，结合周边真实成交数据，再商定写进合同的约定价格。不签约不收费。</view>
   </view>
 

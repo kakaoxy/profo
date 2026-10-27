@@ -10,7 +10,7 @@
   <!-- 顶栏（HTML .topbar：sticky 顶栏 + 品牌 + 重置） -->
   <view class="topbar">
     <view class="in">
-      <view class="brand"><view class="brand-dot"></view>Steep · 房投测算</view>
+      <view class="brand"><view class="brand-dot"></view>美房宝 · 房投测算</view>
       <view wx:if="{{gate}}" class="reset" bindtap="onReset">重置</view>
     </view>
   </view>
@@ -37,7 +37,7 @@
     <view class="main">
       <!-- 结果卡（HTML .card.result） -->
       <view class="card result">
-        <view class="lbl">预计净利润（万元）</view>
+        <view class="lbl">模拟净利润（万元）（示例）</view>
         <view class="profit {{profitNeg ? 'neg' : ''}}">{{profit}}</view>
         <view class="note">{{note}}</view>
         <view class="chips">
@@ -343,6 +343,9 @@
     <view class="page-footer">
       <view>税费规则依据《上海市住房税费政策一览（2026/2/25）》</view>
       <view>本工具为估算参考，实际以税务核定为准</view>
+      <!-- 广告法自查 P1-10：第二十五条要求投资回报预期广告须有风险提示 -->
+      <view>本测算为工具演示，不构成投资建议，亦不承诺任何收益；实际收益可能为负</view>
+      <view>房产交易存在价格波动、税费政策调整、成交周期不确定等风险</view>
     </view>
   </block>
 </view>
