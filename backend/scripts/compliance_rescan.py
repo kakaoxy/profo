@@ -20,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from constants.compliance import find_banned_words
 from db import SessionLocal
-from models.marketing.l4_marketing import L4MarketingProject
+from models.marketing.l4_marketing import L4MarketingProject, PublishStatus
 
 
 def rescan(publish_only: bool) -> list[dict]:
@@ -29,7 +29,7 @@ def rescan(publish_only: bool) -> list[dict]:
     try:
         query = db.query(L4MarketingProject).filter(L4MarketingProject.is_deleted.is_(False))
         if publish_only:
-            query = query.filter(L4MarketingProject.publish_status == "已发布")
+            query = query.filter(L4MarketingProject.publish_status == PublishStatus.PUBLISHED.value)
         rows = query.all()
 
         hits: list[dict] = []

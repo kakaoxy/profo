@@ -23,7 +23,7 @@ export interface ValuationQuery {
  *
  * 广告法自查 P0-01：不得使用「零现金焕新」等零成本承诺表述。
  */
-export const VALUATION_SHARE_TITLE = "不先拘装修款，商定目标价再卖房";
+export const VALUATION_SHARE_TITLE = "不先掏装修款，商定目标价再卖房";
 export const VALUATION_SHARE_IMAGE = "/assets/share.jpg";
 
 /**

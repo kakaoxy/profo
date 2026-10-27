@@ -372,6 +372,17 @@
   border-radius: 48rpx;
   padding: 44rpx 40rpx 40rpx;
 }
+/* 合作规则说明（替代具名证言区，广告法第二十五条风险提示）：与评价卡同视觉语言的灰字卡 */
+.risk-note {
+  margin: 0 40rpx;
+  background: var(--sky-wash);
+  border-radius: 48rpx;
+  padding: 40rpx;
+  font-size: 26rpx;
+  line-height: 1.7;
+  color: var(--graphite);
+  text-align: justify;
+}
 .review-stars {
   display: flex;
   gap: 6rpx;

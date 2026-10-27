@@ -566,7 +566,6 @@ Page<PageData, Custom>({
             }));
       // 广告法自查 P0-02：已售且有真实成交价（sold_price）→ 按成交价口径展示；
       // 其余情况展示营销表价格并标注「挂牌价」（该字段实为签约价/挂牌价，非成交价）
-      const isSold = resolvedDetail.project_status === "已售";
       const soldPrice = resolvedDetail.sold_price ?? null;
       const priceDisplay = soldPrice ?? resolvedDetail.total_price;
       const priceScopeText = soldPrice != null ? "成交价" : "挂牌价";

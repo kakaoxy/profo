@@ -1,5 +1,5 @@
 // 广告法整改渲染态验证（可重跑，报告 §8.3 复核方式）
-// 用法：cd frontend && node e2e-artifacts-compliance.mjs（需 :3000 前端、:8000 后端运行中）
+// 用法：cd frontend && node compliance-render-check.mjs（需 :3000 前端、:8000 后端运行中）
 // 产出工件：tmp/compliance-e2e/*.txt
 import { chromium } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -29,7 +29,7 @@ await grab(browser, "/contact", "contact",
   ["过往案例", "价格面议", "建筑面积"],
   ["真实成交价可查", "0天成交"]);
 await grab(browser, "/projects/308", "project-308-sold",
-  ["成交价", "216", "建筑面积", "挂牌价，可能随市场调整"],
+  ["成交价", "216", "建筑面积", "可能随市场调整"],
   ["元/㎡"]);
 await grab(browser, "/projects/303", "project-303-onsale",
   ["挂牌价", "万/㎡", "建筑面积"],

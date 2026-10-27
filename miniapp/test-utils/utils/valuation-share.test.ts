@@ -37,7 +37,7 @@ describe("buildValuationSharePath", () => {
 
 describe("VALUATION_SHARE_TITLE", () => {
   it("标题与 about 服务页分享卡片一致（广告法自查 P0-01：不得含零成本承诺）", () => {
-    expect(VALUATION_SHARE_TITLE).toBe("不先拘装修款，商定目标价再卖房");
+    expect(VALUATION_SHARE_TITLE).toBe("不先掏装修款，商定目标价再卖房");
     expect(VALUATION_SHARE_TITLE).not.toMatch(/零现金|零成本|零风险/);
   });
 });

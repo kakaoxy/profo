@@ -112,14 +112,14 @@ Page<PageData, PageCustom>({
   },
   onShareAppMessage() {
     return {
-      title: "不先拘装修款，商定目标价再卖房",
+      title: "不先掏装修款，商定目标价再卖房",
       path: "/pages/about/index/index",
       imageUrl: "/assets/share.jpg",
     };
   },
   onShareTimeline() {
     return {
-      title: "不先拘装修款，商定目标价再卖房",
+      title: "不先掏装修款，商定目标价再卖房",
       query: "",
       imageUrl: "/assets/share.jpg",
     };
