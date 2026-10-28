@@ -186,6 +186,10 @@
           mode="aspectFill"
           lazy-load
         />
+        <!-- 已售遮罩：全封面压暗 + 居中「已售」，避免与在售房源混淆 -->
+        <view class="list-thumb__sold-mask" wx:if="{{item.isSold}}">
+          <view class="list-thumb__sold-text">已售</view>
+        </view>
         <view class="list-badge {{item.badgeClass}}" wx:if="{{item.badgeText}}">{{item.badgeText}}</view>
         <!-- 新上黑标：右上角叠加（发布 ≤ 7 天） -->
         <view class="list-badge--new" wx:if="{{item.isNew}}">新上</view>

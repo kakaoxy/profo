@@ -37,6 +37,8 @@ interface DisplayItem {
   tags?: string[];
   badgeText: string;
   badgeClass: string;
+  /** 已售房源（封面展示「已售」遮罩） */
+  isSold: boolean;
   /** 新上黑标（发布 ≤ 7 天，依后端 is_new_listing） */
   isNew: boolean;
   /** 调价行（最近一次调价 ≤ 7 天，依后端 latest_price_change） */
@@ -317,6 +319,7 @@ Page<PageData, PageCustom>({
         tags: [],
         badgeText: "过往案例",
         badgeClass: "badge-fog",
+        isSold: true,
         isNew: false,
         changeText: "",
         changeClass: "",
@@ -328,6 +331,7 @@ Page<PageData, PageCustom>({
     const desc = `${community} · ${layout} · ${onSale.orientation} · ${onSale.floor_info}`;
     let badgeText = "";
     let badgeClass = "";
+    let isSold = false;
     if (tab === "on_sale") {
       badgeText = "在售";
       badgeClass = "badge-apricot";
@@ -346,6 +350,7 @@ Page<PageData, PageCustom>({
       } else if (status === "已售") {
         badgeText = "过往案例";
         badgeClass = "badge-fog";
+        isSold = true;
       }
     }
     // 调价行（后端 7 天窗口内才下发）：降价营销文案（绿 chip），涨价中性文案（灰 chip）
@@ -381,6 +386,7 @@ Page<PageData, PageCustom>({
       tags: onSale.tags,
       badgeText,
       badgeClass,
+      isSold,
       isNew: !!onSale.is_new_listing,
       changeText,
       changeClass,

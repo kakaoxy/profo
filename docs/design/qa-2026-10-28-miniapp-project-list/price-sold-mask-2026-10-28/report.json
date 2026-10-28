@@ -1,0 +1,161 @@
+{
+  "generatedAt": "2026-10-28T14:51:05.571Z",
+  "task": "miniapp/pages/projects/list/index 已售封面遮罩 + 无标签总价右对齐",
+  "method": "真实 WXML/WXSS 编译器语法校验 + 按同名结构/样式在 Chromium 375px@2x 复刻渲染测量（非微信模拟器）",
+  "compiler": {
+    "wcc": "exit 0 (`miniapp/pages/projects/list/index.wxml`)",
+    "wcsc": "exit 0 (`miniapp/pages/projects/list/index.wxss`)"
+  },
+  "typecheck": "exit 0 (`pnpm --dir miniapp tsc`)",
+  "tests": "45 files / 854 tests passed (`pnpm --dir miniapp test`)",
+  "before": {
+    "variant": "before",
+    "viewport": "375x812@2x",
+    "passed": true,
+    "cards": [
+      {
+        "title": "景凤小区 南北通透 双南两房 夯户型",
+        "tags": [],
+        "cardWidth": 335,
+        "priceRightGapToCardRight": 243.02,
+        "price": {
+          "left": 41,
+          "right": 111.98
+        },
+        "thumb": {
+          "width": 333,
+          "height": 249.75
+        },
+        "soldMask": null
+      },
+      {
+        "title": "景凤小区 南北通透 双南两房 夯户型",
+        "tags": [
+          "一梯两户",
+          "采光好",
+          "视野佳"
+        ],
+        "cardWidth": 335,
+        "priceRightGapToCardRight": 21,
+        "price": {
+          "left": 263.02,
+          "right": 334
+        },
+        "thumb": {
+          "width": 333,
+          "height": 249.75
+        },
+        "soldMask": null
+      },
+      {
+        "title": "景凤小区 南北通透 双南两房 夯户型",
+        "tags": [],
+        "cardWidth": 335,
+        "priceRightGapToCardRight": 243.02,
+        "price": {
+          "left": 41,
+          "right": 111.98
+        },
+        "thumb": {
+          "width": 333,
+          "height": 249.75
+        },
+        "soldMask": null
+      }
+    ],
+    "assertions": {
+      "allPriceRightGapsEqual": false,
+      "priceGapRange": [
+        21,
+        243.02
+      ],
+      "soldMaskRendered": false,
+      "soldMaskCoversThumb": true,
+      "soldMaskTextCentered": true,
+      "soldMaskTextCorrect": true,
+      "hasTaggedCard": true,
+      "hasUntaggedCard": true
+    }
+  },
+  "after": {
+    "variant": "after",
+    "viewport": "375x812@2x",
+    "passed": true,
+    "cards": [
+      {
+        "title": "景凤小区 南北通透 双南两房 夯户型",
+        "tags": [],
+        "cardWidth": 335,
+        "priceRightGapToCardRight": 21,
+        "price": {
+          "left": 263.02,
+          "right": 334
+        },
+        "thumb": {
+          "width": 333,
+          "height": 249.75
+        },
+        "soldMask": {
+          "text": "已售",
+          "box": {
+            "width": 333,
+            "height": 249.75
+          },
+          "background": "rgba(23, 25, 28, 0.62)",
+          "textCenterOffset": {
+            "x": 0,
+            "y": 0
+          }
+        }
+      },
+      {
+        "title": "景凤小区 南北通透 双南两房 夯户型",
+        "tags": [
+          "一梯两户",
+          "采光好",
+          "视野佳"
+        ],
+        "cardWidth": 335,
+        "priceRightGapToCardRight": 21,
+        "price": {
+          "left": 263.02,
+          "right": 334
+        },
+        "thumb": {
+          "width": 333,
+          "height": 249.75
+        },
+        "soldMask": null
+      },
+      {
+        "title": "景凤小区 南北通透 双南两房 夯户型",
+        "tags": [],
+        "cardWidth": 335,
+        "priceRightGapToCardRight": 21,
+        "price": {
+          "left": 263.02,
+          "right": 334
+        },
+        "thumb": {
+          "width": 333,
+          "height": 249.75
+        },
+        "soldMask": null
+      }
+    ],
+    "assertions": {
+      "allPriceRightGapsEqual": true,
+      "priceGapRange": [
+        21,
+        21
+      ],
+      "soldMaskRendered": true,
+      "soldMaskCoversThumb": true,
+      "soldMaskTextCentered": true,
+      "soldMaskTextCorrect": true,
+      "hasTaggedCard": true,
+      "hasUntaggedCard": true
+    }
+  },
+  "verdict": "PASS: 已售遮罩覆盖封面且居中，3 张卡片总价右间距均为 21px"
+}
