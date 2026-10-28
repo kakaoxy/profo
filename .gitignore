@@ -162,6 +162,7 @@ backend/data.db
 .kiro/specs/profo-real-estate
 .claude/
 .trae/
+.trae-html-share-packages/
 .codex/
 
 # ==========================================
