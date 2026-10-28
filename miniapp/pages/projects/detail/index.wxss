@@ -4,7 +4,8 @@
   background: var(--fog);
 }
 
-/* 右上角分享按钮：用 line-height=text-height 居中，避免 flex 在 button 上失效导致椭圆 */
+/* 右上角分享按钮：用 line-height=text-height 居中，避免 flex 在 button 上失效导致椭圆；
+   遮罩提至 0.6：M-02 白字在最亮图上仍 ≥4.5:1（0.4 时仅 3.02） */
 .share-btn {
   position: absolute;
   top: 24rpx;
@@ -19,7 +20,7 @@
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.6);
   color: #fff;
   font-size: 24rpx;
   line-height: 88rpx;
@@ -31,8 +32,9 @@
   border: none;
 }
 
+/* 通用状态页（m-03）：图标 + 主文案 + 副文案 + 动作按钮 */
 .state {
-  padding: 400rpx 96rpx;
+  padding: 280rpx 96rpx;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -40,12 +42,94 @@
   color: var(--graphite);
 }
 
-.state-text {
-  font-size: 28rpx;
+/* 状态图标：fog 底圆形 + graphite 感叹号（纯 CSS，无图片资源） */
+.state-ic {
+  width: 112rpx;
+  height: 112rpx;
+  border-radius: 50%;
+  background: var(--fog);
+  color: var(--graphite);
+  font-size: 56rpx;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32rpx;
 }
 
-.retry-btn {
-  margin-top: 32rpx;
+.state-text {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.state-sub {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+
+/* 状态页动作按钮（m-02：热区 ≥44px） */
+.state-btn {
+  margin: 40rpx 0 0;
+  min-width: 240rpx;
+  min-height: 44px;
+  padding: 0 48rpx;
+  border: none;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #ffffff;
+  font-size: 28rpx;
+  font-weight: 500;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.state-btn::after {
+  border: none;
+}
+
+/* 加载骨架屏（m-03）：静态雾色块占位，避免首屏布局跳变（无动效，尊重 reduced-motion） */
+.sk-gallery {
+  height: 640rpx;
+  background: var(--fog);
+}
+
+.sk-card {
+  margin-top: -48rpx;
+  padding: 48rpx 40rpx;
+  background: var(--pure-white);
+  border-radius: 56rpx 56rpx 0 0;
+}
+
+.sk-line {
+  height: 40rpx;
+  border-radius: 12rpx;
+  background: var(--fog);
+}
+
+.sk-line--price {
+  width: 40%;
+  margin-bottom: 24rpx;
+}
+
+.sk-line--title {
+  width: 75%;
+  margin-bottom: 40rpx;
+}
+
+.sk-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+}
+
+.sk-cell {
+  height: 140rpx;
+  border-radius: 32rpx;
+  background: var(--fog);
 }
 
 .gallery {
@@ -116,6 +200,18 @@
   margin-bottom: 44rpx;
 }
 
+/* 标签行（B-01；状态徽章已移至价格行操作组，本行仅承载房源标签） */
+.detail-chips-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.detail-chips-row .detail-chips {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .detail-price-row {
   display: flex;
   align-items: center;
@@ -124,44 +220,76 @@
   margin-bottom: 8rpx;
 }
 
+/* 左侧价格组：价格与「挂牌价」口径 chip 作为一个整体，避免 chip 漂在行中间 */
+.detail-price-main {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* 右侧操作组（四轮迭代）：状态徽章 + 调价铃铛水平排列，替代原先的垂直堆叠 */
+.detail-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  flex-shrink: 0;
+}
+
 .detail-price {
   font-size: 64rpx;
   font-weight: 500;
   color: var(--ink);
+  /* M-03：主价格禁止折行（320px 视口下「¥ 228 万」被拆两行破坏首屏层级） */
+  white-space: nowrap;
 }
 
-/* 调价提醒按钮（房源级订阅两态）：未订阅实心深色 / 已订阅反白；两态定宽居中，切换不跳宽 */
+/* M-01：无有效价格时的「价格待定」缺省分支（字号降级，非成交报价） */
+.detail-price--pending {
+  font-size: 40rpx;
+}
+
+/* 320px 级小视口：主价格缩号，保证价格单行（M-03） */
+@media (max-width: 339px) {
+  .detail-price {
+    font-size: 56rpx;
+  }
+}
+
+/* 调价提醒图标钮（房源级订阅两态，纯图标无文字，用户反馈 2026-10-28）：
+   未订阅 = ink 实心底 / 已订阅 = apricot-wash 暖底（沿用原胶囊两态色词汇，白卡上清晰可辨）；
+   🔔 为 emoji，颜色由字形自绘，CSS color 仅作文本字形回退与无障碍语义兜底；
+   88rpx=44px 保持 m-02 热区下限。
+   正圆保障（用户反馈：真机上底色呈椭圆）：同页 share-btn 同款处理——min/max 锁尺寸 +
+   line-height=高 + text-align 居中，不依赖 flex（真机上 flex 在 button 上可能失效导致椭圆） */
 .price-alert-btn {
-  width: 272rpx;
+  flex-shrink: 0;
+  width: 88rpx;
+  min-width: 88rpx;
+  max-width: 88rpx;
+  height: 88rpx;
+  min-height: 88rpx;
+  max-height: 88rpx;
   box-sizing: border-box;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6rpx;
-  padding: 10rpx 0;
+  padding: 0;
   margin: 0;
-  border-radius: 999rpx;
-  font-size: 24rpx;
-  font-weight: 500;
-  line-height: 1.2;
-  color: #ffffff;
+  border: none;
+  border-radius: 50%;
   background: var(--ink, #1a1a1a);
-  border: 1rpx solid var(--ink, #1a1a1a);
+  color: #ffffff;
+  font-size: 40rpx;
+  line-height: 88rpx;
+  text-align: center;
+  overflow: hidden;
   white-space: nowrap;
 }
 
 .price-alert-btn--on {
-  color: var(--ink, #1a1a1a);
-  background: transparent;
-  border: 1rpx solid rgba(0, 0, 0, 0.18);
+  color: var(--rust, #5d2a1a);
+  background: var(--apricot-wash, #fbe1d1);
 }
 
 .price-alert-btn--hover {
   opacity: 0.82;
-}
-
-.price-alert-ic {
-  font-size: 22rpx;
 }
 
 .price-alert-btn::after {
@@ -313,15 +441,17 @@
   font-weight: 500;
 }
 
-/* 价格口径标注（广告法自查 P0-02）：小号灰字 chip，紧跟价格 */
+/* 价格口径标注（广告法自查 P0-02）：小号灰字 chip，紧跟价格；
+   22rpx=11px：m-01 中文可读性下限（原 20rpx 过小） */
 .price-scope {
   margin-left: 12rpx;
-  align-self: flex-end;
-  font-size: 20rpx;
+  flex-shrink: 0;
+  font-size: 22rpx;
   padding: 2rpx 12rpx;
   border-radius: 9999rpx;
   background: rgba(0, 0, 0, 0.04);
   color: var(--graphite);
+  white-space: nowrap;
 }
 
 /* 价格有效期说明（广告法自查 P1-04） */
@@ -332,10 +462,11 @@
   color: var(--graphite);
 }
 
+/* 贷款口径提示：M-02 由 dove 提为 graphite（dove 不再作文字色，fog 底 5.0:1 达标） */
 .loan-tip {
   margin-top: 10rpx;
   font-size: 22rpx;
-  color: var(--dove);
+  color: var(--graphite);
 }
 
 .detail-section {
@@ -346,6 +477,29 @@
   font-size: 32rpx;
   font-weight: 500;
   margin-bottom: 24rpx;
+}
+
+/* 右缘渐变 + 阶段计数（m-04）：提示改造过程可横滑，避免右缘卡片被硬切无感知 */
+.renovation-scroll {
+  position: relative;
+}
+
+.renovation-scroll::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 16rpx;
+  width: 48rpx;
+  background: linear-gradient(to left, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.renovation-hint {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: var(--graphite);
+  text-align: right;
 }
 
 .renovation-hort {
@@ -674,13 +828,14 @@
   white-space: nowrap;
 }
 
+/* 角色标签：22rpx=11px（m-01 中文可读性下限，原 20rpx 过小） */
 .advisor-role {
   margin-top: 6rpx;
   padding: 2rpx 16rpx;
   border-radius: 9999rpx;
   background: var(--apricot-wash);
   color: var(--rust);
-  font-size: 20rpx;
+  font-size: 22rpx;
 }
 
 /* 想看房按钮（btn-primary 全局底色，此处定宽不挤压卡片） */

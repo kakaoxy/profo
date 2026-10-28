@@ -1,18 +1,29 @@
 <view class="page">
-  <!-- 加载态 -->
-  <view wx:if="{{loading}}" class="state">
-    <text>加载中...</text>
+  <!-- 加载态：骨架屏（m-03：避免首屏布局跳变） -->
+  <view wx:if="{{loading}}" class="sk">
+    <view class="sk-gallery"></view>
+    <view class="sk-card">
+      <view class="sk-line sk-line--price"></view>
+      <view class="sk-line sk-line--title"></view>
+      <view class="sk-grid">
+        <view class="sk-cell" wx:for="{{[0, 1, 2, 3, 4, 5]}}" wx:key="*this"></view>
+      </view>
+    </view>
   </view>
 
-  <!-- 404 态 -->
+  <!-- 404 态（m-03：补充图标与返回动作，不再只有一行灰字） -->
   <view wx:elif="{{notFound}}" class="state">
-    <text>项目不存在</text>
+    <view class="state-ic">!</view>
+    <text class="state-text">项目不存在或已下架</text>
+    <text class="state-sub">该房源可能已下架，或链接有误</text>
+    <button class="state-btn" bindtap="onBackTap">返回列表</button>
   </view>
 
   <!-- 错误态 -->
   <view wx:elif="{{error}}" class="state">
+    <view class="state-ic">!</view>
     <text class="state-text">加载失败，请稍后重试</text>
-    <button class="retry-btn" size="mini" bindtap="onRetry">重试</button>
+    <button class="state-btn" bindtap="onRetry">重试</button>
   </view>
 
   <!-- 详情态 -->
@@ -68,47 +79,57 @@
       <!-- 标题区 -->
       <view class="detail-head">
         <view class="detail-price-row">
-          <!-- 广告法自查 P0-02：已售且有真实成交价显示成交价口径；否则标注挂牌价 -->
-          <view class="detail-price">¥ {{priceDisplay}} 万</view>
-          <view wx:if="{{priceScopeText}}" class="price-scope">{{priceScopeText}}</view>
-          <!-- 调价提醒（房源级订阅，涨降都推）：subscribe_enabled=false 整体隐藏；已订阅反白态点击即取消 -->
-          <button
-            wx:if="{{priceAlertEnabled}}"
-            class="price-alert-btn {{priceAlertSubscribed && priceAlertQuota > 0 ? 'price-alert-btn--on' : ''}}"
-            hover-class="price-alert-btn--hover"
-            hover-stay-time="100"
-            bindtap="onPriceAlertTap"
-          >
-            <text class="price-alert-ic">🔔</text>
-            <text wx:if="{{priceAlertSubscribed && priceAlertQuota > 0}}">已开启 · 可收{{priceAlertQuota}}条</text>
-            <text wx:else>调价提醒</text>
-          </button>
+          <view class="detail-price-main">
+            <!-- 广告法自查 P0-02/M-01：成交价 > 挂牌价 > 「价格待定」缺省，0 不是合法价格 -->
+            <view wx:if="{{pricePending}}" class="detail-price detail-price--pending">价格待定</view>
+            <view wx:else class="detail-price">¥ {{priceDisplay}} 万</view>
+            <view wx:if="{{priceScopeText}}" class="price-scope">{{priceScopeText}}</view>
+          </view>
+          <!-- 四轮迭代（用户反馈 2026-10-28）：状态徽章移入价格行右侧操作组，
+               与调价铃铛水平排列，消除右上角两个元素垂直堆叠的视觉问题 -->
+          <view class="detail-head-actions">
+            <!-- 三状态徽章（B-01）：与列表页/Web C 端状态标识同源（components/status-badge） -->
+            <status-badge status="{{detail.project_status}}" />
+            <!-- 调价提醒（房源级订阅，涨降都推）：纯图标钮，颜色区分两态（用户反馈 2026-10-28）：
+                 未订阅 ink 实心底 / 已订阅 apricot 暖底；subscribe_enabled=false 或已售态整体隐藏；
+                 已订阅态点击即取消；aria-label 补偿无文字语义 -->
+            <button
+              wx:if="{{priceAlertEnabled && !isSold}}"
+              class="price-alert-btn {{priceAlertSubscribed && priceAlertQuota > 0 ? 'price-alert-btn--on' : ''}}"
+              hover-class="price-alert-btn--hover"
+              hover-stay-time="100"
+              aria-label="{{priceAlertSubscribed && priceAlertQuota > 0 ? '已开启调价提醒，点击可取消' : '开启调价提醒'}}"
+              bindtap="onPriceAlertTap"
+            >🔔</button>
+          </view>
         </view>
         <view class="detail-title">{{detail.title}}</view>
-        <view wx:if="{{detail.tags && detail.tags.length}}" class="detail-chips">
-          <text
-            wx:for="{{detail.tags}}"
-            wx:for-item="tag"
-            wx:key="*this"
-            class="{{index===0 ? 'chip chip-apricot' : index===1 ? 'chip chip-sky' : 'chip chip-fog'}}"
-            >{{tag}}</text
-          >
+        <view wx:if="{{detail.tags && detail.tags.length}}" class="detail-chips-row">
+          <view class="detail-chips">
+            <text
+              wx:for="{{detail.tags}}"
+              wx:for-item="tag"
+              wx:key="*this"
+              class="{{index===0 ? 'chip chip-apricot' : index===1 ? 'chip chip-sky' : 'chip chip-fog'}}"
+              >{{tag}}</text
+            >
+          </view>
         </view>
       </view>
 
       <!-- 价格有效期说明（广告法自查 P1-04：《房地产广告发布规定》第十条）；
-           口径兼容成交价/挂牌价两种展示，不锚定单一口径 -->
-      <view class="price-note">页面价格可能随市场调整，请以最新报价与实地看房为准</view>
+           口径随状态切换：已售 → 过往案例展示口径，其余 → 最新报价口径 -->
+      <view class="price-note">{{priceNoteText}}</view>
 
       <!-- 基础信息 -->
       <view class="info-grid">
         <view class="info-item">
           <view class="info-label">总价</view>
-          <view class="info-value">{{detail.total_price}}万</view>
+          <view class="info-value">{{pricePending ? '待定' : detail.total_price + '万'}}</view>
         </view>
         <view class="info-item">
           <view class="info-label">单价</view>
-          <view class="info-value">{{detail.unit_price}}万/㎡</view>
+          <view class="info-value">{{pricePending ? '待定' : detail.unit_price + '万/㎡'}}</view>
         </view>
         <view class="info-item">
           <view class="info-label">户型</view>
@@ -154,7 +175,9 @@
       <!-- 改造过程 -->
       <view wx:if="{{hasRenovationPhotos}}" class="detail-section">
         <view class="section-title">改造过程</view>
-        <view class="renovation-hort">
+        <!-- m-04：右缘渐变 + 阶段计数提示，告知可横滑查看更多阶段 -->
+        <view class="renovation-scroll">
+          <view class="renovation-hort">
           <view
             wx:for="{{stages}}"
             wx:for-item="stage"
@@ -196,7 +219,9 @@
               <block wx:else>待开始</block>
             </view>
           </view>
+          </view>
         </view>
+        <view class="renovation-hint">共{{stages.length}}个阶段 · 左右滑动查看</view>
       </view>
 
       <!-- 现场实景：营销视频独立展示，内嵌播放 -->
@@ -249,7 +274,7 @@
       <view style="height: 200rpx;"></view>
     </view>
 
-    <!-- 固定底栏：顾问卡片 + 想看房 -->
+    <!-- 固定底栏：顾问卡片 + 状态化 CTA（B-02：已售改「联系顾问」，不再征集看房） -->
     <view class="detail-footer">
       <view wx:if="{{booked}}" class="booked-tip">已预约，工作人员将在24小时内电话联系您</view>
       <view class="footer-main">
@@ -261,13 +286,21 @@
             <text class="advisor-role">{{contactRoleText}}</text>
           </view>
         </view>
+        <!-- 已售态：拨打顾问电话（无号码时隐藏按钮，仅保留顾问卡片） -->
         <button
+          wx:if="{{cta.mode === 'call' && contact.phone}}"
+          class="btn-primary btn-book"
+          bindtap="onCallTap"
+        >{{cta.text}}</button>
+        <!-- 在售/在途态：预约看房（wx:elif：已售且无电话时两按钮都不渲染） -->
+        <button
+          wx:elif="{{cta.mode === 'book'}}"
           class="btn-primary btn-book {{booked ? 'btn-book--done' : ''}}"
           bindtap="onBookTap"
           disabled="{{booked}}"
           loading="{{bookingSubmitting}}"
         >
-          {{booked ? '已预约' : '想看房'}}
+          {{booked ? '已预约' : cta.text}}
         </button>
       </view>
     </view>

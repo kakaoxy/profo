@@ -1,4 +1,6 @@
 {
-  "usingComponents": {},
+  "usingComponents": {
+    "status-badge": "/components/status-badge/index"
+  },
   "navigationBarTitleText": "房源详情"
 }

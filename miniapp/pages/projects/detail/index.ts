@@ -1,5 +1,4 @@
 import type { components } from "../../../types/api-types";
-import { calcLoan, fmtBp, fmtWan1, fmtYuanInt, LOAN_DEFAULTS, MODE_NAME } from "../../../utils/loan-calc";
 import { request } from "../../../utils/request";
 import type { HttpResponseError } from "../../../utils/request";
 import {
@@ -18,12 +17,14 @@ import {
   type MarketingSubscribeTemplates,
 } from "../../../utils/marketing-notify";
 import { getVisitorId } from "../../../utils/visitor";
-
+import { buildLoanCard, buildPriceView } from "./price-view";
+import { getFooterCta, getPriceNoteText, isSoldStatus } from "./status-view";
 // ⚠️ 本文件超 500 行不拆分理由（AGENTS §1，M14）：房源详情页承载看房主流程
 // （预约/联系/分享/装修进度）+ 调价提醒订阅（price-alert）双职责，数据加载互相
 // 依赖（订阅弹层需详情数据中的房源 ID 与登录态），拆出子组件需跨页面传递
-// Page 实例方法（小程序无状态提升），成本高于收益；调价提醒的可复用逻辑已
-// 下沉 utils/marketing-notify.ts，页面内仅剩编排代码。
+// Page 实例方法（小程序无状态提升），成本高于收益；可复用/纯派生逻辑已下沉：
+// 价格组装与贷款卡 → ./price-view，状态化决策（CTA/文案） → ./status-view，
+// 调价提醒订阅 → utils/marketing-notify.ts；页面内仅剩编排代码。
 
 type PublicProjectDetail = components["schemas"]["PublicProjectDetail"];
 type PublicMediaItem = components["schemas"]["PublicMediaItem"];
@@ -33,6 +34,8 @@ type PublicProjectBookingItem = components["schemas"]["PublicProjectBookingItem"
 type PublicProjectBookingResponse = components["schemas"]["PublicProjectBookingResponse"];
 type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type PublicTrackingEventResponse = components["schemas"]["PublicTrackingEventResponse"];
+type LoanCardView = import("./price-view").LoanCardView;
+type FooterCta = import("./status-view").FooterCta;
 type RenovationStageName =
   | "拆除"
   | "设计"
@@ -96,24 +99,22 @@ function buildPropertySharePath(id: number, referrer: string): string {
 }
 
 /** 贷款参考卡展示数据：默认口径下的首付/月供/口径摘要（金额与文案同源派生，总价缺失时为 null）. */
-type LoanCardView = {
-  downPctText: string;
-  downText: string;
-  monthText: string;
-  /** 摘要中段：方式 · 年限 · LPR 与加点. */
-  sumText: string;
-  /** 执行利率（强调色展示）. */
-  rateText: string;
-};
-
 interface PageData {
   id: number | null;
   detail: PublicProjectDetail | null;
-  /** 价格展示值：已售且有成交价取 sold_price，否则 total_price（广告法自查 P0-02）. */
+  /** 价格展示值：已售且有成交价取 sold_price，否则 total_price；无有效价格时为 null（渲染「价格待定」，M-01）. */
   priceDisplay: number | null;
   /** 价格口径标注：「成交价」/「挂牌价」；空串不渲染. */
   priceScopeText: string;
-  /** 贷款参考卡（默认口径计算；total_price 缺失/≤0 时整卡隐藏）. */
+  /** 无有效价格（total_price≤0 且无成交价）：主价格与信息格走「待定」缺省分支. */
+  pricePending: boolean;
+  /** 已售（过往案例）态：隐藏调价提醒/贷款参考，底栏 CTA 改「联系顾问」（B-02）. */
+  isSold: boolean;
+  /** 底栏 CTA（随 project_status 状态化，B-01）. */
+  cta: FooterCta;
+  /** 价格口径说明文案（随状态切换，B-01）. */
+  priceNoteText: string;
+  /** 贷款参考卡（默认口径计算；总价缺失/≤0 或已售时整卡隐藏）. */
   loanCard: LoanCardView | null;
   contact: PublicConsultantContact | null;
   stages: DisplayStage[];
@@ -142,7 +143,7 @@ interface PageData {
   phoneAuthVisible: boolean;
   /** 调价提醒（房源级订阅，涨降都推）开关：subscribe_enabled=false 时按钮整体隐藏. */
   priceAlertEnabled: boolean;
-  /** 房源级订阅状态：quota>0 已订阅有额度（反白可续订）/ 0 未订阅. */
+  /** 房源级订阅状态：quota>0 已订阅有额度（图标钮高亮态，点击可取消）/ 0 未订阅. */
   priceAlertQuota: number;
   /** 房源级已订阅（存在订阅行，展示「已提醒」态）. */
   priceAlertSubscribed: boolean;
@@ -164,6 +165,10 @@ type Custom = {
     >
   ): void;
   onBookTap(): void;
+  /** 已售态底栏 CTA：拨打顾问电话（无号码时按钮已隐藏，此为兜底）. */
+  onCallTap(): void;
+  /** 404 态「返回列表」：优先返回上一页，无上级（分享直达）时回列表页. */
+  onBackTap(): void;
   proceedBooking(id: number): Promise<void>;
   createBooking(id: number): Promise<void>;
   onPhoneAuth(e: WechatMiniprogram.CustomEvent): void;
@@ -183,7 +188,7 @@ type Custom = {
   loadPriceAlertTemplate(): Promise<void>;
   /** 刷新房源级订阅状态（需登录；未登录静默保持未订阅态）. */
   refreshPriceAlertState(): Promise<void>;
-  /** 调价提醒按钮 tap：未订阅拉起授权面板；已订阅反白态点击即取消（确认后清零）. */
+  /** 调价提醒图标钮 tap：未订阅拉起授权面板；已订阅高亮态点击即取消（确认后清零）. */
   onPriceAlertTap(): void;
   /** 取消调价提醒：确认后清零剩余额度并回未订阅态（幂等）. */
   cancelPriceAlert(id: number): Promise<void>;
@@ -292,33 +297,16 @@ function buildStages(
   });
 }
 
-/**
- * 按默认口径（LOAN_DEFAULTS，见 utils/loan-calc.ts）计算贷款参考卡展示数据.
- * 摘要行文案（年限/利率/加点）同源派生，避免硬编码与常量漂移失配.
- * 总价缺失/≤0 返回 null（整卡隐藏，spec K1）.
- */
-function buildLoanCard(totalPrice: number | null | undefined): LoanCardView | null {
-  if (!totalPrice || totalPrice <= 0) {
-    return null;
-  }
-  const r = calcLoan(totalPrice, LOAN_DEFAULTS);
-  return {
-    downPctText: String(LOAN_DEFAULTS.downPct),
-    downText: fmtWan1(r.downWan),
-    monthText: fmtYuanInt(r.first),
-    /** 摘要中段：方式 · 年限 · LPR 与加点（静态标签「首套」「年利率」留在 wxml）. */
-    sumText: `${MODE_NAME[LOAN_DEFAULTS.mode]} · ${LOAN_DEFAULTS.years}年 · LPR ${LOAN_DEFAULTS.lpr.toFixed(2)}%${fmtBp(LOAN_DEFAULTS.bp)}bp`,
-    /** 执行利率（rust 强调，与金额同源派生）. */
-    rateText: r.commRate.toFixed(2) + "%",
-  };
-}
-
 Page<PageData, Custom>({
   data: {
     id: null,
     detail: null,
     priceDisplay: null,
     priceScopeText: "",
+    pricePending: false,
+    isSold: false,
+    cta: { mode: "book", text: "想看房" },
+    priceNoteText: "页面价格可能随市场调整，请以最新报价与实地看房为准",
     loanCard: null,
     contact: null,
     stages: [],
@@ -436,16 +424,17 @@ Page<PageData, Custom>({
    * - 未订阅 → 拉起授权面板 → accept 上报房源级额度 +1
    * - 未登录 → 仍同步拉起授权面板，accept 后弹「登录后生效」引导
    *   （from=subscribe-project，返回后 onShow 刷新订阅状态）
-   * - 已订阅有额度（反白态）→ 点击即取消：确认后清零剩余额度回未订阅态
+   * - 已订阅有额度（图标钮高亮态）→ 点击即取消：确认后清零剩余额度回未订阅态
    *   （取消不经微信，纯后端额度清零，无手势同步限制）
    */
   onPriceAlertTap(): void {
     const id = this.data.id;
     const templateId = this.priceAlertTemplateId;
-    if (id === null) {
+    // 已售房源价格已固化，不提供调价提醒（按钮已隐藏，防御兜底；后端同样拒绝）
+    if (id === null || this.data.isSold) {
       return;
     }
-    // 已订阅反白态：点击即取消提醒
+    // 已订阅高亮态：点击即取消提醒
     if (this.data.priceAlertSubscribed && this.data.priceAlertQuota > 0) {
       this.cancelPriceAlert(id);
       return;
@@ -505,8 +494,13 @@ Page<PageData, Custom>({
       error: false,
       notFound: false,
       detail: null,
-    priceDisplay: null,
-    priceScopeText: "",
+      priceDisplay: null,
+      priceScopeText: "",
+      pricePending: false,
+      isSold: false,
+      cta: { mode: "book", text: "想看房" },
+      priceNoteText: "页面价格可能随市场调整，请以最新报价与实地看房为准",
+      loanCard: null,
     });
     try {
       // 详情与顾问联系方式并行拉取，避免请求瀑布；
@@ -564,16 +558,19 @@ Page<PageData, Custom>({
               url,
               poster: "",
             }));
-      // 广告法自查 P0-02：已售且有真实成交价（sold_price）→ 按成交价口径展示；
-      // 其余情况展示营销表价格并标注「挂牌价」（该字段实为签约价/挂牌价，非成交价）
-      const soldPrice = resolvedDetail.sold_price ?? null;
-      const priceDisplay = soldPrice ?? resolvedDetail.total_price;
-      const priceScopeText = soldPrice != null ? "成交价" : "挂牌价";
+      // 价格组装与状态化决策（B-01/B-02/M-01，派生逻辑见 ./price-view ./status-view）：
+      // 已售且有成交价 → 成交价口径；无有效价格 → 「价格待定」缺省分支
+      const priceView = buildPriceView(resolvedDetail);
+      const sold = isSoldStatus(resolvedDetail.project_status);
 
       this.setData({
         detail: resolvedDetail,
-        priceDisplay,
-        priceScopeText,
+        priceDisplay: priceView.priceDisplay,
+        priceScopeText: priceView.priceScopeText,
+        pricePending: priceView.pricePending,
+        isSold: sold,
+        cta: getFooterCta(resolvedDetail.project_status),
+        priceNoteText: getPriceNoteText(resolvedDetail.project_status),
         contact,
         stages,
         gallery,
@@ -583,8 +580,9 @@ Page<PageData, Custom>({
         contactAvatarUrl: resolveAssetUrl(contact.avatar),
         contactFallbackChar: (contact.nickname || "顾问").slice(0, 1),
         contactRoleText: contact.is_referrer ? "分享人" : "房源顾问",
-        // 贷款参考卡：默认口径（首套·纯商贷·15%·30年·LPR−45bp）纯前端计算；总价缺失整卡隐藏
-        loanCard: buildLoanCard(resolvedDetail.total_price),
+        // 贷款参考卡：默认口径（首套·纯商贷·15%·30年·LPR−45bp）纯前端计算；
+        // 总价缺失或已售（过往案例无贷款意义）整卡隐藏
+        loanCard: buildLoanCard(resolvedDetail),
       });
     } catch (err) {
       this.setData({ loading: false });
@@ -665,7 +663,8 @@ Page<PageData, Custom>({
    * 已登录查手机号（/public/auth/me）：有则直接预约，无则弹页内微信授权层.
    */
   onBookTap(): void {
-    if (this.data.booked || this.data.bookingSubmitting) {
+    // 已售态底栏是「联系顾问」，不进预约流（防御：后端同样拒绝已售预约）
+    if (this.data.isSold || this.data.booked || this.data.bookingSubmitting) {
       return;
     }
     const id = this.data.id;
@@ -689,6 +688,27 @@ Page<PageData, Custom>({
         }
         this.proceedBooking(id);
       },
+    });
+  },
+  /**
+   * 已售态底栏 CTA「联系顾问」：拨打顾问电话.
+   * 按钮仅在顾问电话存在时渲染（wxml 条件），此处无号码兜底静默返回.
+   */
+  onCallTap(): void {
+    const phone = this.data.contact?.phone;
+    if (!phone) {
+      return;
+    }
+    wx.makePhoneCall({ phoneNumber: phone });
+  },
+  /**
+   * 404 态「返回列表」：优先返回上一页（保留列表页滚动位置）；
+   * 无上级页面（分享/扫码直达）时回退到房源列表页.
+   */
+  onBackTap(): void {
+    wx.navigateBack({
+      delta: 1,
+      fail: () => wx.reLaunch({ url: "/pages/projects/list/index" }),
     });
   },
   /** 已登录：校验手机号绑定后预约（无手机号 → 页内授权弹层）. */

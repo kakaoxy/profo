@@ -410,13 +410,20 @@ class PublicProjectService:
 
         Raises:
             ResourceNotFoundError: 房源不存在或未发布
-            ConflictError: 用户未绑定手机号
+            ConflictError: 用户未绑定手机号，或房源已售出（过往案例不再征集看房，
+                Design QA 2026-10-28 B-02）
 
         """
         project = self._get_published_project(marketing_project_id)
         if project is None:
             msg = "房源不存在或未发布"
             raise ResourceNotFoundError(msg)
+
+        # 已售（过往案例）房源不再征集看房：前置于手机号校验，保证 E2E 可用无手机号
+        # 账号直接验证状态拒绝（不被「请先绑定手机号」拦截）
+        if project.project_status == MarketingProjectStatus.SOLD.value:
+            msg = "该房源已售出，不再接受看房预约"
+            raise ConflictError(msg)
 
         if not user.phone:
             msg = "请先绑定手机号后再预约看房"

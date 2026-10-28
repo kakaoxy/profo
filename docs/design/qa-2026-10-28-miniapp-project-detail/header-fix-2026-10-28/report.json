@@ -1,0 +1,2726 @@
+{
+  "generatedAt": "2026-10-28T14:34:59.771Z",
+  "before375": {
+    "case": "on-sale-subscribed",
+    "viewport": {
+      "w": 375,
+      "h": 800
+    },
+    "docScrollWidth": 375,
+    "caseScrollWidth": 375,
+    "caseClientWidth": 375,
+    "row": {
+      "x": 20,
+      "y": 114,
+      "w": 335,
+      "h": 44.8,
+      "top": 114,
+      "right": 355,
+      "bottom": 158.8,
+      "left": 20,
+      "cx": 187.5,
+      "cy": 136.4
+    },
+    "priceMain": null,
+    "price": {
+      "x": 20,
+      "y": 114,
+      "w": 123.9,
+      "h": 44.8,
+      "top": 114,
+      "right": 143.9,
+      "bottom": 158.8,
+      "left": 20,
+      "cx": 82,
+      "cy": 136.4
+    },
+    "scope": {
+      "x": 208,
+      "y": 141.4,
+      "w": 45,
+      "h": 17.4,
+      "top": 141.4,
+      "right": 253,
+      "bottom": 158.8,
+      "left": 208,
+      "cx": 230.5,
+      "cy": 150.1
+    },
+    "actions": null,
+    "badge": {
+      "x": 311,
+      "y": 201.2,
+      "w": 44,
+      "h": 22.4,
+      "top": 201.2,
+      "right": 355,
+      "bottom": 223.6,
+      "left": 311,
+      "cx": 333,
+      "cy": 212.4
+    },
+    "bell": {
+      "x": 311,
+      "y": 114.4,
+      "w": 44,
+      "h": 44,
+      "top": 114.4,
+      "right": 355,
+      "bottom": 158.4,
+      "left": 311,
+      "cx": 333,
+      "cy": 136.4
+    },
+    "chipsRow": {
+      "x": 20,
+      "y": 198,
+      "w": 335,
+      "h": 28.8,
+      "top": 198,
+      "right": 355,
+      "bottom": 226.8,
+      "left": 20,
+      "cx": 187.5,
+      "cy": 212.4
+    },
+    "title": {
+      "x": 20,
+      "y": 162.8,
+      "w": 335,
+      "h": 25.2,
+      "top": 162.8,
+      "right": 355,
+      "bottom": 188,
+      "left": 20,
+      "cx": 187.5,
+      "cy": 175.4
+    },
+    "note": {
+      "x": 20,
+      "y": 248.8,
+      "w": 335,
+      "h": 17.6,
+      "top": 248.8,
+      "right": 355,
+      "bottom": 266.4,
+      "left": 20,
+      "cx": 187.5,
+      "cy": 257.6
+    },
+    "badgeInRow": false,
+    "badgeInChips": true,
+    "badgeText": "在售",
+    "tagCount": 1,
+    "statusBellCenterDelta": 76,
+    "statusBellGap": -44,
+    "priceBadgeCenterDelta": 76,
+    "priceScopeCenterDelta": 13.7,
+    "chipsTopGap": 10,
+    "checks": [],
+    "pass": true
+  },
+  "after375": [
+    {
+      "case": "on-sale-subscribed",
+      "viewport": {
+        "w": 375,
+        "h": 800
+      },
+      "docScrollWidth": 375,
+      "caseScrollWidth": 375,
+      "caseClientWidth": 375,
+      "row": {
+        "x": 20,
+        "y": 114,
+        "w": 335,
+        "h": 44.8,
+        "top": 114,
+        "right": 355,
+        "bottom": 158.8,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 136.4
+      },
+      "priceMain": {
+        "x": 20,
+        "y": 114,
+        "w": 174.9,
+        "h": 44.8,
+        "top": 114,
+        "right": 194.9,
+        "bottom": 158.8,
+        "left": 20,
+        "cx": 107.5,
+        "cy": 136.4
+      },
+      "price": {
+        "x": 20,
+        "y": 114,
+        "w": 123.9,
+        "h": 44.8,
+        "top": 114,
+        "right": 143.9,
+        "bottom": 158.8,
+        "left": 20,
+        "cx": 82,
+        "cy": 136.4
+      },
+      "scope": {
+        "x": 149.9,
+        "y": 127.7,
+        "w": 45,
+        "h": 17.4,
+        "top": 127.7,
+        "right": 194.9,
+        "bottom": 145.1,
+        "left": 149.9,
+        "cx": 172.4,
+        "cy": 136.4
+      },
+      "actions": {
+        "x": 259,
+        "y": 114.4,
+        "w": 96,
+        "h": 44,
+        "top": 114.4,
+        "right": 355,
+        "bottom": 158.4,
+        "left": 259,
+        "cx": 307,
+        "cy": 136.4
+      },
+      "badge": {
+        "x": 259,
+        "y": 125.2,
+        "w": 44,
+        "h": 22.4,
+        "top": 125.2,
+        "right": 303,
+        "bottom": 147.6,
+        "left": 259,
+        "cx": 281,
+        "cy": 136.4
+      },
+      "bell": {
+        "x": 311,
+        "y": 114.4,
+        "w": 44,
+        "h": 44,
+        "top": 114.4,
+        "right": 355,
+        "bottom": 158.4,
+        "left": 311,
+        "cx": 333,
+        "cy": 136.4
+      },
+      "chipsRow": {
+        "x": 20,
+        "y": 198,
+        "w": 335,
+        "h": 28.8,
+        "top": 198,
+        "right": 355,
+        "bottom": 226.8,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 212.4
+      },
+      "title": {
+        "x": 20,
+        "y": 162.8,
+        "w": 335,
+        "h": 25.2,
+        "top": 162.8,
+        "right": 355,
+        "bottom": 188,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 175.4
+      },
+      "note": {
+        "x": 20,
+        "y": 248.8,
+        "w": 335,
+        "h": 17.6,
+        "top": 248.8,
+        "right": 355,
+        "bottom": 266.4,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 257.6
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 1,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 8,
+      "priceBadgeCenterDelta": 0,
+      "priceScopeCenterDelta": 0,
+      "chipsTopGap": 10,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=375, vw=375"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=335"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "44×44"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "on-sale-unsubscribed",
+      "viewport": {
+        "w": 375,
+        "h": 800
+      },
+      "docScrollWidth": 375,
+      "caseScrollWidth": 375,
+      "caseClientWidth": 375,
+      "row": {
+        "x": 20,
+        "y": 416.4,
+        "w": 335,
+        "h": 44.8,
+        "top": 416.4,
+        "right": 355,
+        "bottom": 461.2,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 438.8
+      },
+      "priceMain": {
+        "x": 20,
+        "y": 416.4,
+        "w": 174.9,
+        "h": 44.8,
+        "top": 416.4,
+        "right": 194.9,
+        "bottom": 461.2,
+        "left": 20,
+        "cx": 107.5,
+        "cy": 438.8
+      },
+      "price": {
+        "x": 20,
+        "y": 416.4,
+        "w": 123.9,
+        "h": 44.8,
+        "top": 416.4,
+        "right": 143.9,
+        "bottom": 461.2,
+        "left": 20,
+        "cx": 82,
+        "cy": 438.8
+      },
+      "scope": {
+        "x": 149.9,
+        "y": 430.1,
+        "w": 45,
+        "h": 17.4,
+        "top": 430.1,
+        "right": 194.9,
+        "bottom": 447.5,
+        "left": 149.9,
+        "cx": 172.4,
+        "cy": 438.8
+      },
+      "actions": {
+        "x": 259,
+        "y": 416.8,
+        "w": 96,
+        "h": 44,
+        "top": 416.8,
+        "right": 355,
+        "bottom": 460.8,
+        "left": 259,
+        "cx": 307,
+        "cy": 438.8
+      },
+      "badge": {
+        "x": 259,
+        "y": 427.6,
+        "w": 44,
+        "h": 22.4,
+        "top": 427.6,
+        "right": 303,
+        "bottom": 450,
+        "left": 259,
+        "cx": 281,
+        "cy": 438.8
+      },
+      "bell": {
+        "x": 311,
+        "y": 416.8,
+        "w": 44,
+        "h": 44,
+        "top": 416.8,
+        "right": 355,
+        "bottom": 460.8,
+        "left": 311,
+        "cx": 333,
+        "cy": 438.8
+      },
+      "chipsRow": {
+        "x": 20,
+        "y": 500.4,
+        "w": 335,
+        "h": 28.8,
+        "top": 500.4,
+        "right": 355,
+        "bottom": 529.2,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 514.8
+      },
+      "title": {
+        "x": 20,
+        "y": 465.2,
+        "w": 335,
+        "h": 25.2,
+        "top": 465.2,
+        "right": 355,
+        "bottom": 490.4,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 477.8
+      },
+      "note": {
+        "x": 20,
+        "y": 551.2,
+        "w": 335,
+        "h": 17.6,
+        "top": 551.2,
+        "right": 355,
+        "bottom": 568.8,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 560
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 2,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 8,
+      "priceBadgeCenterDelta": 0,
+      "priceScopeCenterDelta": 0,
+      "chipsTopGap": 10,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=375, vw=375"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=335"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "44×44"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "renovating",
+      "viewport": {
+        "w": 375,
+        "h": 800
+      },
+      "docScrollWidth": 375,
+      "caseScrollWidth": 375,
+      "caseClientWidth": 375,
+      "row": {
+        "x": 20,
+        "y": 718.8,
+        "w": 335,
+        "h": 44.8,
+        "top": 718.8,
+        "right": 355,
+        "bottom": 763.5,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 741.1
+      },
+      "priceMain": {
+        "x": 20,
+        "y": 718.8,
+        "w": 177.4,
+        "h": 44.8,
+        "top": 718.8,
+        "right": 197.4,
+        "bottom": 763.5,
+        "left": 20,
+        "cx": 108.7,
+        "cy": 741.1
+      },
+      "price": {
+        "x": 20,
+        "y": 718.8,
+        "w": 126.4,
+        "h": 44.8,
+        "top": 718.8,
+        "right": 146.4,
+        "bottom": 763.5,
+        "left": 20,
+        "cx": 83.2,
+        "cy": 741.1
+      },
+      "scope": {
+        "x": 152.4,
+        "y": 732.5,
+        "w": 45,
+        "h": 17.4,
+        "top": 732.5,
+        "right": 197.4,
+        "bottom": 749.8,
+        "left": 152.4,
+        "cx": 174.9,
+        "cy": 741.1
+      },
+      "actions": {
+        "x": 247,
+        "y": 719.1,
+        "w": 108,
+        "h": 44,
+        "top": 719.1,
+        "right": 355,
+        "bottom": 763.1,
+        "left": 247,
+        "cx": 301,
+        "cy": 741.1
+      },
+      "badge": {
+        "x": 247,
+        "y": 729.9,
+        "w": 56,
+        "h": 22.4,
+        "top": 729.9,
+        "right": 303,
+        "bottom": 752.3,
+        "left": 247,
+        "cx": 275,
+        "cy": 741.1
+      },
+      "bell": {
+        "x": 311,
+        "y": 719.1,
+        "w": 44,
+        "h": 44,
+        "top": 719.1,
+        "right": 355,
+        "bottom": 763.1,
+        "left": 311,
+        "cx": 333,
+        "cy": 741.1
+      },
+      "chipsRow": {
+        "x": 20,
+        "y": 802.7,
+        "w": 335,
+        "h": 28.8,
+        "top": 802.7,
+        "right": 355,
+        "bottom": 831.5,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 817.1
+      },
+      "title": {
+        "x": 20,
+        "y": 767.5,
+        "w": 335,
+        "h": 25.2,
+        "top": 767.5,
+        "right": 355,
+        "bottom": 792.7,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 780.1
+      },
+      "note": {
+        "x": 20,
+        "y": 853.5,
+        "w": 335,
+        "h": 17.6,
+        "top": 853.5,
+        "right": 355,
+        "bottom": 871.1,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 862.3
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "装修中",
+      "tagCount": 1,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 8,
+      "priceBadgeCenterDelta": 0,
+      "priceScopeCenterDelta": 0,
+      "chipsTopGap": 10,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=375, vw=375"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=335"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "44×44"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "sold",
+      "viewport": {
+        "w": 375,
+        "h": 800
+      },
+      "docScrollWidth": 375,
+      "caseScrollWidth": 375,
+      "caseClientWidth": 375,
+      "row": {
+        "x": 20,
+        "y": 926.1,
+        "w": 335,
+        "h": 44.8,
+        "top": 926.1,
+        "right": 355,
+        "bottom": 970.9,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 948.5
+      },
+      "priceMain": {
+        "x": 20,
+        "y": 926.1,
+        "w": 171.7,
+        "h": 44.8,
+        "top": 926.1,
+        "right": 191.7,
+        "bottom": 970.9,
+        "left": 20,
+        "cx": 105.8,
+        "cy": 948.5
+      },
+      "price": {
+        "x": 20,
+        "y": 926.1,
+        "w": 120.7,
+        "h": 44.8,
+        "top": 926.1,
+        "right": 140.7,
+        "bottom": 970.9,
+        "left": 20,
+        "cx": 80.3,
+        "cy": 948.5
+      },
+      "scope": {
+        "x": 146.7,
+        "y": 939.8,
+        "w": 45,
+        "h": 17.4,
+        "top": 939.8,
+        "right": 191.7,
+        "bottom": 957.2,
+        "left": 146.7,
+        "cx": 169.2,
+        "cy": 948.5
+      },
+      "actions": {
+        "x": 287,
+        "y": 937.3,
+        "w": 68,
+        "h": 22.4,
+        "top": 937.3,
+        "right": 355,
+        "bottom": 959.7,
+        "left": 287,
+        "cx": 321,
+        "cy": 948.5
+      },
+      "badge": {
+        "x": 287,
+        "y": 937.3,
+        "w": 68,
+        "h": 22.4,
+        "top": 937.3,
+        "right": 355,
+        "bottom": 959.7,
+        "left": 287,
+        "cx": 321,
+        "cy": 948.5
+      },
+      "bell": null,
+      "chipsRow": null,
+      "title": {
+        "x": 20,
+        "y": 974.9,
+        "w": 335,
+        "h": 25.2,
+        "top": 974.9,
+        "right": 355,
+        "bottom": 1000.1,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 987.5
+      },
+      "note": {
+        "x": 20,
+        "y": 1022.1,
+        "w": 335,
+        "h": 17.6,
+        "top": 1022.1,
+        "right": 355,
+        "bottom": 1039.7,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 1030.9
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "过往案例",
+      "tagCount": 0,
+      "priceBadgeCenterDelta": 0,
+      "priceScopeCenterDelta": 0,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=375, vw=375"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=335"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "无标签时不渲染空标签行",
+          "ok": true,
+          "detail": "chipsRow=null"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "pending",
+      "viewport": {
+        "w": 375,
+        "h": 800
+      },
+      "docScrollWidth": 375,
+      "caseScrollWidth": 375,
+      "caseClientWidth": 375,
+      "row": {
+        "x": 20,
+        "y": 606.7,
+        "w": 335,
+        "h": 44,
+        "top": 606.7,
+        "right": 355,
+        "bottom": 650.7,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 628.7
+      },
+      "priceMain": {
+        "x": 20,
+        "y": 614.7,
+        "w": 80,
+        "h": 28,
+        "top": 614.7,
+        "right": 100,
+        "bottom": 642.7,
+        "left": 20,
+        "cx": 60,
+        "cy": 628.7
+      },
+      "price": {
+        "x": 20,
+        "y": 614.7,
+        "w": 80,
+        "h": 28,
+        "top": 614.7,
+        "right": 100,
+        "bottom": 642.7,
+        "left": 20,
+        "cx": 60,
+        "cy": 628.7
+      },
+      "scope": null,
+      "actions": {
+        "x": 259,
+        "y": 606.7,
+        "w": 96,
+        "h": 44,
+        "top": 606.7,
+        "right": 355,
+        "bottom": 650.7,
+        "left": 259,
+        "cx": 307,
+        "cy": 628.7
+      },
+      "badge": {
+        "x": 259,
+        "y": 617.5,
+        "w": 44,
+        "h": 22.4,
+        "top": 617.5,
+        "right": 303,
+        "bottom": 639.9,
+        "left": 259,
+        "cx": 281,
+        "cy": 628.7
+      },
+      "bell": {
+        "x": 311,
+        "y": 606.7,
+        "w": 44,
+        "h": 44,
+        "top": 606.7,
+        "right": 355,
+        "bottom": 650.7,
+        "left": 311,
+        "cx": 333,
+        "cy": 628.7
+      },
+      "chipsRow": {
+        "x": 20,
+        "y": 689.9,
+        "w": 335,
+        "h": 28.8,
+        "top": 689.9,
+        "right": 355,
+        "bottom": 718.7,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 704.3
+      },
+      "title": {
+        "x": 20,
+        "y": 654.7,
+        "w": 335,
+        "h": 25.2,
+        "top": 654.7,
+        "right": 355,
+        "bottom": 679.9,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 667.3
+      },
+      "note": {
+        "x": 20,
+        "y": 740.7,
+        "w": 335,
+        "h": 17.6,
+        "top": 740.7,
+        "right": 355,
+        "bottom": 758.3,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 749.5
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 1,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 8,
+      "priceBadgeCenterDelta": 0,
+      "chipsTopGap": 10,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=375, vw=375"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=335"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "44×44"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "no-tags",
+      "viewport": {
+        "w": 375,
+        "h": 800
+      },
+      "docScrollWidth": 375,
+      "caseScrollWidth": 375,
+      "caseClientWidth": 375,
+      "row": {
+        "x": 20,
+        "y": 908.3,
+        "w": 335,
+        "h": 44.8,
+        "top": 908.3,
+        "right": 355,
+        "bottom": 953.1,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 930.7
+      },
+      "priceMain": {
+        "x": 20,
+        "y": 908.3,
+        "w": 123.9,
+        "h": 44.8,
+        "top": 908.3,
+        "right": 143.9,
+        "bottom": 953.1,
+        "left": 20,
+        "cx": 82,
+        "cy": 930.7
+      },
+      "price": {
+        "x": 20,
+        "y": 908.3,
+        "w": 123.9,
+        "h": 44.8,
+        "top": 908.3,
+        "right": 143.9,
+        "bottom": 953.1,
+        "left": 20,
+        "cx": 82,
+        "cy": 930.7
+      },
+      "scope": null,
+      "actions": {
+        "x": 259,
+        "y": 908.7,
+        "w": 96,
+        "h": 44,
+        "top": 908.7,
+        "right": 355,
+        "bottom": 952.7,
+        "left": 259,
+        "cx": 307,
+        "cy": 930.7
+      },
+      "badge": {
+        "x": 259,
+        "y": 919.5,
+        "w": 44,
+        "h": 22.4,
+        "top": 919.5,
+        "right": 303,
+        "bottom": 941.9,
+        "left": 259,
+        "cx": 281,
+        "cy": 930.7
+      },
+      "bell": {
+        "x": 311,
+        "y": 908.7,
+        "w": 44,
+        "h": 44,
+        "top": 908.7,
+        "right": 355,
+        "bottom": 952.7,
+        "left": 311,
+        "cx": 333,
+        "cy": 930.7
+      },
+      "chipsRow": null,
+      "title": {
+        "x": 20,
+        "y": 957.1,
+        "w": 335,
+        "h": 25.2,
+        "top": 957.1,
+        "right": 355,
+        "bottom": 982.3,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 969.7
+      },
+      "note": {
+        "x": 20,
+        "y": 1004.3,
+        "w": 335,
+        "h": 17.6,
+        "top": 1004.3,
+        "right": 355,
+        "bottom": 1021.9,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 1013.1
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 0,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 8,
+      "priceBadgeCenterDelta": 0,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=375, vw=375"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=335"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "44×44"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "无标签时不渲染空标签行",
+          "ok": true,
+          "detail": "chipsRow=null"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "long-price",
+      "viewport": {
+        "w": 375,
+        "h": 800
+      },
+      "docScrollWidth": 375,
+      "caseScrollWidth": 375,
+      "caseClientWidth": 375,
+      "row": {
+        "x": 20,
+        "y": 611.9,
+        "w": 335,
+        "h": 44.8,
+        "top": 611.9,
+        "right": 355,
+        "bottom": 656.7,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 634.3
+      },
+      "priceMain": {
+        "x": 20,
+        "y": 611.9,
+        "w": 211.3,
+        "h": 44.8,
+        "top": 611.9,
+        "right": 231.3,
+        "bottom": 656.7,
+        "left": 20,
+        "cx": 125.6,
+        "cy": 634.3
+      },
+      "price": {
+        "x": 20,
+        "y": 611.9,
+        "w": 160.3,
+        "h": 44.8,
+        "top": 611.9,
+        "right": 180.3,
+        "bottom": 656.7,
+        "left": 20,
+        "cx": 100.1,
+        "cy": 634.3
+      },
+      "scope": {
+        "x": 186.3,
+        "y": 625.6,
+        "w": 45,
+        "h": 17.4,
+        "top": 625.6,
+        "right": 231.3,
+        "bottom": 643,
+        "left": 186.3,
+        "cx": 208.8,
+        "cy": 634.3
+      },
+      "actions": {
+        "x": 259,
+        "y": 612.3,
+        "w": 96,
+        "h": 44,
+        "top": 612.3,
+        "right": 355,
+        "bottom": 656.3,
+        "left": 259,
+        "cx": 307,
+        "cy": 634.3
+      },
+      "badge": {
+        "x": 259,
+        "y": 623,
+        "w": 44,
+        "h": 22.4,
+        "top": 623,
+        "right": 303,
+        "bottom": 645.4,
+        "left": 259,
+        "cx": 281,
+        "cy": 634.2
+      },
+      "bell": {
+        "x": 311,
+        "y": 612.3,
+        "w": 44,
+        "h": 44,
+        "top": 612.3,
+        "right": 355,
+        "bottom": 656.3,
+        "left": 311,
+        "cx": 333,
+        "cy": 634.3
+      },
+      "chipsRow": {
+        "x": 20,
+        "y": 695.8,
+        "w": 335,
+        "h": 28.8,
+        "top": 695.8,
+        "right": 355,
+        "bottom": 724.6,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 710.2
+      },
+      "title": {
+        "x": 20,
+        "y": 660.7,
+        "w": 335,
+        "h": 25.2,
+        "top": 660.7,
+        "right": 355,
+        "bottom": 685.8,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 673.3
+      },
+      "note": {
+        "x": 20,
+        "y": 746.6,
+        "w": 335,
+        "h": 17.6,
+        "top": 746.6,
+        "right": 355,
+        "bottom": 764.2,
+        "left": 20,
+        "cx": 187.5,
+        "cy": 755.4
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 2,
+      "statusBellCenterDelta": 0.1,
+      "statusBellGap": 8,
+      "priceBadgeCenterDelta": 0.1,
+      "priceScopeCenterDelta": 0,
+      "chipsTopGap": 10,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=375, vw=375"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=335"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0.1px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "44×44"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0.1px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    }
+  ],
+  "after320": [
+    {
+      "case": "on-sale-subscribed",
+      "viewport": {
+        "w": 320,
+        "h": 800
+      },
+      "docScrollWidth": 320,
+      "caseScrollWidth": 320,
+      "caseClientWidth": 320,
+      "row": {
+        "x": 17.1,
+        "y": 97.3,
+        "w": 285.9,
+        "h": 37.5,
+        "top": 97.3,
+        "right": 302.9,
+        "bottom": 134.8,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 116
+      },
+      "priceMain": {
+        "x": 17.1,
+        "y": 99.3,
+        "w": 135.8,
+        "h": 33.4,
+        "top": 99.3,
+        "right": 152.9,
+        "bottom": 132.8,
+        "left": 17.1,
+        "cx": 85,
+        "cy": 116
+      },
+      "price": {
+        "x": 17.1,
+        "y": 99.3,
+        "w": 92.4,
+        "h": 33.4,
+        "top": 99.3,
+        "right": 109.4,
+        "bottom": 132.8,
+        "left": 17.1,
+        "cx": 63.2,
+        "cy": 116
+      },
+      "scope": {
+        "x": 114.5,
+        "y": 108.6,
+        "w": 38.4,
+        "h": 14.8,
+        "top": 108.6,
+        "right": 152.9,
+        "bottom": 123.4,
+        "left": 114.5,
+        "cx": 133.7,
+        "cy": 116
+      },
+      "actions": {
+        "x": 221,
+        "y": 97.3,
+        "w": 81.9,
+        "h": 37.5,
+        "top": 97.3,
+        "right": 302.9,
+        "bottom": 134.8,
+        "left": 221,
+        "cx": 262,
+        "cy": 116
+      },
+      "badge": {
+        "x": 221,
+        "y": 106.5,
+        "w": 37.5,
+        "h": 19.1,
+        "top": 106.5,
+        "right": 258.6,
+        "bottom": 125.6,
+        "left": 221,
+        "cx": 239.8,
+        "cy": 116
+      },
+      "bell": {
+        "x": 265.4,
+        "y": 97.3,
+        "w": 37.5,
+        "h": 37.5,
+        "top": 97.3,
+        "right": 302.9,
+        "bottom": 134.8,
+        "left": 265.4,
+        "cx": 284.2,
+        "cy": 116
+      },
+      "chipsRow": {
+        "x": 17.1,
+        "y": 168.2,
+        "w": 285.9,
+        "h": 24.5,
+        "top": 168.2,
+        "right": 302.9,
+        "bottom": 192.8,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 180.5
+      },
+      "title": {
+        "x": 17.1,
+        "y": 138.2,
+        "w": 285.9,
+        "h": 21.5,
+        "top": 138.2,
+        "right": 302.9,
+        "bottom": 159.7,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 149
+      },
+      "note": {
+        "x": 17.1,
+        "y": 211.5,
+        "w": 285.9,
+        "h": 15,
+        "top": 211.5,
+        "right": 302.9,
+        "bottom": 226.6,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 219.1
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 1,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 6.8,
+      "priceBadgeCenterDelta": 0,
+      "priceScopeCenterDelta": 0,
+      "chipsTopGap": 8.5,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=320, vw=320"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=285.9"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=6.8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "37.5×37.5"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "on-sale-unsubscribed",
+      "viewport": {
+        "w": 320,
+        "h": 800
+      },
+      "docScrollWidth": 320,
+      "caseScrollWidth": 320,
+      "caseClientWidth": 320,
+      "row": {
+        "x": 17.1,
+        "y": 354.5,
+        "w": 285.9,
+        "h": 37.5,
+        "top": 354.5,
+        "right": 302.9,
+        "bottom": 392.1,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 373.3
+      },
+      "priceMain": {
+        "x": 17.1,
+        "y": 356.6,
+        "w": 135.8,
+        "h": 33.4,
+        "top": 356.6,
+        "right": 152.9,
+        "bottom": 390,
+        "left": 17.1,
+        "cx": 85,
+        "cy": 373.3
+      },
+      "price": {
+        "x": 17.1,
+        "y": 356.6,
+        "w": 92.4,
+        "h": 33.4,
+        "top": 356.6,
+        "right": 109.4,
+        "bottom": 390,
+        "left": 17.1,
+        "cx": 63.2,
+        "cy": 373.3
+      },
+      "scope": {
+        "x": 114.5,
+        "y": 365.9,
+        "w": 38.4,
+        "h": 14.8,
+        "top": 365.9,
+        "right": 152.9,
+        "bottom": 380.7,
+        "left": 114.5,
+        "cx": 133.7,
+        "cy": 373.3
+      },
+      "actions": {
+        "x": 221,
+        "y": 354.5,
+        "w": 81.9,
+        "h": 37.5,
+        "top": 354.5,
+        "right": 302.9,
+        "bottom": 392.1,
+        "left": 221,
+        "cx": 262,
+        "cy": 373.3
+      },
+      "badge": {
+        "x": 221,
+        "y": 363.8,
+        "w": 37.5,
+        "h": 19.1,
+        "top": 363.8,
+        "right": 258.6,
+        "bottom": 382.8,
+        "left": 221,
+        "cx": 239.8,
+        "cy": 373.3
+      },
+      "bell": {
+        "x": 265.4,
+        "y": 354.5,
+        "w": 37.5,
+        "h": 37.5,
+        "top": 354.5,
+        "right": 302.9,
+        "bottom": 392.1,
+        "left": 265.4,
+        "cx": 284.2,
+        "cy": 373.3
+      },
+      "chipsRow": {
+        "x": 17.1,
+        "y": 425.5,
+        "w": 285.9,
+        "h": 24.5,
+        "top": 425.5,
+        "right": 302.9,
+        "bottom": 450,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 437.8
+      },
+      "title": {
+        "x": 17.1,
+        "y": 395.5,
+        "w": 285.9,
+        "h": 21.5,
+        "top": 395.5,
+        "right": 302.9,
+        "bottom": 417,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 406.2
+      },
+      "note": {
+        "x": 17.1,
+        "y": 468.8,
+        "w": 285.9,
+        "h": 15,
+        "top": 468.8,
+        "right": 302.9,
+        "bottom": 483.8,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 476.3
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 2,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 6.8,
+      "priceBadgeCenterDelta": 0,
+      "priceScopeCenterDelta": 0,
+      "chipsTopGap": 8.5,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=320, vw=320"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=285.9"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=6.8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "37.5×37.5"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "renovating",
+      "viewport": {
+        "w": 320,
+        "h": 800
+      },
+      "docScrollWidth": 320,
+      "caseScrollWidth": 320,
+      "caseClientWidth": 320,
+      "row": {
+        "x": 17.1,
+        "y": 611.8,
+        "w": 285.9,
+        "h": 37.5,
+        "top": 611.8,
+        "right": 302.9,
+        "bottom": 649.3,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 630.6
+      },
+      "priceMain": {
+        "x": 17.1,
+        "y": 613.8,
+        "w": 137.6,
+        "h": 33.4,
+        "top": 613.8,
+        "right": 154.6,
+        "bottom": 647.3,
+        "left": 17.1,
+        "cx": 85.8,
+        "cy": 630.6
+      },
+      "price": {
+        "x": 17.1,
+        "y": 613.8,
+        "w": 94.1,
+        "h": 33.4,
+        "top": 613.8,
+        "right": 111.2,
+        "bottom": 647.3,
+        "left": 17.1,
+        "cx": 64.1,
+        "cy": 630.6
+      },
+      "scope": {
+        "x": 116.3,
+        "y": 623.1,
+        "w": 38.4,
+        "h": 14.8,
+        "top": 623.1,
+        "right": 154.6,
+        "bottom": 638,
+        "left": 116.3,
+        "cx": 135.4,
+        "cy": 630.6
+      },
+      "actions": {
+        "x": 210.8,
+        "y": 611.8,
+        "w": 92.1,
+        "h": 37.5,
+        "top": 611.8,
+        "right": 302.9,
+        "bottom": 649.3,
+        "left": 210.8,
+        "cx": 256.9,
+        "cy": 630.6
+      },
+      "badge": {
+        "x": 210.8,
+        "y": 621,
+        "w": 47.8,
+        "h": 19.1,
+        "top": 621,
+        "right": 258.6,
+        "bottom": 640.1,
+        "left": 210.8,
+        "cx": 234.7,
+        "cy": 630.6
+      },
+      "bell": {
+        "x": 265.4,
+        "y": 611.8,
+        "w": 37.5,
+        "h": 37.5,
+        "top": 611.8,
+        "right": 302.9,
+        "bottom": 649.3,
+        "left": 265.4,
+        "cx": 284.2,
+        "cy": 630.6
+      },
+      "chipsRow": {
+        "x": 17.1,
+        "y": 682.8,
+        "w": 285.9,
+        "h": 24.5,
+        "top": 682.8,
+        "right": 302.9,
+        "bottom": 707.3,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 695
+      },
+      "title": {
+        "x": 17.1,
+        "y": 652.7,
+        "w": 285.9,
+        "h": 21.5,
+        "top": 652.7,
+        "right": 302.9,
+        "bottom": 674.2,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 663.5
+      },
+      "note": {
+        "x": 17.1,
+        "y": 726.1,
+        "w": 285.9,
+        "h": 15,
+        "top": 726.1,
+        "right": 302.9,
+        "bottom": 741.1,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 733.6
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "装修中",
+      "tagCount": 1,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 6.8,
+      "priceBadgeCenterDelta": 0,
+      "priceScopeCenterDelta": 0,
+      "chipsTopGap": 8.6,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=320, vw=320"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=285.9"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=6.8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "37.5×37.5"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "sold",
+      "viewport": {
+        "w": 320,
+        "h": 800
+      },
+      "docScrollWidth": 320,
+      "caseScrollWidth": 320,
+      "caseClientWidth": 320,
+      "row": {
+        "x": 17.1,
+        "y": 869.1,
+        "w": 285.9,
+        "h": 33.4,
+        "top": 869.1,
+        "right": 302.9,
+        "bottom": 902.5,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 885.8
+      },
+      "priceMain": {
+        "x": 17.1,
+        "y": 869.1,
+        "w": 133.3,
+        "h": 33.4,
+        "top": 869.1,
+        "right": 150.3,
+        "bottom": 902.5,
+        "left": 17.1,
+        "cx": 83.7,
+        "cy": 885.8
+      },
+      "price": {
+        "x": 17.1,
+        "y": 869.1,
+        "w": 89.8,
+        "h": 33.4,
+        "top": 869.1,
+        "right": 106.9,
+        "bottom": 902.5,
+        "left": 17.1,
+        "cx": 62,
+        "cy": 885.8
+      },
+      "scope": {
+        "x": 112,
+        "y": 878.4,
+        "w": 38.4,
+        "h": 14.8,
+        "top": 878.4,
+        "right": 150.3,
+        "bottom": 893.2,
+        "left": 112,
+        "cx": 131.1,
+        "cy": 885.8
+      },
+      "actions": {
+        "x": 244.9,
+        "y": 876.2,
+        "w": 58,
+        "h": 19.1,
+        "top": 876.2,
+        "right": 302.9,
+        "bottom": 895.3,
+        "left": 244.9,
+        "cx": 273.9,
+        "cy": 885.8
+      },
+      "badge": {
+        "x": 244.9,
+        "y": 876.2,
+        "w": 58,
+        "h": 19.1,
+        "top": 876.2,
+        "right": 302.9,
+        "bottom": 895.3,
+        "left": 244.9,
+        "cx": 273.9,
+        "cy": 885.8
+      },
+      "bell": null,
+      "chipsRow": null,
+      "title": {
+        "x": 17.1,
+        "y": 905.9,
+        "w": 285.9,
+        "h": 21.5,
+        "top": 905.9,
+        "right": 302.9,
+        "bottom": 927.4,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 916.7
+      },
+      "note": {
+        "x": 17.1,
+        "y": 946.2,
+        "w": 285.9,
+        "h": 15,
+        "top": 946.2,
+        "right": 302.9,
+        "bottom": 961.2,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 953.7
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "过往案例",
+      "tagCount": 0,
+      "priceBadgeCenterDelta": 0,
+      "priceScopeCenterDelta": 0,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=320, vw=320"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=285.9"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "无标签时不渲染空标签行",
+          "ok": true,
+          "detail": "chipsRow=null"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "pending",
+      "viewport": {
+        "w": 320,
+        "h": 800
+      },
+      "docScrollWidth": 320,
+      "caseScrollWidth": 320,
+      "caseClientWidth": 320,
+      "row": {
+        "x": 17.1,
+        "y": 574.2,
+        "w": 285.9,
+        "h": 37.5,
+        "top": 574.2,
+        "right": 302.9,
+        "bottom": 611.7,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 592.9
+      },
+      "priceMain": {
+        "x": 17.1,
+        "y": 576.2,
+        "w": 95.6,
+        "h": 33.4,
+        "top": 576.2,
+        "right": 112.6,
+        "bottom": 609.6,
+        "left": 17.1,
+        "cx": 64.8,
+        "cy": 592.9
+      },
+      "price": {
+        "x": 17.1,
+        "y": 576.2,
+        "w": 95.6,
+        "h": 33.4,
+        "top": 576.2,
+        "right": 112.6,
+        "bottom": 609.6,
+        "left": 17.1,
+        "cx": 64.8,
+        "cy": 592.9
+      },
+      "scope": null,
+      "actions": {
+        "x": 221,
+        "y": 574.2,
+        "w": 81.9,
+        "h": 37.5,
+        "top": 574.2,
+        "right": 302.9,
+        "bottom": 611.7,
+        "left": 221,
+        "cx": 262,
+        "cy": 592.9
+      },
+      "badge": {
+        "x": 221,
+        "y": 583.4,
+        "w": 37.5,
+        "h": 19.1,
+        "top": 583.4,
+        "right": 258.6,
+        "bottom": 602.5,
+        "left": 221,
+        "cx": 239.8,
+        "cy": 592.9
+      },
+      "bell": {
+        "x": 265.4,
+        "y": 574.2,
+        "w": 37.5,
+        "h": 37.5,
+        "top": 574.2,
+        "right": 302.9,
+        "bottom": 611.7,
+        "left": 265.4,
+        "cx": 284.2,
+        "cy": 592.9
+      },
+      "chipsRow": {
+        "x": 17.1,
+        "y": 645.1,
+        "w": 285.9,
+        "h": 24.5,
+        "top": 645.1,
+        "right": 302.9,
+        "bottom": 669.7,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 657.4
+      },
+      "title": {
+        "x": 17.1,
+        "y": 615.1,
+        "w": 285.9,
+        "h": 21.5,
+        "top": 615.1,
+        "right": 302.9,
+        "bottom": 636.6,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 625.8
+      },
+      "note": {
+        "x": 17.1,
+        "y": 688.4,
+        "w": 285.9,
+        "h": 15,
+        "top": 688.4,
+        "right": 302.9,
+        "bottom": 703.5,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 695.9
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 1,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 6.8,
+      "priceBadgeCenterDelta": 0,
+      "chipsTopGap": 8.5,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=320, vw=320"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=285.9"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=6.8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "37.5×37.5"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "no-tags",
+      "viewport": {
+        "w": 320,
+        "h": 800
+      },
+      "docScrollWidth": 320,
+      "caseScrollWidth": 320,
+      "caseClientWidth": 320,
+      "row": {
+        "x": 17.1,
+        "y": 831.4,
+        "w": 285.9,
+        "h": 37.5,
+        "top": 831.4,
+        "right": 302.9,
+        "bottom": 869,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 850.2
+      },
+      "priceMain": {
+        "x": 17.1,
+        "y": 833.5,
+        "w": 92.4,
+        "h": 33.4,
+        "top": 833.5,
+        "right": 109.4,
+        "bottom": 866.9,
+        "left": 17.1,
+        "cx": 63.2,
+        "cy": 850.2
+      },
+      "price": {
+        "x": 17.1,
+        "y": 833.5,
+        "w": 92.4,
+        "h": 33.4,
+        "top": 833.5,
+        "right": 109.4,
+        "bottom": 866.9,
+        "left": 17.1,
+        "cx": 63.2,
+        "cy": 850.2
+      },
+      "scope": null,
+      "actions": {
+        "x": 221,
+        "y": 831.4,
+        "w": 81.9,
+        "h": 37.5,
+        "top": 831.4,
+        "right": 302.9,
+        "bottom": 869,
+        "left": 221,
+        "cx": 262,
+        "cy": 850.2
+      },
+      "badge": {
+        "x": 221,
+        "y": 840.6,
+        "w": 37.5,
+        "h": 19.1,
+        "top": 840.6,
+        "right": 258.6,
+        "bottom": 859.7,
+        "left": 221,
+        "cx": 239.8,
+        "cy": 850.2
+      },
+      "bell": {
+        "x": 265.4,
+        "y": 831.4,
+        "w": 37.5,
+        "h": 37.5,
+        "top": 831.4,
+        "right": 302.9,
+        "bottom": 869,
+        "left": 265.4,
+        "cx": 284.2,
+        "cy": 850.2
+      },
+      "chipsRow": null,
+      "title": {
+        "x": 17.1,
+        "y": 872.4,
+        "w": 285.9,
+        "h": 21.5,
+        "top": 872.4,
+        "right": 302.9,
+        "bottom": 893.9,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 883.1
+      },
+      "note": {
+        "x": 17.1,
+        "y": 912.6,
+        "w": 285.9,
+        "h": 15,
+        "top": 912.6,
+        "right": 302.9,
+        "bottom": 927.6,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 920.1
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 0,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 6.8,
+      "priceBadgeCenterDelta": 0,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=320, vw=320"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=285.9"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=6.8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "37.5×37.5"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "无标签时不渲染空标签行",
+          "ok": true,
+          "detail": "chipsRow=null"
+        }
+      ],
+      "pass": true
+    },
+    {
+      "case": "long-price",
+      "viewport": {
+        "w": 320,
+        "h": 800
+      },
+      "docScrollWidth": 320,
+      "caseScrollWidth": 320,
+      "caseClientWidth": 320,
+      "row": {
+        "x": 17.1,
+        "y": 639.6,
+        "w": 285.9,
+        "h": 37.5,
+        "top": 639.6,
+        "right": 302.9,
+        "bottom": 677.1,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 658.4
+      },
+      "priceMain": {
+        "x": 17.1,
+        "y": 641.7,
+        "w": 162.8,
+        "h": 33.4,
+        "top": 641.7,
+        "right": 179.8,
+        "bottom": 675.1,
+        "left": 17.1,
+        "cx": 98.4,
+        "cy": 658.4
+      },
+      "price": {
+        "x": 17.1,
+        "y": 641.7,
+        "w": 119.3,
+        "h": 33.4,
+        "top": 641.7,
+        "right": 136.3,
+        "bottom": 675.1,
+        "left": 17.1,
+        "cx": 76.7,
+        "cy": 658.4
+      },
+      "scope": {
+        "x": 141.5,
+        "y": 651,
+        "w": 38.4,
+        "h": 14.8,
+        "top": 651,
+        "right": 179.8,
+        "bottom": 665.8,
+        "left": 141.5,
+        "cx": 160.6,
+        "cy": 658.4
+      },
+      "actions": {
+        "x": 221,
+        "y": 639.6,
+        "w": 81.9,
+        "h": 37.5,
+        "top": 639.6,
+        "right": 302.9,
+        "bottom": 677.1,
+        "left": 221,
+        "cx": 262,
+        "cy": 658.4
+      },
+      "badge": {
+        "x": 221,
+        "y": 648.8,
+        "w": 37.5,
+        "h": 19.1,
+        "top": 648.8,
+        "right": 258.6,
+        "bottom": 667.9,
+        "left": 221,
+        "cx": 239.8,
+        "cy": 658.4
+      },
+      "bell": {
+        "x": 265.4,
+        "y": 639.6,
+        "w": 37.5,
+        "h": 37.5,
+        "top": 639.6,
+        "right": 302.9,
+        "bottom": 677.1,
+        "left": 265.4,
+        "cx": 284.2,
+        "cy": 658.4
+      },
+      "chipsRow": {
+        "x": 17.1,
+        "y": 710.6,
+        "w": 285.9,
+        "h": 24.5,
+        "top": 710.6,
+        "right": 302.9,
+        "bottom": 735.1,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 722.9
+      },
+      "title": {
+        "x": 17.1,
+        "y": 680.5,
+        "w": 285.9,
+        "h": 21.5,
+        "top": 680.5,
+        "right": 302.9,
+        "bottom": 702,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 691.3
+      },
+      "note": {
+        "x": 17.1,
+        "y": 753.9,
+        "w": 285.9,
+        "h": 15,
+        "top": 753.9,
+        "right": 302.9,
+        "bottom": 768.9,
+        "left": 17.1,
+        "cx": 160,
+        "cy": 761.4
+      },
+      "badgeInRow": true,
+      "badgeInChips": false,
+      "badgeText": "在售",
+      "tagCount": 2,
+      "statusBellCenterDelta": 0,
+      "statusBellGap": 6.8,
+      "priceBadgeCenterDelta": 0,
+      "priceScopeCenterDelta": 0,
+      "chipsTopGap": 8.6,
+      "checks": [
+        {
+          "name": "badge 位于价格行",
+          "ok": true,
+          "detail": "badgeInRow=true"
+        },
+        {
+          "name": "badge 不再位于标签行",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        },
+        {
+          "name": "页面无横向溢出",
+          "ok": true,
+          "detail": "scrollWidth=320, vw=320"
+        },
+        {
+          "name": "价格行无横向溢出",
+          "ok": true,
+          "detail": "rowW=285.9"
+        },
+        {
+          "name": "徽章与铃铛水平同排（中心差 ≤1.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "徽章在铃铛左侧且不重叠",
+          "ok": true,
+          "detail": "gap=6.8px"
+        },
+        {
+          "name": "铃铛热区 88rpx 正方",
+          "ok": true,
+          "detail": "37.5×37.5"
+        },
+        {
+          "name": "徽章与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "挂牌价 chip 与价格垂直居中（差 ≤2.5px）",
+          "ok": true,
+          "detail": "delta=0px"
+        },
+        {
+          "name": "有标签时标签行存在",
+          "ok": true,
+          "detail": "chipsRow=true"
+        },
+        {
+          "name": "标签行不含状态徽章",
+          "ok": true,
+          "detail": "badgeInChips=false"
+        }
+      ],
+      "pass": true
+    }
+  ],
+  "sourceChecks": [
+    {
+      "name": "WXML 价格行包含 detail-price-main 与 detail-head-actions",
+      "ok": true
+    },
+    {
+      "name": "WXML 状态徽章位于 detail-head-actions 内且在铃铛之前",
+      "ok": true
+    },
+    {
+      "name": "WXML 标签行仅在有 tags 时渲染",
+      "ok": true
+    },
+    {
+      "name": "WXML 不再包含 detail-chips-status",
+      "ok": true
+    },
+    {
+      "name": "WXML 价格口径 chip 位于 detail-price-main 内",
+      "ok": true
+    },
+    {
+      "name": "WXSS detail-chips-row 不再 space-between",
+      "ok": true
+    },
+    {
+      "name": "WXSS 存在 detail-head-actions",
+      "ok": true
+    },
+    {
+      "name": "WXSS price-scope 不再 flex-end 下沉",
+      "ok": true
+    }
+  ]
+}

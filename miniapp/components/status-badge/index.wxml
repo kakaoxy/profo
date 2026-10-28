@@ -1,0 +1,1 @@
+<view wx:if="{{label}}" class="status-badge status-badge--{{variant}}">{{label}}</view>

@@ -50,7 +50,7 @@ def _build_item(
     description="C端登录用户预约看房；未绑手机号返回 409，同一用户对同一房源幂等（重复预约返回既有记录 is_new=false）",
     responses={
         404: {"description": "房源不存在或未发布"},
-        409: {"description": "用户未绑定手机号"},
+        409: {"description": "用户未绑定手机号，或房源已售出（不再接受看房预约）"},
     },
 )
 @limiter.limit(RateLimits.PUBLIC_BOOKING_CREATE)

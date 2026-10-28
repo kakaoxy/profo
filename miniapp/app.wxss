@@ -4,7 +4,10 @@ page {
   --pure-white: #ffffff;
   --fog: #f7f7f8;
   --ash: #4c4c4c;
-  --graphite: #777b86;
+  /* graphite：次要文字专用 muted 色阶。原 #777b86 在 fog/白底上对比度 3.95/4.3:1
+     （Design QA 2026-10-28 M-02：WCAG AA 正文需 ≥4.5:1），加深至 #676b76 后
+     fog 底 5.0:1、白底 5.3:1 达标；dove 仅限装饰（分隔线/箭头），不再用作文字色 */
+  --graphite: #676b76;
   --dove: #a3a6af;
   --slate: #8b8c8d;
   --rust: #5d2a1a;

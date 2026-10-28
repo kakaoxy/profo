@@ -25,9 +25,10 @@ from models import (
     SendStatus,
     User,
 )
+from models.marketing.l4_marketing import MarketingProjectStatus
 from schemas.l4_marketing import L4MarketingSubscriptionStatsResponse
 from services.system import subscribe_templates
-from services.system.exceptions import ResourceNotFoundError
+from services.system.exceptions import ConflictError, ResourceNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -400,6 +401,11 @@ class MarketingSubscriptionService:
         if project is None:
             msg = "房源不存在"
             raise ResourceNotFoundError(msg)
+        # 已售（过往案例）房源价格已固化，不再接受调价订阅上报（Design QA 2026-10-28 B-02：
+        # 防止脏数据进入订阅账本；仅拒上报入口，查询/取消入口保持可用）
+        if project.project_status == MarketingProjectStatus.SOLD.value:
+            msg = "该房源已售出，无需调价提醒"
+            raise ConflictError(msg)
 
         user = self.db.query(User).filter(User.id == user_id).first()
         # openid 快照解析：直接绑定优先，间接绑定回退已合并临时账号（同 report_result 口径）；

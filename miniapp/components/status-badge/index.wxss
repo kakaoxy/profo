@@ -1,0 +1,26 @@
+/* 房源状态徽章 · 三态配色取自全局 chip 词汇（app.wxss chip-apricot/sky/fog），
+   对比度均 ≥4.5:1（Design QA 2026-10-28 M-02 修复后口径） */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 8rpx 20rpx;
+  border-radius: 9999rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.status-badge--apricot {
+  background: var(--apricot-wash, #fbe1d1);
+  color: var(--rust, #5d2a1a);
+}
+
+.status-badge--sky {
+  background: var(--sky-wash, #d3e3fc);
+  color: #2a5ca0;
+}
+
+.status-badge--fog {
+  background: var(--fog, #f7f7f8);
+  color: var(--graphite, #676b76);
+}
