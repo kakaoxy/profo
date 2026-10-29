@@ -1,4 +1,9 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { createServer } from "node:http";
+
+// 保存测试开始前的原生 fetch：其他用例会替换 globalThis.fetch 且 afterEach
+// 不会自动还原直接赋值，真实 socket 用例必须显式恢复，否则会调用到上一个 mock。
+const nativeFetch = globalThis.fetch;
 
 describe("api-server fetchClient", () => {
   let consoleWarnSpy: ReturnType<typeof vi.spyOn>;
@@ -10,6 +15,7 @@ describe("api-server fetchClient", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
+    globalThis.fetch = nativeFetch;
   });
 
   // Task 8: 构造 Server Action 上下文的 headers mock（含 next-action 头）。
@@ -22,6 +28,149 @@ describe("api-server fetchClient", () => {
       headers: vi.fn().mockResolvedValue(new Headers({ "next-action": "action-id" })),
     };
   }
+
+  // 生产 #441（2026-10-29）：uvicorn worker 被回收时连接被对端关闭，Server
+  // Component 的 GET 抛 `TypeError: fetch failed`。GET/HEAD 应短暂重试，
+  // 非幂等请求绝不能重试（可能已写库）。
+  it("GET 遇到瞬时网络错误时自动重试并成功", async () => {
+    vi.resetModules();
+
+    vi.doMock("next/headers", () => serverActionHeadersMock("valid-token"));
+
+    vi.doMock("./token-refresh-server", () => ({
+      getAccessTokenFromCookie: vi.fn().mockResolvedValue("valid-token"),
+      forceRefreshToken: vi.fn().mockResolvedValue("refreshed-token"),
+    }));
+
+    const transientError = Object.assign(new TypeError("fetch failed"), {
+      cause: Object.assign(new Error("other side closed"), { code: "UND_ERR_SOCKET" }),
+    });
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(transientError)
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { fetchClient } = await import("./api-server");
+    const client = await fetchClient();
+    const { response } = await client.GET("/api/v1/auth/me" as never);
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    vi.doUnmock("next/headers");
+    vi.doUnmock("./token-refresh-server");
+  });
+
+  it("真实 socket 被对端关闭时 GET 自动重试（复现生产 #441 错误形态）", async () => {
+    vi.resetModules();
+
+    vi.doMock("next/headers", () => serverActionHeadersMock("valid-token"));
+    vi.doMock("./token-refresh-server", () => ({
+      getAccessTokenFromCookie: vi.fn().mockResolvedValue("valid-token"),
+      forceRefreshToken: vi.fn().mockResolvedValue("refreshed-token"),
+    }));
+
+    let requestCount = 0;
+    const server = createServer((request, response) => {
+      requestCount += 1;
+      if (requestCount === 1) {
+        // 模拟 uvicorn worker 被回收：连接被对端直接关闭（UND_ERR_SOCKET）。
+        request.socket.destroy();
+        return;
+      }
+      response.writeHead(200, {
+        "Content-Type": "application/json",
+        Connection: "close",
+      });
+      response.end(JSON.stringify({ ok: true }));
+    });
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, "127.0.0.1", resolve);
+    });
+
+    const address = server.address();
+    if (!address || typeof address === "string") {
+      throw new Error("测试 HTTP server 未返回 TCP 地址");
+    }
+
+    const originalServerApiUrl = process.env.SERVER_API_URL;
+    process.env.SERVER_API_URL = `http://127.0.0.1:${address.port}`;
+    globalThis.fetch = nativeFetch;
+
+    try {
+      const { fetchClient } = await import("./api-server");
+      const client = await fetchClient();
+      const { response } = await client.GET("/api/v1/auth/me" as never);
+
+      expect(response.status).toBe(200);
+      expect(requestCount).toBe(2);
+    } finally {
+      server.closeAllConnections();
+      await new Promise<void>((resolve, reject) => {
+        server.close((error) => (error ? reject(error) : resolve()));
+      });
+      if (originalServerApiUrl === undefined) {
+        delete process.env.SERVER_API_URL;
+      } else {
+        process.env.SERVER_API_URL = originalServerApiUrl;
+      }
+      vi.doUnmock("next/headers");
+      vi.doUnmock("./token-refresh-server");
+    }
+  });
+
+  it("非幂等请求遇到瞬时网络错误时不重试", async () => {
+    vi.resetModules();
+
+    vi.doMock("next/headers", () => serverActionHeadersMock("valid-token"));
+
+    vi.doMock("./token-refresh-server", () => ({
+      getAccessTokenFromCookie: vi.fn().mockResolvedValue("valid-token"),
+      forceRefreshToken: vi.fn().mockResolvedValue("refreshed-token"),
+    }));
+
+    const transientError = Object.assign(new TypeError("fetch failed"), {
+      cause: Object.assign(new Error("other side closed"), { code: "UND_ERR_SOCKET" }),
+    });
+    const fetchMock = vi.fn().mockRejectedValue(transientError);
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const { fetchClient } = await import("./api-server");
+    const client = await fetchClient();
+
+    await expect(client.POST("/api/v1/auth/login" as never, {} as never)).rejects.toThrow(
+      "fetch failed",
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    vi.doUnmock("next/headers");
+    vi.doUnmock("./token-refresh-server");
+  });
+
+  it("非连接类 fetch 错误不视为可重试网络错误", async () => {
+    const { isTransientNetworkError } = await import("./api-server");
+
+    const certificateError = Object.assign(new TypeError("fetch failed"), {
+      cause: Object.assign(new Error("certificate has expired"), { code: "CERT_HAS_EXPIRED" }),
+    });
+
+    expect(isTransientNetworkError(certificateError)).toBe(false);
+    expect(isTransientNetworkError(new Error("ordinary error"))).toBe(false);
+    expect(
+      isTransientNetworkError(
+        Object.assign(new TypeError("fetch failed"), {
+          cause: Object.assign(new Error("other side closed"), { code: "UND_ERR_SOCKET" }),
+        }),
+      ),
+    ).toBe(true);
+  });
 
   it("should log warning with [WARN] prefix on 401 response", async () => {
     vi.doMock("next/headers", () => serverActionHeadersMock("valid-token"));

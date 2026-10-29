@@ -1,5 +1,6 @@
 import { Suspense } from "react";
-import { fetchClient } from "@/lib/api-server";
+import { fetchClient, isTransientNetworkError } from "@/lib/api-server";
+import { isRedirectError } from "@/lib/auth/server/session";
 import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
 import { MarketingStats } from "./_components/marketing-stats";
 import { MarketingView } from "./_components/marketing-view";
@@ -99,11 +100,9 @@ function ContentSkeleton() {
   );
 }
 
-// 异步数据获取组件
-async function ProjectsDataFetcher({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
+// 无依赖的异步请求并行发起（消除请求瀑布）：列表与订阅统计相互独立
+async function fetchMarketingProjects(searchParams: {
+  [key: string]: string | string[] | undefined;
 }) {
   const page = Number(getSearchParam(searchParams?.page, "1")) || 1;
   const size = Number(getSearchParam(searchParams?.size, "20")) || 20;
@@ -116,9 +115,8 @@ async function ProjectsDataFetcher({
   const isNewListing = badgeFilter === "new" ? true : undefined;
   const hasPriceChange = badgeFilter === "price" ? true : undefined;
 
-  // 无依赖的异步请求并行发起（消除请求瀑布）：列表与订阅统计相互独立
   const client = await fetchClient();
-  const [projectsRes, subStatsRes] = await Promise.all([
+  return Promise.all([
     client.GET("/api/v1/admin/marketing/projects", {
       params: {
         query: {
@@ -136,6 +134,30 @@ async function ProjectsDataFetcher({
     // P1-1：订阅漏斗全局统计（统计卡「订阅用户」「可触达·新上」数据源）
     client.GET("/api/v1/admin/marketing/subscription-stats"),
   ]);
+}
+
+// 异步数据获取组件
+async function ProjectsDataFetcher({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
+  let result: Awaited<ReturnType<typeof fetchMarketingProjects>>;
+  try {
+    result = await fetchMarketingProjects(searchParams);
+  } catch (error) {
+    // fetchClient 在 Server Component 上下文遇到 401 会 redirect()，其抛出的
+    // NEXT_REDIRECT 必须放行，否则刷新链路断裂（AGENTS.md NEXT_REDIRECT 守卫）。
+    if (isRedirectError(error)) throw error;
+
+    // 仅对瞬时网络故障降级为可重试提示；其他异常（代码 bug/接口契约问题）
+    // 继续向上抛给 error.tsx，避免把真实故障伪装成“稍后重试”。
+    if (!isTransientNetworkError(error)) throw error;
+
+    return <ErrorState message="获取营销项目列表失败，请稍后重试" />;
+  }
+
+  const [projectsRes, subStatsRes] = result;
   const { data, error } = projectsRes;
   const subStats = subStatsRes.data ?? null;
 

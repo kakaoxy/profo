@@ -31,6 +31,63 @@ import { getAccessTokenFromCookie, forceRefreshToken } from "./token-refresh-ser
 const MAX_RETRIES = 1;
 
 /**
+ * 瞬时网络错误重试配置（仅幂等请求）。
+ *
+ * 生产案例（2026-10-29 20:12:55）：uvicorn supervisor 回收了一个 worker，
+ * Next.js Server Component 正在读营销列表，Node fetch 直接抛
+ * `TypeError: fetch failed`（cause: `SocketError: other side closed` /
+ * `UND_ERR_SOCKET`），页面因此落到 error.tsx 并显示 React #441。
+ * 两个 worker 共享监听端口时，连接被对端关闭后立即重试通常会被存活
+ * worker 接住，因此对 GET/HEAD 做短间隔重试；非幂等请求不重试，避免
+ * 重复提交。
+ */
+const MAX_NETWORK_RETRIES = 2;
+const NETWORK_RETRY_DELAYS_MS = [250, 750] as const;
+const TRANSIENT_NETWORK_ERROR_CODES = new Set([
+  "ECONNRESET",
+  "ECONNREFUSED",
+  "EPIPE",
+  "ETIMEDOUT",
+  "EHOSTUNREACH",
+  "ENETUNREACH",
+  "EAI_AGAIN",
+  "UND_ERR_SOCKET",
+  "UND_ERR_CLOSED",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "UND_ERR_HEADERS_TIMEOUT",
+  "UND_ERR_BODY_TIMEOUT",
+]);
+
+/** 从 Error.cause 链中提取 Node/undici 错误码（兼容多层 cause 包装）。 */
+function getNetworkErrorCode(error: unknown): string | undefined {
+  let current: unknown = error;
+  for (let depth = 0; depth < 3; depth += 1) {
+    if (typeof current !== "object" || current === null) return undefined;
+    if ("code" in current) {
+      const code = (current as { code?: unknown }).code;
+      if (typeof code === "string") return code;
+    }
+    current = "cause" in current ? (current as { cause?: unknown }).cause : undefined;
+  }
+  return undefined;
+}
+
+/**
+ * 判断是否为可重试的瞬时网络错误。
+ *
+ * Node 的 fetch 在网络层失败时统一抛 `TypeError: fetch failed`，具体原因在
+ * `cause.code`。只有错误码属于连接类故障才重试；证书、DNS 解析永久失败等
+ * 不在列表内，避免无意义重试。
+ */
+export function isTransientNetworkError(error: unknown): boolean {
+  if (!(error instanceof TypeError) || error.message !== "fetch failed") {
+    return false;
+  }
+  const code = getNetworkErrorCode(error);
+  return code === undefined || TRANSIENT_NETWORK_ERROR_CODES.has(code);
+}
+
+/**
  * 检测当前请求是否为 Server Action 调用。
  *
  * Next.js 通过 `Next-Action` 头标识 Server Action POST 请求；
@@ -65,6 +122,12 @@ async function getCurrentPathname(): Promise<string> {
 
 async function createServerClient() {
   const fetchWithAutoRefresh: typeof fetch = async (input, init) => {
+    const requestMethod = (
+      init?.method ?? (input instanceof Request ? input.method : "GET")
+    ).toUpperCase();
+    // 只对幂等请求做网络重试；POST/PUT/PATCH/DELETE 可能已经写库，重试会造成重复提交。
+    const canRetryNetwork = requestMethod === "GET" || requestMethod === "HEAD";
+
     const makeRequest = async (bearerToken: string | null) => {
       const requestHeaders =
         input instanceof Request ? Object.fromEntries(input.headers.entries()) : {};
@@ -79,11 +142,40 @@ async function createServerClient() {
       });
     };
 
+    const makeRequestWithNetworkRetry = async (bearerToken: string | null) => {
+      let networkRetries = 0;
+      for (;;) {
+        try {
+          return await makeRequest(bearerToken);
+        } catch (error) {
+          if (
+            !canRetryNetwork ||
+            networkRetries >= MAX_NETWORK_RETRIES ||
+            !isTransientNetworkError(error)
+          ) {
+            throw error;
+          }
+
+          const delay =
+            NETWORK_RETRY_DELAYS_MS[networkRetries] ??
+            NETWORK_RETRY_DELAYS_MS[NETWORK_RETRY_DELAYS_MS.length - 1];
+          networkRetries += 1;
+          const code = getNetworkErrorCode(error);
+          logger.warn(
+            `请求网络异常${code ? ` (${code})` : ""}，${delay}ms 后重试 (第 ${networkRetries}/${MAX_NETWORK_RETRIES} 次)`,
+          );
+          await new Promise<void>((resolve) => {
+            setTimeout(resolve, delay);
+          });
+        }
+      }
+    };
+
     let token = await getAccessTokenFromCookie();
     let retries = 0;
 
     while (retries <= MAX_RETRIES) {
-      const response = await makeRequest(token);
+      const response = await makeRequestWithNetworkRetry(token);
 
       if (response.status !== 401) {
         return response;
@@ -123,7 +215,7 @@ async function createServerClient() {
     }
 
     // 理论上不会到达这里，但 TypeScript 需要返回值
-    return makeRequest(token);
+    return makeRequestWithNetworkRetry(token);
   };
 
   return createClient<paths>({

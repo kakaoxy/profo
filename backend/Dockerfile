@@ -63,4 +63,9 @@ ENV WEB_CONCURRENCY=2
 #   XFF 伪造防御由 _get_client_ip 右向左解析承担（backend 仅绑定 127.0.0.1，
 #   nginx 独占可达）。生产 nginx 建议配置 proxy_set_header X-Forwarded-For $remote_addr;
 #   （覆盖而非追加）以从源头消除 XFF 伪造。
-CMD [".venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*"]
+# --timeout-worker-healthcheck 30: uvicorn 默认 5s。生产 2026-10-27/28/29 三次
+#   “Child process died”均无 Python 异常日志；KPI 户室/楼栋全表 COUNT 生产实测
+#   6.3~9s（重启预热日志实测 7~12s），期间 pong 线程可能拿不到 GIL，5s 会被
+#   误判为 hang 并 SIGKILL。提高到 30s，覆盖 COUNT 的最坏波动（前端另有瞬时
+#   断连重试兜底）。
+CMD [".venv/bin/uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips", "*", "--timeout-worker-healthcheck", "30"]
