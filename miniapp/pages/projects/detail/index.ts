@@ -748,11 +748,18 @@ Page<PageData, Custom>({
     } catch (err) {
       this.setData({ bookingSubmitting: false });
       if (isHttpResponseError(err)) {
+        const body = err.body as { message?: string } | undefined;
         if (err.statusCode === 409) {
+          // 409 双语义：未绑手机号 → 弹授权层；已售 → 直接提示后端守卫文案。
+          // 已售时若仍弹授权层，用户授权后重试依旧 409（房源状态不因授权变化），
+          // 形成无提示的死循环（房源可能在页面快照期间售出，isSold 前端防御失效）
+          if (body?.message?.includes("已售出")) {
+            wx.showToast({ title: body.message, icon: "none" });
+            return;
+          }
           this.setData({ phoneAuthVisible: true });
           return;
         }
-        const body = err.body as { message?: string } | undefined;
         wx.showToast({ title: body?.message || "预约失败，请重试", icon: "none" });
         return;
       }
