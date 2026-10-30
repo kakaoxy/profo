@@ -268,3 +268,11 @@ describe("ReviewTargetPicker · 大社区楼栋可达性（呼玛二村 285 号�
     expect(screen.queryByText("281号")).toBeNull();
   });
 });
+
+describe("ReviewTargetPicker · 小区搜索预填", () => {
+  it("小区条目搜索框默认填入提交的小区名", () => {
+    render(<ReviewTargetPicker {...baseProps} kind="community" communityName="呼玛二村" />);
+
+    expect(screen.getByPlaceholderText(/搜目标小区名或地址/)).toHaveValue("呼玛二村");
+  });
+});

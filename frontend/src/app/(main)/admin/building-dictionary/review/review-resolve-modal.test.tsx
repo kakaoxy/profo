@@ -229,4 +229,11 @@ describe("ReviewResolveModal · 小区条目（恒 merge 可选，设计稿口�
       expect(cardButton(/用已有的/)).not.toBeDisabled();
     });
   });
+
+  it("把提交的小区名作为搜索框初始关键词传给选择器", async () => {
+    renderModal({ kind: "community", name: "呼玛二村", community_id: null, community_name: null });
+
+    await waitFor(() => expect(pickerProps.current).not.toBeNull());
+    expect(pickerProps.current?.communityName).toBe("呼玛二村");
+  });
 });

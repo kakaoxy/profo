@@ -87,4 +87,39 @@ test.describe("审核池楼栋搜索", () => {
       await dispose();
     }
   });
+
+  test("小区条目搜索框自动填入提交的小区名", async ({ page }) => {
+    const { ctx, dispose } = await createApiContext();
+    let pendingId: number | null = null;
+
+    try {
+      const name = `__E2E_COMM_${Date.now() % 1000000}__`;
+      const createRes = await ctx.post("/api/v1/admin/building-dictionary/pending", {
+        data: {
+          kind: "community",
+          name,
+          community_payload: { district: "虹口", business_circle: "E2E" },
+          source_type: "admin",
+        },
+      });
+      expect(createRes.ok()).toBeTruthy();
+      pendingId = ((await createRes.json()) as { pending_id: number }).pending_id;
+
+      await page.goto("/admin/building-dictionary/review");
+      const row = page.locator("tbody tr", { hasText: `新小区 · ${name}` }).first();
+      await expect(row).toBeVisible({ timeout: 20000 });
+      await row.click();
+
+      const dialog = page.getByRole("dialog");
+      const search = dialog.getByPlaceholder(/搜目标小区名或地址/);
+      await expect(search).toHaveValue(name);
+    } finally {
+      if (pendingId !== null) {
+        await ctx.post(`/api/v1/admin/building-dictionary/review/${pendingId}/resolve`, {
+          data: { action: "reject" },
+        });
+      }
+      await dispose();
+    }
+  });
 });

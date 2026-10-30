@@ -95,8 +95,8 @@ export function ReviewTargetPicker({
   const isCommunityKind = kind === "community";
   const isRoomKind = kind === "room";
 
-  // 小区条目：全库搜索
-  const [commQ, setCommQ] = useState("");
+  // 小区条目：全库搜索；搜索框预填提交的小区名，避免审核员从「提交内容」手工复制
+  const [commQ, setCommQ] = useState(() => (isCommunityKind ? (communityName ?? "").trim() : ""));
   const [commOptions, setCommOptions] = useState<CommunityOption[]>([]);
   const [searchingComm, setSearchingComm] = useState(false);
 

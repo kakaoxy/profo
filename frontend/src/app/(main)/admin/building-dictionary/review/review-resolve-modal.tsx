@@ -379,7 +379,9 @@ export function ReviewResolveModal({
           <ReviewTargetPicker
             kind={item.kind === "community" ? "community" : item.kind === "room" ? "room" : "building"}
             communityId={item.community_id ?? null}
-            communityName={item.community_name ?? null}
+            communityName={
+              item.kind === "community" ? (item.name ?? null) : (item.community_name ?? null)
+            }
             prefillBuildingId={item.kind === "room" && item.parent_kind === "building" ? item.parent_id : null}
             prefillFloor={item.kind === "room" ? floorOfRoomNo(item.name ?? "") : null}
             actionLabel={action === "merge" ? "merge" : "reject"}
