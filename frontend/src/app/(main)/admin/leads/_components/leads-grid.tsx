@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MapPin, Home, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatBuildingLabel } from "@/lib/dict-display";
 import { isValidUrl } from "@/lib/validators";
 import { Lead } from "../types";
 import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
@@ -126,7 +127,10 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onDel
                 {/* 字典地址行（surface-dict-binding-info）：楼栋/户室缺失静默省略 */}
                 {lead.buildingNo || lead.roomNo ? (
                   <p className="text-xs text-ink mt-1">
-                    {[lead.buildingNo && `${lead.buildingNo}栋`, lead.roomNo && `${lead.roomNo}室`]
+                    {[
+                      lead.buildingNo && formatBuildingLabel(lead.buildingNo),
+                      lead.roomNo && `${lead.roomNo}室`,
+                    ]
                       .filter(Boolean)
                       .join(" ")}
                   </p>

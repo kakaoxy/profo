@@ -19,6 +19,7 @@
  * - `change`：detail = DictAddressValue（父级写表单的唯一入口）
  */
 import type { components } from "../../types/api-types";
+import { formatBuildingLabel } from "../../utils/building-label";
 import { request } from "../../utils/request";
 
 type PublicCommunitySearchItem = components["schemas"]["PublicCommunitySearchItem"];
@@ -57,6 +58,8 @@ interface DictAddressValue {
 interface BuildingOption {
   id: number;
   building_no: string;
+  /** 展示文案：已带量词原样，否则补「号」 */
+  label: string;
   pending: boolean;
   pending_id: number | null;
   /** wxml wx:key（pending 楼栋 id 恒为 0，不能用 id，否则多条待审时 key 重复） */
@@ -101,6 +104,8 @@ type ComponentData = {
   buildingKeyword: string;
   buildingId: number | null;
   buildingNo: string;
+  /** 已选楼栋展示文案（WXML 不能写正则，统一在 TS 侧格式化） */
+  buildingLabel: string;
   // 三/四级：楼层 + 户室
   floors: FloorOption[];
   activeFloor: string;
@@ -165,6 +170,7 @@ const data: ComponentData = {
   buildingKeyword: "",
   buildingId: null,
   buildingNo: "",
+  buildingLabel: "",
   floors: [],
   activeFloor: "all",
   rooms: [],
@@ -253,6 +259,7 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
         communityResults: [],
         buildingId: null,
         buildingNo: "",
+        buildingLabel: "",
         buildings: [],
         visibleBuildings: [],
         buildingKeyword: "",
@@ -372,6 +379,7 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
       this.setData({
         buildingId: id,
         buildingNo: (ds.no as string) || "",
+        buildingLabel: formatBuildingLabel((ds.no as string) || ""),
         // 选回字典楼栋 → 之前「新建楼栋/户室」的待审载荷必须作废，否则会同时提交
         // 一个实表 building_id 和一条 new_building，后端 dict_status 判定会打架
         newBuildingName: "",
@@ -407,6 +415,7 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
       this.setData({
         buildingId: null,
         buildingNo: name,
+        buildingLabel: formatBuildingLabel(name),
         buildingKeyword: "",
         floors: [],
         activeFloor: "all",
@@ -526,6 +535,7 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
           const list = (res.items || []).map((b) => ({
             id: b.id,
             building_no: b.building_no,
+            label: formatBuildingLabel(b.building_no),
             pending: b.pending,
             pending_id: b.pending_id ?? null,
             // 实表楼栋 id 唯一；pending 楼栋以「p+楼栋号」区分（同名 pending 由 uq_pending_open 防重）

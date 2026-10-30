@@ -1,4 +1,5 @@
 import { Lead } from "../../types";
+import { formatBuildingLabel } from "@/lib/dict-display";
 import { formatPriceWan, formatUnitPriceWan } from "@/lib/formatters";
 
 interface LeadBasicInfoProps {
@@ -19,7 +20,7 @@ export function LeadBasicInfo({ lead }: LeadBasicInfoProps) {
     dictFields.push({
       label: "楼栋",
       value: lead.buildingNo
-        ? `${lead.buildingNo}栋${pending ? "（未审核）" : ""}`
+        ? `${formatBuildingLabel(lead.buildingNo)}${pending ? "（未审核）" : ""}`
         : `ID:${lead.buildingId}`,
     });
   }

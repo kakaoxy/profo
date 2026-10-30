@@ -11,6 +11,7 @@ import {
   Layers,
 } from "lucide-react";
 import { Lead, LeadStatus, FollowUp, FollowUpConclusion, FollowUpMethod } from "../../types";
+import { formatBuildingLabel } from "@/lib/dict-display";
 import { safeFormatDate } from "@/lib/formatters";
 import { KpiRow } from "./kpi-row";
 import { OwnerNotesSection } from "./owner-notes-section";
@@ -56,7 +57,7 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
       icon: Building,
       label: "楼栋",
       value: lead.buildingNo
-        ? `${lead.buildingNo}栋${pending ? "（未审核）" : ""}`
+        ? `${formatBuildingLabel(lead.buildingNo)}${pending ? "（未审核）" : ""}`
         : `ID:${lead.buildingId}`,
     });
   }

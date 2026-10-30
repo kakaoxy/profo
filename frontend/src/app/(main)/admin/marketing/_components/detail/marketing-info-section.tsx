@@ -4,6 +4,7 @@ import { memo, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
 import { ImageOff } from "lucide-react";
 import { formatUnitPrice, formatArea } from "@/lib/formatters";
+import { formatBuildingLabel } from "@/lib/dict-display";
 import { safeParseDate } from "@/lib/validators";
 import { getFileUrl } from "./utils";
 import { getThumbnailUrl } from "@/lib/config";
@@ -92,7 +93,7 @@ export const MarketingInfoSection = memo(function MarketingInfoSection({
   // 楼盘字典四级地址行（非强制：绑定过才显示；pending 时名称为待审内容）
   const dictAddressRows = useMemo(() => {
     const building = project.building_no
-      ? `${project.building_no}栋`
+      ? formatBuildingLabel(project.building_no)
       : project.building_id
         ? `ID:${project.building_id}`
         : null;

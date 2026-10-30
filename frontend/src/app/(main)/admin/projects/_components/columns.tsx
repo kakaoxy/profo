@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Project } from "../types";
 import { ActionCell, ProjectTableMeta } from "./action-cell";
 import { getStatusLabel, DEFAULT_STATUS } from "@/lib/status-colors";
+import { formatBuildingLabel } from "@/lib/dict-display";
 
 /** Steep 风格项目状态徽章映射（仅本列表页使用，勿改全局 status-colors） */
 const STEEP_STATUS_BADGE_CLASS: Record<string, string> = {
@@ -90,7 +91,10 @@ export const columns: ColumnDef<Project>[] = [
     header: () => <div className="hidden lg:block text-graphite font-medium">小区</div>,
     cell: ({ row }) => {
       const p = row.original;
-      const dictAddress = [p.building_no && `${p.building_no}栋`, p.room_no && `${p.room_no}室`]
+      const dictAddress = [
+        p.building_no && formatBuildingLabel(p.building_no),
+        p.room_no && `${p.room_no}室`,
+      ]
         .filter(Boolean)
         .join(" ");
       return (

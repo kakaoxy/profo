@@ -5,7 +5,7 @@
     <block wx:if="{{communityName}}">
       <text class="dp-summary__crumb">{{communityName}}</text>
       <text class="dp-summary__sep" wx:if="{{buildingNo}}">›</text>
-      <text class="dp-summary__crumb" wx:if="{{buildingNo}}">{{buildingNo}}{{roomNo ? '' : '栋'}}</text>
+      <text class="dp-summary__crumb" wx:if="{{buildingNo}}">{{buildingLabel}}</text>
       <text class="dp-summary__sep" wx:if="{{roomNo}}">›</text>
       <text class="dp-summary__crumb" wx:if="{{roomNo}}">{{roomNo}}室</text>
       <text class="dp-summary__badge" wx:if="{{dictStatus === 'pending'}}">待审核</text>
@@ -80,7 +80,7 @@
               data-pending="{{item.pending}}"
               bindtap="onBuildingPick"
             >
-              <text>{{item.building_no}}栋</text>
+              <text>{{item.label}}</text>
               <text class="dp-item__tag" wx:if="{{item.pending}}">待审核</text>
             </view>
             <view wx:if="{{!visibleBuildings.length}}" class="dp-col__state">暂无楼栋，可手填楼栋号</view>

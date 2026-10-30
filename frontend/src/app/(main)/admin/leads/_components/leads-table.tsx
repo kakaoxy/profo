@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatBuildingLabel } from "@/lib/dict-display";
 import { isValidUrl } from "@/lib/validators";
 import { safeFormatDate } from "@/lib/formatters";
 import { Lead } from "../types";
@@ -143,7 +144,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                     {lead.buildingNo || lead.roomNo ? (
                       <span className="mt-0.5 block truncate max-w-[120px] text-xs leading-tight text-graphite">
                         {[
-                          lead.buildingNo && `${lead.buildingNo}栋`,
+                          lead.buildingNo && formatBuildingLabel(lead.buildingNo),
                           lead.roomNo && `${lead.roomNo}室`,
                         ]
                           .filter(Boolean)

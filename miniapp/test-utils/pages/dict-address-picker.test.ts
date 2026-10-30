@@ -111,8 +111,11 @@ describe("字典命中：id 回填，new_* 全空", () => {
     comp.onCommunityPick({ currentTarget: { dataset: { id: "c-1", name: "A 小区" } } });
     pending[0].resolve({ total: 1, items: [{ id: 11, building_no: "8", pending: false, pending_id: null }] });
     await new Promise((r) => setTimeout(r, 0));
+    // 楼栋展示量词在 TS 侧格式化（裸号补「号」，自带量词原样）
+    expect((comp.data.buildings[0] as AnyRecord).label).toBe("8号");
 
     comp.onBuildingPick({ currentTarget: { dataset: { id: 11, no: "8", pending: false } } });
+    expect((comp.data as AnyRecord).buildingLabel).toBe("8号");
     let payload = lastPayload(comp);
     expect(payload.buildingId).toBe(11);
     expect(payload.buildingNo).toBe("8");

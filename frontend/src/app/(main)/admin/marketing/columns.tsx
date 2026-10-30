@@ -11,6 +11,7 @@ import {
 import { getFileUrl } from "@/lib/config";
 import { isValidUrl } from "@/lib/validators";
 import { formatPrice, formatUnitPrice, formatArea, safeFormatDate } from "@/lib/formatters";
+import { formatBuildingLabel } from "@/lib/dict-display";
 import { ActionCell } from "./_components/action-cell";
 
 // 判断是否为开发环境
@@ -122,7 +123,10 @@ export const columns: ColumnDef<L4MarketingProject>[] = [
             {/* 字典地址行（surface-dict-binding-info）：楼栋/户室缺失静默省略 */}
             {project.building_no || project.room_no ? (
               <span className="text-[11px] text-graphite mt-0.5">
-                {[project.building_no && `${project.building_no}栋`, project.room_no && `${project.room_no}室`]
+                {[
+                  project.building_no && formatBuildingLabel(project.building_no),
+                  project.room_no && `${project.room_no}室`,
+                ]
                   .filter(Boolean)
                   .join(" ")}
               </span>
