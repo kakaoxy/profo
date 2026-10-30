@@ -117,15 +117,16 @@ interface PageData {
   // 分享归因（Task 6）
   /** 进入参数携带的分享归属员工 ID（空串=无归属）. */
   referrer: string;
-  /** 当前登录用户是否为内部员工（admin 令牌识别成功）. */
+  /** 当前登录用户是否为内部员工（存在 admin 令牌即置真，不等待 /auth/me）. */
   isEmployee: boolean;
-  /** 员工自身 ID（识别成功置值，分享时作为 referrer 归属）. */
+  /** 员工自身 ID（令牌 sub 初值，识别成功后由 /auth/me 覆盖）. */
   employeeId: string;
 }
 
 interface PageCustom {
   getToken(): string;
   onInput(e: WechatMiniprogram.Input): void;
+  onCommunityInput(e: WechatMiniprogram.Input): void;
   onDictChange(e: WechatMiniprogram.CustomEvent): void;
   onLayoutInput(e: WechatMiniprogram.Input): void;
   onOrientationTap(e: WechatMiniprogram.BaseEvent): void;
@@ -218,7 +219,8 @@ Page<PageData, PageCustom>({
     // 同步取当前登录员工 ID 作为 employeeId 初值：onShareAppMessage 是同步回调，
     // 无法 await loadEmployee；先从 access_token 解析 sub 填充，确保进入后立即
     // 分享仍携带 referrer 归因（loadEmployee 完成后由后端确认值覆盖）
-    this.setData({ referrer, employeeId: getUserIdFromAccessToken() });
+    const isEmployee = hasValidAdminToken();
+    this.setData({ referrer, employeeId: getUserIdFromAccessToken(), isEmployee });
     // 分享/扫码进入（带 referrer）：静默上报访问埋点（PV +1 / UV 按匿名 visitor_id 去重），
     // 免登录接口（skipAuth 不携带令牌）；source 对齐分享 path 的进入渠道参数；失败不打扰用户
     if (referrer) {
@@ -234,36 +236,41 @@ Page<PageData, PageCustom>({
         skipAuth: true,
       }).catch(() => {});
     }
-    // 内部员工（admin 令牌存在）：识别身份后展示分享横幅 + 启用分享菜单；
-    // 识别失败静默降级（非员工不显示横幅，不影响表单）
-    if (hasValidAdminToken()) {
+    // 内部员工（admin 令牌存在）：同步按员工态渲染楼盘字典选择器，再异步识别身份
+    // 展示分享横幅 + 启用分享菜单；识别失败静默降级，不影响字典选择与表单填写。
+    if (isEmployee) {
       this.loadEmployee();
     }
   },
 
   /**
    * 识别当前登录员工（/auth/me）.
-   * 成功置 isEmployee=true/employeeId，并启用分享菜单（右上角分享 + 朋友圈）；
-   * 失败（401/403/网络）静默，不阻断表单与正常分享.
+   * 员工态已由 admin 令牌同步置真；本方法用后端返回值回填 employeeId 并启用分享菜单。
+   * 失败（401/403/网络）静默，不阻断字典选择、表单填写与正常分享.
    */
   async loadEmployee() {
     try {
       const employeeId = await fetchEmployeeId();
+      // 兜底再置真：onLoad/onShow 已同步设置，直接调用本方法时也保持员工态语义
       this.setData({ isEmployee: true, employeeId });
       wx.showShareMenu({ menus: ["shareAppMessage", "shareTimeline"] });
     } catch {
-      // 静默降级：非员工不显示横幅
+      // 静默降级：不阻断表单；employeeId 保留 onLoad 时从令牌解析的初值
     }
   },
 
   onShow() {
     this.loadLogin();
     this.loadLeadCount();
-    // 员工识别补强：tab 页从登录页返回（onLoad 不重跑）时，若已有 admin 令牌
-    // 且尚未识别员工，再次尝试识别以展示分享横幅；识别成功置 isEmployee=true
-    // 后不再重复请求，失败（令牌失效等）静默降级
-    if (hasValidAdminToken() && !this.data.isEmployee) {
+    // 员工态补强：tab 页从登录页返回（onLoad 不重跑）时，若已有 admin 令牌
+    // 且尚未切换为员工态，先同步置真渲染字典选择器，再异步识别身份；
+    // admin 令牌失效时同步切回外部用户手填，避免残留字典入口
+    const isEmployee = hasValidAdminToken();
+    if (isEmployee && !this.data.isEmployee) {
+      this.setData({ isEmployee: true });
       this.loadEmployee();
+    } else if (!isEmployee && this.data.isEmployee) {
+      this.setData({ isEmployee: false });
     }
   },
 
@@ -392,6 +399,28 @@ Page<PageData, PageCustom>({
       [`form.${field}`]: e.detail.value,
     };
     this.setData(patch);
+  },
+
+  /**
+   * 外部用户手填小区名称.
+   *
+   * 外部用户不走楼盘字典，只需提交小区名称；同时清空可能残留的字典关联字段
+   * 与新增待审载荷，避免员工态切换/回退时把旧小区 id、楼栋户室一并提交。
+   */
+  onCommunityInput(e: WechatMiniprogram.Input) {
+    this.dictPending = {
+      newCommunity: null,
+      newBuilding: null,
+      newRoom: null,
+    };
+    this.setData({
+      "form.community_name": e.detail.value,
+      "form.community_id": "",
+      "form.district": "",
+      "form.business_area": "",
+      "form.building_id": null,
+      "form.room_id": null,
+    });
   },
 
   /**

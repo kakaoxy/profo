@@ -24,13 +24,13 @@ router = APIRouter(prefix="/public/communities", tags=["public-communities"])
 @router.get(
     "/search",
     summary="搜索小区",
-    description="根据关键词搜索小区，无需登录",
+    description="根据关键词搜索小区（匹配名称/地址/别名），无需登录",
 )
 @limiter.limit(RateLimits.PUBLIC_COMMUNITY_SEARCH)
 def search_communities(
     request: Request,
     db: DbSessionDep,
-    q: Annotated[str, Query(min_length=1, max_length=100, description="搜索关键词")],
+    q: Annotated[str, Query(min_length=1, max_length=100, description="搜索关键词（名称/地址/别名）")],
     limit: Annotated[int, Query(ge=1, le=100, description="返回条数限制")] = 20,
 ) -> list[PublicCommunitySearchItem]:
     """根据关键词搜索小区."""

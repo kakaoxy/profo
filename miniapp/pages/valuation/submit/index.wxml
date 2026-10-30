@@ -30,10 +30,12 @@
 
   <!-- 表单 -->
   <view class="form-page">
-    <!-- 小区地址（楼盘字典四级：小区必选，楼栋/户室选填；与 admin 录入线索同口径） -->
+    <!-- 小区地址：内部员工走楼盘字典四级（小区必选，楼栋/户室选填，同 admin 录入口径）；
+         外部用户保持手工填写小区名称 -->
     <view class="form-group">
       <text class="form-label">小区名称</text>
-      <dict-address-picker bind:change="onDictChange" />
+      <dict-address-picker wx:if="{{isEmployee}}" bind:change="onDictChange" />
+      <input wx:else class="input" placeholder="请输入小区名称" value="{{form.community_name}}" bindinput="onCommunityInput" />
     </view>
 
     <!-- 房源户型（室 / 厅 / 卫） -->

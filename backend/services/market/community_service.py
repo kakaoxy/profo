@@ -7,7 +7,7 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import distinct, func
+from sqlalchemy import distinct, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -44,6 +44,10 @@ class CommunityQueryService:
     ) -> list[PublicCommunitySearchItem]:
         """C端公开搜索小区.
 
+        关键词同时匹配小区名称、地址与别名（与楼盘字典 admin 搜索口径一致）。
+        小程序字典选择器提示「输入小区名称搜索」，但用户常按地址或俗称查找；
+        只搜名称会导致候选为空，员工被迫手填。
+
         Args:
             db: 数据库会话
             keyword: 搜索关键词
@@ -53,11 +57,18 @@ class CommunityQueryService:
             list[PublicCommunitySearchItem]: 搜索结果列表
 
         """
+        kw = f"%{escape_like(keyword)}%"
+        alias_community_ids = select(CommunityAlias.community_id).where(
+            CommunityAlias.alias_name.like(kw, escape="\\"),
+            CommunityAlias.is_deleted.is_(False),
+        )
         communities = (
             db.query(Community)
             .filter(
                 Community.is_active.is_(True),
-                Community.name.like(f"%{escape_like(keyword)}%"),
+                Community.name.like(kw, escape="\\")
+                | Community.address.like(kw, escape="\\")
+                | Community.id.in_(alias_community_ids),
             )
             .order_by(Community.name)
             .limit(limit)

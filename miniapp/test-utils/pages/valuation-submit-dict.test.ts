@@ -10,9 +10,13 @@
  * 2. dict_status **不由前端自报**（后端按「有 building/room → linked / 有 new_* →
  *    pending / 其余 manual」推导，前端多传会与后端推导打架）；
  * 3. 选到字典小区后旧小区残留的行政区/商圈必须被清空（否则会随单提交脏数据）。
+ *
+ * 2026-10-30 口径调整：内部员工（admin 令牌）走字典选择器，外部用户保持手工填写；
+ * 文件末尾新增员工态/外部用户态用例锁定该差异。
  */
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPageHarness, createRequestMock, pendingReqs, resetTestStubs } from "../test-harness";
+import { hasValidAdminToken } from "../../utils/token";
 
 vi.mock("../../utils/request", () => createRequestMock());
 vi.mock("../../utils/token", () => ({
@@ -219,6 +223,39 @@ describe("楼盘字典接线", () => {
     fillRequired(ctx);
     ctx.onSubmit();
     expect(pendingReqs().some((r) => r.opts.url === "/public/leads")).toBe(false);
+  });
+});
+
+describe("员工态 / 外部用户态小区输入", () => {
+  it("内部员工（admin 令牌）进入页面即按员工态渲染字典选择器，无需等 /auth/me 返回", () => {
+    vi.mocked(hasValidAdminToken).mockReturnValue(true);
+    const ctx = createPageHarness({});
+    ctx.onLoad({});
+
+    expect(ctx.data.isEmployee).toBe(true);
+  });
+
+  it("外部用户进入页面为手填态，输入小区名只写 community_name 并清空字典残留字段", () => {
+    vi.mocked(hasValidAdminToken).mockReturnValue(false);
+    const ctx = createPageHarness({});
+    ctx.onLoad({});
+    ctx.setData({
+      "form.community_id": "c-old",
+      "form.district": "浦东新区",
+      "form.business_area": "花木",
+      "form.building_id": 292014,
+      "form.room_id": 4262551,
+    });
+
+    ctx.onCommunityInput({ detail: { value: "输入的新小区" } });
+
+    expect(ctx.data.isEmployee).toBe(false);
+    expect(ctx.data.form.community_name).toBe("输入的新小区");
+    expect(ctx.data.form.community_id).toBe("");
+    expect(ctx.data.form.district).toBe("");
+    expect(ctx.data.form.business_area).toBe("");
+    expect(ctx.data.form.building_id).toBeNull();
+    expect(ctx.data.form.room_id).toBeNull();
   });
 });
 
