@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { client } from "@/lib/api-client";
+import { formatBuildingLabel } from "@/lib/dict-display";
 import { cn } from "@/lib/utils";
 
 export interface CommunityOption {
@@ -102,6 +103,14 @@ export function ReviewTargetPicker({
   // 楼栋/户室条目：小区固定级联
   const [buildings, setBuildings] = useState<BuildingOption[]>([]);
   const [loadingBuildings, setLoadingBuildings] = useState(false);
+  const [buildingQ, setBuildingQ] = useState("");
+  /**
+   * 小区下是否至少有一栋楼（不受关键词搜索影响）。
+   *
+   * 不能用 ``buildings.length``：搜索无结果时长度同样为 0，会把「搜不到」
+   * 误判成「小区无楼栋」，进而让审核弹层把默认动作降级为「确认新增」。
+   */
+  const [hasAnyBuildings, setHasAnyBuildings] = useState<boolean | null>(null);
   /**
    * 楼栋列表是否**至少完成过一次加载**（BR-29 关键状态）.
    *
@@ -143,27 +152,33 @@ export function ReviewTargetPicker({
     }
   }, [commQ]);
 
-  /** 楼栋/户室条目：加载所属小区楼栋 */
-  useEffect(() => {
-    if (isCommunityKind || !communityId) return;
-    void (async () => {
+  /** 楼栋/户室条目：按关键词搜索所属小区楼栋（与小区选择器同款交互） */
+  const searchBuildings = useCallback(
+    async (keyword: string) => {
+      if (!communityId) return;
+      const kw = keyword.trim();
       setLoadingBuildings(true);
       try {
         const { data } = await client.GET(
           "/api/v1/admin/building-dictionary/communities/{community_id}/buildings",
-          { params: { path: { community_id: communityId }, query: { page: 1, page_size: 100 } } },
+          {
+            params: {
+              path: { community_id: communityId },
+              query: { page: 1, page_size: 100, keyword: kw || undefined },
+            },
+          },
         );
         if (data) {
           // BR-29：待审楼栋不再被过滤 —— 新小区/新楼栋下常常一条实表都没有
           // （实测 2066/21732 个小区无楼栋），旧实现只列实表 → 无目标 → 提交按钮永久置灰。
-          setBuildings(
-            data.items.map((b): BuildingOption => ({
-              id: b.id,
-              building_no: b.building_no,
-              pending: b.pending === true,
-              pending_id: b.pending_id ?? null,
-            })),
-          );
+          const items = data.items.map((b): BuildingOption => ({
+            id: b.id,
+            building_no: b.building_no,
+            pending: b.pending === true,
+            pending_id: b.pending_id ?? null,
+          }));
+          setBuildings(items);
+          if (!kw) setHasAnyBuildings(data.total > 0 || items.length > 0);
         }
       } finally {
         setLoadingBuildings(false);
@@ -171,8 +186,15 @@ export function ReviewTargetPicker({
         // 置位后可如实上报 empty 并给出「改用确认新增」的明确引导。
         setBuildingsLoaded(true);
       }
-    })();
-  }, [isCommunityKind, communityId]);
+    },
+    [communityId],
+  );
+
+  /** 初始加载小区楼栋 */
+  useEffect(() => {
+    if (isCommunityKind || !communityId) return;
+    void searchBuildings("");
+  }, [isCommunityKind, communityId, searchBuildings]);
 
   /**
    * BR-29：上报「用已有的」可用性（驱动审核弹层的默认动作/推荐标）.
@@ -202,7 +224,7 @@ export function ReviewTargetPicker({
     if (isRoomKind) {
       // 户室条目要选到楼栋后才知有无户室；未选楼栋前先按楼栋可用性判定
       if (!selection.building) {
-        onAvailabilityChange(buildings.length > 0 ? "unknown" : "empty");
+        onAvailabilityChange((hasAnyBuildings ?? buildings.length > 0) ? "unknown" : "empty");
         return;
       }
       if (loadingRooms) {
@@ -212,7 +234,7 @@ export function ReviewTargetPicker({
       onAvailabilityChange(rooms.length > 0 ? "available" : "empty");
       return;
     }
-    onAvailabilityChange(buildings.length > 0 ? "available" : "empty");
+    onAvailabilityChange((hasAnyBuildings ?? buildings.length > 0) ? "available" : "empty");
   }, [
     onAvailabilityChange,
     isCommunityKind,
@@ -221,6 +243,7 @@ export function ReviewTargetPicker({
     loadingBuildings,
     buildingsLoaded,
     loadingRooms,
+    hasAnyBuildings,
     buildings.length,
     rooms.length,
     selection.building,
@@ -375,6 +398,32 @@ export function ReviewTargetPicker({
               请改用「确认新增」或「驳回」。
             </p>
           ) : null}
+          {communityId ? (
+            <div className="mb-2 flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-2.5 size-3.5 text-dove" />
+                <Input
+                  value={buildingQ}
+                  onChange={(e) => setBuildingQ(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void searchBuildings(buildingQ);
+                  }}
+                  placeholder="搜楼栋号（如 285）"
+                  aria-label="搜索楼栋号"
+                  className="h-8 pl-8 text-[12.5px]"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={loadingBuildings}
+                onClick={() => void searchBuildings(buildingQ)}
+              >
+                {loadingBuildings ? <Loader2 className="size-3.5 animate-spin" /> : null}
+                搜索
+              </Button>
+            </div>
+          ) : null}
           {/* 楼栋 chips */}
           {loadingBuildings ? (
             <Loader2 className="size-4 animate-spin text-graphite" />
@@ -403,13 +452,15 @@ export function ReviewTargetPicker({
                   )}
                   onClick={() => void pickBuilding(b)}
                 >
-                  {b.building_no}栋
+                  {formatBuildingLabel(b.building_no)}
                   {b.pending ? <span className="ml-1 text-[9.5px] opacity-70">待审</span> : null}
                 </button>
               ))}
               {buildings.length === 0 ? (
                 <span className="py-1 text-[11px] text-dove">
-                  本小区暂无任何楼栋（含待审）—— 无可用合并目标，请改用「确认新增」
+                  {hasAnyBuildings
+                    ? "没有匹配的楼栋，换个楼栋号试试"
+                    : "本小区暂无任何楼栋（含待审）—— 无可用合并目标，请改用「确认新增」"}
                 </span>
               ) : null}
             </div>
@@ -464,7 +515,9 @@ export function ReviewTargetPicker({
                           ? "border-ink bg-ink text-white"
                           : "border-dove/50 text-ink hover:border-ash",
                         r.pending && "border-dashed text-graphite",
-                        r.pending === true && !allowPendingTargets && "cursor-not-allowed opacity-50",
+                        r.pending === true &&
+                          !allowPendingTargets &&
+                          "cursor-not-allowed opacity-50",
                       )}
                       onClick={() => onSelectionChange({ ...selection, room: r })}
                     >

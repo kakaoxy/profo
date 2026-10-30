@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 /**
  * BR-29 目标选择器 · 「初始空数组不得上报 empty」防死锁回归用例（必须保留）.
@@ -103,9 +103,7 @@ describe("ReviewTargetPicker · 初始态不得上报 empty（防死锁）", () 
   it("归属小区缺失（父楼栋已删除）→ empty（无路可走，需引导改用新增/驳回）", async () => {
     const { values, cb } = collect();
 
-    render(
-      <ReviewTargetPicker {...baseProps} communityId={null} onAvailabilityChange={cb} />,
-    );
+    render(<ReviewTargetPicker {...baseProps} communityId={null} onAvailabilityChange={cb} />);
 
     await waitFor(() => expect(values).toContain("empty"));
     expect(getMock).not.toHaveBeenCalled();
@@ -163,9 +161,7 @@ describe("ReviewTargetPicker · 待审兄弟条目的可选性（BR-29）", () =
 
   it("allowPendingTargets=false（reject）→ 待审楼栋 chip 禁用", async () => {
     getMock.mockResolvedValue(pendingBuildingResponse);
-    const { container } = render(
-      <ReviewTargetPicker {...baseProps} allowPendingTargets={false} />,
-    );
+    const { container } = render(<ReviewTargetPicker {...baseProps} allowPendingTargets={false} />);
 
     await waitFor(() => {
       const chips = Array.from(container.querySelectorAll("button")).filter((b) =>
@@ -174,5 +170,63 @@ describe("ReviewTargetPicker · 待审兄弟条目的可选性（BR-29）", () =
       expect(chips.length).toBeGreaterThan(0);
       expect(chips[0]).toBeDisabled();
     });
+  });
+});
+
+describe("ReviewTargetPicker · 大社区楼栋可达性（呼玛二村 285 号）", () => {
+  const building = (id: number, buildingNo: string) => ({
+    id,
+    building_no: buildingNo,
+    pending: false,
+    pending_id: null,
+  });
+
+  const page1 = {
+    data: {
+      total: 279,
+      items: Array.from({ length: 100 }, (_, i) => building(i + 1, String(i + 1))),
+    },
+    error: undefined,
+  };
+
+  // 按 id 排序时 285 号位于第 190 条（第二页），第一页必然看不到它。
+  it("关键词搜索可命中第一页之外的 285 号", async () => {
+    getMock.mockImplementation(
+      (_path: string, options?: { params?: { query?: { keyword?: string } } }) => {
+        if (options?.params?.query?.keyword === "285") {
+          return Promise.resolve({
+            data: { total: 1, items: [building(190, "285")] },
+            error: undefined,
+          });
+        }
+        return Promise.resolve(page1);
+      },
+    );
+
+    render(<ReviewTargetPicker {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("1号")).toBeTruthy());
+
+    fireEvent.change(screen.getByLabelText("搜索楼栋号"), { target: { value: "285" } });
+    fireEvent.click(screen.getByRole("button", { name: "搜索" }));
+
+    await waitFor(() => expect(screen.getByText("285号")).toBeTruthy());
+    const searched = getMock.mock.calls.some(
+      ([, options]) =>
+        (options as { params?: { query?: { keyword?: string } } } | undefined)?.params?.query
+          ?.keyword === "285",
+    );
+    expect(searched).toBe(true);
+  });
+
+  it("楼栋 chip 使用「号」量词，不再显示「栋」", async () => {
+    getMock.mockResolvedValue({
+      data: { total: 1, items: [building(190, "285")] },
+      error: undefined,
+    });
+
+    render(<ReviewTargetPicker {...baseProps} />);
+
+    await waitFor(() => expect(screen.getByText("285号")).toBeTruthy());
+    expect(screen.queryByText("285栋")).toBeNull();
   });
 });

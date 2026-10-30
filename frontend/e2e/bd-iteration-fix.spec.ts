@@ -317,8 +317,11 @@ test.describe("楼盘字典迭代修复 E2E（对齐设计稿 v2.0）", () => {
       // 小区固定（无需搜索框）
       await expect(dialog.getByText(/小区固定为/)).toBeVisible();
       await expect(dialog.getByPlaceholder(/搜目标小区名或地址/)).toBeHidden();
-      // 楼栋 chips 含预填楼栋（选中态 ink 底）
-      const bChip = dialog.locator("button", { hasText: `${buildingNo}栋` }).first();
+      // 楼栋 chips 含预填楼栋（选中态 ink 底）；量词按字典展示规范为「号」
+      const buildingLabel = /(号|号楼|栋|幢|单元|弄)$/.test(buildingNo)
+        ? buildingNo
+        : `${buildingNo}号`;
+      const bChip = dialog.locator("button", { hasText: buildingLabel }).first();
       await expect(bChip).toBeVisible({ timeout: 10000 });
       // 预填户室网格出现并含提交户室号
       await expect(dialog.getByText("户室（必选）")).toBeVisible({ timeout: 10000 });
