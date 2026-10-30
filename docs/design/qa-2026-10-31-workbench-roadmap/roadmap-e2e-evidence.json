@@ -1,7 +1,8 @@
 {
-  "generatedAt": "2026-10-30T16:33:08.338Z",
+  "generatedAt": "2026-10-30T16:46:24.284Z",
   "apiTotal": 47,
   "drawableCount": 33,
+  "missingSigningCount": 13,
   "renderedRowsRecent": 10,
   "chips": {
     "sign": 3,

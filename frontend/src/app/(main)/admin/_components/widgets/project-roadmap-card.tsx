@@ -4,9 +4,14 @@
  * 工作台「项目全流程」时间轴卡（设计稿 01/02 屏，span 12）。
  *
  * 结构：卡头 → 工具条（图例即筛选 / 视图 / 缩放）→ 横向滚动时间轴 → 页脚。
- * 几何与交互口径见 `docs/To-Do/2026-10-31-工作台项目全流程roadmap-widget-SPEC.md`；
+ * 几何与交互口径见 `docs/Done/2026-10-31-工作台项目全流程roadmap-widget-SPEC.md`；
  * 左列宽用 CSS 变量 `--rm-left`（<xl 160px，≥xl 208px），几何计算只用像素值，
  * 因此 JS 不重复维护断点。
+ *
+ * 单文件行数说明（AGENTS §1「单文件 >500 行必须拆分」的特例）：工具条、页脚与
+ * 时间轴共享 filter / view / zoom / counts / 缩放中心保持等状态，拆出子组件需要
+ * 8+ 个 prop 双层透传，追踪成本高于收益；本卡是单次使用的封闭视图，故按规则
+ * 允许的「特殊需求注释说明」保留单文件。
  */
 
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -87,7 +92,9 @@ export function ProjectRoadmapCard({ projects, total, failed, today }: ProjectRo
   const [tip, setTip] = useState<TipState | null>(null);
 
   const drawable = useMemo(() => sortRoadmapProjects(projects.filter(isDrawable)), [projects]);
-  const missingDates = projects.length - drawable.length;
+  // 「缺日期」只统计没有签约日期的项目：`ended` 项目按 SPEC D6 静默排除，
+  // 不能并入缺日期提示（否则页脚会多报「已下架」项目数，实测 14 vs 实际 13）
+  const missingDates = useMemo(() => projects.filter((p) => !p.signingDate).length, [projects]);
   const base = useMemo(
     () => (view === "recent" ? drawable.slice(0, RECENT_LIMIT) : drawable),
     [drawable, view],

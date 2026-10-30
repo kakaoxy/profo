@@ -9,7 +9,12 @@ const BAR_WIDTHS = [46, 62, 38, 71, 54, 33, 58, 44, 66, 40];
 
 export function ProjectRoadmapSkeleton() {
   return (
-    <div className="flex min-w-0 flex-1 flex-col rounded-cards bg-white px-[22px] py-5 shadow-steep-sm">
+    // 与通用 WidgetSkeleton 同口径的加载语义（role=status + aria-label），避免读屏漏读
+    <div
+      role="status"
+      aria-label="加载中"
+      className="flex min-w-0 flex-1 flex-col rounded-cards bg-white px-[22px] py-5 shadow-steep-sm"
+    >
       <div className="h-[18px] w-[104px] animate-pulse rounded bg-fog" />
       <div className="mt-2.5 flex items-center gap-2">
         {[44, 44, 44, 44].map((width, index) => (

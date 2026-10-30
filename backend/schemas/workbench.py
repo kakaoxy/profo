@@ -47,7 +47,10 @@ class WorkbenchRoleLayoutsResponse(BaseModel):
     """三角色默认布局 + widget 注册表."""
 
     roles: dict[str, list[WorkbenchWidgetEntry]] = Field(description="角色 → 条目列表")
-    widgets: list[WorkbenchWidgetInfo] = Field(description="12 个 widget 的注册信息")
+    # 不写死数量：注册表随迭代扩充，描述写死数字会与 services/system/workbench_registry.py 漂移
+    widgets: list[WorkbenchWidgetInfo] = Field(
+        description="工作台 widget 注册信息（key/label/description/permission/default_span）",
+    )
 
 
 class WorkbenchRoleLayoutsUpdateRequest(BaseModel):

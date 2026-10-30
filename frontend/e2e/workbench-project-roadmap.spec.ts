@@ -52,6 +52,8 @@ interface ProjectRow {
 /** 可绘制口径：有签约日期且状态不是 ended（SPEC D2/D6） */
 let apiRows: ProjectRow[] = [];
 let drawableCount = 0;
+/** 页脚「缺日期未展示」口径：仅无签约日期的项目（ended 不算缺日期） */
+let missingSigningCount = 0;
 
 test.beforeAll(async () => {
   fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
@@ -62,6 +64,7 @@ test.beforeAll(async () => {
     const body = (await res.json()) as { items: ProjectRow[]; total: number };
     apiRows = body.items;
     drawableCount = apiRows.filter((p) => p.status !== "ended" && Boolean(p.signing_date)).length;
+    missingSigningCount = apiRows.filter((p) => !p.signing_date).length;
   } finally {
     await dispose();
   }
@@ -303,6 +306,17 @@ test("错误态/空态不出现（真实数据下的正常态）", async ({ page
   await expect(page.locator("[data-roadmap-empty]")).toHaveCount(0);
   await expect(page.locator("[data-roadmap-filtered-empty]")).toHaveCount(0);
 
+  // 页脚「缺日期未展示」= 无签约日期项目数：ended 项目按 D6 静默排除，不得并入
+  // （回归：旧实现用「接口条数 − 可绘制条数」，会把 ended 项目也算成缺日期）
+  if (missingSigningCount > 0) {
+    await expect(card.getByText(`${missingSigningCount} 个项目缺日期未展示`)).toBeVisible();
+    // 旧口径（接口条数 − 可绘制数，含 ended）在本数据下不应再出现，防止回归
+    const legacyCount = apiRows.length - drawableCount;
+    if (legacyCount !== missingSigningCount) {
+      await expect(card.getByText(`${legacyCount} 个项目缺日期未展示`)).toHaveCount(0);
+    }
+  }
+
   // 工件：整卡截图 + 实测证据
   await card.scrollIntoViewIfNeeded();
   await page.screenshot({
@@ -314,6 +328,7 @@ test("错误态/空态不出现（真实数据下的正常态）", async ({ page
     generatedAt: new Date().toISOString(),
     apiTotal: apiRows.length,
     drawableCount,
+    missingSigningCount,
     renderedRowsRecent: await rows(page).count(),
     chips: {
       sign: await chipCount(page, "sign"),

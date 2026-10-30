@@ -8,7 +8,7 @@ r"""E2E：统一消息中心 + 角色化工作台（迭代二 SPEC §11.2 可复
  4. B 用 A 的通知 ID 调 read → 404（验收 A4，K7 不用 403）
  5. A 关闭某分类 in_app → 不产生新收件行，微信仍调用（验收 A6）
  6. A 关闭 system.in_app → 400（K5）
- 7. 三角色 GET workbench/config → admin 10 / operator 8 / user 3（验收 A7）
+ 7. 三角色 GET workbench/config → admin 11 / operator 9 / user 3（验收 A7）
  8. user 手写 finance_summary → 后端不返回（验收 A8，K15 + roles 白名单）
  9. 招募留资只产 1 条站内信（#5，不含 #3）——重复推送风险已消解
 10. 指派产 lead.assigned 且微信行为不变（D-01）
@@ -279,10 +279,10 @@ def main() -> int:
         )
 
         log("")
-        log("═══ 9. 工作台角色矩阵（验收 A7：admin 10 / operator 8 / user 3）═══")
+        log("═══ 9. 工作台角色矩阵（验收 A7：admin 11 / operator 9 / user 3）═══")
         from services.system import workbench_layout
 
-        for role_code, expected in (("admin", 10), ("operator", 8), ("user", 3)):
+        for role_code, expected in (("admin", 11), ("operator", 9), ("user", 3)):
             target = (
                 session.query(User)
                 .join(Role, Role.id == User.role_id)
@@ -452,11 +452,11 @@ def main() -> int:
         )
         status_code, body = request_json("GET", "/admin/workbench/role-layouts", token=admin_token)
         check(
-            "role-layouts 返回三角色 + 12 widget 注册表",
+            "role-layouts 返回三角色 + 13 widget 注册表",
             status_code == 200
             and isinstance(body, dict)
             and set(body.get("roles", {})) == {"admin", "operator", "user"}
-            and len(body.get("widgets", [])) == 12,
+            and len(body.get("widgets", [])) == 13,
             f"http={status_code}",
         )
 

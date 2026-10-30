@@ -21777,7 +21777,7 @@ export interface components {
             };
             /**
              * Widgets
-             * @description 12 个 widget 的注册信息
+             * @description 工作台 widget 注册信息（key/label/description/permission/default_span）
              */
             widgets: components["schemas"]["WorkbenchWidgetInfo"][];
         };

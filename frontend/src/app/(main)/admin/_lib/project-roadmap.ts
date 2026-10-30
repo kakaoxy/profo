@@ -2,7 +2,7 @@
  * 工作台「项目全流程」时间轴的纯模型（无 React、无副作用）。
  *
  * 数据源：`GET /api/v1/projects?page=1&page_size=200&signing_sort=true`
- * （见 `docs/To-Do/2026-10-31-工作台项目全流程roadmap-widget-SPEC.md` §3）。
+ * （见 `docs/Done/2026-10-31-工作台项目全流程roadmap-widget-SPEC.md` §3）。
  *
  * 日期一律按「日」计算：后端 `ProjectResponse` 的签约/交房/上架/成交日期是
  * `YYYY-MM-DD` 字符串，必须用 `Date.UTC` 解析；用 `new Date("2026-04-10")`
