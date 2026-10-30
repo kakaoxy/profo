@@ -1,7 +1,7 @@
 // 迭代二 · 角色工作台布局 Playwright E2E（SPEC §11.4 / §11.5 A7–A9、A12）.
 //
 // 覆盖：
-//  1. 角色矩阵（验收 A7）：admin 10 / operator 8 / user 3 个 widget，
+//  1. 角色矩阵（验收 A7）：admin 11 / operator 9 / user 3 个 widget，
 //     且 operator/user 视角**不含** finance_summary、audit_summary
 //  2. 权限不扩张（验收 A8）：给 user 写入 finance_summary → 后端不返回、页面不渲染
 //  3. 定制持久（验收 A9）：隐藏一个 widget → 刷新仍隐藏 → 重置恢复
@@ -114,7 +114,7 @@ finally:
 
 /**
  * 读页头「当前生效 N / M」的启用数，并核对 DOM 中可见的 widget 槽位数。
- * 直接验证验收 A7 的「admin 10 / operator 8 / user 3」而非只看个别卡。
+ * 直接验证验收 A7 的「admin 11 / operator 9 / user 3」而非只看个别卡。
  */
 async function assertWidgetCount(page: import("@playwright/test").Page, expected: number) {
   await expect(page.getByRole("heading", { name: "工作台" })).toBeVisible();
@@ -260,6 +260,7 @@ test("卡头统一：每张卡标题 15px/500 + 右上角 13px 链接（设计�
     ["leads_funnel", "线索漏斗", "线索"],
     ["alert_card", "待评估提醒", "去处理"],
     ["todo_board_summary", "项目待办", "看板"],
+    ["project_roadmap", "项目全流程", "项目列表"],
     ["growth_overview", "获客总览", "获客中心"],
   ] as const) {
     const card = widget(page, key);
@@ -275,11 +276,11 @@ test("卡头统一：每张卡标题 15px/500 + 右上角 13px 链接（设计�
   }
 });
 
-test("admin 视角：10 个 widget 且含资金/审计概览", async ({ page }) => {
+test("admin 视角：11 个 widget 且含资金/审计概览", async ({ page }) => {
   await loginPage(page);
   await page.goto("/admin");
   await expect(page.getByRole("heading", { name: "工作台" })).toBeVisible();
-  await assertWidgetCount(page, 10); // 验收 A7
+  await assertWidgetCount(page, 11); // 验收 A7
   await expect(widget(page, "finance_summary")).toBeVisible({ timeout: 20_000 });
   await expect(widget(page, "audit_summary")).toBeVisible({ timeout: 20_000 });
   // 业务员专属卡不应出现在 admin 视角
@@ -305,10 +306,10 @@ test("monitor_projects 卡含「添加新项目」入口，且为设计稿 5 列
   expect(columns).toBe(5);
 });
 
-test("operator 视角：8 个 widget 且无资金/审计（验收 A7/A8）", async ({ page }) => {
+test("operator 视角：9 个 widget 且无资金/审计（验收 A7/A8）", async ({ page }) => {
   await loginAs(page, OPERATOR_USER, TEMP_PASSWORD);
   await page.goto("/admin");
-  await assertWidgetCount(page, 8); // 验收 A7
+  await assertWidgetCount(page, 9); // 验收 A7
   await expect(widget(page, "project_overview")).toBeVisible({ timeout: 20_000 });
   await expect(widget(page, "finance_summary")).toHaveCount(0);
   await expect(widget(page, "audit_summary")).toHaveCount(0);

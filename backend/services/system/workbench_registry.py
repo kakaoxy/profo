@@ -17,13 +17,15 @@
 from dataclasses import dataclass, field
 
 # 角色默认布局的代码兜底（K11 第三级：system_configs 缺行/损坏时使用）
-# 与 SPEC §8.3 表完全一致：admin 10 / operator 8 / user 3
+# 与 SPEC §8.3 表完全一致：admin 11 / operator 9 / user 3
+# （`project_roadmap` 为 2026-10-31 新增，紧随 4 张 span3 卡之后）
 WORKBENCH_ROLE_DEFAULTS: dict[str, tuple[str, ...]] = {
     "admin": (
         "project_overview",
         "leads_funnel",
         "alert_card",
         "todo_board_summary",
+        "project_roadmap",
         "growth_overview",
         "finance_summary",
         "audit_summary",
@@ -36,6 +38,7 @@ WORKBENCH_ROLE_DEFAULTS: dict[str, tuple[str, ...]] = {
         "leads_funnel",
         "alert_card",
         "todo_board_summary",
+        "project_roadmap",
         "growth_overview",
         "monitor_projects",
         "leads_table",
@@ -61,7 +64,7 @@ class WidgetSpec:
     roles: frozenset[str] = field(default=_ALL_ROLES)
 
 
-# 12 个 widget（顺序与 SPEC §8.3 表一致；roles 严格按设计稿矩阵）
+# 13 个 widget（顺序与 SPEC §8.3 表一致；roles 严格按设计稿矩阵）
 WORKBENCH_WIDGETS: dict[str, WidgetSpec] = {
     "project_overview": WidgetSpec(
         key="project_overview",
@@ -93,6 +96,14 @@ WORKBENCH_WIDGETS: dict[str, WidgetSpec] = {
         description="待办项目数/待办总数/P0/最深逾期",
         permission="project:read",
         default_span=3,
+        roles=_STAFF_ROLES,
+    ),
+    "project_roadmap": WidgetSpec(
+        key="project_roadmap",
+        label="项目全流程",
+        description="签约→交房→上架→成交 生命周期时间轴",
+        permission="project:read",
+        default_span=12,
         roles=_STAFF_ROLES,
     ),
     "growth_overview": WidgetSpec(

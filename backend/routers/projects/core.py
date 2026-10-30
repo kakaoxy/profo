@@ -155,6 +155,10 @@ def get_projects(
         bool,
         Query(description="按合同编号降序（越新越前），供项目记账列表使用"),
     ] = False,
+    signing_sort: Annotated[
+        bool,
+        Query(description="按签约日期降序（无签约日期的排末尾），供工作台项目全流程时间轴使用"),
+    ] = False,
 ) -> PaginatedResponse[ProjectResponse]:
     """获取项目列表.
 
@@ -173,6 +177,7 @@ def get_projects(
         include_interactions=include_interactions,
         monitor_sort=monitor_sort,
         contract_sort=contract_sort,
+        signing_sort=signing_sort,
     )
     return PaginatedResponse(
         items=result["items"],

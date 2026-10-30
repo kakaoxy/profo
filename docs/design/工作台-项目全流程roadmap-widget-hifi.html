@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>项目全流程 Roadmap · 工作台 Widget · 高保真设计稿</title>
+<!--
+  ============================================================
+  工作台新 Widget · 项目全流程 Roadmap · 高保真设计稿
+  ============================================================
+  覆盖 3 屏：
+    01 /admin                 工作台内嵌（新 widget 位于 KPI 行之后，span 12）
+    02 组件特写               默认 / 全部 / 筛选 / 缩放 / 悬停 / 状态矩阵
+    03 规范                   数据映射、注册表、交互、状态、可访问性、待确认
+
+  数据口径（与现有业务字段完全一致，不新造字段）：
+    签约 = project_contracts.signing_date             → ProjectResponse.signing_date
+    交房 = project_contracts.planned_handover_date    → ProjectResponse.planned_handover_date
+           （项目详情页「关键日期」在 sold 视图即展示为「交房」；HandoverDialog
+            确认交房时会回写该字段，因此它也是实际交房日）
+    上架 = project_sales.listing_date                 → ProjectResponse.listing_date
+    成交 = project_sales.sold_date                    → ProjectResponse.sold_date
+    当前阶段 = ProjectStatus（signing / renovating / selling / sold）
+
+  视觉：严格遵循 /DESIGN.md（Steep），复用 docs/design/迭代二-消息中心-角色工作台-hifi.html
+        的令牌、侧栏与 widget 语言。四阶段颜色全部取自既有色板：
+        签约 Sky Wash / 交房 Apricot Wash / 上架 Ink / 成交 Rust，不新增色值。
+
+  演示基准日：2026-10-30（稿内「今天」虚线固定在此日，真实实现取系统当天）。
+
+  技术形态：单文件自包含 HTML + React 18（CDN，Babel 内联转译）。
+  ⚠️ 设计稿交付物，有意单文件不拆分。
+  ============================================================
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;430;450;480;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>
+  /* ============ 1. Steep tokens（对齐 /DESIGN.md 与 globals.css） ============ */
+  :root {
+    --ink: #17191c;
+    --pwhite: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --slate: #8b8c8d;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --sky: #d3e3fc;
+    --blue: #4a90e2;
+    --pos: #ef4444;
+    --neg: #10b981;
+    --font-display: "Source Serif 4", "Songti SC", "Noto Serif SC", serif;
+    --font-ui: "Inter", -apple-system, "SF Pro Text", "PingFang SC", "Noto Sans SC", sans-serif;
+    --r-card: 24px; --r-img: 12px; --r-input: 16px; --r-pill: 9999px;
+    --shadow-steep: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.1) 0 20px 25px -5px, rgba(0,0,0,.1) 0 8px 10px -6px;
+    --shadow-steep-sm: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 10px 20px -8px, rgba(0,0,0,.05) 0 3px 6px -4px;
+    --sidebar-w: 240px;
+    /* 阶段色（全部来自既有色板） */
+    --st-sign: #d3e3fc;
+    --st-handover: #fbe1d1;
+    --st-listing: #17191c;
+    --st-sold: #5d2a1a;
+    --st-sign-deep: #8fb3e8;
+    --st-handover-deep: #e6a877;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    font-family: var(--font-ui);
+    font-size: 15px; color: var(--ink);
+    letter-spacing: -0.009em;
+    background: var(--fog);
+    min-width: 1180px;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; letter-spacing: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  /* ============ 2. 全局骨架 ============ */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar {
+    position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w);
+    background: var(--fog); display: flex; flex-direction: column;
+    padding: 20px 14px 16px; z-index: 40;
+    overflow: hidden; white-space: nowrap;
+  }
+  .main { flex: 1; margin-left: var(--sidebar-w); min-width: 0; }
+  .side-logo { display: flex; align-items: center; gap: 10px; padding: 4px 10px 18px; }
+  .side-logo .mark {
+    width: 30px; height: 30px; border-radius: 9px; background: var(--ink);
+    color: #fff; font-size: 15px; font-weight: 600; letter-spacing: 0;
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .side-logo .word { font-size: 16px; font-weight: 500; }
+  .side-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; margin: 0 -6px; padding: 0 6px; }
+  .side-scroll::-webkit-scrollbar { width: 4px; }
+  .side-scroll::-webkit-scrollbar-thumb { background: rgba(163,166,175,.35); border-radius: 4px; }
+  .nav-group-label {
+    font-size: 12px; font-weight: 500; color: var(--graphite);
+    letter-spacing: .06em; padding: 16px 12px 6px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 14.5px; font-weight: 450;
+    color: var(--ink); transition: background .15s; position: relative;
+  }
+  .nav-item:hover { background: rgba(23,25,28,.05); }
+  .nav-item.active { background: var(--pwhite); box-shadow: var(--shadow-steep-sm); }
+  .nav-item .ic { color: var(--graphite); display: flex; flex: none; }
+  .nav-item.active .ic { color: var(--ink); }
+  .side-foot { padding-top: 12px; border-top: 1px solid rgba(163,166,175,.25); margin-top: 10px; display: flex; flex-direction: column; gap: 2px; }
+  .side-user { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 12px; width: 100%; }
+  .side-user:hover { background: rgba(23,25,28,.05); }
+  .side-user .info { text-align: left; line-height: 1.25; }
+  .side-user .info .n { font-size: 13.5px; font-weight: 500; }
+  .side-user .info .r { font-size: 11.5px; color: var(--graphite); }
+  .avatar {
+    width: 30px; height: 30px; border-radius: var(--r-pill); flex: none;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 500; color: var(--ink);
+  }
+  .av-2 { background: var(--sky); }
+  .bell-btn {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 450;
+    color: var(--ash); transition: background .15s, color .15s; position: relative;
+  }
+  .bell-btn:hover { background: rgba(23,25,28,.05); color: var(--ink); }
+  .bell-btn .ic { color: var(--graphite); display: flex; flex: none; }
+  .bell-badge {
+    margin-left: auto; background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    min-width: 20px; height: 20px; padding: 0 6px; font-size: 11.5px; font-weight: 500;
+    display: inline-flex; align-items: center; justify-content: center; font-variant-numeric: tabular-nums;
+  }
+  .collapse-btn {
+    display: flex; align-items: center; gap: 11px; width: 100%;
+    padding: 8px 12px; border-radius: 12px; font-size: 13.5px; font-weight: 450;
+    color: var(--graphite); transition: background .15s, color .15s;
+  }
+  .collapse-btn:hover { background: rgba(23,25,28,.05); color: var(--ink); }
+
+  /* ============ 3. 页面通用 ============ */
+  .page { max-width: 1480px; margin: 0 auto; padding: 34px 44px 118px; animation: pageIn .34s ease both; }
+  @keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 26px; }
+  .page-head h1 {
+    font-family: var(--font-display); font-weight: 400; font-size: 44px;
+    line-height: 1.1; letter-spacing: -0.015em; color: var(--ink);
+  }
+  .page-head .desc { margin-top: 10px; font-size: 15px; color: var(--graphite); max-width: 760px; line-height: 1.55; }
+  .page-head .aside { display: flex; align-items: center; gap: 14px; padding-bottom: 6px; flex: none; }
+  .sec-title { font-size: 21px; font-weight: 500; color: var(--ink); letter-spacing: -0.01em; }
+  .sec-head { display: flex; align-items: center; justify-content: space-between; margin: 34px 0 16px; }
+  .sec-link { font-size: 14px; font-weight: 450; color: var(--ink); display: inline-flex; align-items: center; gap: 4px; }
+  .sec-link:hover { color: var(--rust); }
+  .help { font-size: 12.5px; color: var(--graphite); }
+  .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: .86em; letter-spacing: 0; }
+  .dv-chip {
+    font-size: 10.5px; letter-spacing: .08em; color: var(--graphite); background: #fff;
+    border: 1px solid rgba(163,166,175,.4); padding: 3px 8px; border-radius: 999px; text-transform: uppercase;
+  }
+  .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 12.5px; color: var(--graphite); flex-wrap: wrap; }
+  .toolbar .spacer { flex: 1; }
+
+  .btn-fill {
+    background: var(--ink); color: #fff; border-radius: var(--r-pill);
+    padding: 9px 20px; font-size: 14px; font-weight: 450;
+    transition: transform .16s, box-shadow .16s;
+  }
+  .btn-fill:hover { transform: translateY(-1px); box-shadow: 0 10px 20px -8px rgba(23,25,28,.5); }
+  .btn-text { font-size: 14px; font-weight: 450; color: var(--ink); display: inline-flex; align-items: center; gap: 5px; padding: 4px 2px; }
+  .btn-text:hover { color: var(--rust); }
+  .btn-text.sm { font-size: 12.5px; }
+  .icon-btn {
+    width: 30px; height: 30px; border-radius: 10px; background: #fff;
+    box-shadow: var(--shadow-steep-sm); display: inline-flex; align-items: center; justify-content: center; color: var(--graphite);
+  }
+  .icon-btn:hover { color: var(--ink); }
+  .icon-btn.plain { box-shadow: none; background: none; }
+  .icon-btn.plain:hover { background: var(--fog); }
+
+  /* ============ 4. 工作台栅格 + widget ============ */
+  .wb-grid { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; align-items: stretch; }
+  .wb { grid-column: span 12; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .wb.sp3 { grid-column: span 3; }
+  .wb.sp6 { grid-column: span 6; }
+  .wg { background: var(--pwhite); border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); padding: 20px 22px; flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .wg.warm { background: var(--apricot); box-shadow: none; }
+  .wg.warm .wg-title { color: var(--rust); }
+  .wg.warm .sec-link { color: var(--rust); }
+  .wg-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 2px; }
+  .wg-title { font-size: 15px; font-weight: 500; color: var(--ink); display: flex; align-items: center; gap: 7px; }
+  .wg-sub { font-size: 12px; color: var(--graphite); font-weight: 430; }
+  .kpi-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 14px; margin-top: 18px; }
+  .kpi-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 18px; }
+  .kpi-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-top: 18px; }
+  .wg-split { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; margin-top: 18px; }
+  .wg-split .kpi-3, .wg-split .mini-list, .wg-split .spark { margin-top: 0; }
+  .wg-split.narrow-right { grid-template-columns: 3fr 2fr; }
+  .kpi .k { font-size: 12.5px; color: var(--graphite); display: flex; align-items: center; gap: 6px; }
+  .kpi .v { font-size: 26px; font-weight: 480; color: var(--ink); margin-top: 5px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .kpi .v.lg { font-size: 32px; }
+  .kpi .v .unit { font-size: 12px; font-weight: 430; color: var(--graphite); margin-left: 3px; letter-spacing: 0; }
+  .kpi .d { font-size: 11.5px; color: var(--graphite); margin-top: 7px; display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+  .funnel { display: flex; flex-direction: column; gap: 11px; margin-top: 16px; }
+  .f-row { display: flex; align-items: center; gap: 10px; }
+  .f-row .fl { width: 56px; font-size: 12.5px; color: var(--graphite); flex: none; text-align: right; }
+  .f-bar { height: 9px; border-radius: var(--r-pill); flex: 1; background: var(--fog); overflow: hidden; }
+  .f-bar i { display: block; height: 100%; border-radius: var(--r-pill); }
+  .f-row .fv { width: 30px; font-size: 13px; font-weight: 480; text-align: right; font-variant-numeric: tabular-nums; }
+  .alert-num { font-family: var(--font-display); font-size: 52px; line-height: 1; color: var(--rust); margin-top: 14px; }
+  .alert-note { font-size: 13px; color: var(--rust); opacity: .82; margin-top: 10px; line-height: 1.5; }
+  .todo-rows { display: flex; flex-direction: column; margin-top: 8px; }
+  .todo-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(163,166,175,.18); }
+  .todo-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .todo-row .nm { font-size: 13.5px; font-weight: 450; }
+  .todo-row .due { margin-left: auto; flex: none; font-size: 11.5px; color: var(--graphite); text-align: right; padding-top: 2px; }
+  .todo-row .due.late { color: var(--rust); font-weight: 450; }
+  .spark { display: flex; align-items: flex-end; gap: 4px; height: 40px; margin-top: 16px; }
+  .spark i { flex: 1; background: var(--sky); border-radius: 4px 4px 2px 2px; display: block; }
+  .spark i.hot { background: var(--rust); }
+  .spark-x { display: flex; gap: 4px; margin-top: 7px; }
+  .spark-x span { flex: 1; text-align: center; font-size: 10.5px; color: var(--dove); }
+  .mini-list { display: flex; flex-direction: column; margin-top: 8px; }
+  .mini-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(163,166,175,.18); }
+  .mini-row:last-child { border-bottom: none; }
+  .mini-row .nm { font-size: 13.5px; font-weight: 450; display: block; }
+  .mini-row .meta { font-size: 11.5px; color: var(--graphite); margin-top: 2px; display: block; }
+  .mini-row .rt { margin-left: auto; font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--ash); }
+  .money-pos { color: var(--pos); }
+  .money-neg { color: var(--neg); }
+  .monitor-row { display: flex; gap: 14px; overflow-x: auto; padding: 14px 2px 4px; }
+  .monitor-row::-webkit-scrollbar { height: 6px; }
+  .monitor-row::-webkit-scrollbar-thumb { background: rgba(163,166,175,.4); border-radius: 6px; }
+  .m-card { width: 254px; flex: none; background: var(--fog); border-radius: 18px; padding: 16px 18px; }
+  .m-card .m-no { display: flex; align-items: center; justify-content: space-between; }
+  .m-card .no { font-size: 11.5px; color: var(--graphite); }
+  .m-card .m-name { font-size: 16px; font-weight: 500; margin-top: 10px; letter-spacing: -0.01em; }
+  .m-card .m-addr { font-size: 12px; color: var(--graphite); margin-top: 3px; }
+  .m-card .m-div { border-top: 1px dashed rgba(163,166,175,.5); margin: 12px 0 10px; }
+  .m-card .m-feed { font-size: 12.5px; color: var(--ash); line-height: 1.55; }
+  .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 26px; margin-top: 6px; }
+  .q-row { display: flex; align-items: center; gap: 11px; padding: 10px 2px; border-bottom: 1px solid rgba(163,166,175,.18); }
+  .q-row .ic { width: 32px; height: 32px; border-radius: 10px; background: var(--fog); color: var(--ash); display: flex; align-items: center; justify-content: center; flex: none; }
+  .q-row:hover .ic { background: var(--ink); color: #fff; }
+  .q-row .nm { font-size: 13.5px; font-weight: 450; display: block; }
+  .q-row .meta { font-size: 11.5px; color: var(--graphite); margin-top: 2px; display: block; }
+  .q-row .go { margin-left: auto; color: var(--dove); display: flex; }
+  .tbl-card { padding: 6px 8px; overflow: hidden; }
+  table.tbl { width: 100%; border-collapse: collapse; }
+  .tbl th {
+    text-align: left; font-size: 12.5px; font-weight: 500; color: var(--graphite);
+    letter-spacing: .02em; padding: 14px 14px 10px; border-bottom: 1px solid rgba(163,166,175,.35);
+    white-space: nowrap;
+  }
+  .tbl td {
+    font-size: 13.5px; color: var(--ink); padding: 12px 14px;
+    border-bottom: 1px solid rgba(163,166,175,.18); vertical-align: middle;
+  }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl tr:hover td { background: rgba(247,247,248,.7); }
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; border-radius: var(--r-pill);
+    font-size: 12.5px; font-weight: 450; padding: 3.5px 11px; line-height: 1.35;
+    white-space: nowrap; flex: none;
+  }
+  .b-sky { background: var(--sky); color: var(--ink); }
+  .b-apricot { background: var(--apricot); color: var(--rust); }
+  .b-ink { background: var(--ink); color: #fff; }
+  .b-fog { background: var(--fog); color: var(--graphite); }
+  .b-outline { background: var(--pwhite); color: var(--ink); box-shadow: inset 0 0 0 1px var(--dove); }
+  .b-ghost { background: rgba(23,25,28,.045); color: var(--graphite); font-size: 11.5px; padding: 2px 8px; }
+  .empty { text-align: center; padding: 44px 0 40px; }
+  .empty .pic { width: 52px; height: 52px; border-radius: 16px; background: var(--fog); color: var(--dove); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+  .empty .t { font-size: 14px; font-weight: 480; }
+  .empty .d { font-size: 12.5px; color: var(--graphite); margin-top: 6px; }
+
+  /* ============ 5. Roadmap widget ============ */
+  .rm-new {
+    font-size: 10.5px; font-weight: 500; letter-spacing: .04em; color: var(--rust);
+    background: var(--apricot); border-radius: var(--r-pill); padding: 2px 7px;
+  }
+  .rm-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 12px 0 8px; }
+  .rm-tools .spacer { flex: 1; }
+  .rm-legend { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+  .rm-chip {
+    display: inline-flex; align-items: center; gap: 7px; padding: 5px 10px; border-radius: var(--r-pill);
+    background: var(--fog); font-size: 12px; color: var(--ash);
+    box-shadow: inset 0 0 0 1px transparent; transition: background .14s, box-shadow .14s, color .14s;
+  }
+  .rm-chip:hover { background: #fff; box-shadow: var(--shadow-steep-sm); color: var(--ink); }
+  .rm-chip.on { background: #fff; box-shadow: var(--shadow-steep-sm); color: var(--ink); font-weight: 480; }
+  .rm-chip .sw { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+  .rm-chip[data-stage="sign"] .sw { background: var(--st-sign); box-shadow: inset 0 0 0 1px rgba(23,25,28,.08); }
+  .rm-chip[data-stage="handover"] .sw { background: var(--st-handover); box-shadow: inset 0 0 0 1px rgba(93,42,26,.12); }
+  .rm-chip[data-stage="listing"] .sw { background: var(--st-listing); }
+  .rm-chip[data-stage="sold"] .sw { background: var(--st-sold); border-radius: 50%; }
+  .rm-chip .c { color: var(--dove); font-variant-numeric: tabular-nums; }
+  .rm-view { display: inline-flex; background: var(--fog); border-radius: var(--r-pill); padding: 3px; flex: none; }
+  .rm-view button { padding: 5px 11px; border-radius: var(--r-pill); font-size: 12px; color: var(--graphite); white-space: nowrap; }
+  .rm-view button:hover { color: var(--ink); }
+  .rm-view button.on { background: #fff; color: var(--ink); font-weight: 480; box-shadow: var(--shadow-steep-sm); }
+  .rm-zoom { display: inline-flex; align-items: center; gap: 4px; background: var(--fog); border-radius: var(--r-pill); padding: 3px 4px 3px 3px; flex: none; }
+  .rm-zoom button { width: 25px; height: 25px; border-radius: 50%; display: grid; place-items: center; color: var(--graphite); }
+  .rm-zoom button:hover { background: #fff; color: var(--ink); }
+  .rm-zoom input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 68px; height: 3px; border-radius: 3px;
+    background: rgba(163,166,175,.42); outline: none; cursor: pointer;
+  }
+  .rm-zoom input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--ink); border: 2px solid #fff; box-shadow: 0 1px 3px rgba(23,25,28,.25);
+  }
+  .rm-zoom input[type="range"]::-moz-range-thumb {
+    width: 11px; height: 11px; border-radius: 50%; background: var(--ink); border: 2px solid #fff;
+  }
+  .rm-zoom .pct { font-size: 11px; color: var(--graphite); min-width: 32px; text-align: center; font-variant-numeric: tabular-nums; }
+  .rm-zoom .fit { width: auto; padding: 0 9px; height: 25px; border-radius: var(--r-pill); font-size: 11.5px; color: var(--graphite); }
+  .rm-zoom .fit:hover { background: #fff; color: var(--ink); }
+
+  .rm-scroll {
+    position: relative; overflow: auto; max-height: 508px; border-radius: 14px;
+    outline: none; overscroll-behavior-x: contain;
+  }
+  .rm-scroll:focus-visible { box-shadow: inset 0 0 0 2px rgba(23,25,28,.18); }
+  .rm-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+  .rm-scroll::-webkit-scrollbar-thumb { background: rgba(163,166,175,.38); border-radius: 8px; }
+  .rm-scroll::-webkit-scrollbar-track { background: transparent; }
+  .rm-inner { position: relative; }
+  .rm-axis {
+    display: flex; height: 46px; position: sticky; top: 0; z-index: 6;
+    background: #fff; border-bottom: 1px solid rgba(163,166,175,.28);
+  }
+  .rm-corner {
+    width: 208px; flex: none; position: sticky; left: 0; z-index: 7; background: #fff;
+    display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 0 12px 0 14px; border-right: 1px solid rgba(163,166,175,.18);
+    font-size: 11px; color: var(--dove); letter-spacing: .02em;
+  }
+  .rm-axis-track { position: relative; height: 46px; flex: none; }
+  .rm-year { position: absolute; top: 5px; font-size: 11px; font-weight: 480; color: var(--ash); letter-spacing: .03em; white-space: nowrap; }
+  .rm-month { position: absolute; bottom: 7px; font-size: 10.5px; color: var(--dove); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .rm-today-tick { position: absolute; bottom: 0; width: 3px; height: 5px; background: var(--rust); border-radius: 2px 2px 0 0; transform: translateX(-1px); }
+  .rm-body { position: relative; }
+  .rm-grid { position: absolute; top: 0; bottom: 0; pointer-events: none; z-index: 0; }
+  .rm-gl { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(163,166,175,.14); }
+  .rm-gl.year { background: rgba(163,166,175,.28); }
+  .rm-today-line { position: absolute; top: 0; bottom: 0; width: 0; border-left: 1.5px dashed rgba(93,42,26,.42); }
+  .rm-row {
+    display: flex; height: 40px; position: relative; z-index: 1;
+    cursor: pointer; outline: none; transition: background .12s;
+  }
+  .rm-row:hover, .rm-row:focus-visible { background: var(--fog); }
+  .rm-row:focus-visible .rm-track { box-shadow: inset 0 0 0 2px rgba(23,25,28,.14); border-radius: 8px; }
+  .rm-label {
+    width: 208px; flex: none; position: sticky; left: 0; z-index: 3; background: #fff;
+    border-right: 1px solid rgba(163,166,175,.18); padding: 0 12px 0 14px;
+    display: flex; flex-direction: column; justify-content: center; gap: 2px; min-width: 0;
+  }
+  .rm-row:hover .rm-label, .rm-row:focus-visible .rm-label { background: var(--fog); }
+  .rm-name-line { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+  .rm-name { font-size: 13px; font-weight: 480; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rm-bld { font-size: 10.5px; color: var(--graphite); flex: none; }
+  .rm-meta { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--graphite); white-space: nowrap; overflow: hidden; }
+  .rm-meta .d { width: 5px; height: 5px; border-radius: 50%; flex: none; }
+  .rm-meta[data-stage="sign"] .d { background: var(--st-sign-deep); }
+  .rm-meta[data-stage="handover"] .d { background: var(--st-handover-deep); }
+  .rm-meta[data-stage="listing"] .d { background: var(--st-listing); }
+  .rm-meta[data-stage="sold"] .d { background: var(--st-sold); }
+  .rm-meta .live { color: var(--rust); font-weight: 450; }
+  .rm-track { position: relative; height: 40px; flex: none; }
+  .rm-seg { position: absolute; top: 13px; height: 14px; border-radius: 5px; }
+  .rm-seg.sign { background: var(--st-sign); box-shadow: inset 0 0 0 1px rgba(23,25,28,.06); }
+  .rm-seg.handover { background: var(--st-handover); box-shadow: inset 0 0 0 1px rgba(93,42,26,.08); }
+  .rm-seg.listing { background: var(--st-listing); }
+  .rm-seg.live { box-shadow: inset -2px 0 0 rgba(255,255,255,.55); }
+  .rm-seg.future { top: 12px; height: 16px; background: transparent; }
+  .rm-seg.future.sign { border: 1px dashed var(--st-sign-deep); }
+  .rm-seg.future.handover { border: 1px dashed var(--st-handover-deep); }
+  .rm-seg.future.listing { border: 1px dashed rgba(23,25,28,.5); }
+  .rm-sold {
+    position: absolute; top: 15px; width: 10px; height: 10px; border-radius: 50%;
+    background: var(--st-sold); box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(93,42,26,.13);
+    z-index: 2;
+  }
+  .rm-row:hover .rm-sold { box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(93,42,26,.2); }
+  .rm-empty { padding: 38px 0 34px; }
+
+  .rm-foot {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(163,166,175,.16);
+    font-size: 11.5px; color: var(--graphite);
+  }
+  .rm-foot b { font-weight: 480; color: var(--ink); }
+  .rm-foot .spacer { flex: 1; }
+  .rm-foot .key { display: inline-flex; align-items: center; gap: 5px; }
+  .rm-foot .ln { width: 14px; height: 0; border-top: 1.5px dashed rgba(93,42,26,.5); display: inline-block; }
+  .rm-foot .dt { width: 8px; height: 8px; border-radius: 50%; background: var(--st-sold); display: inline-block; box-shadow: 0 0 0 1.5px #fff; }
+
+  /* tooltip */
+  .rm-tip {
+    position: fixed; z-index: 130; width: 304px; background: #fff; border-radius: 18px;
+    box-shadow: var(--shadow-steep); padding: 14px 16px 13px; pointer-events: none;
+  }
+  .rm-tip .t-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .rm-tip .t-name { font-size: 13.5px; font-weight: 500; color: var(--ink); line-height: 1.35; }
+  .rm-tip .t-bld { font-size: 11px; color: var(--graphite); margin-top: 1px; }
+  .rm-tip .t-dates { display: grid; grid-template-columns: 38px 1fr 46px; gap: 7px 8px; margin-top: 11px; font-size: 11.5px; }
+  .rm-tip .t-dates .l { color: var(--graphite); display: flex; align-items: center; gap: 5px; }
+  .rm-tip .t-dates .l .d { width: 5px; height: 5px; border-radius: 50%; }
+  .rm-tip .t-dates .v { color: var(--ink); font-variant-numeric: tabular-nums; }
+  .rm-tip .t-dates .g { color: var(--dove); text-align: right; font-variant-numeric: tabular-nums; }
+  .rm-tip .t-foot { margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(163,166,175,.2); display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--graphite); }
+  .rm-tip .t-foot b { color: var(--ink); font-weight: 480; }
+
+  .anno {
+    display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--ink); color: #fff; font-size: 9.5px; font-weight: 500;
+    flex: none; font-variant-numeric: tabular-nums;
+  }
+  .anno.abs { position: absolute; z-index: 8; }
+
+  /* ============ 6. 特写 / 状态矩阵 ============ */
+  .artboard {
+    background: var(--fog); border-radius: 28px; padding: 18px 18px 20px;
+    box-shadow: inset 0 0 0 1px rgba(163,166,175,.18); margin-top: 6px;
+  }
+  .artboard-cap { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px 12px; font-size: 12px; color: var(--graphite); }
+  .artboard-cap b { color: var(--ink); font-weight: 480; }
+  .anno-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0 28px; margin-top: 22px; }
+  .anno-item { display: flex; gap: 10px; padding: 13px 0; border-bottom: 1px solid rgba(163,166,175,.18); }
+  .anno-item .t { font-size: 13px; font-weight: 450; color: var(--ink); line-height: 1.45; }
+  .anno-item .d { font-size: 11.5px; color: var(--graphite); margin-top: 3px; line-height: 1.55; }
+  .state-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .state-cell { background: #fff; border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); padding: 18px 20px; }
+  .state-cell .cap { font-size: 11.5px; color: var(--graphite); margin-top: 12px; line-height: 1.5; }
+  .state-cell .cap b { color: var(--ink); font-weight: 480; }
+  .rm-skel .sk { background: var(--fog); border-radius: 4px; }
+  .rm-skel .row { display: flex; align-items: center; gap: 12px; height: 34px; border-bottom: 1px solid rgba(163,166,175,.12); }
+  .rm-skel .row:last-child { border-bottom: none; }
+  .rm-skel .row .lbl { width: 118px; height: 10px; }
+  .rm-skel .row .bar { height: 10px; border-radius: 5px; }
+  @keyframes shimmer { 0% { opacity: .55; } 50% { opacity: .9; } 100% { opacity: .55; } }
+  .rm-skel .sk { animation: shimmer 1.6s ease-in-out infinite; }
+  .state-empty { text-align: center; padding: 12px 0 8px; }
+  .state-empty .pic { width: 38px; height: 38px; border-radius: 12px; background: var(--fog); color: var(--dove); display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+  .state-empty .t { font-size: 12.5px; font-weight: 480; }
+  .state-empty .d { font-size: 11px; color: var(--graphite); margin-top: 4px; }
+  .error-banner { display: flex; align-items: flex-start; gap: 10px; background: var(--apricot); border-radius: 14px; padding: 12px 14px; }
+  .error-banner .ic { width: 28px; height: 28px; border-radius: 9px; background: #fff; color: var(--rust); display: flex; align-items: center; justify-content: center; flex: none; }
+  .error-banner .t { font-size: 12.5px; font-weight: 480; color: var(--rust); }
+  .error-banner .d { font-size: 11px; color: var(--rust); opacity: .8; margin-top: 2px; }
+
+  /* ============ 7. 规范 ============ */
+  .spec-sec { margin-top: 34px; }
+  .spec-h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
+  .spec-h h2 { font-size: 18px; font-weight: 500; letter-spacing: -0.01em; }
+  .spec-h .n { font-size: 11.5px; color: var(--dove); }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .card { background: #fff; border-radius: var(--r-card); box-shadow: var(--shadow-steep-sm); padding: 22px 24px; }
+  .card-title { font-size: 15px; font-weight: 500; color: var(--ink); }
+  .note-item { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(163,166,175,.16); font-size: 12.5px; color: var(--ash); line-height: 1.6; }
+  .note-item:last-child { border-bottom: none; }
+  .note-item .no { color: var(--dove); font-variant-numeric: tabular-nums; flex: none; }
+  .note-item.warn .no { color: var(--rust); }
+  .note-item.warn { color: var(--rust); }
+  .swatch-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+  .swatch { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ash); }
+  .swatch i { width: 22px; height: 22px; border-radius: 6px; display: block; box-shadow: inset 0 0 0 1px rgba(23,25,28,.08); }
+  .tbl-foot { display: flex; align-items: center; gap: 16px; padding: 12px 14px 4px; font-size: 11.5px; color: var(--graphite); flex-wrap: wrap; }
+  .tbl-foot b { color: var(--ink); font-weight: 480; }
+  .kv { display: grid; grid-template-columns: 108px 1fr; gap: 10px 12px; font-size: 12.5px; margin-top: 12px; }
+  .kv .k { color: var(--graphite); }
+  .kv .v { color: var(--ink); }
+  .kv .v .mono { color: var(--ash); }
+
+  /* ============ 8. 设计稿控件 ============ */
+  .doc-nav { margin: 0 6px 4px; padding: 2px 0 8px; }
+  .doc-nav .lbl { font-size: 10.5px; color: var(--dove); letter-spacing: .08em; padding: 0 8px 6px; }
+  .doc-nav button {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 6px 9px; border-radius: 9px; font-size: 12.5px; color: var(--graphite); text-align: left;
+  }
+  .doc-nav button:hover { background: rgba(23,25,28,.05); color: var(--ink); }
+  .doc-nav button.on { background: #fff; box-shadow: var(--shadow-steep-sm); color: var(--ink); font-weight: 480; }
+  .doc-nav .n { font-size: 10px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .notes-fab {
+    position: fixed; right: 26px; bottom: 24px; width: 38px; height: 38px; border-radius: 50%;
+    background: var(--ink); color: #fff; font-size: 13px; z-index: 110;
+    box-shadow: var(--shadow-steep); display: grid; place-items: center;
+  }
+  .notes-panel {
+    position: fixed; right: 26px; bottom: 74px; width: 390px; max-height: 70vh; overflow: auto;
+    background: #fff; border-radius: var(--r-card); box-shadow: var(--shadow-steep);
+    padding: 20px 22px; z-index: 110;
+  }
+  .notes-panel h3 { font-size: 16px; font-weight: 500; }
+  .notes-panel .sub { font-size: 11.5px; color: var(--graphite); margin-top: 4px; line-height: 1.5; }
+  .notes-panel .note-item { font-size: 12px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%);
+    background: var(--ink); color: #fff; border-radius: var(--r-pill); padding: 9px 18px;
+    font-size: 13px; z-index: 140; animation: toastIn .18s ease both; max-width: 70vw;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+  @media (max-width: 1320px) {
+    .page { padding-left: 28px; padding-right: 28px; }
+    .anno-grid { grid-template-columns: 1fr 1fr; }
+    .monitor-row { gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+/* ================================================================
+   图标（lucide 风格，1.7px 描边）
+   ================================================================ */
+const ICONS = {
+  dashboard: <><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></>,
+  building: <><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/></>,
+  phone: <><polyline points="16 2 16 8 22 8"/><line x1="23" x2="17" y1="1" y2="7"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></>,
+  kanban: <><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/><path d="M8 10v4"/><path d="M12 10v2"/><path d="M16 10v6"/></>,
+  smartphone: <><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></>,
+  megaphone: <><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></>,
+  chart: <><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></>,
+  wallet: <><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></>,
+  users: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>,
+  scroll: <><path d="M17 12.5H15"/><path d="M17 8.5H15"/><path d="M7 12.5H9"/><path d="M7 8.5H9"/><path d="M15 2v4"/><path d="M7 2v4"/><path d="M19 4v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2Z"/></>,
+  settings: <><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>,
+  chevDown: <path d="m6 9 6 6 6-6"/>,
+  chevRight: <path d="m9 18 6-6-6-6"/>,
+  chevLeft: <path d="m15 18-6-6 6-6"/>,
+  plus: <><path d="M5 12h14"/><path d="M12 5v14"/></>,
+  minus: <path d="M5 12h14"/>,
+  filter: <><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></>,
+  panelLeft: <><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></>,
+  trendUp: <><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>,
+  arrowRight: <><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></>,
+  eye: <><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></>,
+  check: <><path d="M20 6 9 17l-5-5"/></>,
+  clock: <><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></>,
+  x: <><path d="M18 6 6 18"/><path d="m6 6 12 12"/></>,
+  mapPin: <><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></>,
+  key: <><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></>,
+  bell: <><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></>,
+  user: <><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
+  alert: <><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></>,
+  folder: <><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></>,
+  sliders: <><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="2" y1="14" x2="6" y2="14"/><line x1="10" y1="8" x2="14" y2="8"/><line x1="18" y1="16" x2="22" y2="16"/></>,
+  lock: <><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+  list: <><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></>,
+  calendar: <><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></>,
+};
+function Icon({ n, size = 17, sw = 1.7, style, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" style={style} className={className} aria-hidden="true">
+      {ICONS[n]}
+    </svg>
+  );
+}
+
+/* ================================================================
+   日期工具 / 阶段定义
+   ================================================================ */
+const DAY = 86400000;
+const TODAY = "2026-10-30";
+const BASE_PPD = 2.6;
+const LEFT_COL = 208;
+const STAGE_ORDER = ["sign", "handover", "listing", "sold"];
+const STAGE = {
+  sign: { label: "签约", full: "签约中", color: "var(--st-sign)", deep: "var(--st-sign-deep)", bar: "sign" },
+  handover: { label: "交房", full: "交房中", color: "var(--st-handover)", deep: "var(--st-handover-deep)", bar: "handover" },
+  listing: { label: "上架", full: "在售", color: "var(--st-listing)", deep: "var(--st-listing)", bar: "listing" },
+  sold: { label: "成交", full: "已成交", color: "var(--st-sold)", deep: "var(--st-sold)", bar: "sold" },
+};
+function pad2(n) { return (n < 10 ? "0" : "") + n; }
+function parseDay(s) {
+  const [y, m, d] = s.split("-").map(Number);
+  return Date.UTC(y, m - 1, d);
+}
+function dayToStr(t) {
+  const d = new Date(t);
+  return d.getUTCFullYear() + "-" + pad2(d.getUTCMonth() + 1) + "-" + pad2(d.getUTCDate());
+}
+function addDays(s, n) { return dayToStr(parseDay(s) + n * DAY); }
+function daysBetween(a, b) { return Math.round((parseDay(b) - parseDay(a)) / DAY); }
+function fmtDot(s) { return s ? s.replace(/-/g, ".") : "—"; }
+function minDate(list) { return list.slice().sort((a, b) => parseDay(a) - parseDay(b))[0]; }
+function maxDate(list) { return list.slice().sort((a, b) => parseDay(b) - parseDay(a))[0]; }
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+/* ================================================================
+   演示数据（18 个项目；字段与 ProjectResponse 一一对应）
+   排序：signing_date 倒序（即「最新」的含义）
+   古荡新村使用需求方给的示例日期：签约 04.10 / 交房 05.20 / 上架 08.27 / 成交 10.19
+   ================================================================ */
+const PROJECTS = [
+  { id: "p01", name: "文晖里", bld: "5号", mgr: "陈明远", sign: "2026-10-12", hand: "2026-11-20", list: null, sold: null, signPrice: 356, listPrice: null, soldPrice: null },
+  { id: "p02", name: "大关西八苑", bld: "12号", mgr: "林晓芸", sign: "2026-09-28", hand: "2026-11-05", list: null, sold: null, signPrice: 318, listPrice: null, soldPrice: null },
+  { id: "p03", name: "拱宸桥东", bld: "7号", mgr: "王思齐", sign: "2026-09-02", hand: "2026-10-08", list: null, sold: null, signPrice: 286, listPrice: null, soldPrice: null },
+  { id: "p04", name: "景芳五区", bld: "3号", mgr: "赵一鸣", sign: "2026-08-18", hand: "2026-09-25", list: null, sold: null, signPrice: 342, listPrice: null, soldPrice: null },
+  { id: "p05", name: "采荷东区", bld: "2号", mgr: "周文瑾", sign: "2026-07-30", hand: "2026-09-12", list: null, sold: null, signPrice: 305, listPrice: null, soldPrice: null },
+  { id: "p06", name: "三里亭苑", bld: "9号", mgr: "吴倩", sign: "2026-06-25", hand: "2026-08-14", list: "2026-10-10", sold: null, signPrice: 398, listPrice: 468, soldPrice: null },
+  { id: "p07", name: "翠苑一区", bld: "3号", mgr: "陈明远", sign: "2026-05-06", hand: "2026-06-18", list: "2026-09-02", sold: null, signPrice: 412, listPrice: 498, soldPrice: null },
+  { id: "p08", name: "古荡新村", bld: "12号", mgr: "林晓芸", sign: "2026-04-10", hand: "2026-05-20", list: "2026-08-27", sold: "2026-10-19", signPrice: 398, listPrice: 468, soldPrice: 455 },
+  { id: "p09", name: "朝晖六区", bld: "7号", mgr: "王思齐", sign: "2026-03-16", hand: "2026-05-08", list: "2026-08-02", sold: "2026-09-28", signPrice: 365, listPrice: 432, soldPrice: 428 },
+  { id: "p10", name: "小河直街", bld: "4号", mgr: "赵一鸣", sign: "2026-02-11", hand: "2026-03-28", list: "2026-07-15", sold: "2026-09-06", signPrice: 328, listPrice: 398, soldPrice: 386 },
+  { id: "p11", name: "和睦新村", bld: "6号", mgr: "周文瑾", sign: "2026-01-08", hand: "2026-02-26", list: "2026-06-18", sold: "2026-08-22", signPrice: 296, listPrice: 358, soldPrice: 349 },
+  { id: "p12", name: "九堡家苑", bld: "15号", mgr: "吴倩", sign: "2025-12-03", hand: "2026-01-21", list: "2026-05-09", sold: "2026-07-30", signPrice: 272, listPrice: 330, soldPrice: 324 },
+  { id: "p13", name: "东新园", bld: "8号", mgr: "陈明远", sign: "2025-11-10", hand: "2025-12-24", list: "2026-04-07", sold: "2026-06-11", signPrice: 310, listPrice: 372, soldPrice: 366 },
+  { id: "p14", name: "濮家新村", bld: "10号", mgr: "林晓芸", sign: "2025-10-15", hand: "2025-11-29", list: "2026-03-26", sold: "2026-05-18", signPrice: 288, listPrice: 348, soldPrice: 341 },
+  { id: "p15", name: "三墩颐景园", bld: "2号", mgr: "王思齐", sign: "2025-09-18", hand: "2025-11-02", list: "2026-03-05", sold: "2026-04-27", signPrice: 335, listPrice: 402, soldPrice: 392 },
+  { id: "p16", name: "半山田园", bld: "7号", mgr: "赵一鸣", sign: "2025-08-22", hand: "2025-10-06", list: "2026-02-12", sold: "2026-04-01", signPrice: 262, listPrice: 318, soldPrice: 312 },
+  { id: "p17", name: "丁桥家苑", bld: "5号", mgr: "周文瑾", sign: "2025-07-09", hand: "2025-08-23", list: "2025-12-20", sold: "2026-02-06", signPrice: 246, listPrice: 302, soldPrice: 296 },
+  { id: "p18", name: "转塘家园", bld: "11号", mgr: "吴倩", sign: "2025-06-05", hand: "2025-07-20", list: "2025-11-15", sold: "2026-01-09", signPrice: 318, listPrice: 388, soldPrice: 379 },
+];
+
+function stageOf(p) {
+  if (p.sold) return "sold";
+  if (p.list) return "listing";
+  if (p.hand && p.hand <= TODAY) return "handover";
+  return "sign";
+}
+function statusText(p) {
+  const s = stageOf(p);
+  if (s === "sign") return "签约中 · " + daysBetween(p.sign, TODAY) + " 天";
+  if (s === "handover") return "交房中 · " + daysBetween(p.hand, TODAY) + " 天";
+  if (s === "listing") return "在售 · " + daysBetween(p.list, TODAY) + " 天";
+  return "已成交 · 全程 " + daysBetween(p.sign, p.sold) + " 天";
+}
+function segmentsOf(p) {
+  const segs = [];
+  const push = (stage, start, end) => {
+    if (!start || !end) return;
+    if (daysBetween(start, end) <= 0) return;
+    segs.push({ stage, start, end });
+  };
+  const end1 = p.hand || p.list || p.sold || TODAY;
+  push("sign", p.sign, end1);
+  if (p.hand) push("handover", p.hand, p.list || p.sold || TODAY);
+  if (p.list) push("listing", p.list, p.sold || TODAY);
+  return segs;
+}
+
+/* ================================================================
+   Roadmap Widget
+   ================================================================ */
+function RoadmapTip({ p, x, y }) {
+  const s = stageOf(p);
+  const H = 198;
+  const left = Math.min(window.innerWidth - 320, Math.max(12, x + 14));
+  let top = y + 18;
+  if (top + H > window.innerHeight - 12) top = y - H - 14;
+  top = Math.min(window.innerHeight - H - 12, Math.max(12, top));
+  const delta = (a, b) => (a && b ? daysBetween(a, b) + " 天" : "—");
+  const rows = [
+    { k: "sign", label: "签约", d: p.sign, g: delta(p.sign, p.hand || p.list || p.sold) },
+    { k: "handover", label: "交房", d: p.hand, g: delta(p.hand, p.list || p.sold) },
+    { k: "listing", label: "上架", d: p.list, g: delta(p.list, p.sold) },
+    { k: "sold", label: "成交", d: p.sold, g: p.sold ? "全程 " + daysBetween(p.sign, p.sold) + " 天" : "—" },
+  ];
+  return (
+    <div className="rm-tip" role="tooltip" style={{ left, top }}>
+      <div className="t-head">
+        <div>
+          <div className="t-name">{p.name} {p.bld}</div>
+          <div className="t-bld">负责人 {p.mgr} · 点击查看项目详情</div>
+        </div>
+        <span className={"badge " + (s === "sold" ? "b-fog" : s === "listing" ? "b-ink" : s === "handover" ? "b-apricot" : "b-sky")}
+          style={{ fontSize: 11, padding: "2.5px 9px" }}>{STAGE[s].label}</span>
+      </div>
+      <div className="t-dates">
+        {rows.map((r) => (
+          <React.Fragment key={r.k}>
+            <span className="l"><i className="d" style={{ background: STAGE[r.k].color, boxShadow: r.k === "sign" ? "inset 0 0 0 1px rgba(23,25,28,.08)" : "none" }}></i>{r.label}</span>
+            <span className="v">{fmtDot(r.d)}</span>
+            <span className="g">{r.g}</span>
+          </React.Fragment>
+        ))}
+      </div>
+      <div className="t-foot">
+        <span>签约价 <b>{p.signPrice} 万</b></span>
+        <span>{p.sold ? "成交价 " : "挂牌价 "}<b>{p.sold ? p.soldPrice : (p.listPrice || "—")}{p.sold || p.listPrice ? " 万" : ""}</b></span>
+      </div>
+    </div>
+  );
+}
+
+function RoadmapWidget({ annotate, initialView }) {
+  const [view, setView] = React.useState(initialView || "recent");
+  const [filter, setFilter] = React.useState(null);
+  const [zoom, setZoom] = React.useState(1);
+  const [tip, setTip] = React.useState(null);
+  const scrollRef = React.useRef(null);
+  const prevPpd = React.useRef(BASE_PPD);
+  const ppd = BASE_PPD * zoom;
+
+  const baseRows = view === "recent" ? PROJECTS.slice(0, 10) : PROJECTS;
+  const counts = {};
+  STAGE_ORDER.forEach((k) => { counts[k] = baseRows.filter((p) => stageOf(p) === k).length; });
+  const rows = filter ? baseRows.filter((p) => stageOf(p) === filter) : baseRows;
+
+  const domain = React.useMemo(() => {
+    if (!baseRows.length) return { start: addDays(TODAY, -30), end: addDays(TODAY, 30) };
+    const starts = baseRows.map((p) => p.sign).filter(Boolean);
+    const ends = baseRows.map((p) => p.sold || p.hand || p.list || TODAY);
+    ends.push(TODAY);
+    return { start: addDays(minDate(starts), -14), end: addDays(maxDate(ends), 21) };
+  }, [view]);
+
+  const totalDays = Math.max(1, daysBetween(domain.start, domain.end));
+  const plotW = Math.round(totalDays * ppd) + 24;
+  const lastEnd = maxDate(baseRows.map((p) => p.sold || p.hand || p.list || TODAY).concat(TODAY));
+  const lastX = daysBetween(domain.start, lastEnd) * ppd;
+  const xOf = (d) => daysBetween(domain.start, d) * ppd;
+  const todayX = xOf(TODAY);
+
+  /* 月份刻度：按缩放级别决定标签密度 */
+  const ticks = React.useMemo(() => {
+    const out = [];
+    const end = parseDay(domain.end);
+    let y = new Date(parseDay(domain.start)).getUTCFullYear();
+    let m = new Date(parseDay(domain.start)).getUTCMonth();
+    let t = Date.UTC(y, m, 1);
+    if (t < parseDay(domain.start)) {
+      m += 1;
+      if (m > 11) { m = 0; y += 1; }
+      t = Date.UTC(y, m, 1);
+    }
+    const step = ppd >= 2.2 ? 1 : ppd >= 1.15 ? 3 : 6;
+    while (t <= end) {
+      out.push({ t, y, m, show: m % step === 0 });
+      m += 1;
+      if (m > 11) { m = 0; y += 1; }
+      t = Date.UTC(y, m, 1);
+    }
+    return out;
+  }, [domain.start, domain.end, ppd]);
+
+  const years = React.useMemo(() => {
+    const seen = {};
+    const ys = [];
+    ticks.forEach((t) => {
+      if (!seen[t.y]) {
+        seen[t.y] = true;
+        ys.push({ t: t.t, y: t.y });
+      }
+    });
+    if (!ys.length) {
+      ys.push({ t: parseDay(domain.start), y: new Date(parseDay(domain.start)).getUTCFullYear() });
+    }
+    return ys;
+  }, [ticks, domain.start]);
+
+  /* 初始对齐：最新内容能完整看到就从左侧起，否则滚到最右（最新） */
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const id = requestAnimationFrame(() => {
+      const viewport = el.clientWidth - LEFT_COL;
+      el.scrollLeft = lastX > viewport - 12 ? el.scrollWidth : 0;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [view]);
+
+  /* 缩放保持中心日期 */
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const viewport = Math.max(120, el.clientWidth - LEFT_COL);
+    const centerDays = (el.scrollLeft + viewport / 2) / prevPpd.current;
+    el.scrollLeft = Math.max(0, centerDays * ppd - viewport / 2);
+    prevPpd.current = ppd;
+  }, [ppd]);
+
+  const bumpZoom = (d) => setZoom((z) => clamp(Math.round((z + d) * 100) / 100, 0.35, 3));
+  const fitZoom = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const avail = Math.max(160, el.clientWidth - LEFT_COL - 12);
+    const z = clamp((avail / totalDays) / BASE_PPD, 0.35, 3);
+    setZoom(z);
+    requestAnimationFrame(() => { if (scrollRef.current) scrollRef.current.scrollLeft = 0; });
+  };
+
+  const onRowEnter = (e, p) => setTip({ p, x: e.clientX, y: e.clientY });
+  const onRowMove = (e, p) => setTip({ p, x: e.clientX, y: e.clientY });
+
+  const anno = (n) => annotate ? <span className="anno">{n}</span> : null;
+
+  return (
+    <section className="wg" aria-label="项目全流程 roadmap">
+      <div className="wg-head">
+        <span className="wg-title">
+          项目全流程
+          {annotate ? <span className="anno">1</span> : <span className="rm-new">新增</span>}
+          <span className="wg-sub">签约 → 交房 → 上架 → 成交</span>
+          <span className="badge b-ghost" style={{ marginLeft: 2 }}>{baseRows.length} 个项目</span>
+        </span>
+        <button className="sec-link" onClick={() => toast("设计稿演示：跳转 /admin/projects")}>
+          项目列表 <Icon n="arrowRight" size={12} />
+        </button>
+      </div>
+
+      <div className="rm-tools">
+        {annotate ? <span className="anno" style={{ marginRight: -4 }}>3</span> : null}
+        <div className="rm-legend" role="group" aria-label="阶段筛选">
+          {STAGE_ORDER.map((k) => (
+            <button
+              key={k}
+              className={"rm-chip" + (filter === k ? " on" : "")}
+              data-stage={k}
+              aria-pressed={filter === k}
+              onClick={() => setFilter(filter === k ? null : k)}
+              title={"只看当前处于「" + STAGE[k].label + "」的项目"}
+            >
+              <i className="sw"></i>{STAGE[k].label}<span className="c">{counts[k]}</span>
+            </button>
+          ))}
+        </div>
+        <span className="spacer"></span>
+        {annotate ? <span className="anno" style={{ marginRight: -4 }}>2</span> : null}
+        <div className="rm-view" role="group" aria-label="显示范围">
+          <button className={view === "recent" ? "on" : ""} onClick={() => setView("recent")} aria-pressed={view === "recent"}>最新 10</button>
+          <button className={view === "all" ? "on" : ""} onClick={() => setView("all")} aria-pressed={view === "all"}>全部 {PROJECTS.length}</button>
+        </div>
+        {annotate ? <span className="anno" style={{ marginLeft: -4, marginRight: -4 }}>4</span> : null}
+        <div className="rm-zoom" role="group" aria-label="时间轴缩放">
+          <button onClick={() => bumpZoom(-0.1)} aria-label="缩小时间轴"><Icon n="minus" size={14} /></button>
+          <input
+            type="range" min="35" max="300" step="5" value={Math.round(zoom * 100)}
+            onChange={(e) => setZoom(Number(e.target.value) / 100)}
+            aria-label={"时间轴缩放 " + Math.round(zoom * 100) + "%"}
+          />
+          <button onClick={() => bumpZoom(0.1)} aria-label="放大时间轴"><Icon n="plus" size={14} /></button>
+          <span className="pct">{Math.round(zoom * 100)}%</span>
+          <button className="fit" onClick={fitZoom}>适应</button>
+        </div>
+      </div>
+
+      <div
+        className="rm-scroll"
+        ref={scrollRef}
+        tabIndex={0}
+        role="region"
+        aria-label={"项目生命周期时间轴，共 " + rows.length + " 个项目；可横向滚动，方向键平移"}
+        onScroll={() => { if (tip) setTip(null); }}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight") { e.currentTarget.scrollLeft += 80; }
+          if (e.key === "ArrowLeft") { e.currentTarget.scrollLeft -= 80; }
+        }}
+      >
+        <div className="rm-inner" style={{ minWidth: LEFT_COL + plotW }}>
+          <div className="rm-axis">
+            <div className="rm-corner">
+              <span>项目 / 当前阶段</span>
+              <span style={{ color: "var(--dove)" }}>今天 {fmtDot(TODAY).slice(5)}</span>
+            </div>
+            <div className="rm-axis-track" style={{ width: plotW }}>
+              {years.map((y, i) => (
+                <span key={"y" + i} className="rm-year" style={{ left: Math.max(2, xOf(dayToStr(y.t)) + 3) }}>{y.y}</span>
+              ))}
+              {ticks.filter((t) => t.show).map((t, i) => (
+                <span key={"m" + i} className="rm-month" style={{ left: Math.max(2, xOf(dayToStr(t.t)) + 2) }}>{t.m + 1}月</span>
+              ))}
+              <span className="rm-today-tick" style={{ left: todayX }}></span>
+            </div>
+          </div>
+
+          <div className="rm-body">
+            <div className="rm-grid" style={{ left: LEFT_COL, width: plotW }} aria-hidden="true">
+              {ticks.map((t, i) => (
+                <span key={"g" + i} className={"rm-gl" + (t.m === 0 ? " year" : "")} style={{ left: xOf(dayToStr(t.t)) }}></span>
+              ))}
+              <span className="rm-today-line" style={{ left: todayX }}></span>
+            </div>
+
+            {rows.map((p, rowIndex) => {
+              const s = stageOf(p);
+              const segs = segmentsOf(p);
+              return (
+                <div
+                  key={p.id}
+                  className="rm-row"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={p.name + " " + p.bld + "，当前" + STAGE[s].label + "；签约 " + fmtDot(p.sign) + "，交房 " + fmtDot(p.hand) + "，上架 " + fmtDot(p.list) + "，成交 " + fmtDot(p.sold)}
+                  onMouseEnter={(e) => onRowEnter(e, p)}
+                  onMouseMove={(e) => onRowMove(e, p)}
+                  onMouseLeave={() => setTip(null)}
+                  onFocus={(e) => {
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setTip({ p, x: r.left + 240, y: r.top + 18 });
+                  }}
+                  onBlur={() => setTip(null)}
+                  onClick={() => toast("设计稿演示：跳转 /admin/projects/" + p.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toast("设计稿演示：跳转 /admin/projects/" + p.id); }
+                  }}
+                >
+                  <div className="rm-label">
+                    <div className="rm-name-line">
+                      <span className="rm-name">{p.name}</span>
+                      <span className="rm-bld">{p.bld}</span>
+                      {annotate && rowIndex === 0 ? <span className="anno" style={{ marginLeft: "auto" }}>5</span> : null}
+                    </div>
+                    <div className="rm-meta" data-stage={s}>
+                      <i className="d"></i>
+                      <span>{statusText(p)}</span>
+                    </div>
+                  </div>
+                  <div className="rm-track" style={{ width: plotW }}>
+                    {segs.map((seg, i) => {
+                      const color = STAGE[seg.stage];
+                      const a = xOf(seg.start);
+                      const b = xOf(seg.end);
+                      const hasFuture = seg.end > TODAY;
+                      const solidEnd = hasFuture ? TODAY : seg.end;
+                      const nodes = [];
+                      if (seg.start <= TODAY && solidEnd > seg.start) {
+                        const w = Math.max(2, xOf(solidEnd) - a - 2);
+                        const live = hasFuture || (s !== "sold" && seg.end >= TODAY);
+                        nodes.push(
+                          <span
+                            key={seg.stage + "s" + i}
+                            className={"rm-seg " + color.bar + (live ? " live" : "")}
+                            style={{ left: a, width: w }}
+                          ></span>
+                        );
+                      }
+                      if (hasFuture) {
+                        const startFuture = seg.start > TODAY ? seg.start : TODAY;
+                        const left = xOf(startFuture) + 2;
+                        const w = Math.max(2, b - left - 2);
+                        nodes.push(
+                          <span key={seg.stage + "f" + i} className={"rm-seg future " + color.bar} style={{ left, width: w }}></span>
+                        );
+                      }
+                      return <React.Fragment key={seg.stage + i}>{nodes}</React.Fragment>;
+                    })}
+                    {p.sold ? <span className="rm-sold" style={{ left: xOf(p.sold) - 5 }} title={"成交 " + fmtDot(p.sold)}></span> : null}
+                    {annotate && rowIndex === 0 ? <span className="anno abs" style={{ left: Math.min(plotW - 24, Math.max(10, xOf(p.sign) - 22)), top: 2 }}>6</span> : null}
+                  </div>
+                </div>
+              );
+            })}
+
+            {rows.length === 0 ? (
+              <div className="rm-empty">
+                <div className="empty" style={{ padding: "26px 0 24px" }}>
+                  <div className="pic"><Icon n="filter" size={20} /></div>
+                  <div className="t">该阶段暂无项目</div>
+                  <div className="d">当前视图下没有「{filter ? STAGE[filter].label : ""}」阶段的项目</div>
+                  <button className="btn-text sm" style={{ marginTop: 10, color: "var(--rust)" }} onClick={() => setFilter(null)}>清除筛选</button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="rm-foot">
+        <span>共 <b>{PROJECTS.length}</b> 个项目 · 当前显示 <b>{rows.length}</b> {filter ? "（筛选：" + STAGE[filter].label + "）" : ""}</span>
+        {baseRows.length > 10 ? <span className="key" style={{ color: "var(--dove)" }}><Icon n="chevDown" size={12} />列表可上下滚动</span> : null}
+        <span className="spacer"></span>
+        {annotate ? <span className="anno">7</span> : null}
+        <span className="key"><i className="ln"></i>今天之后为计划</span>
+        <span className="key"><i className="dt"></i>成交（瞬时节点）</span>
+        <span className="key"><Icon n="keyboard" size={12} />方向键平移 · 行可 Enter 进入</span>
+      </div>
+
+      {tip ? <RoadmapTip p={tip.p} x={tip.x} y={tip.y} /> : null}
+    </section>
+  );
+}
+/* keyboard 图标补充 */
+ICONS.keyboard = <><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/></>;
+
+/* ================================================================
+   侧边栏
+   ================================================================ */
+const NAV = [
+  { kind: "item", id: "dashboard", label: "工作台", icon: "dashboard" },
+  { kind: "group", label: "业务", items: [
+    { id: "properties", label: "房源管理", icon: "building" },
+    { id: "leads", label: "线索中心", icon: "phone" },
+    { id: "projects", label: "项目管理", icon: "kanban" },
+    { id: "todo", label: "项目待办", icon: "list" },
+    { id: "marketing", label: "房源营销", icon: "smartphone" },
+  ]},
+  { kind: "group", label: "增长", items: [
+    { id: "growth", label: "获客中心", icon: "megaphone" },
+    { id: "reports", label: "数据报表", icon: "chart" },
+  ]},
+  { kind: "group", label: "财务", items: [
+    { id: "ledger", label: "财务管理", icon: "wallet" },
+  ]},
+  { kind: "group", label: "系统", items: [
+    { id: "users", label: "用户管理", icon: "users" },
+    { id: "audit", label: "审计日志", icon: "scroll" },
+    { id: "settings", label: "设置", icon: "settings" },
+  ]},
+];
+
+function Sidebar({ route, go, docRoute, setDocRoute }) {
+  return (
+    <aside className="sidebar">
+      <div className="side-logo">
+        <span className="mark">P</span>
+        <span className="word">Profo</span>
+      </div>
+      <div className="side-scroll">
+        {NAV.map((g) => {
+          if (g.kind === "item") {
+            return (
+              <button key={g.id} className={"nav-item" + (route === g.id ? " active" : "")} onClick={() => go(g.id)}>
+                <span className="ic"><Icon n={g.icon} /></span>
+                <span>{g.label}</span>
+              </button>
+            );
+          }
+          return (
+            <div key={g.label}>
+              <div className="nav-group-label">{g.label}</div>
+              {g.items.map((it) => (
+                <button key={it.id} className={"nav-item" + (route === it.id ? " active" : "")} onClick={() => go(it.id)}>
+                  <span className="ic"><Icon n={it.icon} /></span>
+                  <span>{it.label}</span>
+                </button>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+      <div className="side-foot">
+        <div className="doc-nav">
+          <div className="lbl">设计稿视图</div>
+          {SCREENS.map((s) => (
+            <button key={s.id} className={docRoute === s.id ? "on" : ""} onClick={() => setDocRoute(s.id)} aria-current={docRoute === s.id ? "page" : undefined}>
+              <span className="n">{s.n}</span>{s.label}
+            </button>
+          ))}
+        </div>
+        <button className="bell-btn" onClick={() => toast("设计稿演示：消息抽屉不在本次设计范围")}>
+          <span className="ic"><Icon n="bell" /></span>
+          <span>消息</span>
+          <span className="bell-badge">8</span>
+        </button>
+        <button className="collapse-btn" onClick={() => toast("设计稿演示：侧边栏折叠")}>
+          <Icon n="panelLeft" size={16} /><span>收起菜单</span>
+        </button>
+        <button className="side-user" onClick={() => toast("设计稿演示：账号 陈明远 · 管理员")}>
+          <span className="avatar av-2">陈</span>
+          <span className="info"><div className="n">陈明远</div><div className="r">管理员</div></span>
+        </button>
+      </div>
+    </aside>
+  );
+}
+
+/* ================================================================
+   页面头
+   ================================================================ */
+function PageHeader({ title, desc, aside }) {
+  return (
+    <div className="page-head">
+      <div>
+        <h1>{title}</h1>
+        <p className="desc">{desc}</p>
+      </div>
+      <div className="aside">{aside}</div>
+    </div>
+  );
+}
+
+function WGHead({ title, sub, link, onLink }) {
+  return (
+    <div className="wg-head">
+      <span className="wg-title">
+        {title}
+        {sub ? <span className="wg-sub">{sub}</span> : null}
+      </span>
+      {link ? (
+        <button className="sec-link" style={{ fontSize: 12.5 }} onClick={onLink}>{link} <Icon n="arrowRight" size={12} /></button>
+      ) : null}
+    </div>
+  );
+}
+
+/* ================================================================
+   工作台（现有 widget 简化复刻 + 新 roadmap）
+   ================================================================ */
+function MiniKpi({ k, v, unit, d, tone }) {
+  return (
+    <div className="kpi">
+      <div className="k">{k}</div>
+      <div className="v" style={tone ? { color: tone } : undefined}>{v}{unit ? <span className="unit">{unit}</span> : null}</div>
+      {d ? <div className="d" style={tone === "var(--rust)" ? { color: "var(--rust)" } : undefined}>{d}</div> : null}
+    </div>
+  );
+}
+
+function WorkbenchScreen() {
+  return (
+    <div className="page" data-screen-label="01 工作台">
+      <PageHeader
+        title="工作台"
+        desc="欢迎回来，这是您今日的数据概览"
+        aside={
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="dv-chip">VIEW · admin</span>
+            <button className="btn-fill" onClick={() => toast("设计稿演示：打开工作台定制器（显示/隐藏 + 排序）")}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Icon n="sliders" size={14} /> 定制</span>
+            </button>
+          </div>
+        }
+      />
+
+      <div className="toolbar" style={{ marginTop: -8 }}>
+        <span>当前生效 <b style={{ color: "var(--ink)", fontWeight: 480 }}>11</b> / 13 个 widget</span>
+        <span style={{ color: "var(--dove)" }}>·</span>
+        <span>来源</span>
+        <span className="badge b-fog" style={{ fontSize: 11.5 }}>个人覆盖</span>
+        <span className="spacer"></span>
+        <span className="help" style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+          <span className="badge b-apricot" style={{ fontSize: 10.5, padding: "2px 8px" }}>新增</span>
+          project_roadmap · span 12
+        </span>
+      </div>
+
+      <div className="wb-grid">
+        {/* 1 项目总览 */}
+        <div className="wb sp3">
+          <div className="wg">
+            <WGHead title="项目总览" link="详情" onLink={() => toast("设计稿演示：跳转 /admin/projects")} />
+            <div className="kpi-2">
+              <MiniKpi k="已签约" v="12" />
+              <MiniKpi k="装修中" v="8" />
+              <MiniKpi k="在售中" v="15" />
+              <MiniKpi k="已成交" v="23" />
+            </div>
+          </div>
+        </div>
+
+        {/* 2 线索漏斗 */}
+        <div className="wb sp3">
+          <div className="wg">
+            <WGHead title="线索漏斗" sub="本月" link="线索" onLink={() => toast("设计稿演示：跳转 /admin/leads")} />
+            <div className="funnel">
+              {[
+                { l: "总线索", v: 128, p: 100, c: "var(--ink)" },
+                { l: "进入评估", v: 45, p: 35, c: "#4a90e2" },
+                { l: "实地看房", v: 18, p: 14, c: "var(--sky)" },
+                { l: "签约", v: 9, p: 7, c: "var(--rust)" },
+              ].map((f) => (
+                <div className="f-row" key={f.l}>
+                  <span className="fl">{f.l}</span>
+                  <span className="f-bar"><i style={{ width: f.p + "%", background: f.c }}></i></span>
+                  <span className="fv tnum">{f.v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 3 待评估提醒 */}
+        <div className="wb sp3">
+          <div className="wg warm">
+            <WGHead title="待评估提醒" link="去处理" onLink={() => toast("设计稿演示：跳转线索中心")} />
+            <div className="alert-num tnum">7</div>
+            <div className="alert-note">最久等待 3 天 2 小时<br />涉及 2 位业务负责人</div>
+          </div>
+        </div>
+
+        {/* 4 项目待办 */}
+        <div className="wb sp3">
+          <div className="wg">
+            <WGHead title="项目待办" link="看板" onLink={() => toast("设计稿演示：跳转项目待办")} />
+            <div className="kpi-2">
+              <MiniKpi k="待办项目" v="4" />
+              <MiniKpi k="待办总数" v="14" />
+              <MiniKpi k="P0 阻塞" v="3" tone="var(--rust)" />
+              <MiniKpi k="最深逾期" v="12" unit="天" />
+            </div>
+            <div className="todo-rows">
+              <div className="todo-row">
+                <span className="nm">翠苑一区 · 水电验收</span>
+                <span className="due late">逾期 1 天</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 5 新 widget：项目全流程 */}
+        <div className="wb">
+          <RoadmapWidget />
+        </div>
+
+        {/* 6 获客总览 */}
+        <div className="wb sp6">
+          <div className="wg">
+            <WGHead title="获客总览" sub="近 14 日" link="获客中心" onLink={() => toast("设计稿演示：跳转获客中心")} />
+            <div className="wg-split narrow-right" style={{ marginTop: 16 }}>
+              <div>
+                <div className="kpi-3" style={{ marginTop: 0 }}>
+                  <MiniKpi k="新增线索" v="342" unit="条" d="近 30 天" tone="var(--rust)" />
+                  <MiniKpi k="整体转化率" v="18.4" unit="%" d="有效新客 ÷ 分享次数" />
+                  <MiniKpi k="分享带来" v="126" unit="条" d="占 36.8%" />
+                </div>
+                <div className="spark" style={{ marginTop: 22, height: 74 }}>
+                  {[14, 22, 18, 26, 21, 30, 24, 28, 34, 27, 31, 36, 29, 33].map((v, i) => (
+                    <i key={i} className={i >= 11 ? "hot" : ""} style={{ height: (v / 36) * 100 + "%" }}></i>
+                  ))}
+                </div>
+                <div className="spark-x">
+                  {["10-04", "10-07", "10-10", "10-13", "10-17"].map((d) => <span key={d}>{d}</span>)}
+                </div>
+              </div>
+              <div>
+                <div className="help" style={{ fontSize: 12, marginBottom: 10 }}>线索来源（按模块）</div>
+                {[
+                  { nm: "估价", n: 126, p: 37 },
+                  { nm: "预约", n: 98, p: 29 },
+                  { nm: "房源单", n: 74, p: 22 },
+                  { nm: "招募", n: 44, p: 13 },
+                ].map((c, ci) => (
+                  <div key={c.nm} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0" }}>
+                    <span style={{ width: 72, fontSize: 12.5, color: "var(--ash)", flex: "none" }}>{c.nm}</span>
+                    <span className="f-bar" style={{ height: 7 }}><i style={{ width: c.p * 2.4 + "%", background: ci === 0 ? "var(--rust)" : "var(--ink)", opacity: ci === 0 ? 1 : 0.28 }}></i></span>
+                    <span style={{ width: 32, fontSize: 12.5, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{c.n}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 7 资金概览 */}
+        <div className="wb sp6">
+          <div className="wg">
+            <WGHead title="资金概览" sub="本月" link="资金账本" onLink={() => toast("设计稿演示：跳转资金账本")} />
+            <div className="kpi-3">
+              <MiniKpi k="净现金流" v="+128.6" unit="万" d="本月流入 − 流出" tone="var(--pos)" />
+              <MiniKpi k="在投金额" v="3,240" unit="万" d="装修/在售 · 12 个项目" />
+              <MiniKpi k="本月回款" v="86.4" unit="万" d="本月收入类流水" />
+            </div>
+            <div className="wg-split" style={{ marginTop: 20 }}>
+              <div>
+                <div className="help" style={{ fontSize: 12, marginBottom: 4 }}>项目损益（万元）</div>
+                <div className="mini-list">
+                  <div className="mini-row">
+                    <span><span className="nm">古荡新村</span><span className="meta">已成交 · 455 万 · 已结算</span></span>
+                    <span className="rt money-pos">+52.8</span>
+                  </div>
+                  <div className="mini-row">
+                    <span><span className="nm">翠苑一区</span><span className="meta">在售 · 账面浮盈</span></span>
+                    <span className="rt money-pos">+32.4</span>
+                  </div>
+                  <div className="mini-row">
+                    <span><span className="nm">拱宸桥东</span><span className="meta">装修中 · 已投入</span></span>
+                    <span className="rt money-neg">-41.2</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <div className="help" style={{ fontSize: 12, marginBottom: 4 }}>本月现金流（万元）</div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 8, height: 92 }}>
+                  {[22, 14, 31, 9, 26, 18, 34, 12].map((v, i) => (
+                    <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", height: "100%" }}>
+                      <i style={{ display: "block", height: v * 2.4 + "%", borderRadius: "5px 5px 2px 2px", background: i === 6 ? "var(--rust)" : "var(--ink)", opacity: i === 6 ? 1 : 0.16 }}></i>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((w) => <span key={w} style={{ flex: 1, textAlign: "center", fontSize: 10.5, color: "var(--dove)" }}>W{w}</span>)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 8 审计概览（落单升满宽） */}
+        <div className="wb">
+          <div className="wg">
+            <WGHead title="审计概览" sub="今日" link="审计日志" onLink={() => toast("设计稿演示：跳转 /admin/audit-logs")} />
+            <div className="kpi-3">
+              <MiniKpi k="操作总数" v="128" d="今日" />
+              <MiniKpi k="敏感访问" v="3" d="导出 / 银行卡" tone="var(--rust)" />
+              <MiniKpi k="登录失败" v="1" d="今日" />
+            </div>
+            <div className="wg-split" style={{ marginTop: 18 }}>
+              <div>
+                <div className="help" style={{ fontSize: 12, marginBottom: 8 }}>操作分布</div>
+                {[
+                  { nm: "创建", n: 42, p: 33 },
+                  { nm: "更新", n: 51, p: 40 },
+                  { nm: "删除", n: 8, p: 6 },
+                  { nm: "导出", n: 3, p: 2 },
+                  { nm: "登录", n: 24, p: 19 },
+                ].map((c, i) => (
+                  <div key={c.nm} style={{ display: "flex", alignItems: "center", gap: 10, padding: "5px 0" }}>
+                    <span style={{ width: 52, fontSize: 12, color: "var(--ash)", flex: "none" }}>{c.nm}</span>
+                    <span className="f-bar" style={{ height: 7 }}><i style={{ width: c.p + "%", background: i === 3 ? "var(--rust)" : "var(--ink)", opacity: i === 3 ? 1 : 0.22 }}></i></span>
+                    <span style={{ width: 32, fontSize: 12, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{c.n}</span>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <div className="help" style={{ fontSize: 12, marginBottom: 4 }}>最近敏感操作</div>
+                <div className="mini-list">
+                  <div className="mini-row">
+                    <span><span className="nm">导出项目台账</span><span className="meta">陈明远 · 14:32 · 12 条记录</span></span>
+                    <span className="rt" style={{ color: "var(--rust)" }}>敏感</span>
+                  </div>
+                  <div className="mini-row">
+                    <span><span className="nm">查看银行卡</span><span className="meta">林晓芸 · 11:08 · 1 位业主</span></span>
+                    <span className="rt" style={{ color: "var(--rust)" }}>敏感</span>
+                  </div>
+                  <div className="mini-row">
+                    <span><span className="nm">删除资金流水</span><span className="meta">陈明远 · 09:47 · 已撤销</span></span>
+                    <span className="rt" style={{ color: "var(--graphite)" }}>撤回</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 9 重点监控项目 */}
+        <div className="wb">
+          <div className="wg">
+            <WGHead title="重点监控项目" link="全部项目" onLink={() => toast("设计稿演示：跳转 /admin/projects")} />
+            <div className="monitor-row">
+              {[
+                { nm: "翠苑一区 3号", addr: "西湖 · 翠苑", badge: "在售", feed: "今日访客 12 · 新增收藏 3", warm: false },
+                { nm: "古荡新村 12号", addr: "西湖 · 古荡", badge: "已售", feed: "成交 455 万 · 周期 192 天", warm: false },
+                { nm: "拱宸桥东 7号", addr: "拱墅 · 拱宸桥", badge: "装修", feed: "水电验收待办 · 逾期 1 天", warm: true },
+                { nm: "三里亭苑 9号", addr: "上城 · 三里亭", badge: "在售", feed: "上架 20 天 · 带看 7 组", warm: false },
+                { nm: "大关西八苑 12号", addr: "拱墅 · 大关", badge: "签约", feed: "计划交房 11.05 · 剩 6 天", warm: false },
+              ].map((m) => (
+                <div className="m-card" key={m.nm}>
+                  <div className="m-no">
+                    <span className="no">{m.addr}</span>
+                    <span className={"badge " + (m.warm ? "b-apricot" : "b-fog")} style={{ fontSize: 10.5, padding: "2px 8px" }}>{m.badge}</span>
+                  </div>
+                  <div className="m-name">{m.nm}</div>
+                  <div className="m-addr">挂牌 468 万 · 建筑面积 68.2 ㎡</div>
+                  <div className="m-div"></div>
+                  <div className="m-feed">{m.feed}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 10 最近线索 */}
+        <div className="wb">
+          <div className="wg" style={{ padding: "20px 22px 10px" }}>
+            <WGHead title="最近线索" sub="待跟进优先" link="线索中心" onLink={() => toast("设计稿演示：跳转线索中心")} />
+            <div style={{ overflowX: "auto", marginTop: 6 }}>
+              <table className="tbl">
+                <thead>
+                  <tr>
+                    <th>客户</th>
+                    <th>小区 / 房源</th>
+                    <th>来源</th>
+                    <th>状态</th>
+                    <th style={{ textAlign: "right" }}>评估价</th>
+                    <th style={{ textAlign: "right" }}>更新时间</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["王先生", "翠苑一区 · 3号", "估价", "跟进中", "412 万", "10-30 14:20"],
+                    ["李女士", "古荡新村 · 12号", "预约", "待评估", "455 万", "10-30 13:05"],
+                    ["张先生", "三里亭苑 · 9号", "房源单", "已看房", "468 万", "10-30 11:46"],
+                    ["周女士", "拱宸桥东 · 7号", "分享", "待联系", "286 万", "10-30 10:12"],
+                    ["陈先生", "大关西八苑 · 12号", "估价", "跟进中", "318 万", "10-29 18:30"],
+                  ].map((r, i) => (
+                    <tr key={i}>
+                      <td style={{ fontWeight: 450 }}>{r[0]}</td>
+                      <td style={{ color: "var(--ash)" }}>{r[1]}</td>
+                      <td><span className="badge b-fog" style={{ fontSize: 11, padding: "2px 9px" }}>{r[2]}</span></td>
+                      <td><span className="badge b-sky" style={{ fontSize: 11, padding: "2px 9px" }}>{r[3]}</span></td>
+                      <td style={{ textAlign: "right", fontVariantNumeric: "tabular-nums" }}>{r[4]}</td>
+                      <td style={{ textAlign: "right", color: "var(--graphite)", fontSize: 12 }}>{r[5]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* 11 快捷入口 */}
+        <div className="wb">
+          <div className="wg">
+            <WGHead title="快捷入口" />
+            <div className="quick-grid">
+              {[
+                { nm: "新建项目", meta: "录入房源或开发项目", ic: "plus" },
+                { nm: "录入线索", meta: "评估价与归属分配", ic: "phone" },
+                { nm: "项目待办", meta: "逾期 3 · P0 3", ic: "list" },
+                { nm: "资金流水", meta: "本月 128 笔", ic: "wallet" },
+                { nm: "获客活动", meta: "活动配置", ic: "megaphone" },
+                { nm: "订阅模板", meta: "微信 5 个入口", ic: "calendar" },
+              ].map((q) => (
+                <button className="q-row" key={q.nm} onClick={() => toast("设计稿演示：" + q.nm)}>
+                  <span className="ic"><Icon n={q.ic} size={16} /></span>
+                  <span><span className="nm">{q.nm}</span><span className="meta">{q.meta}</span></span>
+                  <span className="go"><Icon n="chevRight" size={14} /></span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 02 · 组件特写
+   ================================================================ */
+function SkeletonWidget() {
+  return (
+    <div className="rm-skel">
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingBottom: 12 }}>
+        <div className="sk" style={{ width: 96, height: 13 }}></div>
+        <div className="sk" style={{ width: 180, height: 26, borderRadius: 999 }}></div>
+      </div>
+      <div style={{ display: "flex", gap: 6, paddingBottom: 10 }}>
+        {[54, 54, 54, 54].map((w, i) => <div key={i} className="sk" style={{ width: w, height: 22, borderRadius: 999 }}></div>)}
+      </div>
+      <div style={{ height: 24 }}></div>
+      {[62, 48, 55, 40].map((w, i) => (
+        <div className="row" key={i}>
+          <div className="sk lbl"></div>
+          <div className="sk bar" style={{ width: w + "%", marginLeft: (i * 7) + "%" }}></div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function CloseupScreen() {
+  return (
+    <div className="page" data-screen-label="02 组件特写">
+      <PageHeader
+        title="组件特写"
+        desc="项目全流程 roadmap 独立视图。图例、视图切换、缩放、悬停与键盘均可直接操作。"
+        aside={<span className="dv-chip">project_roadmap · span 12</span>}
+      />
+      <div className="artboard">
+        <div className="artboard-cap">
+          <span><b>默认态</b> · 最新 10 个项目 · 今天 = 2026.10.30</span>
+          <span className="mono" style={{ fontSize: 11 }}>1240 × auto</span>
+        </div>
+        <RoadmapWidget annotate />
+      </div>
+
+      <div className="anno-grid">
+        {[
+          ["1", "标题 / 新增标记", "「新增」只在首次上线的一个 release 内展示，之后移除；副标题固定为四阶段顺序。"],
+          ["2", "视图切换", "默认「最新 10」（签约日倒序）；切「全部 18」后时间域自动扩展，纵向滚动、轴吸顶。"],
+          ["3", "图例 = 筛选", "点击任一阶段只看当前处于该阶段的项目；再次点击清除，计数随视图变化。"],
+          ["4", "缩放", "35%–300%，滑块 / ± / 适应；缩放时保持视口中心日期，今天刻度随之移动。"],
+          ["5", "行标签", "项目名 + 楼栋号，第二行是当前阶段与停留天数；已成交显示全程周期。"],
+          ["6", "分段甘特条", "四阶段用四种既有色；今天之后画虚线；成交是瞬时节点，用 Rust 圆点而非时长。"],
+        ].map(([n, t, d]) => (
+          <div className="anno-item" key={n}>
+            <span className="anno" style={{ marginTop: 1 }}>{n}</span>
+            <div><div className="t">{t}</div><div className="d">{d}</div></div>
+          </div>
+        ))}
+      </div>
+
+      <div className="spec-sec">
+        <div className="spec-h"><h2>状态矩阵</h2><span className="n">loading / empty / filtered-empty / forbidden</span></div>
+        <div className="state-grid2">
+          <div className="state-cell">
+            <SkeletonWidget />
+            <div className="cap"><b>加载态</b>：每个 widget 独立 Suspense，骨架保持与默认态同高，避免布局跳动。</div>
+          </div>
+          <div className="state-cell">
+            <div style={{ height: 186, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div className="state-empty">
+                <div className="pic"><Icon n="folder" size={18} /></div>
+                <div className="t">暂无项目</div>
+                <div className="d">新建项目后，签约、交房、上架、成交会依次出现在这里</div>
+              </div>
+              <div style={{ textAlign: "center", marginTop: 8 }}>
+                <span className="btn-text sm" style={{ color: "var(--rust)" }}>新建项目 <Icon n="arrowRight" size={12} /></span>
+              </div>
+            </div>
+            <div className="cap"><b>空态</b>：项目数为 0 时展示引导，不渲染空时间轴。</div>
+          </div>
+          <div className="state-cell">
+            <div style={{ height: 186, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div className="state-empty">
+                <div className="pic"><Icon n="filter" size={18} /></div>
+                <div className="t">该阶段暂无项目</div>
+                <div className="d">当前视图下没有「交房」阶段的项目</div>
+                <div style={{ marginTop: 8 }}>
+                  <span className="badge b-outline" style={{ fontSize: 11.5 }}>清除筛选</span>
+                </div>
+              </div>
+            </div>
+            <div className="cap"><b>筛选空态</b>：保留图例与视图切换，仅替换图表区，用户可一键清除。</div>
+          </div>
+          <div className="state-cell">
+            <div style={{ height: 186, display: "flex", flexDirection: "column", justifyContent: "center", gap: 12 }}>
+              <div className="error-banner">
+                <span className="ic"><Icon n="lock" size={14} /></span>
+                <span><span className="t">缺少 project:read</span><span className="d">注册表权限过滤后，该 widget 不渲染</span></span>
+              </div>
+              <div className="error-banner">
+                <span className="ic"><Icon n="alert" size={14} /></span>
+                <span><span className="t">项目列表加载失败</span><span className="d">显示重试入口；不影响同页其它 widget</span></span>
+              </div>
+            </div>
+            <div className="cap"><b>无权限 / 失败</b>：403 走注册表过滤；接口失败仅降级本卡片。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   Screen 03 · 规范
+   ================================================================ */
+function SpecScreen() {
+  return (
+    <div className="page" data-screen-label="03 规范">
+      <PageHeader
+        title="规范"
+        desc="字段映射、注册表、交互、状态与可访问性。所有日期字段均来自现有 ProjectResponse，不新增接口与字段。"
+        aside={<span className="dv-chip">project-roadmap · v1</span>}
+      />
+
+      <div className="spec-sec" style={{ marginTop: 0 }}>
+        <div className="spec-h"><h2>数据映射</h2><span className="n">与项目详情页「关键日期」同源</span></div>
+        <div className="card tbl-card">
+          <table className="tbl">
+            <thead>
+              <tr><th style={{ width: 84 }}>阶段</th><th>项目详情页文案</th><th>物理字段</th><th>ProjectResponse</th><th>口径</th></tr>
+            </thead>
+            <tbody>
+              {[
+                ["签约", "签约", "project_contracts.signing_date", "signing_date", "合同签约日；缺失则项目无法落位（见待确认 02）"],
+                ["交房", "交房", "project_contracts.planned_handover_date", "planned_handover_date", "业主交房时间；HandoverDialog 确认时回写为实际交房日，故同一字段兼容计划/实际"],
+                ["上架", "上架", "project_sales.listing_date", "listing_date", "首次挂牌日；in-progress 时上架段画到今天"],
+                ["成交", "成交", "project_sales.sold_date", "sold_date", "成交日；瞬时节点，画圆点不画时长（无结算结束字段）"],
+                ["当前阶段", "—", "projects.status", "status", "signing / renovating / selling / sold；ended / deleted 不进入"],
+                ["价格", "签约价 / 成交价", "signing_price / sold_price", "signing_price / sold_price", "仅 tooltip 展示，单位万元；不参与时间轴"],
+              ].map((r, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 480 }}>{r[0]}</td>
+                  <td style={{ color: "var(--graphite)", fontSize: 12.5 }}>{r[1]}</td>
+                  <td className="mono" style={{ color: "var(--ash)", fontSize: 11.5 }}>{r[2]}</td>
+                  <td className="mono" style={{ color: "var(--ash)", fontSize: 11.5 }}>{r[3]}</td>
+                  <td style={{ color: "var(--graphite)", fontSize: 12 }}>{r[4]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="tbl-foot">
+            <span><b>演示基准日</b> 2026-10-30</span>
+            <span><b>数据源</b> GET /api/v1/projects（复用列表接口，按 signing_date 倒序）</span>
+            <span style={{ color: "var(--rust)" }}>⚠️ 「全部」需考虑分页 / 数据量，见待确认 01</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="spec-sec">
+        <div className="spec-h"><h2>Widget 注册表</h2><span className="n">新增第 13 项</span></div>
+        <div className="cols">
+          <div className="card">
+            <div className="card-title">注册信息</div>
+            <div className="kv">
+              <span className="k">key</span><span className="v mono">project_roadmap</span>
+              <span className="k">label</span><span className="v">项目全流程</span>
+              <span className="k">span</span><span className="v">12（满宽）</span>
+              <span className="k">permission</span><span className="v mono">project:read</span>
+              <span className="k">roles</span><span className="v">admin · operator</span>
+              <span className="k">order</span><span className="v">紧跟 todo_board_summary 之后</span>
+              <span className="k">fallback</span><span className="v">无 project:read → 不渲染；布局 JSON 缺项 → 不进默认布局</span>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-title">阶段色（全部来自 DESIGN.md 既有色）</div>
+            <div className="swatch-row">
+              {[
+                ["签约", "var(--st-sign)", "#d3e3fc · Sky Wash"],
+                ["交房", "var(--st-handover)", "#fbe1d1 · Apricot Wash"],
+                ["上架", "var(--st-listing)", "#17191c · Ink"],
+                ["成交", "var(--st-sold)", "#5d2a1a · Rust"],
+              ].map(([l, c, v]) => (
+                <span className="swatch" key={l}><i style={{ background: c }}></i><span><b style={{ fontWeight: 480 }}>{l}</b><br /><span style={{ fontSize: 10.5, color: "var(--graphite)" }}>{v}</span></span></span>
+              ))}
+            </div>
+            <div className="help" style={{ marginTop: 14, lineHeight: 1.6 }}>
+              浅色条仅作背景，文字一律 Ink / Rust；成交用 Rust 圆点 + 白色描边与上架深色条区分，不依赖颜色单独承载语义。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="spec-sec">
+        <div className="spec-h"><h2>交互清单</h2><span className="n">8 个直接可操作项</span></div>
+        <div className="card tbl-card">
+          <table className="tbl">
+            <thead><tr><th style={{ width: 150 }}>触发</th><th>行为</th><th style={{ width: 260 }}>备注</th></tr></thead>
+            <tbody>
+              {[
+                ["默认", "按 signing_date 倒序取最新 10 个", "避免首屏过载；无签约日期的项目不计入"],
+                ["视图切换", "最新 10 ↔ 全部 18；时间域随可见项目扩展", "切「全部」后滚到最右（最新），轴吸顶、左列吸左"],
+                ["图例点击", "单阶段筛选；再次点击清除", "aria-pressed；计数随当前视图变化"],
+                ["缩放", "35%–300%；滑块 / ±10% / 适应", "缩放保持视口中心日期；「适应」回到起点"],
+                ["悬停 / focus", "tooltip：四节点日期、阶段间隔、签约/成交价", "键盘 focus 在行左侧弹出，不遮挡时间轴"],
+                ["点击行", "跳转 /admin/projects/{id}", "整行可点击；Enter / Space 同效"],
+                ["键盘 ← →", "时间轴横向平移 80px", "容器可聚焦，role=region"],
+                ["今天刻度", "Rust 虚线 + 轴底部 3px 刻度", "不随缩放改变语义"],
+              ].map((r, i) => (
+                <tr key={i}>
+                  <td style={{ fontWeight: 480 }}>{r[0]}</td>
+                  <td>{r[1]}</td>
+                  <td style={{ color: "var(--graphite)", fontSize: 12 }}>{r[2]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="spec-sec">
+        <div className="spec-h"><h2>边界与状态</h2><span className="n">日期缺失 / 数据量 / 响应式</span></div>
+        <div className="cols">
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: 8 }}>日期缺失规则</div>
+            {[
+              "缺交房：签约段收口到上架日（无上架则到今天），不画交房段。",
+              "缺上架：交房段收口到成交日（无成交则到今天）。",
+              "缺成交：不画成交圆点，末段用 live 端头表达进行中。",
+              "交房日晚于今天：交房段为虚线「计划」，tooltip 标「计划交房」。",
+              "所有日期都缺：行不进入图表，页脚提示「N 个项目缺日期未展示」。",
+            ].map((t, i) => <div className="note-item" key={i}><span className="no">{pad2(i + 1)}</span><span>{t}</span></div>)}
+          </div>
+          <div className="card">
+            <div className="card-title" style={{ marginBottom: 8 }}>可访问性与响应式</div>
+            {[
+              "颜色不单独承载语义：图例带文字与数量，tooltip 给出完整日期，成交另有圆点形状。",
+              "行 role=button + tabIndex=0，Enter/Space 进入项目；容器 role=region 并支持方向键平移。",
+              "图表提供 aria-label 概述；每行 aria-label 朗读四个日期与当前阶段。",
+              "浅色条上的文字一律用 Ink/Rust；成交圆点带白色描边，避免与深色条融合。",
+              "≥1280：左列 208px 全时间轴；768–1279：左列 160px，工具栏换行；<768：卡片横向滚动、标签列吸左。",
+              "prefers-reduced-motion：仅移除 hover 过渡，不影响信息。",
+            ].map((t, i) => <div className="note-item" key={i}><span className="no">{pad2(i + 1)}</span><span>{t}</span></div>)}
+          </div>
+        </div>
+      </div>
+
+      <div className="spec-sec">
+        <div className="spec-h"><h2>⚠️ 未覆盖 / 待确认</h2><span className="n">Fail Loud</span></div>
+        <div className="card">
+          {[
+            "【数据量】「全部」的取数方式：当前项目列表接口分页；本稿以 18 条演示。若真实项目数 >50，需后端提供轻量 roadmap 聚合接口，或前端分页 + 虚拟滚动。",
+            "【缺签约日】没有 signing_date 的项目无法在时间轴落位。建议过滤并在页脚提示「N 个项目缺签约日期未展示」，而不是用 created_at 猜测。",
+            "【交房语义】planned_handover_date 既是计划也是实际（确认交房时回写）。未交房项目的虚线段语义需产品确认文案。",
+            "【成交时长】成交后没有「结算结束」字段，因此成交只画瞬时圆点；若后续要展示结算周期，需先补字段。",
+            "【最新口径】本稿「最新」= signing_date 倒序；若产品指 created_at / updated_at，需改排序键。",
+            "【状态范围】已下架（ended）与已删除（deleted）不进入 roadmap；是否保留历史项目需产品确认。",
+            "【权限】operator 是否可见：本稿按 project:read 放开；若运营不该看资金价格，tooltip 需按权限裁剪价格行。",
+            "【颜色区分】上架 Ink 与成交 Rust 均为深色，小尺寸下区分度有限，已用圆点 + 白描边补偿；如需更强区分必须在 DESIGN 既有色板外新增色，本稿不做。",
+          ].map((t, i) => (
+            <div className="note-item warn" key={i}><span className="no">⚠️</span><span>{t}</span></div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   设计说明 / 屏幕切换 / App
+   ================================================================ */
+const NOTES = [
+  ["01", "位置：插在 KPI 行之后、获客/资金之前，span 12。全流程需要横向时间跨度，半宽会把 10 个项目压成横向滚动的小窗。"],
+  ["02", "默认「最新 10」按签约日倒序，首屏只讲最近的项目；「全部 18」保留在同一张卡里，不跳页。"],
+  ["03", "四阶段颜色全部取 DESIGN.md 既有色：Sky Wash / Apricot Wash / Ink / Rust，不新增色值。"],
+  ["04", "上架段 Ink、成交用 Rust 圆点：深色在 14px 条上区分度有限，用形状（圆点 + 白描边）补偿，不靠颜色单独承载语义。"],
+  ["05", "交房日之后的区间画虚线（计划）；今天用 Rust 虚线 + 轴底部刻度，任何时候都能定位「现在」。"],
+  ["06", "缺日期不猜：按已有节点收口到下一节点或今天，tooltip 用「—」显式标注缺失。"],
+  ["07", "缩放 35%–300%，滑块 / ± / 适应三种入口；缩放保持视口中心日期，不把用户甩到时间轴边缘。"],
+  ["08", "图例即筛选，计数随「最新/全部」变化；筛选空态保留控制项，只替换图表区。"],
+  ["09", "键盘可达：行可 focus、Enter 进入；容器可 focus、← → 平移；图例 aria-pressed；tooltip 同时服务 hover 与 focus。"],
+  ["10", "数据复用 ProjectResponse 的四个日期字段（与详情页「关键日期」同源），不新增接口；数据量风险见规范屏待确认 01。"],
+];
+
+function NotesPanel() {
+  const [show, setShow] = React.useState(false);
+  return (
+    <React.Fragment>
+      <button className="notes-fab" onClick={() => setShow(!show)} title="设计说明" aria-label="设计说明">{show ? "×" : "注"}</button>
+      {show ? (
+        <div className="notes-panel">
+          <h3>设计说明</h3>
+          <p className="sub">工作台新 widget · 项目全流程 roadmap · 10 个设计决策</p>
+          {NOTES.map(([no, txt]) => (
+            <div className="note-item" key={no}><span className="no">{no}</span><span>{txt}</span></div>
+          ))}
+        </div>
+      ) : null}
+    </React.Fragment>
+  );
+}
+
+const SCREENS = [
+  { id: "workbench", n: "01", label: "工作台" },
+  { id: "closeup", n: "02", label: "组件特写" },
+  { id: "spec", n: "03", label: "规范" },
+];
+
+function App() {
+  const [route, setRoute] = React.useState("workbench");
+  const [toastMsg, setToastMsg] = React.useState(null);
+  const timer = React.useRef(null);
+
+  React.useEffect(() => {
+    const h = (e) => {
+      setToastMsg(e.detail);
+      clearTimeout(timer.current);
+      timer.current = setTimeout(() => setToastMsg(null), 2400);
+    };
+    window.addEventListener("d-toast", h);
+    return () => window.removeEventListener("d-toast", h);
+  }, []);
+
+  const go = (id) => {
+    if (id === "dashboard") { setRoute("workbench"); return; }
+    toast("设计稿演示：该模块不在本次设计范围");
+  };
+
+  return (
+    <div className="app">
+      <Sidebar route="dashboard" go={go} docRoute={route} setDocRoute={setRoute} />
+      <main className="main">
+        {route === "workbench" ? <WorkbenchScreen /> : route === "closeup" ? <CloseupScreen /> : <SpecScreen />}
+      </main>
+
+      <NotesPanel />
+      {toastMsg ? <div className="toast" role="status">{toastMsg}</div> : null}
+    </div>
+  );
+}
+
+function toast(msg) {
+  window.dispatchEvent(new CustomEvent("d-toast", { detail: msg }));
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>

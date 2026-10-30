@@ -421,3 +421,27 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* 工作台「项目全流程」时间轴：计划段（今天之后）虚线描边 + 图例/行首小圆点。
+   签约(Sky Wash #d3e3fc)/交房(Apricot Wash #fbe1d1) 在白底用 1px 虚线不可见，
+   按 hifi `.rm-seg.future` 用同色系深一档描边；上架/成交本身是深色，直接复用
+   Ink/Rust 工具类，不在此重复定义。
+   ⚠️ `#8fb3e8` 未收录于 DESIGN.md，为本次按 hifi 引入的唯一新增色值，
+   仅用于此处（SPEC D8 / 未覆盖项）；`#e6a877` 与既有 --color-apricot-edge
+   同族但更偏橙，按 hifi 保留原值。
+   刻意写成字面量而非 CSS 变量：Next 的 CSS 压缩会剔除「仅被 JS 内联样式引用」
+   的自定义属性（曾导致 var() 失效、虚线边框回退成 currentColor 变黑）。 */
+@layer utilities {
+  .rm-dash-sign {
+    border-color: #8fb3e8;
+  }
+  .rm-dash-handover {
+    border-color: #e6a877;
+  }
+  .rm-dot-sign {
+    background-color: #8fb3e8;
+  }
+  .rm-dot-handover {
+    background-color: #e6a877;
+  }
+}

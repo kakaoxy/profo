@@ -119,6 +119,7 @@ class ProjectQueryService:
         monitor_sort: bool = False,
         keyword: str | None = None,
         contract_sort: bool = False,
+        signing_sort: bool = False,
         is_archived: bool | None = None,
     ) -> list[Project]:
         """分页获取项目列表.
@@ -136,6 +137,8 @@ class ProjectQueryService:
                 + 创建时间升序，需在 LIMIT 前应用以保证返回优先级最高的项目
             keyword: 模糊搜索关键词（匹配小区名称 或 合同编号）
             contract_sort: 按合同编号降序（越新越前），供项目记账列表使用
+            signing_sort: 按签约日期降序（无签约日期的排末尾），
+                供工作台「项目全流程」时间轴使用
             is_archived: 归档筛选（None=全部，False=仅未归档，True=仅已归档）
 
         Returns:
@@ -175,9 +178,9 @@ class ProjectQueryService:
             # 同时预加载 operator 关系以构建销售记录操作人嵌套对象
             options.append(selectinload(Project.interactions).selectinload(ProjectInteraction.operator))
 
-        # 契约表需进主查询的情况：合同编号排序 / 工作台监控排序
+        # 契约表需进主查询的情况：合同编号排序 / 工作台监控排序 / 签约日期排序
         # （keyword 搜索合同编号改用 exists 子查询，不要求 join 进主查询）
-        join_contract = monitor_sort or contract_sort
+        join_contract = monitor_sort or contract_sort or signing_sort
         if join_contract:
             # 显式 outerjoin contract：以 contains_eager 复用此 join 承担预加载，
             # 避免 joinedload 产生重复 join
@@ -254,6 +257,10 @@ class ProjectQueryService:
         elif contract_sort:
             # 项目记账列表：按合同编号降序（SH 序号零填充，字典序降序即最新在前），无契约的排末尾
             order_clause = (ProjectContract.contract_no.desc().nulls_last(),)
+        elif signing_sort:
+            # 工作台「项目全流程」时间轴：按签约日期降序（最新签约在前），
+            # 无签约日期的项目无法定位时间轴起点，排到末尾（前端会过滤并提示）
+            order_clause = (ProjectContract.signing_date.desc().nulls_last(), Project.created_at.desc())
         else:
             order_clause = (Project.created_at.desc(),)
 

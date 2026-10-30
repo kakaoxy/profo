@@ -26,6 +26,7 @@ import { getWidget, resolveSpans, spanToClassName } from "@/lib/workbench-widget
 import { getWorkbenchLayout } from "./_lib/workbench-config";
 import { WorkbenchCustomizer } from "./_components/workbench-customizer";
 import { WIDGET_COMPONENTS } from "./_components/widgets/workbench-widgets";
+import { ProjectRoadmapSkeleton } from "./_components/widgets/project-roadmap-skeleton";
 
 // 页面元数据
 export const metadata = {
@@ -285,7 +286,12 @@ export default async function DashboardPage() {
                   data-widget={key}
                   className={`${spanToClassName(span)} flex min-w-0`}
                 >
-                  <Suspense fallback={<WidgetSkeleton />}>
+                  {/* 项目全流程卡终态约 600px，用专用骨架避免加载时明显跳动 */}
+                  <Suspense
+                    fallback={
+                      key === "project_roadmap" ? <ProjectRoadmapSkeleton /> : <WidgetSkeleton />
+                    }
+                  >
                     <Widget />
                   </Suspense>
                 </div>

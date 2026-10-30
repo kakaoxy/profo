@@ -1,0 +1,14 @@
+{
+  "generatedAt": "2026-10-30T16:33:08.338Z",
+  "apiTotal": 47,
+  "drawableCount": 33,
+  "renderedRowsRecent": 10,
+  "chips": {
+    "sign": 3,
+    "handover": 4,
+    "listing": 2,
+    "sold": 1
+  },
+  "zoomLabel": "100%",
+  "footer": "共 33 个项目 · 当前显示 10"
+}

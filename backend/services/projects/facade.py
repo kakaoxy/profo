@@ -161,6 +161,7 @@ class ProjectService:
         monitor_sort: bool = False,
         keyword: str | None = None,
         contract_sort: bool = False,
+        signing_sort: bool = False,
         is_archived: bool | None = None,
     ) -> dict[str, Any]:
         """获取项目列表."""
@@ -175,6 +176,7 @@ class ProjectService:
             monitor_sort=monitor_sort,
             keyword=keyword,
             contract_sort=contract_sort,
+            signing_sort=signing_sort,
             is_archived=is_archived,
         )
 

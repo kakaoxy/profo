@@ -8,6 +8,10 @@ interface WidgetHeadProps {
   /** 右侧链接文案（如「详情」「去处理」），不带则仅渲染标题 */
   link?: string;
   href?: string;
+  /** 标题右侧小徽标（如「新增」），对应设计稿 .rm-new */
+  badge?: string;
+  /** 标题后计数徽标（如「18 个项目」），对应设计稿 .b-ghost */
+  count?: string;
 }
 
 interface WidgetHeadClassProps extends WidgetHeadProps {
@@ -31,6 +35,8 @@ export function WidgetHead({
   href,
   linkClassName,
   titleClassName,
+  badge,
+  count,
 }: WidgetHeadClassProps) {
   return (
     <div className="mb-[2px] flex items-center justify-between gap-3">
@@ -42,7 +48,17 @@ export function WidgetHead({
         }`}
       >
         {title}
+        {badge ? (
+          <span className="rounded-full bg-apricot-wash px-[7px] py-[2px] text-[10.5px] font-medium text-rust">
+            {badge}
+          </span>
+        ) : null}
         {sub ? <span className="text-xs font-[430] text-graphite">{sub}</span> : null}
+        {count ? (
+          <span className="rounded-full bg-ink/[0.045] px-2 py-[2px] text-[11.5px] font-[450] text-graphite">
+            {count}
+          </span>
+        ) : null}
       </span>
       {link && href ? (
         <Link

@@ -259,6 +259,7 @@ class ProjectCoreService:
         monitor_sort: bool = False,
         keyword: str | None = None,
         contract_sort: bool = False,
+        signing_sort: bool = False,
         is_archived: bool | None = None,
     ) -> dict[str, Any]:
         """获取项目列表.
@@ -275,6 +276,8 @@ class ProjectCoreService:
                 需在分页前应用
             keyword: 模糊搜索关键词（匹配小区名称 或 合同编号）
             contract_sort: 按合同编号降序（越新越前），供项目记账列表使用
+            signing_sort: 按签约日期降序（无签约日期的排末尾），
+                供工作台「项目全流程」时间轴使用
             is_archived: 归档筛选（None=全部，False=仅未归档，True=仅已归档）
 
         Returns:
@@ -292,6 +295,7 @@ class ProjectCoreService:
             monitor_sort=monitor_sort,
             keyword=keyword,
             contract_sort=contract_sort,
+            signing_sort=signing_sort,
             is_archived=is_archived,
         )
 

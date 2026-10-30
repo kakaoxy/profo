@@ -1,7 +1,7 @@
 /**
  * 工作台 widget 注册表（迭代二 SPEC §8.3）
  *
- * 唯一事实源：12 个 widget 的 key / 中文名 / 所需权限 / 默认栅格宽度。
+ * 唯一事实源：13 个 widget 的 key / 中文名 / 所需权限 / 默认栅格宽度。
  * - span 由本注册表决定，**不存布局 JSON**（K14：避免布局破坏栅格）；
  * - 与后端 `services/system/workbench_registry.py` 的 key/roles/permission 必须一致；
  * - 后端的 `default_span` 只用于布局管理页展示，渲染宽度以本文件为准。
@@ -22,7 +22,7 @@ export interface WorkbenchWidgetMeta {
   roles: readonly ("admin" | "operator" | "user")[];
 }
 
-/** 12 个 widget（顺序与设计稿矩阵一致） */
+/** 13 个 widget（顺序与设计稿矩阵一致；`project_roadmap` 紧随 4 张 span3 卡之后） */
 export const WORKBENCH_WIDGETS: Record<string, WorkbenchWidgetMeta> = {
   project_overview: {
     key: "project_overview",
@@ -49,6 +49,13 @@ export const WORKBENCH_WIDGETS: Record<string, WorkbenchWidgetMeta> = {
     key: "todo_board_summary",
     label: "项目待办",
     span: 3,
+    permission: PERMISSION_CODES.PROJECT_READ,
+    roles: ["admin", "operator"],
+  },
+  project_roadmap: {
+    key: "project_roadmap",
+    label: "项目全流程",
+    span: 12,
     permission: PERMISSION_CODES.PROJECT_READ,
     roles: ["admin", "operator"],
   },

@@ -5657,7 +5657,7 @@ export interface paths {
         };
         /**
          * 搜索小区
-         * @description 根据关键词搜索小区，无需登录
+         * @description 根据关键词搜索小区（匹配名称/地址/别名），无需登录
          */
         get: operations["search_communities_api_v1_public_communities_search_get"];
         put?: never;
@@ -25600,6 +25600,8 @@ export interface operations {
                 monitor_sort?: boolean;
                 /** @description 按合同编号降序（越新越前），供项目记账列表使用 */
                 contract_sort?: boolean;
+                /** @description 按签约日期降序（无签约日期的排末尾），供工作台项目全流程时间轴使用 */
+                signing_sort?: boolean;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
@@ -31889,7 +31891,7 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description 用户未绑定手机号 */
+            /** @description 用户未绑定手机号，或房源已售出（不再接受看房预约） */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -32697,7 +32699,7 @@ export interface operations {
     search_communities_api_v1_public_communities_search_get: {
         parameters: {
             query: {
-                /** @description 搜索关键词 */
+                /** @description 搜索关键词（名称/地址/别名） */
                 q: string;
                 /** @description 返回条数限制 */
                 limit?: number;

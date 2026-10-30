@@ -23,12 +23,15 @@ import {
   ProjectCardList,
 } from "..";
 import { getDashboardData } from "../../_lib/dashboard-data";
+import { toRoadmapProject, type RoadmapProject } from "../../_lib/project-roadmap";
+import { todayISO } from "@/lib/formatters";
 import { GrowthOverviewCard } from "./growth-overview-card";
 import { FinanceSummaryCard } from "./finance-summary-card";
 import { AuditSummaryCard } from "./audit-summary-card";
 import { MyProjectsCard } from "./my-projects-card";
 import { MyTodosCard } from "./my-todos-card";
 import { TodoBoardSummaryCard } from "./todo-board-summary-card";
+import { ProjectRoadmapCard } from "./project-roadmap-card";
 import { WidgetHead } from "./widget-head";
 
 type MonthlySummary = components["schemas"]["LedgerMonthlySummaryResponse"];
@@ -166,6 +169,33 @@ export const getFullTodoBoard = cache(async (): Promise<TodoBoard | null> => {
   }
 });
 
+/**
+ * 项目全流程时间轴数据（工作台「项目全流程」卡）。
+ *
+ * 复用项目列表接口：`signing_sort=true` 按签约日期降序（该排序为本迭代新增，
+ * 见 SPEC D1）；当前库内项目数 < `max_page_size`(200)，一页取完即可。
+ * 取数失败返回 `failed: true`，由卡片渲染卡内错误横幅（只降级本卡）。
+ */
+export const getRoadmapProjects = cache(
+  async (): Promise<{ projects: RoadmapProject[]; total: number; failed: boolean }> => {
+    const client = await fetchClient();
+    try {
+      const { data } = await client.GET("/api/v1/projects", {
+        params: { query: { page: 1, page_size: 200, signing_sort: true } },
+      });
+      return {
+        projects: (data?.items ?? []).map(toRoadmapProject),
+        total: data?.total ?? 0,
+        failed: false,
+      };
+    } catch (e) {
+      if (isRedirectError(e)) throw e;
+      logger.error("[Workbench] 项目全流程获取失败:", e);
+      return { projects: [], total: 0, failed: true };
+    }
+  },
+);
+
 // ==================== 渲染包装（每个对应一个 Suspense 边界） ====================
 
 export async function ProjectOverviewWidget() {
@@ -201,6 +231,14 @@ export async function AlertCardWidget() {
 export async function TodoBoardSummaryWidget() {
   const board = await getFullTodoBoard();
   return <TodoBoardSummaryCard board={board} />;
+}
+
+export async function ProjectRoadmapWidget() {
+  const { projects, total, failed } = await getRoadmapProjects();
+  // today 由服务端注入：客户端 new Date() 与服务端日期不一致会导致 hydration mismatch
+  return (
+    <ProjectRoadmapCard projects={projects} total={total} failed={failed} today={todayISO()} />
+  );
 }
 
 export async function GrowthOverviewWidget() {
@@ -278,6 +316,7 @@ export const WIDGET_COMPONENTS: Record<string, () => Promise<React.ReactElement 
   leads_funnel: LeadsFunnelWidget,
   alert_card: AlertCardWidget,
   todo_board_summary: TodoBoardSummaryWidget,
+  project_roadmap: ProjectRoadmapWidget,
   growth_overview: GrowthOverviewWidget,
   finance_summary: FinanceSummaryWidget,
   audit_summary: AuditSummaryWidget,
