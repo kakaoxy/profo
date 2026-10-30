@@ -229,4 +229,42 @@ describe("ReviewTargetPicker · 大社区楼栋可达性（呼玛二村 285 号�
     await waitFor(() => expect(screen.getByText("285号")).toBeTruthy());
     expect(screen.queryByText("285栋")).toBeNull();
   });
+
+  it("快速连续搜索时以后发请求的结果为准（防慢请求乱序回包覆盖）", async () => {
+    let resolveStale!: (v: unknown) => void;
+    const stalePromise = new Promise((resolve) => {
+      resolveStale = resolve;
+    });
+    getMock
+      .mockResolvedValueOnce({
+        data: { total: 279, items: [building(1, "1"), building(2, "2")] },
+        error: undefined,
+      }) // 初始加载，正常回包
+      .mockImplementationOnce(() => stalePromise) // 搜「28」：慢请求，挂起
+      .mockResolvedValueOnce({
+        data: { total: 1, items: [building(190, "285")] },
+        error: undefined,
+      }); // 搜「285」：快请求，先回包
+
+    render(<ReviewTargetPicker {...baseProps} />);
+    await waitFor(() => expect(screen.getByText("1号")).toBeTruthy());
+
+    const search = screen.getByLabelText("搜索楼栋号");
+    fireEvent.change(search, { target: { value: "28" } });
+    fireEvent.click(screen.getByRole("button", { name: "搜索" }));
+    // 「28」请求挂起中（搜索按钮已禁用），改输「285」用回车再触发一次搜索
+    fireEvent.change(search, { target: { value: "285" } });
+    fireEvent.keyDown(search, { key: "Enter" });
+
+    await waitFor(() => expect(screen.getByText("285号")).toBeTruthy());
+
+    // 慢的「28」请求此刻才回包：不得把已显示的「285」结果覆盖回旧列表
+    resolveStale({
+      data: { total: 2, items: [building(28, "28"), building(281, "281")] },
+      error: undefined,
+    });
+    await waitFor(() => expect(screen.getByText("285号")).toBeTruthy());
+    expect(screen.queryByText("28号")).toBeNull();
+    expect(screen.queryByText("281号")).toBeNull();
+  });
 });

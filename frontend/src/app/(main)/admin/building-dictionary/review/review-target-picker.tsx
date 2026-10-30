@@ -104,6 +104,8 @@ export function ReviewTargetPicker({
   const [buildings, setBuildings] = useState<BuildingOption[]>([]);
   const [loadingBuildings, setLoadingBuildings] = useState(false);
   const [buildingQ, setBuildingQ] = useState("");
+  /** 楼栋搜索请求序号：只采纳最后一次请求的结果，防慢请求乱序回包覆盖新结果 */
+  const buildingSearchSeqRef = useRef(0);
   /**
    * 小区下是否至少有一栋楼（不受关键词搜索影响）。
    *
@@ -157,6 +159,7 @@ export function ReviewTargetPicker({
     async (keyword: string) => {
       if (!communityId) return;
       const kw = keyword.trim();
+      const seq = (buildingSearchSeqRef.current += 1);
       setLoadingBuildings(true);
       try {
         const { data } = await client.GET(
@@ -168,7 +171,9 @@ export function ReviewTargetPicker({
             },
           },
         );
-        if (data) {
+        // 乱序回包守卫：仅当仍是最后一次请求时才落地结果（输入改了又搜/连点搜索时，
+        // 慢的旧请求后回包会把新结果覆盖回旧列表）
+        if (data && seq === buildingSearchSeqRef.current) {
           // BR-29：待审楼栋不再被过滤 —— 新小区/新楼栋下常常一条实表都没有
           // （实测 2066/21732 个小区无楼栋），旧实现只列实表 → 无目标 → 提交按钮永久置灰。
           const items = data.items.map((b): BuildingOption => ({
@@ -181,10 +186,12 @@ export function ReviewTargetPicker({
           if (!kw) setHasAnyBuildings(data.total > 0 || items.length > 0);
         }
       } finally {
-        setLoadingBuildings(false);
-        // 无论成功失败都置位：失败时继续 unknown 会让弹层永远停在「待定」，
-        // 置位后可如实上报 empty 并给出「改用确认新增」的明确引导。
-        setBuildingsLoaded(true);
+        if (seq === buildingSearchSeqRef.current) {
+          setLoadingBuildings(false);
+          // 无论成功失败都置位：失败时继续 unknown 会让弹层永远停在「待定」，
+          // 置位后可如实上报 empty 并给出「改用确认新增」的明确引导。
+          setBuildingsLoaded(true);
+        }
       }
     },
     [communityId],

@@ -270,7 +270,18 @@ Page<PageData, PageCustom>({
       this.setData({ isEmployee: true });
       this.loadEmployee();
     } else if (!isEmployee && this.data.isEmployee) {
-      this.setData({ isEmployee: false });
+      // 切回外部用户态（admin 令牌失效/登出）：清空员工态留下的字典关联与待审载荷。
+      // 否则界面已无任何选中态，直接提交却仍按字典 linked 带出旧小区 id、楼栋户室，
+      // 与「外部用户保持手工填写」口径相悖。小区名保留，供手填框回显后改写。
+      this.dictPending = { newCommunity: null, newBuilding: null, newRoom: null };
+      this.setData({
+        isEmployee: false,
+        "form.community_id": "",
+        "form.district": "",
+        "form.business_area": "",
+        "form.building_id": null,
+        "form.room_id": null,
+      });
     }
   },
 

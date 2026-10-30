@@ -257,6 +257,42 @@ describe("员工态 / 外部用户态小区输入", () => {
     expect(ctx.data.form.building_id).toBeNull();
     expect(ctx.data.form.room_id).toBeNull();
   });
+
+  it("员工态切回外部用户态（admin 令牌失效）时清空字典残留字段，小区名保留供手填框回显", () => {
+    vi.mocked(hasValidAdminToken).mockReturnValue(true);
+    const ctx = createPageHarness({});
+    ctx.onLoad({});
+    // 员工态下通过字典选择器选了小区/楼栋/户室
+    ctx.onDictChange({
+      detail: {
+        communityId: "c-1",
+        communityName: "梅花新村（花木）",
+        district: "浦东新区",
+        businessCircle: "花木",
+        buildingId: 292014,
+        buildingNo: "01",
+        roomId: 4262551,
+        roomNo: "0101",
+        dictStatus: "linked",
+        newCommunity: null,
+        newBuilding: null,
+        newRoom: null,
+      },
+    });
+    expect(ctx.data.form.building_id).toBe(292014);
+
+    // admin 令牌失效（登出/过期）→ onShow 切回外部用户手填态
+    vi.mocked(hasValidAdminToken).mockReturnValue(false);
+    ctx.onShow();
+
+    expect(ctx.data.isEmployee).toBe(false);
+    expect(ctx.data.form.community_name).toBe("梅花新村（花木）");
+    expect(ctx.data.form.community_id).toBe("");
+    expect(ctx.data.form.district).toBe("");
+    expect(ctx.data.form.business_area).toBe("");
+    expect(ctx.data.form.building_id).toBeNull();
+    expect(ctx.data.form.room_id).toBeNull();
+  });
 });
 
 describe("提交成功后跳转与守卫（回归：与字典改造无关但共用同一路径）", () => {
