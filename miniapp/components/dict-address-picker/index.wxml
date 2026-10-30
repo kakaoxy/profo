@@ -63,7 +63,7 @@
         </view>
         <input
           class="dp-col__search"
-          placeholder="搜楼栋号"
+          placeholder="输入楼栋号搜索（如 285）"
           placeholder-class="dp-search__ph"
           value="{{buildingKeyword}}"
           bindinput="onBuildingSearch"
@@ -83,10 +83,17 @@
               <text>{{item.label}}</text>
               <text class="dp-item__tag" wx:if="{{item.pending}}">待审核</text>
             </view>
-            <view wx:if="{{!visibleBuildings.length}}" class="dp-col__state">暂无楼栋，可手填楼栋号</view>
+            <view
+              wx:if="{{!visibleBuildings.length && buildingKeyword}}"
+              class="dp-col__empty"
+              data-prefill="{{buildingKeyword}}"
+              bindtap="onToggleBuildingManual"
+            >没有找到「{{buildingKeyword}}」？点此添加为新楼栋</view>
+            <view wx:elif="{{!visibleBuildings.length}}" class="dp-col__state">暂无楼栋</view>
           </block>
         </scroll-view>
-        <view class="dp-col__foot">
+        <view wx:if="{{!buildingManualOpen}}" class="dp-col__manual" bindtap="onToggleBuildingManual">没找到？手动添加楼栋</view>
+        <view wx:else class="dp-col__foot">
           <input
             class="dp-col__new"
             placeholder="新楼栋号"

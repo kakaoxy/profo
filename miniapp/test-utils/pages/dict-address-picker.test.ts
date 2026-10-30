@@ -52,6 +52,8 @@ function createComponent() {
     data: state,
     searchTimer: null,
     searchSeq: 0,
+    buildingSearchTimer: null,
+    buildingSearchSeq: 0,
     setData(patch: AnyRecord) {
       Object.assign(state, patch);
     },
@@ -194,7 +196,7 @@ describe("待审载荷：只带名称，且与字典选择互斥", () => {
     comp.onCommunityPick({ currentTarget: { dataset: { id: "c-1", name: "A 小区" } } });
     comp.setData({
       buildings: [{ id: 11, building_no: "8", pending: false, pending_id: null }],
-      // 当前搜索结果为空也不影响查重：查重必须看全量楼栋
+      // 服务端搜索模式下 buildings 即当前结果集；同名 pending 由后端 uq_pending_open 兜底
       visibleBuildings: [],
       buildingDraft: "8",
     });
@@ -226,19 +228,67 @@ describe("待审条目不可选（BR-23：仅来源单据可回显）", () => {
   });
 });
 
-describe("楼栋筛选与楼层筛选", () => {
-  it("楼栋关键词过滤在 JS 侧生效（wx:for 与 wx:if 不能同节点）", () => {
+describe("楼栋搜索与楼层筛选", () => {
+  it("楼栋搜索走服务端 keyword（可命中首屏 100 条之外的楼栋）", async () => {
     const comp = createComponent();
-    comp.setData({
-      buildings: [
+    comp.onCommunityPick({ currentTarget: { dataset: { id: "c-huma", name: "呼玛二村" } } });
+    pending[0].resolve({ total: 279, items: [] });
+    await new Promise((r) => setTimeout(r, 0));
+
+    comp.onBuildingSearch({ detail: { value: "285" } });
+    // 300ms 防抖期内不发请求
+    expect(pending).toHaveLength(1);
+    await new Promise((r) => setTimeout(r, 400));
+    expect(pending).toHaveLength(2);
+    expect(pending[1].opts.url).toBe("/public/building-dictionary/communities/c-huma/buildings");
+    expect(pending[1].opts.data.keyword).toBe("285");
+    pending[1].resolve({
+      total: 1,
+      items: [{ id: 2851, building_no: "285", pending: false, pending_id: null }],
+    });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(comp.data.visibleBuildings.map((b: AnyRecord) => b.building_no)).toEqual(["285"]);
+    expect((comp.data.visibleBuildings[0] as AnyRecord).label).toBe("285号");
+  });
+
+  it("清空楼栋关键词 → 立即回全量第一页（不带 keyword）", async () => {
+    const comp = createComponent();
+    comp.onCommunityPick({ currentTarget: { dataset: { id: "c-1", name: "A 小区" } } });
+    pending[0].resolve({ total: 2, items: [] });
+    await new Promise((r) => setTimeout(r, 0));
+
+    comp.onBuildingSearch({ detail: { value: "12" } });
+    await new Promise((r) => setTimeout(r, 400));
+    expect(pending[1].opts.data.keyword).toBe("12");
+    pending[1].resolve({ total: 0, items: [] });
+    await new Promise((r) => setTimeout(r, 0));
+
+    comp.onBuildingSearch({ detail: { value: "" } });
+    // 空关键词立即请求，不防抖
+    expect(pending).toHaveLength(3);
+    expect(pending[2].opts.data.keyword).toBeUndefined();
+    pending[2].resolve({
+      total: 2,
+      items: [
         { id: 1, building_no: "1", pending: false, pending_id: null },
         { id: 2, building_no: "12", pending: false, pending_id: null },
       ],
     });
-    comp.onBuildingSearch({ detail: { value: "12" } });
-    expect(comp.data.visibleBuildings.map((b: AnyRecord) => b.building_no)).toEqual(["12"]);
-    comp.onBuildingSearch({ detail: { value: "" } });
+    await new Promise((r) => setTimeout(r, 0));
     expect(comp.data.visibleBuildings).toHaveLength(2);
+  });
+
+  it("手动添加默认收起；弱化入口/空态可展开并预填搜索词", async () => {
+    const comp = createComponent();
+    expect(comp.data.buildingManualOpen).toBe(false);
+    comp.onToggleBuildingManual({ currentTarget: { dataset: { prefill: "285" } } });
+    expect(comp.data.buildingManualOpen).toBe(true);
+    expect(comp.data.buildingDraft).toBe("285");
+    // 手填面板打开时不再渲染弱化入口（WXML wx:if 互斥，这里锁 data 语义）
+    comp.onNewBuildingInput({ detail: { value: "" } });
+    comp.onCreateBuilding();
+    // 空草稿不产生事件
+    expect(comp.__events.filter((e: AnyRecord) => e.name === "change")).toHaveLength(0);
   });
 
   it("楼层筛选：全部 / 指定层", () => {

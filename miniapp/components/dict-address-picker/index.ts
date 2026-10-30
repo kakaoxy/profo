@@ -123,11 +123,15 @@ type ComponentData = {
   /** 输入框草稿（点「添加」后才写入上面三个已确认字段） */
   buildingDraft: string;
   roomDraft: string;
+  /** 「手动添加楼栋」弱化入口展开态（默认收起，避免压过搜索） */
+  buildingManualOpen: boolean;
 };
 
 interface ComponentCustomProperties {
   searchTimer: number | null;
   searchSeq: number;
+  buildingSearchTimer: number | null;
+  buildingSearchSeq: number;
 }
 
 interface Methods {
@@ -139,14 +143,17 @@ interface Methods {
   onBuildingSearch(e: WechatMiniprogram.Input): void;
   onBuildingPick(e: WechatMiniprogram.BaseEvent): void;
   onNewBuildingInput(e: WechatMiniprogram.Input): void;
+  /** 展开「手动添加楼栋」弱化入口（可携带搜索词预填） */
+  onToggleBuildingManual(e: WechatMiniprogram.BaseEvent): void;
   onCreateBuilding(): void;
   onNewRoomInput(e: WechatMiniprogram.Input): void;
-  /** 按楼栋号关键词过滤楼栋（空关键词返回全部） */
-  filterBuildings(keyword: string): BuildingOption[];
+  /** 楼栋号服务端搜索（keyword 透传 /public 字典接口，突破首屏 100 条限制） */
+  searchBuildings(keyword: string, seq: number): void;
   onFloorPick(e: WechatMiniprogram.BaseEvent): void;
   onRoomPick(e: WechatMiniprogram.BaseEvent): void;
   onCreateRoom(): void;
   clearTimer(): void;
+  clearBuildingTimer(): void;
   doSearch(keyword: string, seq: number): void;
   loadBuildings(communityId: string): void;
   loadRooms(buildingId: number): void;
@@ -184,6 +191,7 @@ const data: ComponentData = {
   newRoomName: "",
   buildingDraft: "",
   roomDraft: "",
+  buildingManualOpen: false,
 };
 
 Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProperties>({
@@ -192,9 +200,12 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
     attached() {
       this.searchTimer = null;
       this.searchSeq = 0;
+      this.buildingSearchTimer = null;
+      this.buildingSearchSeq = 0;
     },
     detached() {
       this.clearTimer();
+      this.clearBuildingTimer();
     },
   },
   methods: {
@@ -275,6 +286,7 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
         newRoomName: "",
         buildingDraft: "",
         roomDraft: "",
+        buildingManualOpen: false,
       });
       this.loadBuildings(id);
       this.emit();
@@ -308,6 +320,7 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
         newRoomName: "",
         buildingDraft: "",
         roomDraft: "",
+        buildingManualOpen: false,
       });
       this.emit();
     },
@@ -342,13 +355,71 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
         newRoomName: "",
         buildingDraft: "",
         roomDraft: "",
+        buildingManualOpen: false,
       });
       this.emit();
     },
 
     onBuildingSearch(e: WechatMiniprogram.Input) {
-      const keyword = (e.detail.value || "").trim();
-      this.setData({ buildingKeyword: keyword, visibleBuildings: this.filterBuildings(keyword) });
+      const raw = e.detail.value || "";
+      const keyword = raw.trim();
+      this.setData({ buildingKeyword: keyword });
+      this.clearBuildingTimer();
+      this.buildingSearchSeq += 1;
+      const seq = this.buildingSearchSeq;
+      if (!keyword) {
+        // 清空关键词 → 回到首屏全量（第一页）
+        this.searchBuildings("", seq);
+        return;
+      }
+      this.buildingSearchTimer = setTimeout(() => {
+        this.buildingSearchTimer = null;
+        this.searchBuildings(keyword, seq);
+      }, DEBOUNCE_DELAY);
+    },
+
+    /** 楼栋号服务端搜索：keyword 透传字典接口，突破「只加载第一页」的限制 */
+    searchBuildings(keyword: string, seq: number) {
+      const communityId = this.data.communityId;
+      if (!communityId) {
+        return;
+      }
+      this.setData({ buildingsLoading: true });
+      request<BdBuildingListResponse>({
+        url: `/public/building-dictionary/communities/${communityId}/buildings`,
+        data: { page: 1, page_size: BUILDING_PAGE_SIZE, keyword: keyword || undefined },
+        skipAuth: true,
+      })
+        .then((res) => {
+          if (seq !== this.buildingSearchSeq) {
+            return;
+          }
+          const list = (res.items || []).map((b) => ({
+            id: b.id,
+            building_no: b.building_no,
+            label: formatBuildingLabel(b.building_no),
+            pending: b.pending,
+            pending_id: b.pending_id ?? null,
+            // 实表楼栋 id 唯一；pending 楼栋以「p+楼栋号」区分（同名 pending 由 uq_pending_open 防重）
+            key: b.pending ? `p${b.building_no}` : `b${b.id}`,
+          }));
+          this.setData({ buildings: list, visibleBuildings: list, buildingsLoading: false });
+        })
+        .catch(() => {
+          if (seq !== this.buildingSearchSeq) {
+            return;
+          }
+          this.setData({ buildings: [], visibleBuildings: [], buildingsLoading: false });
+        });
+    },
+
+    /** 展开「手动添加」弱化入口（搜索无结果的空态也会带上搜索词预填） */
+    onToggleBuildingManual(e: WechatMiniprogram.BaseEvent) {
+      const prefill = ((e.currentTarget.dataset.prefill as string) || "").trim();
+      this.setData({
+        buildingManualOpen: true,
+        buildingDraft: this.data.buildingDraft || prefill,
+      });
     },
 
     onNewBuildingInput(e: WechatMiniprogram.Input) {
@@ -429,6 +500,7 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
         newRoomName: "",
         buildingDraft: "",
         roomDraft: "",
+        buildingManualOpen: false,
       });
       this.emit();
     },
@@ -504,12 +576,11 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
       }
     },
 
-    filterBuildings(keyword: string): BuildingOption[] {
-      const kw = keyword.trim();
-      if (!kw) {
-        return this.data.buildings;
+    clearBuildingTimer() {
+      if (this.buildingSearchTimer !== null) {
+        clearTimeout(this.buildingSearchTimer);
+        this.buildingSearchTimer = null;
       }
-      return this.data.buildings.filter((b) => b.building_no.indexOf(kw) >= 0);
     },
 
     floorOfRoom(roomNo: string): number | null {
@@ -524,32 +595,10 @@ Component<ComponentData, Record<string, never>, Methods, [], ComponentCustomProp
       return null;
     },
 
+    /** 初始加载楼栋首页（选中小区后调用；后续搜索走 searchBuildings） */
     loadBuildings(communityId: string) {
-      this.setData({ buildingsLoading: true });
-      request<BdBuildingListResponse>({
-        url: `/public/building-dictionary/communities/${communityId}/buildings`,
-        data: { page: 1, page_size: BUILDING_PAGE_SIZE },
-        skipAuth: true,
-      })
-        .then((res) => {
-          const list = (res.items || []).map((b) => ({
-            id: b.id,
-            building_no: b.building_no,
-            label: formatBuildingLabel(b.building_no),
-            pending: b.pending,
-            pending_id: b.pending_id ?? null,
-            // 实表楼栋 id 唯一；pending 楼栋以「p+楼栋号」区分（同名 pending 由 uq_pending_open 防重）
-            key: b.pending ? `p${b.building_no}` : `b${b.id}`,
-          }));
-          this.setData({
-            buildings: list,
-            visibleBuildings: this.filterBuildings(this.data.buildingKeyword),
-            buildingsLoading: false,
-          });
-        })
-        .catch(() => {
-          this.setData({ buildings: [], visibleBuildings: [], buildingsLoading: false });
-        });
+      this.buildingSearchSeq += 1;
+      this.searchBuildings("", this.buildingSearchSeq);
     },
 
     /** 户室逐页取全后按楼层聚合（后端单页上限 500，超大楼栋需翻页） */

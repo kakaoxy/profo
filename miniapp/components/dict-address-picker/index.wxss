@@ -178,12 +178,13 @@
 }
 
 .dp-col__search {
-  margin: 12rpx 16rpx;
-  height: 64rpx;
-  padding: 0 20rpx;
-  border-radius: 16rpx;
-  background: var(--fog);
-  font-size: 24rpx;
+  margin: 16rpx 16rpx 8rpx;
+  height: 88rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid var(--dove);
+  border-radius: 24rpx;
+  background: var(--pure-white);
+  font-size: 28rpx;
   color: var(--ink);
   box-sizing: border-box;
 }
@@ -197,6 +198,27 @@
 .dp-col__state {
   padding: 24rpx 8rpx;
   font-size: 24rpx;
+  color: var(--dove);
+  text-align: center;
+}
+
+/* 搜索无结果时的「添加为新楼栋」引导（ apricot-wash 弱化底色，替代常驻添加框） */
+.dp-col__empty {
+  margin: 8rpx 8rpx 12rpx;
+  padding: 20rpx;
+  border-radius: 20rpx;
+  background: var(--apricot-wash);
+  color: var(--rust);
+  font-size: 24rpx;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* 「手动添加楼栋」弱化入口：默认只露一行灰字，点击才展开添加框 */
+.dp-col__manual {
+  margin: 4rpx 16rpx 16rpx;
+  padding: 8rpx 0 4rpx;
+  font-size: 22rpx;
   color: var(--dove);
   text-align: center;
 }
