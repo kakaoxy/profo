@@ -25,6 +25,12 @@ type StoreItem = components["schemas"]["MerchantStoreListItem"];
 
 const REVIEW_LABELS: Record<string, string> = { pending: "待审核", approved: "已转正", merged: "已合并" };
 const STATUS_LABELS: Record<string, string> = { normal: "正常", disabled: "停用", merged: "已合并", relocated: "已搬迁" };
+const SOURCE_LABELS: Record<string, string> = {
+  employee: "员工建档",
+  backoffice: "后台新增",
+  import: "批量导入",
+  broker: "经纪人创建",
+};
 
 export default function MerchantStoresPage() {
   const [data, setData] = useState<StoreList | null>(null);
@@ -33,6 +39,10 @@ export default function MerchantStoresPage() {
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("all");
   const [reviewStatus, setReviewStatus] = useState("all");
+  const [district, setDistrict] = useState("");
+  const [businessCircle, setBusinessCircle] = useState("");
+  const [ownerId, setOwnerId] = useState("all");
+  const [employees, setEmployees] = useState<components["schemas"]["UserSimpleResponse"][]>([]);
   const [page, setPage] = useState(1);
 
   const load = async (nextPage = page) => {
@@ -46,6 +56,9 @@ export default function MerchantStoresPage() {
           keyword: keyword.trim() || undefined,
           status: status === "all" ? undefined : status,
           review_status: reviewStatus === "all" ? undefined : reviewStatus,
+          district: district.trim() || undefined,
+          business_circle: businessCircle.trim() || undefined,
+          owner_employee_id: ownerId === "all" ? undefined : ownerId,
         })}`,
       );
       setData(result);
@@ -60,6 +73,12 @@ export default function MerchantStoresPage() {
   useEffect(() => {
     void load(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    merchantApi<components["schemas"]["UserSimpleListResponse"]>("/users/simple?page=1&page_size=200")
+      .then((result) => setEmployees(result.items))
+      .catch(() => setEmployees([]));
   }, []);
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.page_size)) : 1;
@@ -102,6 +121,33 @@ export default function MerchantStoresPage() {
                 <SelectItem value="merged">已合并</SelectItem>
               </SelectContent>
             </Select>
+            <Input
+              className="w-32"
+              placeholder="区县"
+              value={district}
+              onChange={(event) => setDistrict(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && void load(1)}
+            />
+            <Input
+              className="w-32"
+              placeholder="商圈"
+              value={businessCircle}
+              onChange={(event) => setBusinessCircle(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && void load(1)}
+            />
+            <Select value={ownerId} onValueChange={setOwnerId}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="负责人" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部负责人</SelectItem>
+                {employees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {employee.nickname || employee.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <Button variant="outline" onClick={() => void load(1)} disabled={loading}>
               <RefreshCw className="mr-1 h-4 w-4" /> 查询
             </Button>
@@ -111,6 +157,9 @@ export default function MerchantStoresPage() {
                   keyword: keyword.trim() || undefined,
                   status: status === "all" ? undefined : status,
                   review_status: reviewStatus === "all" ? undefined : reviewStatus,
+                  district: district.trim() || undefined,
+                  business_circle: businessCircle.trim() || undefined,
+                  owner_employee_id: ownerId === "all" ? undefined : ownerId,
                 })}`}
               >
                 导出 CSV
@@ -137,6 +186,7 @@ export default function MerchantStoresPage() {
                   <th className="px-4 py-3">区域/商圈</th>
                   <th className="px-4 py-3">合作状态</th>
                   <th className="px-4 py-3">审核</th>
+                  <th className="px-4 py-3">来源</th>
                   <th className="px-4 py-3">负责人</th>
                   <th className="px-4 py-3">最近拜访</th>
                   <th className="px-4 py-3">门店状态</th>
@@ -166,6 +216,9 @@ export default function MerchantStoresPage() {
                         {REVIEW_LABELS[item.review_status] || item.review_status}
                       </Badge>
                     </td>
+                    <td className="px-4 py-3 text-xs text-graphite">
+                      {SOURCE_LABELS[item.source] || item.source}
+                    </td>
                     <td className="px-4 py-3">{item.owner_employee_name || "—"}</td>
                     <td className="px-4 py-3 text-xs text-graphite">
                       {item.last_visit_at ? new Date(item.last_visit_at).toLocaleString("zh-CN") : "—"}
@@ -175,7 +228,7 @@ export default function MerchantStoresPage() {
                 ))}
                 {data.items.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-10 text-center text-sm text-graphite" colSpan={8}>
+                    <td className="px-4 py-10 text-center text-sm text-graphite" colSpan={9}>
                       没有符合条件的门店
                     </td>
                   </tr>

@@ -114,9 +114,13 @@ export default function MerchantStoreDetailPage() {
           description="档案 · 经纪人 · 拜访时间线 · 协议 · 线索统计"
           actions={
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" asChild>
-                <Link href={`/admin/merchant/stores/new?mode=edit&store_id=${storeId}`}>编辑门店</Link>
-              </Button>
+              {detail && detail.store.status !== "merged" ? (
+                <Button variant="outline" asChild>
+                  <Link href={`/admin/merchant/stores/new?mode=edit&store_id=${storeId}`}>
+                    编辑门店
+                  </Link>
+                </Button>
+              ) : null}
               <Button variant="outline" asChild>
                 <Link href="/admin/merchant/stores">返回列表</Link>
               </Button>
@@ -140,10 +144,43 @@ export default function MerchantStoreDetailPage() {
                   <div className="mt-2 flex flex-wrap gap-2">
                     <Badge>{detail.store.cooperation_status_label}</Badge>
                     <Badge variant={detail.store.review_status === "pending" ? "destructive" : "secondary"}>
-                      {detail.store.review_status === "pending" ? "待审核" : "已转正"}
+                      {detail.store.review_status === "pending"
+                        ? "待审核"
+                        : detail.store.review_status === "merged"
+                          ? "已合并"
+                          : "已转正"}
                     </Badge>
-                    <Badge variant="secondary">{detail.store.status}</Badge>
+                    <Badge variant="secondary">
+                      {detail.store.status === "merged"
+                        ? "已合并"
+                        : detail.store.status === "disabled"
+                          ? "停用"
+                          : detail.store.status === "relocated"
+                            ? "已搬迁"
+                            : "正常"}
+                    </Badge>
                   </div>
+                  {detail.store.status === "merged" ? (
+                    <div className="mt-3 rounded-lg bg-mist p-3 text-sm">
+                      <div className="font-medium">该门店已合并，只读不可编辑</div>
+                      {detail.store.former_store_no ? (
+                        <div className="mt-1 text-xs text-graphite">
+                          原门店编号：{detail.store.former_store_no}
+                        </div>
+                      ) : null}
+                      {detail.store.merged_to_store_id ? (
+                        <div className="mt-1 text-xs text-graphite">
+                          合并去向：
+                          <Link
+                            className="text-rust hover:underline"
+                            href={`/admin/merchant/stores/${detail.store.merged_to_store_id}`}
+                          >
+                            {detail.store.merged_to_store_id}
+                          </Link>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
                 <div className="text-right text-sm text-graphite">
                   <div>联系人：{detail.store.contact_name}</div>
@@ -154,7 +191,7 @@ export default function MerchantStoreDetailPage() {
               </div>
             </Card>
 
-            {detail.store.review_status === "pending" ? (
+            {detail.store.review_status === "pending" && detail.store.status !== "merged" ? (
               <Card className="flex flex-wrap items-center gap-3 p-4">
                 <span className="text-sm font-medium">经纪人自建门店待审核</span>
                 <Button size="sm" onClick={() => void approve()}>
@@ -164,6 +201,7 @@ export default function MerchantStoreDetailPage() {
               </Card>
             ) : null}
 
+            {detail.store.status === "merged" ? null : (
             <div className="grid gap-6 lg:grid-cols-2">
               <Card className="p-6">
                 <div className="mb-3 text-sm font-medium">合作状态变更</div>
@@ -240,6 +278,7 @@ export default function MerchantStoreDetailPage() {
                 </div>
               </Card>
             </div>
+            )}
 
             <Card className="p-6">
               <div className="mb-3 text-sm font-medium">门店经纪人（{brokers.length}）</div>
