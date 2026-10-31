@@ -3,6 +3,7 @@
 import uuid
 from collections.abc import Generator
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
@@ -27,6 +28,12 @@ from utils.crypto import hash_phone
 API = "/api/v1"
 AGREEMENT_TYPE = str(EventType.MERCHANT_AGREEMENT_EXPIRING)
 VISIT_TYPE = str(EventType.MERCHANT_VISIT_OVERDUE)
+_SHANGHAI = ZoneInfo("Asia/Shanghai")
+
+
+def _biz_date(value: datetime) -> str:
+    """业务日期（Asia/Shanghai），与通知去重键/模板口径一致."""
+    return value.astimezone(_SHANGHAI).date().isoformat()
 
 
 def _client(session: Session, user: User) -> TestClient:
@@ -199,19 +206,34 @@ def test_agreement_expiring_notification_recipient_dedup_list_and_read(
     store = _make_store(session, company, name="到期测试门店", owner_employee_id=employee.id)
     expire_at = datetime.now(timezone.utc) + timedelta(days=10)
     agreement = _make_agreement(session, store=store, expire_at=expire_at)
+    # AC-V09-002：已作废 / 已过期协议不产生提醒
+    voided = _make_agreement(
+        session,
+        store=store,
+        expire_at=expire_at,
+        status="voided",
+    )
+    expired = _make_agreement(
+        session,
+        store=store,
+        expire_at=datetime.now(timezone.utc) - timedelta(days=1),
+    )
     session.commit()
 
     result = _run(admin_client)
+    assert result["agreements"]["scanned"] == 1, result
     assert result["agreements"]["created"] == 1, result
     assert result["agreements"]["failed"] == 0
 
     notification = _notifications(session, AGREEMENT_TYPE)[0]
     assert notification.category == "merchant"
     assert notification.title == f"合作协议即将到期：{store.store_name}"
-    assert notification.body == f"将于 {expire_at.date().isoformat()} 到期，请及时续签"
+    assert notification.body == f"将于 {_biz_date(expire_at)} 到期，请及时续签"
     assert notification.action_type == "route"
     assert notification.action_url == f"/admin/merchant/agreements/{agreement.id}"
-    assert notification.dedupe_key == (f"merchant:agreement_expiring:{agreement.id}:{expire_at.date().isoformat()}")
+    assert notification.dedupe_key == f"merchant:agreement_expiring:{agreement.id}:{_biz_date(expire_at)}"
+    assert notification.source_id == agreement.id
+    assert {voided.id, expired.id} & {n.source_id for n in _notifications(session, AGREEMENT_TYPE)} == set()
     assert _recipient_ids(session, notification) == {employee.id}
     # AC-V09-014：正文不含明文手机号
     assert "13700002222" not in f"{notification.title}{notification.body}"
@@ -364,7 +386,7 @@ def test_visit_overdue_scan_filters_and_new_cycle(seeded_db: dict) -> None:
     assert _recipient_ids(session, by_store[inactive_owner.id]) == {operator.id}
     # earliest 门店的锚点是最早拜访时间
     assert by_store[earliest.id].dedupe_key == (
-        f"merchant:visit_overdue:{earliest.id}:{(now - timedelta(days=45)).date().isoformat()}"
+        f"merchant:visit_overdue:{earliest.id}:{_biz_date(now - timedelta(days=45))}"
     )
 
     # 重复扫描去重
@@ -386,7 +408,7 @@ def test_visit_overdue_scan_filters_and_new_cycle(seeded_db: dict) -> None:
     assert fourth["visits"]["created"] == 1, fourth
     notifications_after = _notifications(session, VISIT_TYPE)
     assert len(notifications_after) == 5
-    expected_key = f"merchant:visit_overdue:{overdue.id}:{(now - timedelta(days=33)).date().isoformat()}"
+    expected_key = f"merchant:visit_overdue:{overdue.id}:{_biz_date(now - timedelta(days=33))}"
     assert any(n.dedupe_key == expected_key for n in notifications_after)
 
 
