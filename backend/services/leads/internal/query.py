@@ -68,6 +68,8 @@ class LeadQueryService:
         statuses: list[LeadStatus] | None = None,
         district: str | None = None,
         creator_id: str | None = None,
+        store_id: str | None = None,
+        broker_id: str | None = None,
         layout: str | None = None,
         floor: str | None = None,
     ) -> dict[str, Any]:
@@ -80,6 +82,8 @@ class LeadQueryService:
             statuses: 状态筛选
             district: 行政区筛选
             creator_id: 创建人筛选
+            store_id: 推荐门店筛选
+            broker_id: 推荐经纪人筛选
             layout: 户型筛选
             floor: 楼层筛选
 
@@ -123,6 +127,10 @@ class LeadQueryService:
             )
         if creator_id:
             query = query.filter(Lead.creator_id == creator_id)
+        if store_id:
+            query = query.filter(Lead.store_id == store_id)
+        if broker_id:
+            query = query.filter(Lead.broker_id == broker_id)
         if layout:
             query = query.filter(
                 func.lower(Lead.layout).like(f"%{escape_like(layout).lower()}%", escape="\\"),

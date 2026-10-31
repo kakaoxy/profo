@@ -28,6 +28,7 @@ from schemas.lead import (
 )
 from services.leads import LeadService
 from services.market.community_image_service import CommunityImageService
+from services.merchant.lead_attribution import LeadAttributionService
 from services.property.dict_read_service import BuildingDictReadService
 from services.property.doc_dict_resolver import DocDictKey, DocDictNames
 from services.system.exceptions import ResourceNotFoundError
@@ -120,6 +121,10 @@ def _lead_to_list_item(
         creator_name=lead.creator.nickname if lead.creator else None,
         referrer_id=lead.referrer_id,
         referrer_name=lead.referrer.nickname if lead.referrer else None,
+        store_id=lead.store_id,
+        broker_id=lead.broker_id,
+        store_owner_employee_id=lead.store_owner_employee_id,
+        broker_inviter_employee_id=lead.broker_inviter_employee_id,
         source_property_id=lead.source_property_id,
         last_follow_up_at=lead.last_follow_up_at,
         latest_follow_up=(
@@ -147,6 +152,8 @@ def get_leads(
     statuses: Annotated[list[LeadStatus] | None, Query(description="状态筛选")] = None,
     district: Annotated[str | None, Query(max_length=100, description="行政区筛选")] = None,
     creator_id: Annotated[str | None, Query(max_length=100, description="创建人筛选")] = None,
+    store_id: Annotated[str | None, Query(max_length=36, description="推荐门店筛选")] = None,
+    broker_id: Annotated[str | None, Query(max_length=36, description="推荐经纪人筛选")] = None,
     layout: Annotated[str | None, Query(max_length=100, description="户型筛选")] = None,
     floor: Annotated[str | None, Query(max_length=100, description="楼层筛选")] = None,
 ) -> PaginatedLeadListResponse:
@@ -162,6 +169,8 @@ def get_leads(
         statuses=statuses,
         district=district,
         creator_id=creator_id,
+        store_id=store_id,
+        broker_id=broker_id,
         layout=layout,
         floor=floor,
     )
@@ -181,6 +190,8 @@ def get_leads(
         )
         for lead in result["items"]
     ]
+    # 商户域五维归属名称批量回填（门店/经纪人/归属员工，无 N+1）
+    LeadAttributionService(db).fill_names(items)
 
     return PaginatedLeadListResponse(
         items=items,
@@ -233,6 +244,7 @@ def _lead_response_with_names(
     resp = LeadResponse.model_validate(lead, from_attributes=True)
     for field, value in _dict_names_update(lead, dict_names).items():
         setattr(resp, field, value)
+    LeadAttributionService(db).fill_names([resp])
     if with_verdict:
         svc = service or LeadService(db)
         verdict = svc.query_service.get_latest_eval_verdicts([lead.id]).get(lead.id, {})

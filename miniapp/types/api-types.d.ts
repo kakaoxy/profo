@@ -7414,6 +7414,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/merchant/stores/{store_id}/brokers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店有效经纪人列表
+         * @description 线索录入二级联动：仅返回该门店有效绑定且启用的经纪人.
+         */
+        get: operations["list_store_brokers_api_v1_public_merchant_stores__store_id__brokers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/brokers/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 经纪人搜索
+         * @description 未选门店时按姓名/手机号搜索启用经纪人.
+         */
+        get: operations["search_brokers_api_v1_public_merchant_brokers_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/merchant/visits": {
         parameters: {
             query?: never;
@@ -14598,6 +14638,16 @@ export interface components {
             status: components["schemas"]["LeadStatus"] | null;
             /** Images */
             images?: string[];
+            /**
+             * Store Id
+             * @description 推荐门店ID
+             */
+            store_id?: string | null;
+            /**
+             * Broker Id
+             * @description 推荐经纪人ID
+             */
+            broker_id?: string | null;
             /** Created At */
             created_at?: string | null;
             /** New Community */
@@ -14889,6 +14939,24 @@ export interface components {
             referrer_id?: string | null;
             /** Referrer Name */
             referrer_name?: string | null;
+            /** Store Id */
+            store_id?: string | null;
+            /** Store Name */
+            store_name?: string | null;
+            /** Broker Id */
+            broker_id?: string | null;
+            /** Broker Name */
+            broker_name?: string | null;
+            /** Store Owner Employee Id */
+            store_owner_employee_id?: string | null;
+            /** Store Owner Name */
+            store_owner_name?: string | null;
+            /** Broker Inviter Employee Id */
+            broker_inviter_employee_id?: string | null;
+            /** Broker Inviter Name */
+            broker_inviter_name?: string | null;
+            /** Attribution Status */
+            attribution_status?: string | null;
             /** Source Property Id */
             source_property_id?: number | null;
             /** Last Follow Up At */
@@ -14997,6 +15065,24 @@ export interface components {
             referrer_id?: string | null;
             /** Referrer Name */
             referrer_name?: string | null;
+            /** Store Id */
+            store_id?: string | null;
+            /** Store Name */
+            store_name?: string | null;
+            /** Broker Id */
+            broker_id?: string | null;
+            /** Broker Name */
+            broker_name?: string | null;
+            /** Store Owner Employee Id */
+            store_owner_employee_id?: string | null;
+            /** Store Owner Name */
+            store_owner_name?: string | null;
+            /** Broker Inviter Employee Id */
+            broker_inviter_employee_id?: string | null;
+            /** Broker Inviter Name */
+            broker_inviter_name?: string | null;
+            /** Attribution Status */
+            attribution_status?: string | null;
             /** Last Follow Up At */
             last_follow_up_at?: string | null;
             /**
@@ -15104,6 +15190,16 @@ export interface components {
             status?: components["schemas"]["LeadStatus"] | null;
             /** Audit Reason */
             audit_reason?: string | null;
+            /**
+             * Store Id
+             * @description 推荐门店ID
+             */
+            store_id?: string | null;
+            /**
+             * Broker Id
+             * @description 推荐经纪人ID
+             */
+            broker_id?: string | null;
             /** Images */
             images?: string[] | null;
             /** District */
@@ -26044,6 +26140,10 @@ export interface operations {
                 district?: string | null;
                 /** @description 创建人筛选 */
                 creator_id?: string | null;
+                /** @description 推荐门店筛选 */
+                store_id?: string | null;
+                /** @description 推荐经纪人筛选 */
+                broker_id?: string | null;
                 /** @description 户型筛选 */
                 layout?: string | null;
                 /** @description 楼层筛选 */
@@ -38282,6 +38382,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BrokerBindingResponse"][];
+                };
+            };
+        };
+    };
+    list_store_brokers_api_v1_public_merchant_stores__store_id__brokers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_brokers_api_v1_public_merchant_brokers_search_get: {
+        parameters: {
+            query: {
+                /** @description 姓名/手机号关键词 */
+                keyword: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

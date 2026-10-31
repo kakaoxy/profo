@@ -207,6 +207,7 @@ from migrations._marketing_notify import (
 # 独立迁移模块
 from migrations._merchant import seed_merchant_platform
 from migrations._merchant_schema import (
+    add_lead_merchant_attribution_columns,
     add_merchant_store_phone_hash_column,
     create_merchant_agreement_tables,
     create_merchant_broker_tables,
@@ -524,6 +525,8 @@ def _run_all_migrations(engine: Engine) -> None:
         create_merchant_broker_tables(engine)
         # v108：协议模板与电子协议表
         create_merchant_agreement_tables(engine)
+        # v109：leads 补商户域五维归属列
+        add_lead_merchant_attribution_columns(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

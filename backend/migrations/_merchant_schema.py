@@ -171,6 +171,34 @@ def create_merchant_broker_tables(engine: Engine) -> None:
     )
 
 
+def add_lead_merchant_attribution_columns(engine: Engine) -> None:
+    """v109：leads 补门店/经纪人/员工归因快照四列与索引（幂等）."""
+    columns = (
+        ("store_id", "VARCHAR(36)"),
+        ("broker_id", "VARCHAR(36)"),
+        ("store_owner_employee_id", "VARCHAR(36)"),
+        ("broker_inviter_employee_id", "VARCHAR(36)"),
+    )
+    for column, ddl_type in columns:
+        if not _column_exists(engine, "leads", column):
+            logger.info("迁移 v109：leads 补列 %s", column)
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE leads ADD COLUMN {column} {ddl_type}"))
+    _ensure_indexes(
+        engine,
+        (
+            (
+                "idx_leads_store",
+                "CREATE INDEX IF NOT EXISTS idx_leads_store ON leads (store_id)",
+            ),
+            (
+                "idx_leads_broker",
+                "CREATE INDEX IF NOT EXISTS idx_leads_broker ON leads (broker_id)",
+            ),
+        ),
+    )
+
+
 def create_merchant_agreement_tables(engine: Engine) -> None:
     """v108：幂等创建协议模板与协议表及索引."""
     from models import Base, MerchantAgreement, MerchantAgreementTemplate

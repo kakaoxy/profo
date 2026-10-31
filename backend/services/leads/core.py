@@ -26,6 +26,7 @@ from services.growth_center.customer_notify import (
     unified_status_label,
 )
 from services.growth_center.normalize import map_valuation_status
+from services.merchant.lead_attribution import LeadAttributionService
 from services.notification.dual_write import (
     MODULE_LABELS,
     emit_customer_new,
@@ -116,6 +117,12 @@ class LeadService:
         # 使用 exclude_unset=True：未显式提供的字段不传入构造，
         # 这样 created_at 等字段为 None 时不会覆盖 ORM 列级 default
         lead_payload = lead_data.model_dump(exclude_unset=True)
+        # 商户域五维归属（V06）：门店/经纪人快照由服务端解析，客户端不可直接写快照
+        attribution = LeadAttributionService(self.db).resolve(
+            creator_id=creator_id,
+            store_id=lead_payload.pop("store_id", None),
+            broker_id=lead_payload.pop("broker_id", None),
+        )
         # 录入端新增载荷（new_*）非 Lead 列：进审核池（M3/FR-10），单据 dict_status=pending
         new_community = lead_payload.pop("new_community", None) or None
         new_building = lead_payload.pop("new_building", None) or None
@@ -138,6 +145,7 @@ class LeadService:
         )
         db_lead = Lead(
             **lead_payload,
+            **attribution.as_dict(),
             id=uuid.uuid4(),
             creator_id=creator_id,
             referrer_id=referrer_id,
@@ -293,6 +301,8 @@ class LeadService:
         statuses: list | None = None,
         district: str | None = None,
         creator_id: str | None = None,
+        store_id: str | None = None,
+        broker_id: str | None = None,
         layout: str | None = None,
         floor: str | None = None,
     ) -> dict[str, Any]:
@@ -305,6 +315,8 @@ class LeadService:
             statuses: 状态筛选
             district: 行政区筛选
             creator_id: 创建人筛选
+            store_id: 推荐门店筛选
+            broker_id: 推荐经纪人筛选
             layout: 户型筛选
             floor: 楼层筛选
 
@@ -320,6 +332,8 @@ class LeadService:
             statuses=statuses,
             district=district,
             creator_id=creator_id,
+            store_id=store_id,
+            broker_id=broker_id,
             layout=layout,
             floor=floor,
         )
@@ -349,6 +363,20 @@ class LeadService:
         """
         lead = self.get_lead_or_404(lead_id)
         update_dict = update_data.model_dump(exclude_unset=True)
+        # 商户域五维归属：仅重算本次显式变更的门店/经纪人，未变更时保持原快照
+        store_touched = "store_id" in update_dict
+        broker_touched = "broker_id" in update_dict
+        attribution = LeadAttributionService(self.db).resolve_for_update(
+            creator_id=str(lead.creator_id) if lead.creator_id else None,
+            current_store_id=str(lead.store_id) if lead.store_id else None,
+            current_broker_id=str(lead.broker_id) if lead.broker_id else None,
+            new_store_id=update_dict.get("store_id"),
+            new_broker_id=update_dict.get("broker_id"),
+            store_touched=store_touched,
+            broker_touched=broker_touched,
+        )
+        if store_touched or broker_touched:
+            update_dict.update(attribution.as_dict())
         # 录入端新增载荷（new_*）非 Lead 列：提交审核池后弹出（M3/FR-10，
         # pending 关联由 dict_status=pending + 引用账本承载，单据照常更新）
         new_community = update_dict.pop("new_community", None) or None

@@ -86,6 +86,19 @@ class Lead(Base):
     # Linkage
     creator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="创建人ID")
     referrer_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="分享归属员工ID(逻辑外键)")
+    # 商户域五维归属（V06 / D7 / m02721）：门店、经纪人及提交时员工快照
+    store_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="推荐门店ID(逻辑外键)")
+    broker_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="推荐经纪人ID(逻辑外键)")
+    store_owner_employee_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="提交时门店归属员工快照",
+    )
+    broker_inviter_employee_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="提交时经纪人邀请员工快照",
+    )
     source_property_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="关联房源ID(软引用)")
 
     # 软删除标记
@@ -148,6 +161,9 @@ class Lead(Base):
         Index("idx_lead_auditor_audit_time", "auditor_id", "audit_time"),
         # 分享统计/归因：按 referrer_id 聚合「我的分享统计」lead_count 与今日 lead_count
         Index("idx_lead_referrer", "referrer_id"),
+        # 商户域五维归属筛选（V06）
+        Index("idx_leads_store", "store_id"),
+        Index("idx_leads_broker", "broker_id"),
     )
 
 

@@ -370,6 +370,30 @@ def create_store_as_broker(
     )
 
 
+@router.get("/stores/{store_id}/brokers", summary="门店有效经纪人列表")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def list_store_brokers(
+    request: Request,
+    store_id: Annotated[str, Path(description="门店ID")],
+    db: DbSessionDep,
+    current_user: MerchantCReadDep,
+) -> list[BrokerResponse]:
+    """线索录入二级联动：仅返回该门店有效绑定且启用的经纪人."""
+    return MerchantBrokerService(db).list_store_brokers_for_user(current_user, store_id)
+
+
+@router.get("/brokers/search", summary="经纪人搜索")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def search_brokers(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: MerchantCReadDep,
+    keyword: Annotated[str, Query(min_length=1, max_length=50, description="姓名/手机号关键词")],
+) -> list[BrokerResponse]:
+    """未选门店时按姓名/手机号搜索启用经纪人."""
+    return MerchantBrokerService(db).search_active_brokers(keyword)
+
+
 # -------------------- 拜访 --------------------
 @router.post("/visits", status_code=status.HTTP_201_CREATED, summary="登记拜访")
 @limiter.limit(RateLimits.MERCHANT_VISIT)

@@ -683,6 +683,37 @@ class MerchantBrokerService:
         return self._response(broker)
 
     # -------------------- 对外只读接口 --------------------
+    def list_store_brokers_for_user(self, user: User, store_id: str) -> list[BrokerResponse]:
+        """线索录入门店→经纪人联动（校验门店数据范围）."""
+        store = self.db.query(MerchantStore).filter(MerchantStore.id == store_id).first()
+        if store is None or store.is_deleted:
+            msg = "门店不存在"
+            raise ResourceNotFoundError(msg)
+        from services.merchant.scope import ensure_store_visible
+
+        ensure_store_visible(self.db, user, store)
+        return [self._response(row) for row in self.effective_brokers_for_store(store_id)]
+
+    def search_active_brokers(self, keyword: str, *, limit: int = 20) -> list[BrokerResponse]:
+        """按姓名/手机号哈希搜索启用经纪人（未选门店时的线索归属入口）."""
+        keyword = keyword.strip()
+        if not keyword:
+            return []
+        conditions = [MerchantBroker.name.ilike(f"%{keyword}%")]
+        if keyword.isdigit():
+            conditions.append(MerchantBroker.phone_hash == hash_phone(keyword))
+        rows = (
+            self.db.query(MerchantBroker)
+            .filter(
+                or_(*conditions),
+                MerchantBroker.bind_status != MerchantBindStatus.DISABLED.value,
+            )
+            .order_by(MerchantBroker.name.asc())
+            .limit(limit)
+            .all()
+        )
+        return [self._response(row) for row in rows]
+
     def effective_brokers_for_store(self, store_id: str) -> list[MerchantBroker]:
         """门店当前有效绑定且未停用的经纪人（V06/V07/V08 消费）."""
         return (

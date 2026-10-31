@@ -163,6 +163,9 @@ class LeadCreate(LeadBase):
 
     status: LeadStatus | None = LeadStatus.PENDING_ASSESSMENT
     images: list[str] = Field(default_factory=list)
+    # 商户域归属（V06）：门店/经纪人均选填，快照由服务端回填
+    store_id: str | None = Field(default=None, max_length=36, description="推荐门店ID")
+    broker_id: str | None = Field(default=None, max_length=36, description="推荐经纪人ID")
     # 允许导入场景显式指定创建时间；未提供时由 DB 默认值填充当前时间
     created_at: datetime | None = None
     # 录入端新增小区/楼栋/户室载荷（进审核池 FR-10；业务单据照常创建）
@@ -195,6 +198,10 @@ class LeadUpdate(BaseModel):
 
     status: LeadStatus | None = None
     audit_reason: str | None = None
+
+    # 商户域归属（V06）：可清空，清空时快照同步置空并留痕
+    store_id: str | None = Field(default=None, max_length=36, description="推荐门店ID")
+    broker_id: str | None = Field(default=None, max_length=36, description="推荐经纪人ID")
 
     images: list[str] | None = None
     district: str | None = None
@@ -231,6 +238,17 @@ class LeadResponse(LeadBase):
     creator_name: str | None = None
     referrer_id: str | None = None
     referrer_name: str | None = None
+
+    # 商户域五维归属（V06）
+    store_id: str | None = None
+    store_name: str | None = None
+    broker_id: str | None = None
+    broker_name: str | None = None
+    store_owner_employee_id: str | None = None
+    store_owner_name: str | None = None
+    broker_inviter_employee_id: str | None = None
+    broker_inviter_name: str | None = None
+    attribution_status: str | None = None
 
     last_follow_up_at: datetime | None = None
     created_at: datetime
@@ -290,6 +308,16 @@ class LeadListItem(BaseModel):
     creator_name: str | None = None
     referrer_id: str | None = None
     referrer_name: str | None = None
+    # 商户域五维归属（V06）
+    store_id: str | None = None
+    store_name: str | None = None
+    broker_id: str | None = None
+    broker_name: str | None = None
+    store_owner_employee_id: str | None = None
+    store_owner_name: str | None = None
+    broker_inviter_employee_id: str | None = None
+    broker_inviter_name: str | None = None
+    attribution_status: str | None = None
     source_property_id: int | None = None
     last_follow_up_at: datetime | None = None
     latest_follow_up: LeadFollowUpSummary | None = Field(
