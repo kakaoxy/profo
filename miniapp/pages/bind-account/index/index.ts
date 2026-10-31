@@ -147,6 +147,11 @@ Page<PageData, PageCustom>({
           wx.showToast({ title: "目标账号不可合并", icon: "none" });
         } else if (body.code === 40005) {
           wx.showToast({ title: "不能合并到当前账号", icon: "none" });
+        } else if (body.code === 40903) {
+          wx.showToast({ title: "该账号已完成绑定，请重新登录", icon: "none" });
+        } else if (body.code === 401) {
+          // 会话彻底失效（refresh 失败且静默重登也失败）：提示重新登录，而不是笼统的「绑定失败」
+          wx.showToast({ title: "登录已过期，请重新登录", icon: "none" });
         } else {
           wx.showToast({ title: "绑定失败", icon: "none" });
         }

@@ -225,10 +225,65 @@ export function refreshCAccessToken(): Promise<string | null> {
 }
 
 /**
+ * C 端会话恢复回调（由 app.ts 注册为「静默微信登录」）.
+ *
+ * 场景：C 端 refresh_token 过期/失效（超过 7 天未使用、轮换结果未落盘、换设备）时，
+ * 刷新链路无法续期，令牌被清除后所有 /public/* 请求持续 401——小程序进入「看起来已登录、
+ * 但绑定账号/手机号授权等操作全部失败」的僵死状态，且只能手动重新登录才能恢复。
+ * 由于 wx.login 无弹窗，此时静默重新换取令牌即可恢复，无需打断用户。
+ *
+ * 以回调方式注册而非直接 import wechatLogin：wechat-auth.ts 依赖本模块，直接 import 会形成循环依赖。
+ */
+let cSessionRecovery: (() => Promise<boolean>) | null = null;
+
+/** 注册 C 端会话恢复回调；回调返回是否已重新获得 C 端令牌. */
+export function registerCSessionRecovery(handler: () => Promise<boolean>): void {
+  cSessionRecovery = handler;
+}
+
+/** 正在进行的会话恢复 Promise（并发复用：多个请求同时 401 时只登录一次）. */
+let recoveryPromise: Promise<boolean> | null = null;
+
+/** 静默恢复 C 端会话；未注册回调或恢复失败返回 false. */
+function recoverCSession(): Promise<boolean> {
+  const handler = cSessionRecovery;
+  if (!handler) {
+    return Promise.resolve(false);
+  }
+  if (recoveryPromise) {
+    return recoveryPromise;
+  }
+  const promise = handler().catch(() => false);
+  recoveryPromise = promise;
+  // 恢复完成后清空引用（无论成功失败），允许后续再次尝试
+  const clearRef = () => {
+    if (recoveryPromise === promise) {
+      recoveryPromise = null;
+    }
+  };
+  promise.then(clearRef, clearRef);
+  return promise;
+}
+
+/**
+ * 续期 C 端令牌：先按 refresh_token 刷新，失败则静默重新微信登录.
+ *
+ * 返回可用的 C 端 access_token；两条路径都失败时返回 null（调用方据此 reject）。
+ */
+async function renewCToken(): Promise<string | null> {
+  const refreshed = await refreshCAccessToken();
+  if (refreshed) {
+    return refreshed;
+  }
+  const recovered = await recoverCSession();
+  return recovered ? getCAccessToken() || null : null;
+}
+
+/**
  * 封装 wx.request，返回 Promise<T>.
  * - 自动注入 Authorization（/public/* 与 /keys/* 优先用 c_access_token，其他用 access_token）；
  * - 401 时按接口受众自动刷新对应端令牌并重试一次（/public/* 与 /keys/* → C 端，其余 → 后台），
- *   避免 access_token 过期后频繁强制用户重新登录；
+ *   C 端刷新失败时再静默重新微信登录一次，避免 refresh_token 过期后进入「全部 401」僵死状态；
  * - 调用方显式传入 header.Authorization 时优先保留；
  * - HTTP 非 2xx reject { statusCode, body }；网络异常 reject { errMsg }.
  */
@@ -302,12 +357,12 @@ function doRequest<T>(
           resolve(res.data as T);
           return;
         }
-        // 401 且未跳过鉴权且未重试过：access_token 可能过期，按接口受众刷新对应端令牌后重试一次。
-        // - /public/* 与 /keys/*（aud=c）→ 刷新 C 端令牌（refreshCAccessToken）
-        // - 其余后台接口 → 刷新后台令牌（refreshAccessToken）
+        // 401 且未跳过鉴权且未重试过：access_token 可能过期，按接口受众续期令牌后重试一次。
+        // - /public/* 与 /keys/*（aud=c）→ renewCToken（刷新失败时静默重新微信登录）
+        // - 其余后台接口 → refreshAccessToken
         if (statusCode === 401 && !skipAuth && !retried) {
-          const refresh = isCAudiencePath(url) ? refreshCAccessToken : refreshAccessToken;
-          refresh().then((newToken) => {
+          const renew = isCAudiencePath(url) ? renewCToken : refreshAccessToken;
+          renew().then((newToken) => {
             if (newToken) {
               requestHeader.Authorization = `Bearer ${newToken}`;
               doRequest<T>(url, method, data, requestHeader, skipAuth, true, networkRetried, timeout)

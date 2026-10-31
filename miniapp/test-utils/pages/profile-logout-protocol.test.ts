@@ -19,6 +19,8 @@ import { createPageHarness, resetTestStubs, wxStubs } from "../test-harness";
 vi.mock("../../utils/request", () => ({
   request: vi.fn(() => Promise.resolve({})),
   refreshCAccessToken: vi.fn(() => Promise.resolve(null)),
+  // app.ts onLaunch 注册 C 端会话恢复回调（静默重登兜底），本用例只验证冷启动续登分支
+  registerCSessionRecovery: vi.fn(),
 }));
 vi.mock("../../utils/customers-badge", () => ({ fetchCustomersBadgeCount: vi.fn(() => Promise.resolve(0)) }));
 vi.mock("../../utils/pending-assessment", () => ({

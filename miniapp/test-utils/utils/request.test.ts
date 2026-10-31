@@ -3,7 +3,7 @@
  * /public 令牌选择、GET 网络重试、timeout 覆盖、内存缓存.
  */
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { request, getCacheData, DEFAULT_TIMEOUT } from "../../utils/request";
+import { request, getCacheData, DEFAULT_TIMEOUT, registerCSessionRecovery } from "../../utils/request";
 
 type WxRequestOptions = {
   url: string;
@@ -25,6 +25,9 @@ function queueResponses(hs: Array<(opts: WxRequestOptions) => void>): void {
 beforeEach(() => {
   storage.clear();
   handlers = [];
+  // 默认不恢复 C 端会话（等价于 app.ts 未注册回调），避免用例间串味；
+  // 需要恢复行为的用例自行 registerCSessionRecovery
+  registerCSessionRecovery(async () => false);
   vi.stubGlobal("wx", {
     request: vi.fn((opts: WxRequestOptions) => {
       const handler = handlers.shift();
@@ -264,5 +267,109 @@ describe("内存缓存（cacheKey）", () => {
 
   it("未命中返回 undefined", () => {
     expect(getCacheData("k-nope")).toBeUndefined();
+  });
+});
+
+describe("C 端会话恢复（refresh_token 失效后静默重登）", () => {
+  /**
+   * 缺陷复现（线上 admin/users 之外的第二个问题）：C 端 refresh_token 过期/失效时，
+   * 刷新链路只能返回 null 并清空令牌，小程序进入「看起来已登录、但 /public/* 全部 401」
+   * 的僵死状态——绑定已有账号（/public/users/merge）永远提示「绑定失败」。
+   * 修复：刷新失败后静默重新微信登录一次，用新令牌重试原请求。
+   */
+  it("C 端刷新失败 → 静默重登 → 用新令牌重试原请求成功", async () => {
+    storage.set("access_token", "admin-tok");
+    storage.set("c_access_token", "stale-c");
+    storage.set("c_refresh_token", "stale-c-refresh");
+    let recoveryCalls = 0;
+    registerCSessionRecovery(async () => {
+      recoveryCalls += 1;
+      // 模拟 wechatLogin 成功：写入新令牌
+      storage.set("c_access_token", "fresh-c");
+      storage.set("c_refresh_token", "fresh-c-refresh");
+      return true;
+    });
+    queueResponses([
+      // 1) 原请求 401（c_access_token 已过期）
+      ok({ code: 401, message: "无法验证凭据" }, 401),
+      // 2) /public/auth/refresh 401（refresh_token 已失效）
+      ok({ code: 401, message: "刷新令牌无效" }, 401),
+      // 3) 静默重登后重试原请求，携带新 C 端令牌
+      (opts) => {
+        expect(opts.url).toContain("/public/users/merge");
+        expect(opts.header?.Authorization).toBe("Bearer fresh-c");
+        opts.success({ statusCode: 200, data: { success: true } });
+      },
+    ]);
+
+    const res = await request<{ success: boolean }>({
+      url: "/public/users/merge",
+      method: "POST",
+      data: { type: "internal", username: "zhangli", password: "***" },
+    });
+
+    expect(res).toEqual({ success: true });
+    expect(recoveryCalls).toBe(1);
+    expect(storage.get("c_access_token")).toBe("fresh-c");
+  });
+
+  it("会话恢复失败 → reject 原始 401，且只尝试恢复一次", async () => {
+    storage.set("c_access_token", "stale-c");
+    storage.set("c_refresh_token", "stale-c-refresh");
+    let recoveryCalls = 0;
+    registerCSessionRecovery(async () => {
+      recoveryCalls += 1;
+      return false;
+    });
+    queueResponses([
+      ok({ code: 401, message: "无法验证凭据" }, 401),
+      ok({ code: 401, message: "刷新令牌无效" }, 401),
+    ]);
+
+    await expect(
+      request({ url: "/public/users/merge", method: "POST", data: {} }),
+    ).rejects.toMatchObject({ statusCode: 401 });
+    expect(recoveryCalls).toBe(1);
+  });
+
+  it("C 端刷新成功时不触发会话恢复", async () => {
+    storage.set("c_access_token", "c-old");
+    storage.set("c_refresh_token", "c-ref");
+    let recoveryCalls = 0;
+    registerCSessionRecovery(async () => {
+      recoveryCalls += 1;
+      return true;
+    });
+    queueResponses([
+      ok({}, 401),
+      (opts) => {
+        expect(opts.url).toContain("/public/auth/refresh");
+        opts.success({ statusCode: 200, data: { access_token: "c-new", refresh_token: "c-ref2" } });
+      },
+      (opts) => {
+        expect(opts.header?.Authorization).toBe("Bearer c-new");
+        opts.success({ statusCode: 200, data: { ok: true } });
+      },
+    ]);
+
+    await expect(request({ url: "/public/leads/mine" })).resolves.toEqual({ ok: true });
+    expect(recoveryCalls).toBe(0);
+  });
+
+  it("后台接口 401 不触发 C 端会话恢复", async () => {
+    storage.set("access_token", "admin-old");
+    storage.set("refresh_token", "admin-ref");
+    let recoveryCalls = 0;
+    registerCSessionRecovery(async () => {
+      recoveryCalls += 1;
+      return true;
+    });
+    queueResponses([
+      ok({}, 401),
+      (opts) => opts.success({ statusCode: 401, data: {} }),
+    ]);
+
+    await expect(request({ url: "/projects" })).rejects.toMatchObject({ statusCode: 401 });
+    expect(recoveryCalls).toBe(0);
   });
 });
