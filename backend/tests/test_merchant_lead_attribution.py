@@ -9,7 +9,7 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
 import db
-from models import BizDictItem, Lead, Role, User
+from models import BizDictItem, Lead, OperationLog, Role, User
 from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C, create_access_token, get_password_hash
 from utils.crypto import hash_phone
 
@@ -212,6 +212,40 @@ def test_lead_attribution_employee_filter(
     assert resp.json()["total"] == 3
     names = {item["community_name"] for item in resp.json()["items"]}
     assert names == {"分享归因线索", "门店归属线索", "经纪人邀请线索"}
+
+
+def test_attribution_change_writes_audit_log(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """归属字段变更写审计日志（BR-M07-007 / AC-V06-016）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    broker = _create_broker(admin_client, store["id"])
+    lead = _create_lead(admin_client)
+
+    updated = admin_client.put(
+        f"{API}/leads/{lead['id']}",
+        json={"store_id": store["id"], "broker_id": broker["id"]},
+    )
+    assert updated.status_code == 200, updated.text
+
+    session: Session = seeded_db["session"]
+    logs = (
+        session.query(OperationLog)
+        .filter(
+            OperationLog.resource_type == "lead",
+            OperationLog.resource_id == lead["id"],
+            OperationLog.action == "update",
+        )
+        .all()
+    )
+    assert len(logs) == 1
+    assert logs[0].before["store_id"] is None
+    assert logs[0].after["store_id"] == store["id"]
+    assert logs[0].after["store_owner_employee_id"] == employee.id
+    assert logs[0].after["broker_id"] == broker["id"]
 
 
 def test_broker_options_for_lead_entry(admin_client: TestClient, employee: User, seeded_db: dict) -> None:

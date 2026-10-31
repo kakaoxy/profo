@@ -26,6 +26,7 @@ from services.growth_center.customer_notify import (
     unified_status_label,
 )
 from services.growth_center.normalize import map_valuation_status
+from services.merchant.audit import add_audit_log
 from services.merchant.lead_attribution import LeadAttributionService
 from services.notification.dual_write import (
     MODULE_LABELS,
@@ -397,6 +398,15 @@ class LeadService:
         # 商户域五维归属：仅重算本次显式变更的门店/经纪人，未变更时保持原快照
         store_touched = "store_id" in update_dict
         broker_touched = "broker_id" in update_dict
+        # 归属变更审计（BR-M07-007 / AC-V06-016）：变更前快照需在 setattr 前采集
+        before_attribution = {
+            "store_id": str(lead.store_id) if lead.store_id else None,
+            "broker_id": str(lead.broker_id) if lead.broker_id else None,
+            "store_owner_employee_id": (str(lead.store_owner_employee_id) if lead.store_owner_employee_id else None),
+            "broker_inviter_employee_id": (
+                str(lead.broker_inviter_employee_id) if lead.broker_inviter_employee_id else None
+            ),
+        }
         attribution = LeadAttributionService(self.db).resolve_for_update(
             creator_id=str(lead.creator_id) if lead.creator_id else None,
             current_store_id=str(lead.store_id) if lead.store_id else None,
@@ -441,6 +451,29 @@ class LeadService:
         old_status = lead.status
         for field, value in update_dict.items():
             setattr(lead, field, value)
+
+        # 归属字段实际变化时写审计日志（同事务；日志失败回滚业务）
+        if store_touched or broker_touched:
+            after_attribution = {
+                "store_id": str(lead.store_id) if lead.store_id else None,
+                "broker_id": str(lead.broker_id) if lead.broker_id else None,
+                "store_owner_employee_id": (
+                    str(lead.store_owner_employee_id) if lead.store_owner_employee_id else None
+                ),
+                "broker_inviter_employee_id": (
+                    str(lead.broker_inviter_employee_id) if lead.broker_inviter_employee_id else None
+                ),
+            }
+            if after_attribution != before_attribution:
+                add_audit_log(
+                    self.db,
+                    user_id=updater_id,
+                    action="update",
+                    resource_type="lead",
+                    resource_id=str(lead.id),
+                    before=before_attribution,
+                    after=after_attribution,
+                )
 
         # total_price 或 area 变更时重算单价（仅当本次未显式提供 unit_price）
         if ("total_price" in update_dict or "area" in update_dict) and "unit_price" not in update_dict:
