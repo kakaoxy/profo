@@ -278,6 +278,10 @@ def test_employee_lead_list_scoped_to_own_attribution(seeded_db: dict) -> None:
     assert body["total"] == 2
     assert {item["community_name"] for item in body["items"]} == {"本人创建线索", "本人归因线索"}
 
+    # 统计与列表同范围（V01 AC-V01-010 口径）
+    stats = employee_client.get(f"{API}/leads/stats").json()
+    assert stats["pending_assessment"] == 2
+
 
 def test_lead_list_marks_disabled_or_deleted_attribution(
     admin_client: TestClient,

@@ -640,14 +640,17 @@ class LeadService:
         """待评估积压指标（迭代二 alert_card widget）."""
         return self.query_service.get_assessment_backlog()
 
-    def get_stats(self) -> dict[str, int]:
+    def get_stats(self, scope_employee_id: str | None = None) -> dict[str, int]:
         """获取线索状态统计（不受分页影响）.
+
+        Args:
+            scope_employee_id: 员工数据范围（仅统计本人创建/归因线索；admin/operator 为空）
 
         Returns:
             包含各状态数量的字典
 
         """
-        return self.query_service.get_status_stats()
+        return self.query_service.get_status_stats(scope_employee_id=scope_employee_id)
 
     def count_total(self) -> int:
         """未删除线索总数（与 admin /leads 同口径）.

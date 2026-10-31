@@ -40,6 +40,16 @@ router = APIRouter()
 _MAX_IMAGE_LENGTH = 500
 
 
+def _employee_scope_id(user: Any) -> str | None:
+    """员工数据范围（V06 REQ-M07-004）：admin/operator 返回 None（全量）.
+
+    非内部角色仅可见本人创建或本人归因线索，统计与列表使用同一范围。
+    """
+    role_codes = {user.role.code if user.role else ""}
+    role_codes.update(role.code for role in (user.roles or []))
+    return None if role_codes & INTERNAL_ROLE_CODES else str(user.id)
+
+
 def _dict_names_update(lead: Lead, names: dict[str, DocDictNames]) -> dict[str, Any]:
     """字典解析名称 → LeadListItem/LeadResponse 补充字段（单条）.
 
@@ -168,9 +178,7 @@ def get_leads(
     """
     service = LeadService(db)
     # 数据范围（V06 REQ-M07-004）：admin/operator 全量；员工仅本人归因线索
-    role_codes = {_current_user.role.code if _current_user.role else ""}
-    role_codes.update(role.code for role in (_current_user.roles or []))
-    scope_employee_id = None if role_codes & INTERNAL_ROLE_CODES else str(_current_user.id)
+    scope_employee_id = _employee_scope_id(_current_user)
     result = service.get_leads(
         page=pagination.page,
         page_size=pagination.page_size,
@@ -271,7 +279,7 @@ def get_leads_stats(
 ) -> LeadStatsResponse:
     """获取线索状态统计（不受分页影响）."""
     service = LeadService(db)
-    return LeadStatsResponse(**service.get_stats())
+    return LeadStatsResponse(**service.get_stats(scope_employee_id=_employee_scope_id(_current_user)))
 
 
 @router.get("/{lead_id}")

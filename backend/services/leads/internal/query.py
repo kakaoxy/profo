@@ -287,18 +287,30 @@ class LeadQueryService:
             "owner_count": int(owner_count),
         }
 
-    def get_status_stats(self) -> dict[str, int]:
+    def get_status_stats(self, scope_employee_id: str | None = None) -> dict[str, int]:
         """获取线索各状态数量统计（单次 GROUP BY 查询）.
+
+        Args:
+            scope_employee_id: 员工数据范围（仅本人创建/归因线索；admin/operator 为空）
 
         Returns:
             包含各状态数量的字典，键为 LeadStatus 枚举值
 
         """
-        rows = self.db.execute(
-            select(Lead.status, func.count())
-            .where(Lead.is_deleted.is_(False), Lead.status.is_not(None))
-            .group_by(Lead.status),
-        ).all()
+        stmt = select(Lead.status, func.count()).where(
+            Lead.is_deleted.is_(False),
+            Lead.status.is_not(None),
+        )
+        if scope_employee_id:
+            stmt = stmt.where(
+                or_(
+                    Lead.creator_id == scope_employee_id,
+                    Lead.referrer_id == scope_employee_id,
+                    Lead.store_owner_employee_id == scope_employee_id,
+                    Lead.broker_inviter_employee_id == scope_employee_id,
+                ),
+            )
+        rows = self.db.execute(stmt.group_by(Lead.status)).all()
 
         counts = {status.value: 0 for status in LeadStatus}
         for status, count in rows:
