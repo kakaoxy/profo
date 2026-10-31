@@ -411,6 +411,55 @@ _PERMISSIONS_SEED: list[dict] = [
         "sort_order": 10,
         "description": "管理角色默认工作台布局（仅 admin）",
     },
+    # 商户管理模块（V01 平台基座；6 个权限点固定，禁止重命名既有编码）
+    {
+        "code": "merchant:read",
+        "name": "商户域查看",
+        "module": "merchant",
+        "category": "api",
+        "sort_order": 10,
+        "description": "门店、经纪人、协议、线索等商户域数据的查看",
+    },
+    {
+        "code": "merchant:write",
+        "name": "商户域维护",
+        "module": "merchant",
+        "category": "api",
+        "sort_order": 20,
+        "description": "公司/门店新增、编辑、停用、软删、合并与商户域字典维护",
+    },
+    {
+        "code": "merchant:visit",
+        "name": "拜访记录",
+        "module": "merchant",
+        "category": "api",
+        "sort_order": 30,
+        "description": "拜访登记、补录与拜访记录查看",
+    },
+    {
+        "code": "merchant:broker",
+        "name": "经纪人管理",
+        "module": "merchant",
+        "category": "api",
+        "sort_order": 40,
+        "description": "经纪人档案维护、绑定、解绑、换店",
+    },
+    {
+        "code": "merchant:agreement",
+        "name": "协议管理",
+        "module": "merchant",
+        "category": "api",
+        "sort_order": 50,
+        "description": "协议发起、签署、作废、归档",
+    },
+    {
+        "code": "merchant:map",
+        "name": "地图与轨迹",
+        "module": "merchant",
+        "category": "api",
+        "sort_order": 60,
+        "description": "后台门店地图与拜访轨迹查看",
+    },
 ]
 
 # 内置角色 → 默认权限集（admin 拥有全部权限）
@@ -449,6 +498,13 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "recruit:write",
         # 运营可管理 API Key
         "api_key:manage",
+        # 商户管理模块（operator 数据范围全量，默认拥有全部 6 个权限点）
+        "merchant:read",
+        "merchant:write",
+        "merchant:visit",
+        "merchant:broker",
+        "merchant:agreement",
+        "merchant:map",
     ],
     "user": [
         # 仅读取（不含 project:read：普通用户默认不应查看项目管理，
@@ -461,6 +517,11 @@ _ROLE_PERMISSIONS_SEED: dict[str, list[str]] = {
         "ledger:read",
         "investment:read",
         "l4_marketing:read",
+        # 商户管理模块（user 数据范围仅本人拓展/拜访门店，默认 4 项）
+        "merchant:read",
+        "merchant:write",
+        "merchant:visit",
+        "merchant:agreement",
     ],
     "customer": [
         # C 端权限

@@ -10,6 +10,7 @@ import {
   ScrollText,
   Settings,
   Smartphone,
+  Store,
   Users,
   Wallet,
 } from "lucide-react";
@@ -66,6 +67,52 @@ export const navMain: NavItem[] = [
         url: "/admin/properties/upload",
         roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
         permission: PERMISSION_CODES.PROPERTY_UPLOAD,
+      },
+    ],
+  },
+  {
+    title: "商户管理",
+    url: "/admin/merchant/stores",
+    icon: Store,
+    section: "业务",
+    // 任一 merchant:* 权限即可见；默认角色均含 merchant:read
+    permission: PERMISSION_CODES.MERCHANT_READ,
+    items: [
+      {
+        title: "门店列表",
+        url: "/admin/merchant/stores",
+        permission: PERMISSION_CODES.MERCHANT_READ,
+      },
+      {
+        title: "门店地图",
+        url: "/admin/merchant/map",
+        permission: PERMISSION_CODES.MERCHANT_MAP,
+      },
+      {
+        title: "拜访轨迹",
+        url: "/admin/merchant/tracks",
+        permission: PERMISSION_CODES.MERCHANT_MAP,
+      },
+      {
+        title: "经纪人管理",
+        url: "/admin/merchant/brokers",
+        permission: PERMISSION_CODES.MERCHANT_BROKER,
+      },
+      {
+        title: "协议管理",
+        url: "/admin/merchant/agreements",
+        permission: PERMISSION_CODES.MERCHANT_AGREEMENT,
+      },
+      {
+        title: "协议模板",
+        url: "/admin/merchant/agreement-templates",
+        permission: PERMISSION_CODES.MERCHANT_AGREEMENT,
+      },
+      {
+        title: "商户字典",
+        url: "/admin/settings/dicts",
+        roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
+        permission: PERMISSION_CODES.MERCHANT_WRITE,
       },
     ],
   },
@@ -215,8 +262,8 @@ export const navMain: NavItem[] = [
       {
         title: "业务字典",
         url: "/admin/settings/dicts",
-        roles: [ROLE_CODES.ADMIN],
-        permission: PERMISSION_CODES.DICT_MANAGE,
+        roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
+        permission: PERMISSION_CODES.MERCHANT_WRITE,
       },
       {
         // 迭代二：角色默认工作台布局管理（仅 admin）

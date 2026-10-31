@@ -28,6 +28,7 @@ from models.system import BizDictItem
 from schemas.biz_dict import (
     BizDictGroupResponse,
     BizDictItemCreate,
+    BizDictItemDeleteResponse,
     BizDictItemResponse,
     BizDictItemUpdate,
     BizDictReorderRequest,
@@ -36,7 +37,12 @@ from schemas.biz_dict import (
     PublicDictItemResponse,
     PublicDictListResponse,
 )
-from services.system.exceptions import ConflictError, ResourceNotFoundError, ValidationError
+from services.system.exceptions import (
+    ConflictError,
+    PermissionDeniedError,
+    ResourceNotFoundError,
+    ValidationError,
+)
 from services.system.operation_log import OperationLogService
 
 logger = logging.getLogger(__name__)
@@ -59,7 +65,33 @@ SUPPORTED_DICTS: dict[str, tuple[str, str]] = {
         "改造阶段别名",
         "改造阶段的展示名（仅影响前台展示，历史数据入库值不变）",
     ),
+    "merchant_cooperation_status": (
+        "门店合作状态",
+        "商户域门店合作阶段（V02 消费；未合作/洽谈中/已合作/暂停/终止）",
+    ),
+    "merchant_store_type": (
+        "门店类型",
+        "商户域门店类型（本期保留空组，待业务启用后补字段与消费规则）",
+    ),
+    "merchant_visit_result": (
+        "拜访结果",
+        "商户域拜访结构化结果（V03 消费；未见到人/有意向/已合作/其他）",
+    ),
+    "merchant_agreement_status": (
+        "协议状态",
+        "商户域协议状态展示名（V05 消费；状态机由 V05 定义）",
+    ),
 }
+
+# 商户域字典组（权限与删除保护按此白名单收口）
+MERCHANT_DICT_CODES: frozenset[str] = frozenset(
+    {
+        "merchant_cooperation_status",
+        "merchant_store_type",
+        "merchant_visit_result",
+        "merchant_agreement_status",
+    },
+)
 
 # 归因渠道原始值所在表（宽松校验的存量盘点与未纳管值查询共用）
 _CHANNEL_SOURCE_COLUMNS = (ValuationVisit.source, PropertySheetVisit.source, ProjectVisit.source)
@@ -90,6 +122,55 @@ def _ensure_supported(dict_code: str) -> None:
     if dict_code not in SUPPORTED_DICTS:
         msg = f"不支持的字典组: {dict_code}"
         raise ResourceNotFoundError(msg)
+
+
+def ensure_dict_access(dict_code: str, *, has_full_access: bool) -> None:
+    """校验当前用户是否有权操作该字典组.
+
+    - ``dict:manage``：全部字典组；
+    - ``merchant:read`` / ``merchant:write``：仅 4 个商户域字典组（V01 N12）。
+    """
+    _ensure_supported(dict_code)
+    if not has_full_access and dict_code not in MERCHANT_DICT_CODES:
+        msg = f"无权操作字典组: {dict_code}"
+        raise PermissionDeniedError(msg)
+
+
+def _item_snapshot(item: BizDictItem) -> dict[str, Any]:
+    """字典项审计快照（字段名与业务表一致，BR-M12-023）."""
+    return {
+        "dict_code": item.dict_code,
+        "code": item.code,
+        "label": item.label,
+        "sort_order": item.sort_order,
+        "enabled": item.enabled,
+        "is_builtin": item.is_builtin,
+        "remark": item.remark,
+    }
+
+
+def _log_merchant_change(
+    db: Session,
+    *,
+    action: str,
+    operator_id: str,
+    item: BizDictItem,
+    before: dict[str, Any] | None,
+    request: Request | None,
+) -> None:
+    """商户域字典审计：与业务变更同事务（BR-M12-025）."""
+    from services.merchant.audit import add_audit_log
+
+    add_audit_log(
+        db,
+        user_id=operator_id,
+        action=action,
+        resource_type="merchant_dict",
+        resource_id=str(item.id),
+        before=before,
+        after=_item_snapshot(item),
+        request=request,
+    )
 
 
 def _to_response(item: BizDictItem) -> BizDictItemResponse:
@@ -130,8 +211,16 @@ def _next_sort_order(db: Session, dict_code: str) -> int:
     return 0 if max_value is None else int(max_value) + 10
 
 
-def list_groups(db: Session) -> list[BizDictGroupResponse]:
-    """字典组概览（顺序按 ``SUPPORTED_DICTS`` 声明顺序，即管理页展示顺序）."""
+def list_groups(
+    db: Session,
+    *,
+    allowed_dict_codes: frozenset[str] | None = None,
+) -> list[BizDictGroupResponse]:
+    """字典组概览（顺序按 ``SUPPORTED_DICTS`` 声明顺序，即管理页展示顺序）.
+
+    ``allowed_dict_codes`` 为 None 表示全量（``dict:manage``）；否则仅返回白名单内组。
+    """
+    visible_codes = set(SUPPORTED_DICTS) if allowed_dict_codes is None else set(allowed_dict_codes)
     rows = (
         db.query(
             BizDictItem.dict_code,
@@ -144,6 +233,8 @@ def list_groups(db: Session) -> list[BizDictGroupResponse]:
     counts = {row[0]: (int(row[1]), int(row[2])) for row in rows}
     groups: list[BizDictGroupResponse] = []
     for dict_code, (name, description) in SUPPORTED_DICTS.items():
+        if dict_code not in visible_codes:
+            continue
         total, enabled = counts.get(dict_code, (0, 0))
         groups.append(
             BizDictGroupResponse(
@@ -285,6 +376,7 @@ def create_item(
     *,
     operator_id: str,
     request: Request | None = None,
+    has_full_access: bool = True,
 ) -> BizDictItemResponse:
     """新增字典条目（组内 code 唯一；重复 → 409）.
 
@@ -292,7 +384,7 @@ def create_item(
     ``OperationLogService.log_action``，用于抽取审计日志的客户端 IP / User-Agent
     （见 D7 配置变更审计）。移除后审计行 ip/user_agent 会为空。
     """
-    _ensure_supported(dict_code)
+    ensure_dict_access(dict_code, has_full_access=has_full_access)
     code = req.code.strip()
     if not code:
         msg = "条目编码不能为空"
@@ -321,6 +413,13 @@ def create_item(
         db.rollback()
         msg = f"字典组 {dict_code} 下已存在编码 {code}"
         raise ConflictError(msg) from exc
+
+    if dict_code in MERCHANT_DICT_CODES:
+        _log_merchant_change(db, action="create", operator_id=operator_id, item=item, before=None, request=request)
+        db.commit()
+        db.refresh(item)
+        _invalidate_public_cache(dict_code)
+        return _to_response(item)
 
     db.commit()
     db.refresh(item)
@@ -366,20 +465,15 @@ def update_item(
     *,
     operator_id: str,
     request: Request | None = None,
+    has_full_access: bool = True,
 ) -> BizDictItemResponse:
     """修改条目（label/排序/停用/备注；code 不可改，避免破坏落库值引用）.
 
     ``request`` 用于审计日志抽取 IP / User-Agent（同 ``create_item``，勿删）.
     """
+    ensure_dict_access(dict_code, has_full_access=has_full_access)
     item = _get_item(db, dict_code, item_id)
-    before = {
-        "label": item.label,
-        "sort_order": item.sort_order,
-        "enabled": item.enabled,
-        "business_form": item.business_form,
-        "category": item.category,
-        "remark": item.remark,
-    }
+    before = _item_snapshot(item)
     if req.label is not None:
         # Pydantic 的 min_length 只校验原串（全空格可通过），strip 后必须非空
         label = req.label.strip()
@@ -398,6 +492,16 @@ def update_item(
     if req.remark is not None:
         item.remark = req.remark
 
+    if dict_code in MERCHANT_DICT_CODES:
+        action = "update"
+        if req.enabled is not None and req.enabled != before["enabled"]:
+            action = "enable" if req.enabled else "disable"
+        _log_merchant_change(db, action=action, operator_id=operator_id, item=item, before=before, request=request)
+        db.commit()
+        db.refresh(item)
+        _invalidate_public_cache(dict_code)
+        return _to_response(item)
+
     db.commit()
     db.refresh(item)
     _invalidate_public_cache(dict_code)
@@ -412,12 +516,13 @@ def reorder_items(
     *,
     operator_id: str,
     request: Request | None = None,
+    has_full_access: bool = True,
 ) -> list[BizDictItemResponse]:
     """按 item_ids 顺序重排 sort_order（步长 10，未列出的条目保持原排序值）.
 
     ``request`` 用于审计日志抽取 IP / User-Agent（同 ``create_item``，勿删）.
     """
-    _ensure_supported(dict_code)
+    ensure_dict_access(dict_code, has_full_access=has_full_access)
     items = {str(item.id): item for item in _load_items(db, dict_code)}
     unknown = [item_id for item_id in req.item_ids if item_id not in items]
     if unknown:
@@ -426,6 +531,21 @@ def reorder_items(
 
     for index, item_id in enumerate(req.item_ids):
         items[item_id].sort_order = index * 10
+
+    if dict_code in MERCHANT_DICT_CODES:
+        _log_merchant_change(
+            db,
+            action="reorder",
+            operator_id=operator_id,
+            item=items[req.item_ids[0]],
+            before=None,
+            request=request,
+        )
+        db.commit()
+        ordered = [_to_response(items[item_id]) for item_id in req.item_ids]
+        _invalidate_public_cache(dict_code)
+        return ordered
+
     db.commit()
 
     ordered = [_to_response(items[item_id]) for item_id in req.item_ids]
@@ -439,6 +559,52 @@ def reorder_items(
         request=request,
     )
     return ordered
+
+
+def delete_item(
+    db: Session,
+    dict_code: str,
+    item_id: str,
+    *,
+    operator_id: str,
+    request: Request | None = None,
+    has_full_access: bool = True,
+) -> BizDictItemDeleteResponse:
+    """删除商户域字典项（仅未被业务数据引用时允许，V01 BR-M13-013）.
+
+    非商户域字典组不开放物理删除，避免误删文档模板等平台字典。
+    """
+    ensure_dict_access(dict_code, has_full_access=has_full_access)
+    if dict_code not in MERCHANT_DICT_CODES:
+        msg = "仅商户域字典组支持删除"
+        raise ValidationError(msg)
+
+    item = _get_item(db, dict_code, item_id)
+
+    from services.merchant.dict_refs import count_references
+
+    reference_count = count_references(db, dict_code, item.code)
+    if reference_count > 0:
+        msg = f"该字典项已被 {reference_count} 条业务数据引用，不能删除，请改为停用"
+        raise ConflictError(msg)
+
+    before = _item_snapshot(item)
+    db.delete(item)
+    from services.merchant.audit import add_audit_log
+
+    add_audit_log(
+        db,
+        user_id=operator_id,
+        action="delete",
+        resource_type="merchant_dict",
+        resource_id=str(item.id),
+        before=before,
+        after=None,
+        request=request,
+    )
+    db.commit()
+    _invalidate_public_cache(dict_code)
+    return BizDictItemDeleteResponse(deleted=True, reference_count=0)
 
 
 def get_document_templates(db: Session, business_form: BusinessForm | None) -> list[DocumentTemplate]:
@@ -480,9 +646,12 @@ def get_document_templates(db: Session, business_form: BusinessForm | None) -> l
 
 
 __all__ = [
+    "MERCHANT_DICT_CODES",
     "SUPPORTED_DICTS",
     "ChannelValidation",
     "create_item",
+    "delete_item",
+    "ensure_dict_access",
     "get_document_templates",
     "get_public_items",
     "label_map",

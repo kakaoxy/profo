@@ -40,6 +40,13 @@ class BizDictReorderRequest(BaseModel):
     item_ids: list[str] = Field(min_length=1, max_length=200, description="条目ID列表（顺序即新排序）")
 
 
+class BizDictItemDeleteResponse(BaseModel):
+    """删除字典条目响应（仅商户域字典组支持）."""
+
+    deleted: bool = Field(description="是否删除成功")
+    reference_count: int = Field(description="业务引用数（>0 时拒绝删除）")
+
+
 class BizDictItemResponse(BaseModel):
     """字典条目响应（管理端，含停用项与预置标记）."""
 
@@ -100,6 +107,7 @@ class PublicDictListResponse(BaseModel):
 __all__ = [
     "BizDictGroupResponse",
     "BizDictItemCreate",
+    "BizDictItemDeleteResponse",
     "BizDictItemResponse",
     "BizDictItemUpdate",
     "BizDictReorderRequest",

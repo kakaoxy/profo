@@ -84,6 +84,7 @@ from migrations._marketing_notify import (
     create_marketing_subscription_tables,
     widen_subscription_openid_columns,
 )
+from migrations._merchant import seed_merchant_platform
 from migrations._notification import (
     create_notification_tables,
     create_user_preferences_table,
@@ -1269,6 +1270,16 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=True,
         description="线索跟进记录补 conclusion 列（跟进结论：合作模式/价格/两者均未达成一致，选填）",
     ),
+    Migration(
+        version=103,
+        name="seed_merchant_platform",
+        fn=seed_merchant_platform,
+        kind="seed",
+        risk="B",
+        backup="none",
+        reversible=False,
+        description="商户管理 V01：6 个权限点 + 角色默认授权 + 4 个业务字典组种子项",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1281,7 +1292,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 102）。"""
+"""登记总数（当前 103）。"""
 
-NEXT_VERSION = 103
+NEXT_VERSION = 104
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

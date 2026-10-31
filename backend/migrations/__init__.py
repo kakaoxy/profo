@@ -203,6 +203,9 @@ from migrations._marketing_notify import (
     create_marketing_subscription_tables,
     widen_subscription_openid_columns,
 )
+
+# 独立迁移模块
+from migrations._merchant import seed_merchant_platform
 from migrations._notification import (
     create_notification_tables,
     create_user_preferences_table,
@@ -260,8 +263,6 @@ from migrations._user_security import (
     encrypt_existing_phones,
     populate_phone_hash,
 )
-
-# 独立迁移模块
 from migrations._workbench import seed_workbench_manage_permission
 from migrations.add_counterparty_type import add_counterparty_type_to_finance_records
 from migrations.add_lead_auditor_index import add_lead_auditor_index
@@ -504,6 +505,8 @@ def _run_all_migrations(engine: Engine) -> None:
         add_competitor_soft_delete(engine)
         # v102：线索跟进记录补 conclusion 列（跟进结论：合作模式/价格/两者均未达成一致，选填）
         add_lead_followup_conclusion(engine)
+        # v103：商户管理 V01——6 个权限点 + 角色默认授权 + 4 个业务字典组种子项
+        seed_merchant_platform(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

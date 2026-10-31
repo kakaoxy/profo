@@ -88,6 +88,13 @@ export const PERMISSION_CODES = {
   API_KEY_MANAGE: "api_key:manage",
   // 业务字典（运营可配枚举字典，仅 admin）
   DICT_MANAGE: "dict:manage",
+  // 商户管理（V01 平台基座，6 个权限点固定）
+  MERCHANT_READ: "merchant:read",
+  MERCHANT_WRITE: "merchant:write",
+  MERCHANT_VISIT: "merchant:visit",
+  MERCHANT_BROKER: "merchant:broker",
+  MERCHANT_AGREEMENT: "merchant:agreement",
+  MERCHANT_MAP: "merchant:map",
   // C 端估价
   VALUATION_WRITE: "valuation:write",
 } as const;
@@ -117,6 +124,14 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   permission: string;
   exact?: boolean;
 }> = [
+  // 商户管理：具体子路由必须排在更宽泛的 /admin/merchant 之前（前缀长度降序）
+  { prefix: "/admin/merchant/agreement-templates", permission: PERMISSION_CODES.MERCHANT_AGREEMENT },
+  { prefix: "/admin/merchant/agreements", permission: PERMISSION_CODES.MERCHANT_AGREEMENT },
+  { prefix: "/admin/merchant/brokers", permission: PERMISSION_CODES.MERCHANT_BROKER },
+  { prefix: "/admin/merchant/stores", permission: PERMISSION_CODES.MERCHANT_READ },
+  { prefix: "/admin/merchant/tracks", permission: PERMISSION_CODES.MERCHANT_MAP },
+  { prefix: "/admin/merchant/map", permission: PERMISSION_CODES.MERCHANT_MAP },
+  { prefix: "/admin/merchant", permission: PERMISSION_CODES.MERCHANT_READ },
   // 房源数据治理 → 需 property:governance 权限
   { prefix: "/admin/properties/governance", permission: PERMISSION_CODES.PROPERTY_GOVERNANCE },
   // 小区户型图库 → 需 property:read 权限
@@ -131,9 +146,9 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   { prefix: "/admin/properties", permission: PERMISSION_CODES.PROPERTY_READ },
   // 审计日志 → 需 operation_log:read 权限
   { prefix: "/admin/audit-logs", permission: PERMISSION_CODES.OPERATION_LOG_READ },
-  // 业务字典配置 → 需 dict:manage 权限；必须排在 /admin/settings 之前
+  // 业务字典配置 → 商户字典归 merchant:write（V01 N12）；必须排在 /admin/settings 之前
   // （首个命中即返回，否则会被 /admin/settings 的 api_key:manage 影子掉）
-  { prefix: "/admin/settings/dicts", permission: PERMISSION_CODES.DICT_MANAGE },
+  { prefix: "/admin/settings/dicts", permission: PERMISSION_CODES.MERCHANT_WRITE },
   // 工作台布局管理 → 需 workbench:manage（仅 admin）；同理必须排在 /admin/settings 之前
   { prefix: "/admin/settings/workbench", permission: PERMISSION_CODES.WORKBENCH_MANAGE },
   // 消息中心 /admin/notifications 与 /admin/notifications/preferences 故意**不登记**：
