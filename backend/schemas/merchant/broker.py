@@ -117,6 +117,61 @@ class BrokerMyStoreResponse(BaseModel):
     bound_at: datetime | None
 
 
+class BrokerStoreOption(BaseModel):
+    """经纪人可选门店（不含联系人/电话等内部跟进信息）."""
+
+    id: str
+    store_name: str
+    company_name: str
+    address: str
+    district: str
+    business_circle: str
+    cooperation_status: str
+    cooperation_status_label: str
+    review_status: str
+
+
+class BrokerStoreOptionListResponse(BaseModel):
+    """经纪人可选门店搜索响应."""
+
+    items: list[BrokerStoreOption]
+    total: int
+    page: int
+    page_size: int
+
+
+class BrokerLeadFollowUpItem(BaseModel):
+    """经纪人可见的跟进记录."""
+
+    id: str
+    method: str
+    content: str
+    conclusion: str | None
+    followed_at: datetime
+
+
+class BrokerLeadItem(BaseModel):
+    """经纪人推荐线索（只读，含完整跟进记录）."""
+
+    id: str
+    community_name: str
+    status: str
+    layout: str | None
+    area: float | None
+    total_price: float | None
+    created_at: datetime
+    follow_ups: list[BrokerLeadFollowUpItem]
+
+
+class BrokerLeadListResponse(BaseModel):
+    """经纪人推荐记录分页响应."""
+
+    items: list[BrokerLeadItem]
+    total: int
+    page: int
+    page_size: int
+
+
 class BrokerRegisterResult(BaseModel):
     """经纪人认证结果."""
 
@@ -223,6 +278,9 @@ __all__ = [
     "BrokerBindRequest",
     "BrokerBindingResponse",
     "BrokerChangeRequest",
+    "BrokerLeadFollowUpItem",
+    "BrokerLeadItem",
+    "BrokerLeadListResponse",
     "BrokerListItem",
     "BrokerListResponse",
     "BrokerMyStoreResponse",
@@ -232,6 +290,8 @@ __all__ = [
     "BrokerRegisterResult",
     "BrokerResponse",
     "BrokerStatusChangeRequest",
+    "BrokerStoreOption",
+    "BrokerStoreOptionListResponse",
     "BrokerUnbindRequest",
     "BrokerUpdateRequest",
 ]

@@ -7534,6 +7534,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/merchant/brokers/me/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的推荐记录
+         * @description 经纪人本人推荐线索及完整跟进记录（只读）.
+         */
+        get: operations["list_my_broker_leads_api_v1_public_merchant_brokers_me_leads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/broker-stores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 经纪人可选门店搜索
+         * @description 仅返回正常且已转正门店，不含联系人/电话.
+         */
+        get: operations["search_broker_stores_api_v1_public_merchant_broker_stores_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/public/merchant/stores/{store_id}/brokers": {
         parameters: {
             query?: never;
@@ -7900,6 +7940,26 @@ export interface paths {
          * @description 签署后生成 PDF；门店主体协议联动合作状态为已合作.
          */
         post: operations["sign_agreement_api_v1_public_merchant_agreements__agreement_id__sign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/agreements/{agreement_id}/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 员工上传线下盖章扫描件
+         * @description 校验门店数据范围后归档盖章件，签署人须与记录一致（运营可代传）.
+         */
+        post: operations["upload_agreement_scan_api_v1_public_merchant_agreements__agreement_id__scan_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9846,6 +9906,64 @@ export interface components {
             reason: string;
         };
         /**
+         * BrokerLeadFollowUpItem
+         * @description 经纪人可见的跟进记录.
+         */
+        BrokerLeadFollowUpItem: {
+            /** Id */
+            id: string;
+            /** Method */
+            method: string;
+            /** Content */
+            content: string;
+            /** Conclusion */
+            conclusion: string | null;
+            /**
+             * Followed At
+             * Format: date-time
+             */
+            followed_at: string;
+        };
+        /**
+         * BrokerLeadItem
+         * @description 经纪人推荐线索（只读，含完整跟进记录）.
+         */
+        BrokerLeadItem: {
+            /** Id */
+            id: string;
+            /** Community Name */
+            community_name: string;
+            /** Status */
+            status: string;
+            /** Layout */
+            layout: string | null;
+            /** Area */
+            area: number | null;
+            /** Total Price */
+            total_price: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Follow Ups */
+            follow_ups: components["schemas"]["BrokerLeadFollowUpItem"][];
+        };
+        /**
+         * BrokerLeadListResponse
+         * @description 经纪人推荐记录分页响应.
+         */
+        BrokerLeadListResponse: {
+            /** Items */
+            items: components["schemas"]["BrokerLeadItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
          * BrokerListItem
          * @description 后台经纪人列表项.
          */
@@ -10045,6 +10163,44 @@ export interface components {
             target_status: "disabled" | "unbound";
             /** Reason */
             reason?: string | null;
+        };
+        /**
+         * BrokerStoreOption
+         * @description 经纪人可选门店（不含联系人/电话等内部跟进信息）.
+         */
+        BrokerStoreOption: {
+            /** Id */
+            id: string;
+            /** Store Name */
+            store_name: string;
+            /** Company Name */
+            company_name: string;
+            /** Address */
+            address: string;
+            /** District */
+            district: string;
+            /** Business Circle */
+            business_circle: string;
+            /** Cooperation Status */
+            cooperation_status: string;
+            /** Cooperation Status Label */
+            cooperation_status_label: string;
+            /** Review Status */
+            review_status: string;
+        };
+        /**
+         * BrokerStoreOptionListResponse
+         * @description 经纪人可选门店搜索响应.
+         */
+        BrokerStoreOptionListResponse: {
+            /** Items */
+            items: components["schemas"]["BrokerStoreOption"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
         };
         /**
          * BrokerUnbindRequest
@@ -39083,6 +39239,76 @@ export interface operations {
             };
         };
     };
+    list_my_broker_leads_api_v1_public_merchant_brokers_me_leads_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerLeadListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_broker_stores_api_v1_public_merchant_broker_stores_get: {
+        parameters: {
+            query?: {
+                /** @description 门店名称/地址/公司关键词 */
+                keyword?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerStoreOptionListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_store_brokers_api_v1_public_merchant_stores__store_id__brokers_get: {
         parameters: {
             query?: never;
@@ -39738,6 +39964,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AgreementSignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_agreement_scan_api_v1_public_merchant_agreements__agreement_id__scan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementScanUploadRequest"];
             };
         };
         responses: {

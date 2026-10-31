@@ -13,6 +13,7 @@ from constants.merchant import (
     MerchantBindStatus,
     MerchantStoreStatus,
 )
+from models.lead import Lead, LeadFollowUp
 from models.merchant import (
     MerchantBroker,
     MerchantBrokerBinding,
@@ -28,12 +29,17 @@ from schemas.merchant import (
     BrokerBindingResponse,
     BrokerBindRequest,
     BrokerChangeRequest,
+    BrokerLeadFollowUpItem,
+    BrokerLeadItem,
+    BrokerLeadListResponse,
     BrokerListResponse,
     BrokerMyStoreResponse,
     BrokerRegisterRequest,
     BrokerRegisterResult,
     BrokerResponse,
     BrokerStatusChangeRequest,
+    BrokerStoreOption,
+    BrokerStoreOptionListResponse,
     BrokerUnbindRequest,
     BrokerUpdateRequest,
     MerchantDuplicateCandidate,
@@ -429,6 +435,103 @@ class MerchantBrokerService:
             .all()
         )
         return [broker_binding_response(row) for row in rows]
+
+    def search_selectable_stores(
+        self,
+        *,
+        page: int,
+        page_size: int,
+        keyword: str | None = None,
+    ) -> BrokerStoreOptionListResponse:
+        """经纪人绑定可选门店：仅正常且已转正，不返回联系人/电话."""
+        query = self.db.query(MerchantStore).filter(
+            MerchantStore.status == MerchantStoreStatus.NORMAL.value,
+            MerchantStore.review_status == "approved",
+            MerchantStore.is_deleted.is_(False),
+        )
+        keyword = (keyword or "").strip()
+        if keyword:
+            pattern = f"%{keyword}%"
+            query = query.filter(
+                or_(
+                    MerchantStore.store_name.ilike(pattern),
+                    MerchantStore.address.ilike(pattern),
+                    MerchantStore.company_name.ilike(pattern),
+                )
+            )
+        total = query.count()
+        rows = query.order_by(MerchantStore.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        labels = cooperation_label_map(self.db)
+        return BrokerStoreOptionListResponse(
+            items=[
+                BrokerStoreOption(
+                    id=str(store.id),
+                    store_name=store.store_name,
+                    company_name=store.company_name,
+                    address=store.address,
+                    district=store.district,
+                    business_circle=store.business_circle,
+                    cooperation_status=store.cooperation_status,
+                    cooperation_status_label=labels.get(store.cooperation_status, store.cooperation_status),
+                    review_status=store.review_status,
+                )
+                for store in rows
+            ],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+
+    def my_recommended_leads(
+        self,
+        user: User,
+        *,
+        page: int,
+        page_size: int,
+    ) -> BrokerLeadListResponse:
+        """经纪人本人推荐线索 + 完整跟进记录（只读）."""
+        broker = self._require_my_broker(user)
+        query = self.db.query(Lead).filter(Lead.broker_id == broker.id, Lead.is_deleted.is_(False))
+        total = query.count()
+        rows = query.order_by(Lead.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        lead_ids = [row.id for row in rows]
+        follow_ups = (
+            self.db.query(LeadFollowUp)
+            .filter(LeadFollowUp.lead_id.in_(lead_ids))
+            .order_by(LeadFollowUp.followed_at.desc())
+            .all()
+            if lead_ids
+            else []
+        )
+        grouped: dict[str, list[BrokerLeadFollowUpItem]] = {}
+        for row in follow_ups:
+            grouped.setdefault(row.lead_id, []).append(
+                BrokerLeadFollowUpItem(
+                    id=str(row.id),
+                    method=row.method.value if hasattr(row.method, "value") else str(row.method),
+                    content=row.content,
+                    conclusion=row.conclusion,
+                    followed_at=row.followed_at,
+                )
+            )
+        return BrokerLeadListResponse(
+            items=[
+                BrokerLeadItem(
+                    id=str(row.id),
+                    community_name=row.community_name,
+                    status=row.status.value if hasattr(row.status, "value") else str(row.status),
+                    layout=row.layout,
+                    area=float(row.area) if row.area is not None else None,
+                    total_price=float(row.total_price) if row.total_price is not None else None,
+                    created_at=row.created_at,
+                    follow_ups=grouped.get(row.id, []),
+                )
+                for row in rows
+            ],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
 
     # -------------------- 运营审批/后台 --------------------
     def approve_binding(

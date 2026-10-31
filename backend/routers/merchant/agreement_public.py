@@ -11,6 +11,7 @@ from schemas.merchant import (
     AgreementCreateRequest,
     AgreementListResponse,
     AgreementResponse,
+    AgreementScanUploadRequest,
     AgreementSignRequest,
     AgreementSupplementCreate,
     AgreementTemplateResponse,
@@ -95,6 +96,27 @@ def sign_agreement(
         agreement_id,
         body,
         signer_id=str(current_user.id),
+        privileged=ensure_scope_role(current_user),
+        request=request,
+    )
+
+
+@router.post("/agreements/{agreement_id}/scan", summary="员工上传线下盖章扫描件")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def upload_agreement_scan(
+    request: Request,
+    agreement_id: Annotated[str, Path(description="协议ID")],
+    body: AgreementScanUploadRequest,
+    db: DbSessionDep,
+    current_user: MerchantCAgreementDep,
+) -> AgreementResponse:
+    """校验门店数据范围后归档盖章件，签署人须与记录一致（运营可代传）."""
+    service = MerchantAgreementService(db)
+    service.get(current_user, agreement_id)
+    return service.upload_scan(
+        agreement_id,
+        body,
+        operator_id=str(current_user.id),
         privileged=ensure_scope_role(current_user),
         request=request,
     )

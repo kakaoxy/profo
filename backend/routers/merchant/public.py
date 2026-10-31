@@ -16,12 +16,14 @@ from schemas.merchant import (
     BrokerBindingResponse,
     BrokerBindRequest,
     BrokerChangeRequest,
+    BrokerLeadListResponse,
     BrokerMyStoreResponse,
     BrokerQRCodeResolveResponse,
     BrokerQRCodeResponse,
     BrokerRegisterRequest,
     BrokerRegisterResult,
     BrokerResponse,
+    BrokerStoreOptionListResponse,
     BrokerUnbindRequest,
     BrokerUpdateRequest,
     MerchantBusinessCircleResponse,
@@ -351,6 +353,39 @@ def list_my_bindings(
 ) -> list[BrokerBindingResponse]:
     """本人历次绑定门店记录."""
     return MerchantBrokerService(db).history(current_user)
+
+
+@router.get("/brokers/me/leads", summary="我的推荐记录")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def list_my_broker_leads(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+    pagination: PaginationDep,
+) -> BrokerLeadListResponse:
+    """经纪人本人推荐线索及完整跟进记录（只读）."""
+    return MerchantBrokerService(db).my_recommended_leads(
+        current_user,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
+
+
+@router.get("/broker-stores", summary="经纪人可选门店搜索")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def search_broker_stores(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: CurrentCustomerUserDep,
+    pagination: PaginationDep,
+    keyword: Annotated[str | None, Query(max_length=100, description="门店名称/地址/公司关键词")] = None,
+) -> BrokerStoreOptionListResponse:
+    """仅返回正常且已转正门店，不含联系人/电话."""
+    return MerchantBrokerService(db).search_selectable_stores(
+        page=pagination.page,
+        page_size=pagination.page_size,
+        keyword=keyword,
+    )
 
 
 @router.post("/brokers/me/store", status_code=status.HTTP_201_CREATED, summary="经纪人注册创建门店")

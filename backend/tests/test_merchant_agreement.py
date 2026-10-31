@@ -344,6 +344,56 @@ def test_void_scan_and_supplement(
     assert void.json()["file_url"] == "/static/uploads/scan-test.pdf"
 
 
+def test_employee_upload_scan_requires_matching_signer(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """员工上传盖章扫描件：数据范围内可传，签署人必须与门店联系人一致."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    template = _create_template(admin_client)
+    agreement = _create_agreement(
+        employee_client,
+        subject_type="store",
+        store_id=store["id"],
+        company_id=None,
+        template_id=template["id"],
+    )
+    admin_client.post(f"{API}/admin/merchant/agreements/{agreement['id']}/review", json={"approve": True})
+
+    mismatch = employee_client.post(
+        f"{API}/public/merchant/agreements/{agreement['id']}/scan",
+        json={
+            "file_url": "/static/uploads/scan-test.pdf",
+            "signer_name": "冒名",
+            "signer_phone": "13700002222",
+        },
+    )
+    assert mismatch.status_code == 400, mismatch.text
+
+    scan = employee_client.post(
+        f"{API}/public/merchant/agreements/{agreement['id']}/scan",
+        json={
+            "file_url": "/static/uploads/scan-test.pdf",
+            "signer_name": "王店长",
+            "signer_phone": "13700002222",
+        },
+    )
+    assert scan.status_code == 200, scan.text
+    assert scan.json()["status"] == "signed"
+    store_row = session_store(seeded_db, store["id"])
+    assert store_row.cooperation_status == "cooperated"
+
+
+def session_store(seeded_db: dict, store_id: str) -> MerchantStore:
+    """读取门店最新状态（测试辅助）."""
+    session: Session = seeded_db["session"]
+    session.expire_all()
+    return session.query(MerchantStore).filter(MerchantStore.id == store_id).one()
+
+
 def test_expiring_events_and_expire_scan(
     admin_client: TestClient,
     employee_client: TestClient,

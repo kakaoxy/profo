@@ -11,13 +11,17 @@ from sqlalchemy.orm import Session
 import db
 from models import (
     BizDictItem,
+    Lead,
+    LeadFollowUp,
     MerchantBroker,
+    MerchantStore,
     MerchantStoreQRCode,
     RecruitLead,
     RecruitLeadStatus,
     Role,
     User,
 )
+from models.common.base import FollowUpMethod
 from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C, create_access_token, get_password_hash
 from utils.crypto import hash_phone
 
@@ -463,6 +467,94 @@ def test_qr_invalid_and_expired(
     assert expired_resp.status_code == 200
     assert expired_resp.json()["valid"] is False
     assert "过期" in expired_resp.json()["reason"]
+
+
+def test_selectable_store_search_filters_and_hides_contact(
+    broker_client: TestClient,
+    admin_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """可选门店仅返回正常且已转正，字段不含联系人/电话."""
+    session: Session = seeded_db["session"]
+    company = _create_company(admin_client)
+    approved = _create_store(admin_client, company["id"])
+    pending = _create_store(admin_client, company["id"])
+    disabled = _create_store(admin_client, company["id"])
+    session.query(MerchantStore).filter(MerchantStore.id == pending["id"]).update(
+        {"review_status": "pending"},
+        synchronize_session=False,
+    )
+    session.query(MerchantStore).filter(MerchantStore.id == disabled["id"]).update(
+        {"status": "disabled"},
+        synchronize_session=False,
+    )
+    session.commit()
+
+    resp = broker_client.get(f"{API}/public/merchant/broker-stores", params={"keyword": "门店"})
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["total"] == 1
+    assert body["items"][0]["id"] == approved["id"]
+    assert "contact_phone" not in body["items"][0]
+    assert set(body["items"][0]).issuperset(
+        {"id", "store_name", "company_name", "address", "district", "business_circle"}
+    )
+
+    keyword = broker_client.get(
+        f"{API}/public/merchant/broker-stores",
+        params={"keyword": approved["store_name"]},
+    ).json()
+    assert keyword["items"][0]["id"] == approved["id"]
+
+
+def test_my_recommended_leads_with_followups(
+    broker_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """经纪人仅能看到本人推荐线索，并返回完整跟进记录."""
+    session: Session = seeded_db["session"]
+    broker = _register(broker_client)["broker"]
+    other_broker = MerchantBroker(
+        user_id=None,
+        name="其他经纪人",
+        phone="13800002222",
+        phone_hash=hash_phone("13800002222"),
+        bind_status="unbound",
+        source="self_apply",
+        bind_source="none",
+    )
+    session.add(other_broker)
+    session.flush()
+    lead = Lead(community_name="经纪人推荐小区", broker_id=broker["id"], creator_id=None)
+    other_lead = Lead(community_name="他人推荐小区", broker_id=other_broker.id, creator_id=None)
+    session.add_all([lead, other_lead])
+    session.flush()
+    session.add_all(
+        [
+            LeadFollowUp(
+                lead_id=lead.id,
+                method=FollowUpMethod.PHONE,
+                content="首次沟通",
+                followed_at=datetime.now(timezone.utc) - timedelta(hours=2),
+                created_by_id="admin-user",
+            ),
+            LeadFollowUp(
+                lead_id=lead.id,
+                method=FollowUpMethod.VISIT,
+                content="带看跟进",
+                followed_at=datetime.now(timezone.utc) - timedelta(hours=1),
+                created_by_id="admin-user",
+            ),
+        ]
+    )
+    session.commit()
+
+    resp = broker_client.get(f"{API}/public/merchant/brokers/me/leads")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["total"] == 1
+    assert body["items"][0]["community_name"] == "经纪人推荐小区"
+    assert [row["content"] for row in body["items"][0]["follow_ups"]] == ["带看跟进", "首次沟通"]
 
 
 pytestmark = pytest.mark.usefixtures("seeded_db")

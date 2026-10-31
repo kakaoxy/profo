@@ -323,6 +323,7 @@ class MerchantAgreementService:
         req: AgreementScanUploadRequest,
         *,
         operator_id: str,
+        privileged: bool = True,
         request: Request | None = None,
     ) -> AgreementResponse:
         """上传线下盖章扫描件，协议置已签署."""
@@ -333,7 +334,7 @@ class MerchantAgreementService:
             req.signer_phone,
             expected_name=agreement.signer_name,
             expected_phone=agreement.signer_phone,
-            privileged=True,
+            privileged=privileged,
         )
         before = self._snapshot(agreement)
         agreement.file_url = req.file_url
