@@ -303,6 +303,7 @@ class LeadService:
         creator_id: str | None = None,
         store_id: str | None = None,
         broker_id: str | None = None,
+        attribution_employee_id: str | None = None,
         layout: str | None = None,
         floor: str | None = None,
     ) -> dict[str, Any]:
@@ -317,6 +318,7 @@ class LeadService:
             creator_id: 创建人筛选
             store_id: 推荐门店筛选
             broker_id: 推荐经纪人筛选
+            attribution_employee_id: 归属员工筛选（分享/门店归属/经纪人邀请任一命中）
             layout: 户型筛选
             floor: 楼层筛选
 
@@ -334,6 +336,7 @@ class LeadService:
             creator_id=creator_id,
             store_id=store_id,
             broker_id=broker_id,
+            attribution_employee_id=attribution_employee_id,
             layout=layout,
             floor=floor,
         )

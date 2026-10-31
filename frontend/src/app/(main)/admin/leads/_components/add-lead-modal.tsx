@@ -6,6 +6,7 @@ import { DictAddressPicker, type DictAddressValue } from "@/components/dict-addr
 import { LayoutInputs } from "@/components/common/layout-inputs";
 import { FloorInput } from "@/components/common";
 import { ImageUpload } from "./add-lead-parts/image-upload";
+import { AttributionSelects } from "./add-lead-parts/attribution-selects";
 import { CommunityImagePicker, type PickerImageItem } from "./community-image-picker";
 import { listCommunityImagesForLeadAction } from "@/app/(main)/admin/communities/images/actions/upload-image";
 import { cn } from "@/lib/utils";
@@ -46,6 +47,9 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
     district: "",
     businessArea: "",
     remarks: "",
+    // 五维归属（V06）：推荐门店 / 推荐经纪人（门店→经纪人二级联动）
+    storeId: "",
+    brokerId: "",
   });
   // 楼盘字典四级地址（M3 / Task 15）
   const [dictValue, setDictValue] = useState<DictAddressValue | null>(null);
@@ -84,6 +88,8 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
         district: lead.district || "",
         businessArea: lead.businessArea || "",
         remarks: lead.remarks || "",
+        storeId: lead.storeId || "",
+        brokerId: lead.brokerId || "",
       });
       setImages(lead.images || []);
       // 四级选择器初值回显（surface-dict-binding-info）：已绑楼栋/户室不在编辑时被静默清空
@@ -117,6 +123,8 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
         district: "",
         businessArea: "",
         remarks: "",
+        storeId: "",
+        brokerId: "",
       });
       setImages([]);
       setDictValue(null);
@@ -151,6 +159,9 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
       district: formData.district,
       businessArea: formData.businessArea,
       remarks: formData.remarks,
+      // 空值显式传 null：编辑时可清除归属字段（后端留痕，V06 REQ-M07-002）
+      storeId: formData.storeId || null,
+      brokerId: formData.brokerId || null,
       status: lead?.status || LeadStatus.PENDING_ASSESSMENT,
       images: images.length > 0 ? images : [],
       creatorName: lead?.creatorName || "运营",
@@ -243,6 +254,15 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
               </div>
             </div>
           </div>
+
+          {/* 五维归属（V06 REQ-M07-003）：门店→经纪人二级联动 */}
+          <AttributionSelects
+            storeId={formData.storeId}
+            brokerId={formData.brokerId}
+            onChange={(next) => setFormData((prev) => ({ ...prev, ...next }))}
+            fallbackStoreName={lead?.storeName}
+            fallbackBrokerName={lead?.brokerName}
+          />
 
           <div className="bg-fog p-6 rounded-inputs space-y-6">
             <div className="flex items-center gap-2 mb-2">

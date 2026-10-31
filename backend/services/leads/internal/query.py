@@ -70,6 +70,7 @@ class LeadQueryService:
         creator_id: str | None = None,
         store_id: str | None = None,
         broker_id: str | None = None,
+        attribution_employee_id: str | None = None,
         layout: str | None = None,
         floor: str | None = None,
     ) -> dict[str, Any]:
@@ -84,6 +85,7 @@ class LeadQueryService:
             creator_id: 创建人筛选
             store_id: 推荐门店筛选
             broker_id: 推荐经纪人筛选
+            attribution_employee_id: 归属员工筛选（分享/门店归属/经纪人邀请任一命中）
             layout: 户型筛选
             floor: 楼层筛选
 
@@ -131,6 +133,15 @@ class LeadQueryService:
             query = query.filter(Lead.store_id == store_id)
         if broker_id:
             query = query.filter(Lead.broker_id == broker_id)
+        if attribution_employee_id:
+            # 员工归因三字段（V06 / BR-M07-021）：分享员工 / 门店归属员工 / 经纪人邀请员工任一命中
+            query = query.filter(
+                or_(
+                    Lead.referrer_id == attribution_employee_id,
+                    Lead.store_owner_employee_id == attribution_employee_id,
+                    Lead.broker_inviter_employee_id == attribution_employee_id,
+                ),
+            )
         if layout:
             query = query.filter(
                 func.lower(Lead.layout).like(f"%{escape_like(layout).lower()}%", escape="\\"),

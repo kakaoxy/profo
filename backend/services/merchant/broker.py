@@ -38,6 +38,8 @@ from schemas.merchant import (
     BrokerLeadListResponse,
     BrokerListResponse,
     BrokerMyStoreResponse,
+    BrokerOption,
+    BrokerOptionListResponse,
     BrokerRegisterRequest,
     BrokerRegisterResult,
     BrokerResponse,
@@ -613,6 +615,43 @@ class MerchantBrokerService:
         self.db.commit()
         self.db.refresh(binding)
         return broker_binding_response(binding)
+
+    def list_options(
+        self,
+        *,
+        store_id: str | None = None,
+        keyword: str | None = None,
+        bind_status: str | None = None,
+        limit: int = 200,
+    ) -> BrokerOptionListResponse:
+        """线索录入下拉选项（不暴露手机号/备注等敏感字段）.
+
+        门店已选时按 store_id 过滤（仅有效绑定由调用方传 bind_status=bound）；
+        未选门店时可用姓名/手机号关键字搜索，选中后由前端按其 store_id 回填门店.
+        """
+        query = self.db.query(MerchantBroker)
+        keyword = (keyword or "").strip()
+        if keyword:
+            conditions = [MerchantBroker.name.ilike(f"%{keyword}%")]
+            if keyword.isdigit():
+                conditions.append(MerchantBroker.phone_hash == hash_phone(keyword))
+            query = query.filter(or_(*conditions))
+        if store_id:
+            query = query.filter(MerchantBroker.store_id == store_id)
+        if bind_status:
+            query = query.filter(MerchantBroker.bind_status == bind_status)
+        rows = query.order_by(MerchantBroker.name).limit(limit).all()
+        return BrokerOptionListResponse(
+            items=[
+                BrokerOption(
+                    id=str(broker.id),
+                    name=broker.name,
+                    store_id=str(broker.store_id) if broker.store_id else None,
+                    bind_status=broker.bind_status,
+                )
+                for broker in rows
+            ],
+        )
 
     def list_admin(
         self,

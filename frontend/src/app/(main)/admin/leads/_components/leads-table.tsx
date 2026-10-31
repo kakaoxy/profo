@@ -2,12 +2,14 @@
 
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatBuildingLabel } from "@/lib/dict-display";
 import { isValidUrl } from "@/lib/validators";
 import { safeFormatDate } from "@/lib/formatters";
+import { usePermission } from "@/hooks/use-permission";
 import { Lead } from "../types";
 import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
 import { getFollowUpConclusionMeta, getFollowUpMethodShort } from "../_lib/follow-up-meta";
@@ -32,27 +34,29 @@ interface LeadsTableProps {
 }
 
 /**
- * 线索列表 11 列（docs/design/线索跟进列表-线索中心迭代-hifi.html ①②③）：
- * ① 评估价前移 + 评估单价（= 评估价 ÷ 面积，前端派生，后端不新增列）；
- * ② 创建/更新合并为一列上下两行；
- * ③ 状态与录入人之间插入「跟进结论 / 最后一条跟进内容」（最近一条，取数口径见后端
- *    LeadQueryService.get_latest_follow_ups）。
- * 列宽用 table-fixed + th 宽度类（不用 colgroup：断点隐藏 th 后剩余列按宽度类重排，
- * colgroup 会错位）；容器 overflow-x-auto，窄屏横向滚动不挤压文字列。
- * 「最后一条跟进内容」为唯一弹性列：table-fixed 只认首行 width、忽略 min-width，
- * 故表格 min-width = 固定列合计 1090 + 弹性列最小 134 = 1224px（设计稿规格「弹性，≥134」），
- * 保证视口 1180–1280px 时弹性列不倅于固定列压瘪（否则与录入人间出现大空白）。
- * 录入人列 96px 偶离设计稿的 80px：真实姓名多为 3 字（刘希锋），80px 下内容
- * 溢出 padding、与创建/更新列间隙压到 11px，尾部节奏与前段 20px 不一致（SPEC R7）。
+ * 线索列表（列宽用 table-fixed + th 宽度类：断点隐藏 th 后剩余列按宽度类重排，
+ * 容器 overflow-x-auto，窄屏横向滚动不挤压文字列）。
+ * V06 归属扩展：新增「归属（门店 / 经纪人 / 分享）」与「员工归因（门店归属 / 邀请）」两列，
+ * 缺值显示「—」；有权限时门店/经纪人名称可跳转对应后台页面。
  */
 export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onDelete }) => {
+  const { hasPermission } = usePermission();
+  const canOpenStore = hasPermission(PERMISSION_CODES.MERCHANT_READ);
+  const canOpenBroker = hasPermission(PERMISSION_CODES.MERCHANT_BROKER);
+
   return (
-    <table className="w-full min-w-[1224px] table-fixed border-collapse">
+    <table className="w-full min-w-[1524px] table-fixed border-collapse">
       <thead className="border-b border-dove">
         <tr className="text-left align-bottom text-[12.5px] font-medium tracking-wide text-graphite">
           <th className="w-[196px] whitespace-nowrap px-2.5 py-3 pl-5 font-medium">小区 / 房源</th>
           <th className="hidden w-[84px] whitespace-nowrap px-2.5 py-3 font-medium lg:table-cell">
             区域
+          </th>
+          <th className="hidden w-[160px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
+            归属（门店 / 经纪人 / 分享）
+          </th>
+          <th className="hidden w-[140px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
+            员工归因（门店归属 / 邀请）
           </th>
           <th className="w-[120px] whitespace-nowrap px-2.5 py-3 font-medium">户型 / 楼层</th>
           <th className="w-[102px] whitespace-nowrap px-2.5 py-3 text-right font-medium">
@@ -169,6 +173,58 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                 </span>
               </td>
 
+              {/* 五维归属（V06）：门店 / 经纪人 / 分享员工（有权限时可跳转） */}
+              <td className="hidden px-2.5 py-2.5 align-middle xl:table-cell">
+                <div className="space-y-0.5 text-[12px] leading-tight">
+                  <div className="truncate text-ash">
+                    <span className="text-graphite">店 </span>
+                    {lead.storeId && lead.storeName && canOpenStore ? (
+                      <Link
+                        href={`/admin/merchant/stores/${lead.storeId}`}
+                        className="hover:text-rust hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {lead.storeName}
+                      </Link>
+                    ) : (
+                      lead.storeName || "—"
+                    )}
+                  </div>
+                  <div className="truncate text-ash">
+                    <span className="text-graphite">纪 </span>
+                    {lead.brokerId && lead.brokerName && canOpenBroker ? (
+                      <Link
+                        href={`/admin/merchant/brokers?keyword=${encodeURIComponent(lead.brokerName)}`}
+                        className="hover:text-rust hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {lead.brokerName}
+                      </Link>
+                    ) : (
+                      lead.brokerName || "—"
+                    )}
+                  </div>
+                  <div className="truncate text-ash">
+                    <span className="text-graphite">推 </span>
+                    {lead.referrerName || "—"}
+                  </div>
+                </div>
+              </td>
+
+              {/* 员工归因（V06 / BR-M07-021）：门店归属员工 / 经纪人邀请员工 */}
+              <td className="hidden px-2.5 py-2.5 align-middle xl:table-cell">
+                <div className="space-y-0.5 text-[12px] leading-tight">
+                  <div className="truncate text-ash">
+                    <span className="text-graphite">门 </span>
+                    {lead.storeOwnerName || "—"}
+                  </div>
+                  <div className="truncate text-ash">
+                    <span className="text-graphite">邀 </span>
+                    {lead.brokerInviterName || "—"}
+                  </div>
+                </div>
+              </td>
+
               {/* 户型 / 楼层 */}
               <td className="whitespace-nowrap px-2.5 py-2.5 align-middle">
                 <span className="block text-[13.5px] font-normal leading-tight text-ink">
@@ -242,14 +298,14 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                 )}
               </td>
 
-              {/* 录入人 */}
+              {/* 录入人（BR-M07-013：与「分享员工」语义分开，不得 referrerName || creatorName 混用） */}
               <td className="hidden whitespace-nowrap px-2.5 py-2.5 align-middle xl:table-cell">
                 <span className="inline-flex items-center gap-1.5">
                   <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fog text-[11px] font-medium text-ink">
-                    {(lead.referrerName || lead.creatorName || "—").charAt(0)}
+                    {(lead.creatorName || "—").charAt(0)}
                   </span>
                   <span className="block truncate max-w-[56px] text-[13px] text-ash">
-                    {lead.referrerName || lead.creatorName || "—"}
+                    {lead.creatorName || "—"}
                   </span>
                 </span>
               </td>

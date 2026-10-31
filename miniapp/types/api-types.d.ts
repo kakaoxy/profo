@@ -7050,6 +7050,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/brokers/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 经纪人下拉选项（线索录入二级联动）
+         * @description 仅返回 id/姓名/门店/绑定状态，供线索录入门店→经纪人二级联动.
+         */
+        get: operations["list_broker_options_api_v1_admin_merchant_brokers_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/brokers/{broker_id}": {
         parameters: {
             query?: never;
@@ -10107,6 +10127,28 @@ export interface components {
             bind_status: string;
             /** Bound At */
             bound_at: string | null;
+        };
+        /**
+         * BrokerOption
+         * @description 线索录入门店→经纪人二级联动选项（不暴露手机号等敏感信息）.
+         */
+        BrokerOption: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Store Id */
+            store_id: string | null;
+            /** Bind Status */
+            bind_status: string;
+        };
+        /**
+         * BrokerOptionListResponse
+         * @description 经纪人下拉选项列表.
+         */
+        BrokerOptionListResponse: {
+            /** Items */
+            items: components["schemas"]["BrokerOption"][];
         };
         /**
          * BrokerQRCodeResolveResponse
@@ -26852,6 +26894,8 @@ export interface operations {
                 store_id?: string | null;
                 /** @description 推荐经纪人筛选 */
                 broker_id?: string | null;
+                /** @description 归属员工筛选（分享/门店归属/经纪人邀请任一命中） */
+                attribution_employee_id?: string | null;
                 /** @description 户型筛选 */
                 layout?: string | null;
                 /** @description 楼层筛选 */
@@ -38365,6 +38409,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_broker_options_api_v1_admin_merchant_brokers_options_get: {
+        parameters: {
+            query?: {
+                store_id?: string | null;
+                /** @description 姓名/手机号关键词 */
+                keyword?: string | null;
+                /** @description 绑定状态筛选（门店联动传 bound） */
+                bind_status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerOptionListResponse"];
                 };
             };
             /** @description Validation Error */

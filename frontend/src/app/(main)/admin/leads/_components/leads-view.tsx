@@ -3,7 +3,7 @@
 import React, { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { Lead, LeadStatus, FollowUpConclusion, FollowUpMethod } from "../types";
+import { Lead, LeadStatus, FollowUpConclusion, FollowUpMethod, LeadFilterOption } from "../types";
 import {
   updateLeadAction,
   addFollowUpAction,
@@ -42,6 +42,10 @@ interface LeadsViewProps {
   initialSelectedLeadId?: string;
   creatorId?: string;
   creatorName?: string;
+  /** 归属筛选（V06 / REQ-M07-004） */
+  storeOptions?: LeadFilterOption[];
+  brokerOptions?: LeadFilterOption[];
+  employeeOptions?: LeadFilterOption[];
 }
 
 export function LeadsView({
@@ -52,6 +56,9 @@ export function LeadsView({
   initialSelectedLeadId,
   creatorId,
   creatorName,
+  storeOptions = [],
+  brokerOptions = [],
+  employeeOptions = [],
 }: LeadsViewProps) {
   const router = useRouter();
   const {
@@ -64,6 +71,12 @@ export function LeadsView({
     searchQuery,
     setSearchQuery,
     clearCreatorId,
+    storeId,
+    setStoreId,
+    brokerId,
+    setBrokerId,
+    attributionEmployeeId,
+    setAttributionEmployeeId,
   } = useLeadsFilter(initialLeads);
 
   const {
@@ -189,6 +202,15 @@ export function LeadsView({
             creatorId={creatorId}
             creatorName={creatorName}
             onClearCreatorId={clearCreatorId}
+            storeId={storeId}
+            onStoreChange={setStoreId}
+            brokerId={brokerId}
+            onBrokerChange={setBrokerId}
+            attributionEmployeeId={attributionEmployeeId}
+            onAttributionEmployeeChange={setAttributionEmployeeId}
+            storeOptions={storeOptions}
+            brokerOptions={brokerOptions}
+            employeeOptions={employeeOptions}
             stats={stats}
             total={total}
           />

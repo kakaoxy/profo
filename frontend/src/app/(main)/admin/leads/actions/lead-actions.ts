@@ -41,6 +41,9 @@ function toCreatePayload(data: Omit<Lead, "id" | "createdAt">): LeadCreatePayloa
   if (data.district !== undefined) payload.district = data.district;
   if (data.businessArea !== undefined) payload.business_area = data.businessArea;
   if (data.remarks !== undefined) payload.remarks = data.remarks;
+  // 五维归属（V06）：门店/经纪人可空，服务端回填员工快照
+  if (data.storeId !== undefined) payload.store_id = data.storeId;
+  if (data.brokerId !== undefined) payload.broker_id = data.brokerId;
   return payload;
 }
 
@@ -68,6 +71,9 @@ function toUpdatePayload(data: Partial<Lead>): LeadUpdatePayload {
   if (data.images !== undefined) payload.images = data.images;
   if (data.status !== undefined) payload.status = data.status;
   if (data.auditReason !== undefined) payload.audit_reason = data.auditReason;
+  // 五维归属（V06）：null 表示显式清空（后端留痕并重算快照）
+  if (data.storeId !== undefined) payload.store_id = data.storeId;
+  if (data.brokerId !== undefined) payload.broker_id = data.brokerId;
   return payload;
 }
 

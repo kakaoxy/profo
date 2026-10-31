@@ -1,6 +1,6 @@
 import { fetchClient } from "@/lib/api-server";
 import { LeadsView } from "./_components/leads-view";
-import type { Lead } from "./types";
+import type { Lead, LeadFilterOption } from "./types";
 import type { components, operations } from "@/lib/api-types";
 import { mapBackendToFrontend } from "./lib/utils";
 
@@ -10,6 +10,9 @@ interface PageProps {
     statuses?: string;
     district?: string;
     creator_id?: string;
+    store_id?: string;
+    broker_id?: string;
+    attribution_employee_id?: string;
     leadId?: string;
     page?: string;
     page_size?: string;
@@ -50,12 +53,35 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     queryParams.creator_id = params.creator_id;
   }
 
-  // 并行获取线索列表和状态统计（统计不受分页影响）
-  const [listRes, statsRes] = await Promise.all([
+  // 五维归属筛选（V06 / REQ-M07-004）：门店、经纪人、归属员工
+  if (params.store_id) {
+    queryParams.store_id = params.store_id;
+  }
+
+  if (params.broker_id) {
+    queryParams.broker_id = params.broker_id;
+  }
+
+  if (params.attribution_employee_id) {
+    queryParams.attribution_employee_id = params.attribution_employee_id;
+  }
+
+  // 并行获取线索列表、状态统计与归属筛选下拉数据（统计不受分页影响）
+  const [listRes, statsRes, storesRes, brokersRes, usersRes] = await Promise.all([
     client.GET("/api/v1/leads", {
       params: { query: queryParams },
     }),
     client.GET("/api/v1/leads/stats", {}),
+    // 门店/经纪人筛选选项：包含停用/合并历史项（历史线索仍可筛）
+    client.GET("/api/v1/admin/merchant/stores", {
+      params: { query: { page: 1, page_size: 200 } },
+    }),
+    client.GET("/api/v1/admin/merchant/brokers", {
+      params: { query: { page: 1, page_size: 200 } },
+    }),
+    client.GET("/api/v1/users/simple", {
+      params: { query: { status: "active" } },
+    }),
   ]);
 
   const leads: Lead[] = (listRes.data?.items || []).map(mapBackendToFrontend);
@@ -75,6 +101,22 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   // 创建人筛选标签展示名：取当前页首条线索的 creator_name（后端已按 creator_id 过滤）
   const creatorName = params.creator_id ? leads[0]?.creatorName : undefined;
 
+  // 归属筛选下拉选项（无权限/加载失败时为空数组，工具栏自动隐藏对应下拉）
+  const storeOptions: LeadFilterOption[] = (storesRes.data?.items || []).map((store) => ({
+    id: store.id,
+    name: store.store_name,
+    status: store.status,
+  }));
+  const brokerOptions: LeadFilterOption[] = (brokersRes.data?.items || []).map((broker) => ({
+    id: broker.id,
+    name: broker.name,
+    description: broker.phone_masked,
+  }));
+  const employeeOptions: LeadFilterOption[] = (usersRes.data?.items || []).map((user) => ({
+    id: user.id,
+    name: user.nickname || user.username,
+  }));
+
   return (
     <div className="min-h-screen bg-fog">
       <LeadsView
@@ -85,6 +127,9 @@ export default async function LeadsPage({ searchParams }: PageProps) {
         initialSelectedLeadId={params.leadId}
         creatorId={params.creator_id}
         creatorName={creatorName}
+        storeOptions={storeOptions}
+        brokerOptions={brokerOptions}
+        employeeOptions={employeeOptions}
       />
     </div>
   );

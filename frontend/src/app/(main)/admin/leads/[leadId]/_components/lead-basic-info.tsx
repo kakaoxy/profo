@@ -1,6 +1,7 @@
 import { Lead } from "../../types";
 import { formatBuildingLabel } from "@/lib/dict-display";
 import { formatPriceWan, formatUnitPriceWan } from "@/lib/formatters";
+import { LeadAttributionCard } from "../../_components/drawer-parts/lead-attribution-card";
 
 interface LeadBasicInfoProps {
   lead: Lead;
@@ -51,13 +52,14 @@ export function LeadBasicInfo({ lead }: LeadBasicInfoProps) {
       label: "区域",
       value: lead.district || lead.businessArea ? `${lead.district} - ${lead.businessArea}` : "-",
     },
-    { label: "录入人", value: lead.referrerName || lead.creatorName || "-" },
+    { label: "录入人", value: lead.creatorName || "-" },
     { label: "单价", value: formatUnitPriceWan(lead.unitPrice) },
   ];
 
   return (
-    <div className="bg-card border border-dove rounded-2xl p-4">
-      <div className="grid grid-cols-2 gap-3">
+    <div className="space-y-4">
+      <div className="bg-card border border-dove rounded-2xl p-4">
+        <div className="grid grid-cols-2 gap-3">
         {fields.map((field) => (
           <div key={field.label} className="flex flex-col gap-0.5">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
@@ -68,7 +70,9 @@ export function LeadBasicInfo({ lead }: LeadBasicInfoProps) {
             </span>
           </div>
         ))}
+        </div>
       </div>
+      <LeadAttributionCard lead={lead} />
     </div>
   );
 }

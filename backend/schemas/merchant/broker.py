@@ -239,6 +239,21 @@ class BrokerListResponse(BaseModel):
     page_size: int
 
 
+class BrokerOption(BaseModel):
+    """线索录入门店→经纪人二级联动选项（不暴露手机号等敏感信息）."""
+
+    id: str
+    name: str
+    store_id: str | None
+    bind_status: str
+
+
+class BrokerOptionListResponse(BaseModel):
+    """经纪人下拉选项列表."""
+
+    items: list[BrokerOption]
+
+
 class BrokerAdminCreate(BaseModel):
     """后台新建经纪人."""
 

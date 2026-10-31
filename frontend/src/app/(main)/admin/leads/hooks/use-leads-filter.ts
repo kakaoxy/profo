@@ -54,6 +54,10 @@ export function useLeadsFilter(initialLeads: Lead[]) {
   const searchQuery = searchParams.get("search") || "";
   const statusesParam = searchParams.get("statuses") || "";
   const creatorId = searchParams.get("creator_id") || "";
+  // 商户域五维归属筛选（V06 / REQ-M07-004）：门店、经纪人、归属员工
+  const storeId = searchParams.get("store_id") || "";
+  const brokerId = searchParams.get("broker_id") || "";
+  const attributionEmployeeId = searchParams.get("attribution_employee_id") || "";
 
   // 「已放弃」Tab 聚合 rejected + lost_to_competitor（他司成交归属到放弃）：
   // URL 若含这两个状态之一即视为激活 rejected Tab
@@ -135,6 +139,27 @@ export function useLeadsFilter(initialLeads: Lead[]) {
     updateUrlParams({ creator_id: undefined });
   }, [updateUrlParams]);
 
+  const setStoreId = useCallback(
+    (value: string) => {
+      updateUrlParams({ store_id: value });
+    },
+    [updateUrlParams],
+  );
+
+  const setBrokerId = useCallback(
+    (value: string) => {
+      updateUrlParams({ broker_id: value });
+    },
+    [updateUrlParams],
+  );
+
+  const setAttributionEmployeeId = useCallback(
+    (value: string) => {
+      updateUrlParams({ attribution_employee_id: value });
+    },
+    [updateUrlParams],
+  );
+
   /** 客户端过滤（仅 layouts/floors/creator，search/statuses/district 已由服务端处理） */
   const filteredLeads = useMemo(() => {
     return initialLeads.filter((lead) => {
@@ -164,6 +189,9 @@ export function useLeadsFilter(initialLeads: Lead[]) {
     params.delete("statuses");
     params.delete("district");
     params.delete("creator_id");
+    params.delete("store_id");
+    params.delete("broker_id");
+    params.delete("attribution_employee_id");
     params.set("page", "1");
     router.push(`/admin/leads?${params.toString()}`);
   }, [searchParams, router, debouncedSearchUpdate]);
@@ -186,5 +214,11 @@ export function useLeadsFilter(initialLeads: Lead[]) {
     setSearchQuery,
     creatorId,
     clearCreatorId,
+    storeId,
+    setStoreId,
+    brokerId,
+    setBrokerId,
+    attributionEmployeeId,
+    setAttributionEmployeeId,
   };
 }

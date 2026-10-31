@@ -28,6 +28,8 @@ type PublicLeadCountResponse = components["schemas"]["PublicLeadCountResponse"];
 type PublicVisitEventRequest = components["schemas"]["PublicVisitEventRequest"];
 type PublicShareEventRequest = components["schemas"]["PublicShareEventRequest"];
 type PublicTrackingEventResponse = components["schemas"]["PublicTrackingEventResponse"];
+type Broker = components["schemas"]["BrokerResponse"];
+type BrokerMyStore = components["schemas"]["BrokerMyStoreResponse"];
 
 /**
  * 权限说明：
@@ -121,6 +123,15 @@ interface PageData {
   isEmployee: boolean;
   /** 员工自身 ID（令牌 sub 初值，识别成功后由 /auth/me 覆盖）. */
   employeeId: string;
+  // 经纪人代填身份（V06 REQ-M08-002/003）
+  /** 已认证经纪人姓名（非经纪人为空串，不展示横幅）. */
+  brokerName: string;
+  /** 当前有效绑定门店名称（未绑定为空串）. */
+  brokerStoreName: string;
+  /** 已认证但未绑定门店（独立经纪人，提交后待审核）. */
+  brokerStoreMissing: boolean;
+  /** 已绑定门店但门店不可用（停用/删除）. */
+  brokerStoreUnavailable: boolean;
 }
 
 interface PageCustom {
@@ -149,6 +160,10 @@ interface PageCustom {
   handleUnauthorized(): void;
   onLoad(options: Record<string, string | undefined>): void;
   loadEmployee(): void;
+  /** 识别当前登录用户的经纪人身份与绑定门店（非经纪人不展示横幅）. */
+  loadBrokerIdentity(): void;
+  /** 独立经纪人提交确认：本轮已确认后不再重复弹窗. */
+  brokerStoreConfirmed: boolean;
   /** 员工分享事件上报（card/timeline），静默失败. */
   reportShareEvent(shareType: "card" | "timeline"): void;
   onMineTap(): void;
@@ -207,6 +222,10 @@ Page<PageData, PageCustom>({
     referrer: "",
     isEmployee: false,
     employeeId: "",
+    brokerName: "",
+    brokerStoreName: "",
+    brokerStoreMissing: false,
+    brokerStoreUnavailable: false,
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -259,9 +278,64 @@ Page<PageData, PageCustom>({
     }
   },
 
+  /**
+   * 识别当前登录用户的经纪人身份与绑定门店（V06 REQ-M08-002/003）.
+   *
+   * - 已认证且有有效绑定门店：展示「XX 门店 · XX 经纪人」
+   * - 已认证但未绑定门店（独立经纪人）：展示「独立经纪人 · XX」并提示待审核，允许提交
+   * - 已绑定但门店不可用（停用/删除）：提示门店不可用，允许提交（后端按空门店处理）
+   * - 非经纪人（404）/未登录（401）：不展示横幅，按普通用户流程
+   */
+  async loadBrokerIdentity() {
+    if (!getCAccessToken()) {
+      this.setData({
+        brokerName: "",
+        brokerStoreName: "",
+        brokerStoreMissing: false,
+        brokerStoreUnavailable: false,
+      });
+      return;
+    }
+    try {
+      const broker = await request<Broker>({ url: "/public/merchant/brokers/me" });
+      let storeName = "";
+      let unavailable = false;
+      if (broker.store_id) {
+        try {
+          const store = await request<BrokerMyStore | null>({
+            url: "/public/merchant/brokers/me/store",
+          });
+          if (store) {
+            storeName = store.store_name;
+          } else {
+            unavailable = true;
+          }
+        } catch {
+          unavailable = true;
+        }
+      }
+      this.setData({
+        brokerName: broker.name,
+        brokerStoreName: storeName,
+        brokerStoreMissing: !broker.store_id,
+        brokerStoreUnavailable: unavailable,
+      });
+    } catch {
+      // 非经纪人/未登录：静默降级为普通用户，不阻断估价表单
+      this.setData({
+        brokerName: "",
+        brokerStoreName: "",
+        brokerStoreMissing: false,
+        brokerStoreUnavailable: false,
+      });
+    }
+  },
+
   onShow() {
     this.loadLogin();
     this.loadLeadCount();
+    // 经纪人代填身份（V06）：已认证经纪人展示「门店 · 经纪人」，未绑定门店提示待审核
+    this.loadBrokerIdentity();
     // 员工态补强：tab 页从登录页返回（onLoad 不重跑）时，若已有 admin 令牌
     // 且尚未切换为员工态，先同步置真渲染字典选择器，再异步识别身份；
     // admin 令牌失效时同步切回外部用户手填，避免残留字典入口
@@ -296,6 +370,8 @@ Page<PageData, PageCustom>({
   leadCountTimer: null,
 
   subscribeTemplateId: null,
+
+  brokerStoreConfirmed: false,
 
   dictPending: {
     newCommunity: null,
@@ -744,6 +820,22 @@ Page<PageData, PageCustom>({
 
   /** 实际提交：由 onSubmit 校验/授权流程后调用（performSubmit 不重复做守卫与校验）. */
   async performSubmit(body: PublicLeadCreate) {
+    // 独立经纪人（未绑定门店）首次提交前确认：提交后线索挂空门店待审核（REQ-M08-003）
+    if (this.data.brokerStoreMissing && !this.brokerStoreConfirmed) {
+      wx.showModal({
+        title: "尚未绑定门店",
+        content: "提交后将进入待审核，由运营在后台补充门店。是否继续提交？",
+        confirmText: "继续提交",
+        cancelText: "取消",
+        success: (res) => {
+          if (res.confirm) {
+            this.brokerStoreConfirmed = true;
+            void this.performSubmit(body);
+          }
+        },
+      });
+      return;
+    }
     this.setData({ submitting: true });
     try {
       await request<PublicLeadResponse>({

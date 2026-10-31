@@ -3,6 +3,13 @@
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Download, List, LayoutGrid, Plus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -10,7 +17,7 @@ import { SearchBar } from "@/components/common";
 import { HasPermission } from "@/components/has-permission";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
-import { LeadTabValue, LeadStatus } from "../types";
+import { LeadTabValue, LeadStatus, LeadFilterOption } from "../types";
 import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
 import type { LeadStats } from "./leads-stats";
 
@@ -19,6 +26,13 @@ const VALID_TAB_VALUES: LeadTabValue[] = ["all", ...Object.values(LeadStatus)];
 const TAB_STATUSES = Object.values(LeadStatus).filter(
   (status) => status !== LeadStatus.LOST_TO_COMPETITOR,
 );
+
+/** 门店筛选下拉的历史状态后缀（已停用/合并/搬迁仍可筛选历史线索） */
+const STORE_STATUS_SUFFIX: Record<string, string> = {
+  disabled: "（已停用）",
+  merged: "（已合并）",
+  relocated: "（已搬迁）",
+};
 
 /** Steep Tab 胶囊：白底容器 + Ink 激活（与 projects 页一致），.cnt 计数徽标随激活态换色 */
 const TAB_TRIGGER_CLASS =
@@ -39,6 +53,16 @@ interface LeadsToolbarProps {
   creatorId?: string;
   creatorName?: string;
   onClearCreatorId: () => void;
+  /** 归属筛选（V06 / REQ-M07-004）：门店、经纪人、归属员工 */
+  storeId?: string;
+  onStoreChange: (value: string) => void;
+  brokerId?: string;
+  onBrokerChange: (value: string) => void;
+  attributionEmployeeId?: string;
+  onAttributionEmployeeChange: (value: string) => void;
+  storeOptions?: LeadFilterOption[];
+  brokerOptions?: LeadFilterOption[];
+  employeeOptions?: LeadFilterOption[];
   /** 各状态计数（LeadsStats 同源数据），用于 Tab 计数徽标 */
   stats?: LeadStats;
   /** 全部线索数（列表 total），用于「全部」Tab 计数 */
@@ -56,6 +80,15 @@ export function LeadsToolbar({
   creatorId,
   creatorName,
   onClearCreatorId,
+  storeId,
+  onStoreChange,
+  brokerId,
+  onBrokerChange,
+  attributionEmployeeId,
+  onAttributionEmployeeChange,
+  storeOptions = [],
+  brokerOptions = [],
+  employeeOptions = [],
   stats,
   total,
 }: LeadsToolbarProps) {
@@ -77,52 +110,114 @@ export function LeadsToolbar({
       <span className="cnt ml-1 text-[12px] text-dove tabular-nums">{value}</span>
     );
 
+  const hasAttributionFilters =
+    storeOptions.length > 0 || brokerOptions.length > 0 || employeeOptions.length > 0;
+
   return (
     <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
       {/* Left: Filter Area */}
-      <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-start sm:items-center">
-        <SearchBar value={searchQuery} onChange={onSearchChange} placeholder="搜索小区名称..." />
+      <div className="flex w-full flex-col gap-3 lg:w-auto">
+        <div className="flex flex-col sm:flex-row w-full lg:w-auto gap-3 items-start sm:items-center">
+          <SearchBar value={searchQuery} onChange={onSearchChange} placeholder="搜索小区名称..." />
 
-        {/* Status Tabs */}
-        <Tabs
-          value={activeTab}
-          onValueChange={(value) => {
-            if (isValidTabValue(value)) {
-              onTabChange(value);
-            }
-          }}
-          className="w-full sm:w-auto"
-        >
-          <TabsList className="h-auto min-h-10 flex-wrap rounded-full border-none bg-pure-white p-1 shadow-steep-sm">
-            <TabsTrigger value="all" className={TAB_TRIGGER_CLASS}>
-              全部
-              {renderTabCount(tabCounts.all)}
-            </TabsTrigger>
-            {TAB_STATUSES.map((status) => (
-              <TabsTrigger key={status} value={status} className={TAB_TRIGGER_CLASS}>
-                {LEAD_STATUS_META[status].label}
-                {renderTabCount(tabCounts[status])}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
-
-        {/* 创建人筛选标签（URL 含 creator_id 时展示） */}
-        {creatorId && (
-          <Badge
-            variant="secondary"
-            className="h-9 px-3 gap-1.5 rounded-full bg-apricot-wash text-rust"
+          {/* Status Tabs */}
+          <Tabs
+            value={activeTab}
+            onValueChange={(value) => {
+              if (isValidTabValue(value)) {
+                onTabChange(value);
+              }
+            }}
+            className="w-full sm:w-auto"
           >
-            {creatorLabel}
-            <button
-              type="button"
-              onClick={onClearCreatorId}
-              className="ml-0.5 inline-flex items-center justify-center rounded-full hover:bg-rust/15 p-0.5 transition-colors"
-              aria-label="清除创建人筛选"
+            <TabsList className="h-auto min-h-10 flex-wrap rounded-full border-none bg-pure-white p-1 shadow-steep-sm">
+              <TabsTrigger value="all" className={TAB_TRIGGER_CLASS}>
+                全部
+                {renderTabCount(tabCounts.all)}
+              </TabsTrigger>
+              {TAB_STATUSES.map((status) => (
+                <TabsTrigger key={status} value={status} className={TAB_TRIGGER_CLASS}>
+                  {LEAD_STATUS_META[status].label}
+                  {renderTabCount(tabCounts[status])}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+
+          {/* 创建人筛选标签（URL 含 creator_id 时展示） */}
+          {creatorId && (
+            <Badge
+              variant="secondary"
+              className="h-9 px-3 gap-1.5 rounded-full bg-apricot-wash text-rust"
             >
-              <X className="h-3 w-3" />
-            </button>
-          </Badge>
+              {creatorLabel}
+              <button
+                type="button"
+                onClick={onClearCreatorId}
+                className="ml-0.5 inline-flex items-center justify-center rounded-full hover:bg-rust/15 p-0.5 transition-colors"
+                aria-label="清除创建人筛选"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+        </div>
+
+        {/* 归属筛选（V06 / REQ-M07-004）：门店、经纪人、归属员工 */}
+        {hasAttributionFilters && (
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="归属筛选">
+            {storeOptions.length > 0 && (
+              <Select value={storeId || "all"} onValueChange={onStoreChange}>
+                <SelectTrigger className="h-9 w-40" aria-label="推荐门店筛选">
+                  <SelectValue placeholder="全部门店" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部门店</SelectItem>
+                  {storeOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
+                      {STORE_STATUS_SUFFIX[option.status || ""] || ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {brokerOptions.length > 0 && (
+              <Select value={brokerId || "all"} onValueChange={onBrokerChange}>
+                <SelectTrigger className="h-9 w-44" aria-label="推荐经纪人筛选">
+                  <SelectValue placeholder="全部经纪人" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部经纪人</SelectItem>
+                  {brokerOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
+                      {option.description ? ` · ${option.description}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {employeeOptions.length > 0 && (
+              <Select
+                value={attributionEmployeeId || "all"}
+                onValueChange={onAttributionEmployeeChange}
+              >
+                <SelectTrigger className="h-9 w-44" aria-label="归属员工筛选">
+                  <SelectValue placeholder="全部归属员工" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部归属员工</SelectItem>
+                  {employeeOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id}>
+                      {option.name}
+                      {option.description ? ` · ${option.description}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         )}
       </div>
 

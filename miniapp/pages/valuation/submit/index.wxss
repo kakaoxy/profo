@@ -58,6 +58,44 @@
   line-height: 1.6;
 }
 
+/* 经纪人代填身份 banner（V06）：常规态白卡，未绑定/门店不可用时转警示色 */
+.broker-banner {
+  margin: 0 40rpx 32rpx;
+  padding: 24rpx 28rpx;
+  background: var(--pure-white);
+  border: 2rpx solid var(--dove);
+  border-radius: 28rpx;
+  box-shadow: var(--shadow-sm);
+}
+
+.broker-banner--warn {
+  background: var(--apricot-wash);
+  border-color: var(--apricot-wash);
+  box-shadow: none;
+}
+
+.broker-banner__title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.broker-banner--warn .broker-banner__title {
+  color: var(--rust);
+}
+
+.broker-banner__sub {
+  margin-top: 8rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+  line-height: 1.5;
+}
+
+.broker-banner--warn .broker-banner__sub {
+  color: var(--rust);
+}
+
 /* 手机号 banner */
 .phone-banner {
   margin: 0 40rpx 32rpx;

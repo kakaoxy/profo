@@ -18,6 +18,7 @@ import { OwnerNotesSection } from "./owner-notes-section";
 import { ImagesStrip } from "./images-strip";
 import { LeadAuditPanel } from "./lead-audit-panel";
 import { FollowUpTimeline } from "./follow-up-timeline";
+import { LeadAttributionCard } from "./lead-attribution-card";
 
 interface InfoTabProps {
   lead: Lead;
@@ -86,7 +87,7 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
     ...baseCells.slice(0, 4),
     ...dictCells,
     ...baseCells.slice(4),
-    { icon: User, label: "录入人", value: lead.referrerName || lead.creatorName },
+    { icon: User, label: "录入人", value: lead.creatorName || "—" },
     { icon: Clock, label: "建档时间", value: formatDateTime(lead.createdAt) },
     {
       icon: History,
@@ -129,6 +130,7 @@ export const InfoTab: React.FC<InfoTabProps> = ({
 }) => (
   <div className="space-y-4 animate-in fade-in duration-300">
     <KpiRow lead={lead} />
+    <LeadAttributionCard lead={lead} />
     <ParamsSection lead={lead} />
     <OwnerNotesSection lead={lead} />
     <ImagesStrip images={lead.images} onImagesChange={onImagesUpdate} />

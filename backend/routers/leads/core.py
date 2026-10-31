@@ -154,6 +154,10 @@ def get_leads(
     creator_id: Annotated[str | None, Query(max_length=100, description="创建人筛选")] = None,
     store_id: Annotated[str | None, Query(max_length=36, description="推荐门店筛选")] = None,
     broker_id: Annotated[str | None, Query(max_length=36, description="推荐经纪人筛选")] = None,
+    attribution_employee_id: Annotated[
+        str | None,
+        Query(max_length=36, description="归属员工筛选（分享/门店归属/经纪人邀请任一命中）"),
+    ] = None,
     layout: Annotated[str | None, Query(max_length=100, description="户型筛选")] = None,
     floor: Annotated[str | None, Query(max_length=100, description="楼层筛选")] = None,
 ) -> PaginatedLeadListResponse:
@@ -171,6 +175,7 @@ def get_leads(
         creator_id=creator_id,
         store_id=store_id,
         broker_id=broker_id,
+        attribution_employee_id=attribution_employee_id,
         layout=layout,
         floor=floor,
     )

@@ -13,6 +13,23 @@
     <view class="form-sub">线上提交房源信息，我们先做初步估价。合适的会联系你安排上门看房，结合周边真实成交数据，再商定写进合同的约定价格。不签约不收费。</view>
   </view>
 
+  <!-- 经纪人代填身份（V06 REQ-M08-002/003）：展示「门店 · 经纪人」；独立经纪人提示待审核 -->
+  <view
+    wx:if="{{brokerName}}"
+    class="broker-banner {{brokerStoreMissing || brokerStoreUnavailable ? 'broker-banner--warn' : ''}}"
+  >
+    <view class="broker-banner__title">
+      <block wx:if="{{brokerStoreUnavailable}}">门店不可用 · {{brokerName}}</block>
+      <block wx:elif="{{brokerStoreMissing}}">独立经纪人 · {{brokerName}}</block>
+      <block wx:else>{{brokerStoreName}} · {{brokerName}}</block>
+    </view>
+    <view class="broker-banner__sub">
+      <block wx:if="{{brokerStoreMissing}}">尚未绑定门店，提交后将进入待审核。</block>
+      <block wx:elif="{{brokerStoreUnavailable}}">绑定门店当前不可用，提交后将进入待审核。</block>
+      <block wx:else>正在以经纪人身份代客户填写，提交后线索归属本门店与经纪人。</block>
+    </view>
+  </view>
+
   <!-- 手机号完善 banner（未绑定手机号时展示；点击触发微信授权弹窗） -->
   <view wx:if="{{!hasPhone}}" class="phone-banner">
     <text class="phone-banner__text">完善手机号，加速评估速度</text>

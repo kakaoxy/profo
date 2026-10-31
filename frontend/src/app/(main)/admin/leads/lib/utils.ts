@@ -43,6 +43,15 @@ export function mapBackendToFrontend(backendLead: BackendLead): Lead {
     creatorName: backendLead.creator_name ?? "未知",
     referrerId: backendLead.referrer_id ?? undefined,
     referrerName: backendLead.referrer_name ?? undefined,
+    storeId: backendLead.store_id ?? undefined,
+    storeName: backendLead.store_name ?? undefined,
+    brokerId: backendLead.broker_id ?? undefined,
+    brokerName: backendLead.broker_name ?? undefined,
+    storeOwnerEmployeeId: backendLead.store_owner_employee_id ?? undefined,
+    storeOwnerName: backendLead.store_owner_name ?? undefined,
+    brokerInviterEmployeeId: backendLead.broker_inviter_employee_id ?? undefined,
+    brokerInviterName: backendLead.broker_inviter_name ?? undefined,
+    attributionStatus: backendLead.attribution_status ?? undefined,
     lastFollowUpAt: backendLead.last_follow_up_at ?? undefined,
     latestFollowUp: backendLead.latest_follow_up
       ? ({

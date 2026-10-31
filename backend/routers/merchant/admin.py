@@ -20,6 +20,7 @@ from schemas.merchant import (
     BrokerBindingResponse,
     BrokerForceChangeRequest,
     BrokerListResponse,
+    BrokerOptionListResponse,
     BrokerResponse,
     BrokerStatusChangeRequest,
     MerchantBusinessCircleResponse,
@@ -432,6 +433,24 @@ def list_brokers(
         page_size=pagination.page_size,
         keyword=keyword,
         store_id=store_id,
+        bind_status=bind_status,
+    )
+
+
+@router.get("/brokers/options", summary="经纪人下拉选项（线索录入二级联动）")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def list_broker_options(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: MerchantReadPermDep,
+    store_id: str | None = None,
+    keyword: Annotated[str | None, Query(max_length=100, description="姓名/手机号关键词")] = None,
+    bind_status: Annotated[str | None, Query(description="绑定状态筛选（门店联动传 bound）")] = None,
+) -> BrokerOptionListResponse:
+    """仅返回 id/姓名/门店/绑定状态，供线索录入门店→经纪人二级联动."""
+    return MerchantBrokerService(db).list_options(
+        store_id=store_id,
+        keyword=keyword,
         bind_status=bind_status,
     )
 

@@ -190,6 +190,50 @@ def test_lead_with_store_and_broker(admin_client: TestClient, employee: User, se
     assert listed.json()["items"][0]["broker_name"] == "小李"
 
 
+def test_lead_attribution_employee_filter(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """归属员工筛选：分享员工/门店归属员工/经纪人邀请员工任一命中（V06 / BR-M07-021）."""
+    session: Session = seeded_db["session"]
+    session.add_all(
+        [
+            Lead(community_name="分享归因线索", referrer_id=employee.id),
+            Lead(community_name="门店归属线索", store_owner_employee_id=employee.id),
+            Lead(community_name="经纪人邀请线索", broker_inviter_employee_id=employee.id),
+            Lead(community_name="无归属线索"),
+        ],
+    )
+    session.commit()
+
+    resp = admin_client.get(f"{API}/leads?attribution_employee_id={employee.id}")
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["total"] == 3
+    names = {item["community_name"] for item in resp.json()["items"]}
+    assert names == {"分享归因线索", "门店归属线索", "经纪人邀请线索"}
+
+
+def test_broker_options_for_lead_entry(admin_client: TestClient, employee: User, seeded_db: dict) -> None:
+    """门店→经纪人二级联动选项：按门店只看有效绑定，未选门店可按姓名搜索."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    broker = _create_broker(admin_client, store["id"], name="联动经纪人")
+
+    resp = admin_client.get(f"{API}/admin/merchant/brokers/options?store_id={store['id']}&bind_status=bound")
+    assert resp.status_code == 200, resp.text
+    items = resp.json()["items"]
+    assert len(items) == 1
+    assert items[0]["id"] == broker["id"]
+    assert items[0]["store_id"] == store["id"]
+    # 不暴露手机号等敏感字段
+    assert "phone_masked" not in items[0]
+
+    search = admin_client.get(f"{API}/admin/merchant/brokers/options?keyword=联动经纪人")
+    assert search.status_code == 200, search.text
+    assert {item["id"] for item in search.json()["items"]} == {broker["id"]}
+
+
 def test_lead_broker_unbound_missing_store(admin_client: TestClient, seeded_db: dict) -> None:
     """仅经纪人且无绑定门店 → 缺门店/待审核."""
     broker = _create_broker(admin_client, None, name="独立经纪人")
