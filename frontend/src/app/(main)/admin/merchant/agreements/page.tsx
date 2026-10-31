@@ -149,6 +149,14 @@ export default function MerchantAgreementsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
+  // 数据异步加载完成或慢网时，补齐发起表单的默认选择，避免模板/门店为空导致无法提交
+  useEffect(() => {
+    if (!createOpen) return;
+    setFormStoreId((current) => current || stores[0]?.id || "");
+    setFormCompanyId((current) => current || companies[0]?.id || "");
+    setFormTemplateId((current) => current || templates[0]?.id || "");
+  }, [createOpen, stores, companies, templates]);
+
   const review = async (item: Agreement, approve: boolean) => {
     if (!approve && !reason.trim()) {
       setError("驳回时必须填写审核意见");

@@ -121,6 +121,15 @@ def test_status_returns_1_when_failed(applied_ledger: Engine, cli_engine: Engine
 
 def test_verify_ok(applied_ledger: Engine, cli_engine: Engine, capsys: pytest.CaptureFixture[str]) -> None:
     """全绿时退出码 0 且输出「全部通过」."""
+    # 测试基建不落真实备份文件；先归一化账本中的备份字段，
+    # 避免前序备份/迁移用例留下的临时路径导致 verify 误报。
+    with applied_ledger.begin() as conn:
+        conn.execute(
+            text(
+                "UPDATE schema_migrations SET backup_path = NULL, backup_sha256 = NULL, "
+                "backup_scope = 'none' WHERE status = 'applied'"
+            ),
+        )
     code = main(["verify"])
     assert code == EXIT_OK
     assert "全部通过" in capsys.readouterr().out

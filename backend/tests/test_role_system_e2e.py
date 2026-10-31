@@ -191,7 +191,7 @@ class TestPermissionRiskLevel:
         client: TestClient = admin_auth["client"]
         session: Session = admin_auth["session"]
 
-        resp = client.get("/api/v1/permissions")
+        resp = client.get("/api/v1/permissions?page_size=200")
         assert resp.status_code == 200
         perms = resp.json()["items"]
         by_code = {p["code"]: p for p in perms}
@@ -200,7 +200,7 @@ class TestPermissionRiskLevel:
 
         _backfill_risk_levels(session)
 
-        resp = client.get("/api/v1/permissions")
+        resp = client.get("/api/v1/permissions?page_size=200")
         assert resp.status_code == 200
         perms = resp.json()["items"]
         by_code = {p["code"]: p for p in perms}

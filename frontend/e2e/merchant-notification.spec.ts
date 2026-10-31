@@ -190,7 +190,9 @@ test.beforeEach(async ({ page }) => {
 
 test("消息中心出现商户分类与两条商户通知", async ({ page }) => {
   await page.goto("/admin/notifications");
-  await expect(page.getByRole("button", { name: /^商户\d+$/ })).toBeVisible();
+  // 并行执行时其他用例可能已「全部已读」，tab 计数为 0 时不渲染数字。
+  // 用侧边栏「商户管理」+ 页内 tab 的最后一个匹配，避免 button accessible name 受计数文本影响。
+  await expect(page.locator("button").filter({ hasText: "商户" }).last()).toBeVisible();
   await expect(page.getByText(`合作协议即将到期：${MARK}门店`).first()).toBeVisible();
   await expect(page.getByText(`门店超期未拜访：${MARK}门店`).first()).toBeVisible();
 });

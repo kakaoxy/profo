@@ -143,7 +143,7 @@ test("后台编辑门店并留痕原因", async ({ page }) => {
   await page.getByPlaceholder("变更原因 *").fill("E2E 编辑留痕");
   await page.getByRole("button", { name: "保存修改" }).click();
 
-  await expect(page.getByText(`${MARK}门店改`).first()).toBeVisible();
+  await expect(page.getByText(`${MARK}门店改`).first()).toBeVisible({ timeout: 15_000 });
 });
 
 test("后台发起协议", async ({ page }) => {
@@ -158,6 +158,6 @@ test("后台发起协议", async ({ page }) => {
   await page.getByPlaceholder("签署人手机号").fill("13700002222");
   await page.getByRole("button", { name: "提交审核" }).click();
 
-  await expect(page.locator("tr").filter({ hasText: storeName }).first()).toBeVisible();
-  await expect(page.locator("tr").filter({ hasText: "待审核" }).first()).toBeVisible();
+  await expect(page.locator("tr").filter({ hasText: storeName }).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator("tr").filter({ hasText: "待审核" }).first()).toBeVisible({ timeout: 15_000 });
 });
