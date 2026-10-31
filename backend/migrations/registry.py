@@ -87,6 +87,7 @@ from migrations._marketing_notify import (
 from migrations._merchant import seed_merchant_platform
 from migrations._merchant_schema import (
     add_merchant_store_phone_hash_column,
+    create_merchant_broker_tables,
     create_merchant_core_tables,
     create_merchant_visit_tables,
 )
@@ -1315,6 +1316,16 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=True,
         description="门店补 contact_phone_hash 列与索引（电话查重精确匹配）",
     ),
+    Migration(
+        version=107,
+        name="create_merchant_broker_tables",
+        fn=create_merchant_broker_tables,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="商户管理 V04：经纪人、绑定历史、门店邀请二维码三表与索引",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1327,7 +1338,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 106）。"""
+"""登记总数（当前 107）。"""
 
-NEXT_VERSION = 107
+NEXT_VERSION = 108
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

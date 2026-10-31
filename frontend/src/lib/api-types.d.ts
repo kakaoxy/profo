@@ -6906,6 +6906,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/brokers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 经纪人列表
+         * @description 后台经纪人分页列表.
+         */
+        get: operations["list_brokers_api_v1_admin_merchant_brokers_get"];
+        put?: never;
+        /**
+         * 新建经纪人
+         * @description 后台新建经纪人（手机号加密，哈希唯一）.
+         */
+        post: operations["create_broker_api_v1_admin_merchant_brokers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/brokers/{broker_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 经纪人详情
+         * @description 后台经纪人档案.
+         */
+        get: operations["get_broker_api_v1_admin_merchant_brokers__broker_id__get"];
+        /**
+         * 编辑经纪人
+         * @description 编辑姓名/手机号/备注.
+         */
+        put: operations["update_broker_api_v1_admin_merchant_brokers__broker_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/brokers/{broker_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 停用/启用经纪人
+         * @description 停用时自动解绑当前门店.
+         */
+        post: operations["change_broker_status_api_v1_admin_merchant_brokers__broker_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/brokers/{broker_id}/unbind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 强制解绑经纪人
+         * @description 后台强制解绑（保留历史并留痕）.
+         */
+        post: operations["force_unbind_broker_api_v1_admin_merchant_brokers__broker_id__unbind_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/bindings/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 待审核绑定申请
+         * @description 换绑/解绑待审核列表.
+         */
+        get: operations["list_pending_bindings_api_v1_admin_merchant_bindings_pending_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/bindings/{binding_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 审批绑定申请
+         * @description 通过后原绑定失效，新绑定生效；拒绝保留原绑定.
+         */
+        post: operations["approve_binding_api_v1_admin_merchant_bindings__binding_id__approve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/business-circles": {
         parameters: {
             query?: never;
@@ -7090,6 +7218,194 @@ export interface paths {
          * @description 商圈候选.
          */
         get: operations["business_circles_api_v1_public_merchant_business_circles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/broker-qrcodes/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 解析门店邀请二维码
+         * @description 扫码后解析门店与邀请员工（无需登录）.
+         */
+        get: operations["resolve_broker_qrcode_api_v1_public_merchant_broker_qrcodes__code__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/stores/{store_id}/broker-qrcode": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 生成门店邀请二维码
+         * @description 门店归属员工生成二维码，经纪人扫码注册后自动绑定.
+         */
+        post: operations["generate_broker_qrcode_api_v1_public_merchant_stores__store_id__broker_qrcode_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/brokers/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 经纪人认证建档
+         * @description 微信登录 + 已绑定手机号后填写姓名；支持二维码/员工分享归因.
+         */
+        post: operations["register_broker_api_v1_public_merchant_brokers_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/brokers/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的经纪人档案
+         * @description 当前登录用户的经纪人档案.
+         */
+        get: operations["get_my_broker_api_v1_public_merchant_brokers_me_get"];
+        /**
+         * 修改经纪人资料
+         * @description 修改姓名/手机号/备注（手机号需先在用户侧验证）.
+         */
+        put: operations["update_my_broker_api_v1_public_merchant_brokers_me_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/brokers/me/store": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的门店
+         * @description 当前有效绑定门店（只读，不暴露内部跟进信息）.
+         */
+        get: operations["get_my_broker_store_api_v1_public_merchant_brokers_me_store_get"];
+        put?: never;
+        /**
+         * 经纪人注册创建门店
+         * @description 经纪人创建待审核门店，并自动绑定创建人.
+         */
+        post: operations["create_store_as_broker_api_v1_public_merchant_brokers_me_store_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/brokers/me/bind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 绑定门店
+         * @description 首次绑定免审直接生效；已有绑定时拒绝.
+         */
+        post: operations["bind_broker_store_api_v1_public_merchant_brokers_me_bind_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/brokers/me/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 换绑门店申请
+         * @description 换绑需运营审核，审核前原绑定持续有效.
+         */
+        post: operations["request_broker_change_api_v1_public_merchant_brokers_me_change_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/brokers/me/unbind": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 解绑门店申请
+         * @description 解绑需运营审核，审核前绑定持续有效.
+         */
+        post: operations["request_broker_unbind_api_v1_public_merchant_brokers_me_unbind_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/brokers/me/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 绑定历史
+         * @description 本人历次绑定门店记录.
+         */
+        get: operations["list_my_bindings_api_v1_public_merchant_brokers_me_bindings_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -8342,6 +8658,16 @@ export interface components {
             room_no: string;
         };
         /**
+         * BindingApprovalRequest
+         * @description 换绑/解绑审批.
+         */
+        BindingApprovalRequest: {
+            /** Approve */
+            approve: boolean;
+            /** Remark */
+            remark?: string | null;
+        };
+        /**
          * BizDictGroupResponse
          * @description 字典组概览（管理页左侧分组列表）.
          */
@@ -8645,6 +8971,316 @@ export interface components {
         Body_upload_file_api_v1_public_files_upload_post: {
             /** File */
             file: string;
+        };
+        /**
+         * BrokerAdminCreate
+         * @description 后台新建经纪人.
+         */
+        BrokerAdminCreate: {
+            /** Name */
+            name: string;
+            /** Phone */
+            phone: string;
+            /** Store Id */
+            store_id?: string | null;
+            /** Remark */
+            remark?: string | null;
+        };
+        /**
+         * BrokerAdminUpdate
+         * @description 后台编辑经纪人.
+         */
+        BrokerAdminUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Remark */
+            remark?: string | null;
+        };
+        /**
+         * BrokerBindRequest
+         * @description 首次绑定门店请求.
+         */
+        BrokerBindRequest: {
+            /**
+             * Store Id
+             * @description 门店ID
+             */
+            store_id: string;
+        };
+        /**
+         * BrokerBindingResponse
+         * @description 绑定历史记录.
+         */
+        BrokerBindingResponse: {
+            /** Id */
+            id: string;
+            /** Broker Id */
+            broker_id?: string | null;
+            /** Broker Name */
+            broker_name?: string | null;
+            /** Store Id */
+            store_id: string;
+            /** Store Name */
+            store_name: string;
+            /** Status */
+            status: string;
+            /**
+             * Applied At
+             * Format: date-time
+             */
+            applied_at: string;
+            /** Approved At */
+            approved_at: string | null;
+            /** Unbound At */
+            unbound_at: string | null;
+            /** Reason */
+            reason: string | null;
+            /** Bind Source */
+            bind_source: string;
+            /** Inviter Employee Id */
+            inviter_employee_id: string | null;
+        };
+        /**
+         * BrokerChangeRequest
+         * @description 换绑门店申请（运营审核后生效）.
+         */
+        BrokerChangeRequest: {
+            /**
+             * Store Id
+             * @description 新门店ID
+             */
+            store_id: string;
+            /**
+             * Reason
+             * @description 换绑原因
+             */
+            reason: string;
+        };
+        /**
+         * BrokerListItem
+         * @description 后台经纪人列表项.
+         */
+        BrokerListItem: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Phone Masked */
+            phone_masked: string;
+            /** Store Id */
+            store_id: string | null;
+            /** Store Name */
+            store_name: string | null;
+            /** Bind Status */
+            bind_status: string;
+            /** Source */
+            source: string;
+            /** Inviter Employee Id */
+            inviter_employee_id: string | null;
+            /** Recommendation Count */
+            recommendation_count: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * BrokerListResponse
+         * @description 后台经纪人分页列表.
+         */
+        BrokerListResponse: {
+            /** Items */
+            items: components["schemas"]["BrokerListItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * BrokerMyStoreResponse
+         * @description 经纪人“我的门店”只读视图.
+         */
+        BrokerMyStoreResponse: {
+            /** Id */
+            id: string;
+            /** Store Name */
+            store_name: string;
+            /** Company Name */
+            company_name: string;
+            /** Address */
+            address: string;
+            /** District */
+            district: string;
+            /** Business Circle */
+            business_circle: string;
+            /** Cooperation Status */
+            cooperation_status: string;
+            /** Cooperation Status Label */
+            cooperation_status_label: string;
+            /** Review Status */
+            review_status: string;
+            /** Photos */
+            photos?: {
+                [key: string]: unknown;
+            }[];
+            /** Bind Status */
+            bind_status: string;
+            /** Bound At */
+            bound_at: string | null;
+        };
+        /**
+         * BrokerQRCodeResolveResponse
+         * @description 门店二维码解析结果（扫码注册前展示）.
+         */
+        BrokerQRCodeResolveResponse: {
+            /** Valid */
+            valid: boolean;
+            /** Store Id */
+            store_id: string | null;
+            /** Store Name */
+            store_name: string | null;
+            /** Inviter Employee Id */
+            inviter_employee_id: string | null;
+            /** Expires At */
+            expires_at: string | null;
+            /** Reason */
+            reason: string | null;
+        };
+        /**
+         * BrokerQRCodeResponse
+         * @description 门店二维码生成响应.
+         */
+        BrokerQRCodeResponse: {
+            /** Code */
+            code: string;
+            /** Image Base64 */
+            image_base64: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Page */
+            page: string;
+        };
+        /**
+         * BrokerRegisterRequest
+         * @description 经纪人认证建档请求（手机号必须已在 users 中绑定）.
+         */
+        BrokerRegisterRequest: {
+            /**
+             * Name
+             * @description 姓名
+             */
+            name: string;
+            /**
+             * Qrcode Code
+             * @description 门店二维码场景短码
+             */
+            qrcode_code?: string | null;
+            /**
+             * Referrer
+             * @description 员工分享 referrer
+             */
+            referrer?: string | null;
+        };
+        /**
+         * BrokerRegisterResult
+         * @description 经纪人认证结果.
+         */
+        BrokerRegisterResult: {
+            broker: components["schemas"]["BrokerResponse"];
+            my_store?: components["schemas"]["BrokerMyStoreResponse"] | null;
+            /**
+             * Auto Bound
+             * @default false
+             */
+            auto_bound: boolean;
+            /** Qr Invalid Reason */
+            qr_invalid_reason?: string | null;
+        };
+        /**
+         * BrokerResponse
+         * @description 经纪人档案响应.
+         */
+        BrokerResponse: {
+            /** Id */
+            id: string;
+            /** User Id */
+            user_id: string | null;
+            /** Name */
+            name: string;
+            /** Phone Masked */
+            phone_masked: string;
+            /** Store Id */
+            store_id: string | null;
+            /** Store Name */
+            store_name: string | null;
+            /** Bind Status */
+            bind_status: string;
+            /** Source */
+            source: string;
+            /** Inviter Employee Id */
+            inviter_employee_id: string | null;
+            /** Bind Source */
+            bind_source: string;
+            /** Bound At */
+            bound_at: string | null;
+            /** Unbound At */
+            unbound_at: string | null;
+            /** Remark */
+            remark: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * BrokerStatusChangeRequest
+         * @description 后台停用/启用经纪人.
+         */
+        BrokerStatusChangeRequest: {
+            /**
+             * Target Status
+             * @enum {string}
+             */
+            target_status: "disabled" | "unbound";
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * BrokerUnbindRequest
+         * @description 解绑门店申请（运营审核后生效）.
+         */
+        BrokerUnbindRequest: {
+            /**
+             * Reason
+             * @description 解绑原因
+             */
+            reason: string;
+        };
+        /**
+         * BrokerUpdateRequest
+         * @description 经纪人资料修改（手机号变更需走现有用户手机号流程后同步）.
+         */
+        BrokerUpdateRequest: {
+            /** Name */
+            name?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Remark */
+            remark?: string | null;
         };
         /**
          * BusinessDistrictListResponse
@@ -36101,6 +36737,272 @@ export interface operations {
             };
         };
     };
+    list_brokers_api_v1_admin_merchant_brokers_get: {
+        parameters: {
+            query?: {
+                /** @description 姓名/手机号关键词 */
+                keyword?: string | null;
+                store_id?: string | null;
+                bind_status?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_broker_api_v1_admin_merchant_brokers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerAdminCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_broker_api_v1_admin_merchant_brokers__broker_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 经纪人ID */
+                broker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_broker_api_v1_admin_merchant_brokers__broker_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 经纪人ID */
+                broker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerAdminUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_broker_status_api_v1_admin_merchant_brokers__broker_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 经纪人ID */
+                broker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerStatusChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    force_unbind_broker_api_v1_admin_merchant_brokers__broker_id__unbind_post: {
+        parameters: {
+            query: {
+                /** @description 解绑原因 */
+                reason: string;
+            };
+            header?: never;
+            path: {
+                /** @description 经纪人ID */
+                broker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_pending_bindings_api_v1_admin_merchant_bindings_pending_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerBindingResponse"][];
+                };
+            };
+        };
+    };
+    approve_binding_api_v1_admin_merchant_bindings__binding_id__approve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 绑定申请ID */
+                binding_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BindingApprovalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerBindingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     business_circles_api_v1_admin_merchant_business_circles_get: {
         parameters: {
             query?: {
@@ -36511,6 +37413,328 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_broker_qrcode_api_v1_public_merchant_broker_qrcodes__code__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 二维码场景短码 */
+                code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerQRCodeResolveResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_broker_qrcode_api_v1_public_merchant_stores__store_id__broker_qrcode_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerQRCodeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_broker_api_v1_public_merchant_brokers_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerRegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerRegisterResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_broker_api_v1_public_merchant_brokers_me_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+        };
+    };
+    update_my_broker_api_v1_public_merchant_brokers_me_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_broker_store_api_v1_public_merchant_brokers_me_store_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerMyStoreResponse"] | null;
+                };
+            };
+        };
+    };
+    create_store_as_broker_api_v1_public_merchant_brokers_me_store_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreCreateResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bind_broker_store_api_v1_public_merchant_brokers_me_bind_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerBindRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_broker_change_api_v1_public_merchant_brokers_me_change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerBindingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    request_broker_unbind_api_v1_public_merchant_brokers_me_unbind_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerUnbindRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerBindingResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_my_bindings_api_v1_public_merchant_brokers_me_bindings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerBindingResponse"][];
                 };
             };
         };

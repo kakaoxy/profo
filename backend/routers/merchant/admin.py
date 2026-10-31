@@ -6,12 +6,20 @@ from fastapi import APIRouter, Path, Query, Request, status
 
 from dependencies.auth import (
     DbSessionDep,
+    MerchantBrokerPermDep,
     MerchantReadPermDep,
     MerchantVisitPermDep,
     MerchantWritePermDep,
 )
 from dependencies.common import PaginationDep
 from schemas.merchant import (
+    BindingApprovalRequest,
+    BrokerAdminCreate,
+    BrokerAdminUpdate,
+    BrokerBindingResponse,
+    BrokerListResponse,
+    BrokerResponse,
+    BrokerStatusChangeRequest,
     MerchantBusinessCircleResponse,
     MerchantCompanyCreate,
     MerchantCompanyListResponse,
@@ -30,6 +38,7 @@ from schemas.merchant import (
     MerchantStoreUpdate,
     MerchantVisitListResponse,
 )
+from services.merchant.broker import MerchantBrokerService
 from services.merchant.company import MerchantCompanyService
 from services.merchant.serializers import company_response, cooperation_label_map, store_response
 from services.merchant.store import MerchantStoreService
@@ -235,6 +244,139 @@ def list_store_visits(
         store_id,
         page=pagination.page,
         page_size=pagination.page_size,
+    )
+
+
+# -------------------- 经纪人（V04/V07） --------------------
+@router.get("/brokers", summary="经纪人列表")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def list_brokers(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: MerchantBrokerPermDep,
+    pagination: PaginationDep,
+    keyword: Annotated[str | None, Query(description="姓名/手机号关键词")] = None,
+    store_id: str | None = None,
+    bind_status: str | None = None,
+) -> BrokerListResponse:
+    """后台经纪人分页列表."""
+    return MerchantBrokerService(db).list_admin(
+        page=pagination.page,
+        page_size=pagination.page_size,
+        keyword=keyword,
+        store_id=store_id,
+        bind_status=bind_status,
+    )
+
+
+@router.post("/brokers", status_code=status.HTTP_201_CREATED, summary="新建经纪人")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def create_broker(
+    request: Request,
+    body: BrokerAdminCreate,
+    db: DbSessionDep,
+    current_user: MerchantBrokerPermDep,
+) -> BrokerResponse:
+    """后台新建经纪人（手机号加密，哈希唯一）."""
+    return MerchantBrokerService(db).create_admin(
+        body,
+        operator_id=str(current_user.id),
+        request=request,
+    )
+
+
+@router.get("/brokers/{broker_id}", summary="经纪人详情")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def get_broker(
+    request: Request,
+    broker_id: Annotated[str, Path(description="经纪人ID")],
+    db: DbSessionDep,
+    _current_user: MerchantBrokerPermDep,
+) -> BrokerResponse:
+    """后台经纪人档案."""
+    return MerchantBrokerService(db).get_admin(broker_id)
+
+
+@router.put("/brokers/{broker_id}", summary="编辑经纪人")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def update_broker(
+    request: Request,
+    broker_id: Annotated[str, Path(description="经纪人ID")],
+    body: BrokerAdminUpdate,
+    db: DbSessionDep,
+    current_user: MerchantBrokerPermDep,
+) -> BrokerResponse:
+    """编辑姓名/手机号/备注."""
+    return MerchantBrokerService(db).update_admin(
+        broker_id,
+        body,
+        operator_id=str(current_user.id),
+        request=request,
+    )
+
+
+@router.post("/brokers/{broker_id}/status", summary="停用/启用经纪人")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def change_broker_status(
+    request: Request,
+    broker_id: Annotated[str, Path(description="经纪人ID")],
+    body: BrokerStatusChangeRequest,
+    db: DbSessionDep,
+    current_user: MerchantBrokerPermDep,
+) -> BrokerResponse:
+    """停用时自动解绑当前门店."""
+    return MerchantBrokerService(db).change_status_admin(
+        broker_id,
+        body,
+        operator_id=str(current_user.id),
+        request=request,
+    )
+
+
+@router.post("/brokers/{broker_id}/unbind", summary="强制解绑经纪人")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def force_unbind_broker(
+    request: Request,
+    broker_id: Annotated[str, Path(description="经纪人ID")],
+    reason: Annotated[str, Query(min_length=1, description="解绑原因")],
+    db: DbSessionDep,
+    current_user: MerchantBrokerPermDep,
+) -> BrokerResponse:
+    """后台强制解绑（保留历史并留痕）."""
+    return MerchantBrokerService(db).force_unbind(
+        broker_id,
+        reason,
+        operator_id=str(current_user.id),
+        request=request,
+    )
+
+
+@router.get("/bindings/pending", summary="待审核绑定申请")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def list_pending_bindings(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: MerchantBrokerPermDep,
+) -> list[BrokerBindingResponse]:
+    """换绑/解绑待审核列表."""
+    return MerchantBrokerService(db).list_pending_bindings()
+
+
+@router.post("/bindings/{binding_id}/approve", summary="审批绑定申请")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def approve_binding(
+    request: Request,
+    binding_id: Annotated[str, Path(description="绑定申请ID")],
+    body: BindingApprovalRequest,
+    db: DbSessionDep,
+    current_user: MerchantBrokerPermDep,
+) -> BrokerBindingResponse:
+    """通过后原绑定失效，新绑定生效；拒绝保留原绑定."""
+    return MerchantBrokerService(db).approve_binding(
+        binding_id,
+        body,
+        operator_id=str(current_user.id),
+        request=request,
     )
 
 

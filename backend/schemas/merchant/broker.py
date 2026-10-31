@@ -1,0 +1,237 @@
+"""经纪人档案、绑定与门店二维码 Schemas（V04）."""
+
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, Field, field_validator
+
+
+def _normalize_phone(value: str | None) -> str | None:
+    """去除手机号中的空格/连字符."""
+    if value is None:
+        return value
+    return value.replace(" ", "").replace("-", "").strip()
+
+
+class BrokerRegisterRequest(BaseModel):
+    """经纪人认证建档请求（手机号必须已在 users 中绑定）."""
+
+    name: str = Field(min_length=1, max_length=50, description="姓名")
+    qrcode_code: str | None = Field(default=None, max_length=32, description="门店二维码场景短码")
+    referrer: str | None = Field(default=None, max_length=36, description="员工分享 referrer")
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, value: str) -> str:
+        return value.strip()
+
+
+class BrokerUpdateRequest(BaseModel):
+    """经纪人资料修改（手机号变更需走现有用户手机号流程后同步）."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=50)
+    phone: str | None = Field(default=None, max_length=20)
+    remark: str | None = Field(default=None, max_length=500)
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, value: str | None) -> str | None:
+        return value.strip() if value else value
+
+    @field_validator("phone")
+    @classmethod
+    def _strip_phone(cls, value: str | None) -> str | None:
+        return _normalize_phone(value)
+
+
+class BrokerBindRequest(BaseModel):
+    """首次绑定门店请求."""
+
+    store_id: str = Field(min_length=1, max_length=36, description="门店ID")
+
+
+class BrokerChangeRequest(BaseModel):
+    """换绑门店申请（运营审核后生效）."""
+
+    store_id: str = Field(min_length=1, max_length=36, description="新门店ID")
+    reason: str = Field(min_length=1, max_length=500, description="换绑原因")
+
+
+class BrokerUnbindRequest(BaseModel):
+    """解绑门店申请（运营审核后生效）."""
+
+    reason: str = Field(min_length=1, max_length=500, description="解绑原因")
+
+
+class BrokerBindingResponse(BaseModel):
+    """绑定历史记录."""
+
+    id: str
+    broker_id: str | None = None
+    broker_name: str | None = None
+    store_id: str
+    store_name: str
+    status: str
+    applied_at: datetime
+    approved_at: datetime | None
+    unbound_at: datetime | None
+    reason: str | None
+    bind_source: str
+    inviter_employee_id: str | None
+
+
+class BrokerResponse(BaseModel):
+    """经纪人档案响应."""
+
+    id: str
+    user_id: str | None
+    name: str
+    phone_masked: str
+    store_id: str | None
+    store_name: str | None
+    bind_status: str
+    source: str
+    inviter_employee_id: str | None
+    bind_source: str
+    bound_at: datetime | None
+    unbound_at: datetime | None
+    remark: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class BrokerMyStoreResponse(BaseModel):
+    """经纪人“我的门店”只读视图."""
+
+    id: str
+    store_name: str
+    company_name: str
+    address: str
+    district: str
+    business_circle: str
+    cooperation_status: str
+    cooperation_status_label: str
+    review_status: str
+    photos: list[dict] = Field(default_factory=list)
+    bind_status: str
+    bound_at: datetime | None
+
+
+class BrokerRegisterResult(BaseModel):
+    """经纪人认证结果."""
+
+    broker: BrokerResponse
+    my_store: BrokerMyStoreResponse | None = None
+    auto_bound: bool = False
+    qr_invalid_reason: str | None = None
+
+
+class BrokerQRCodeResponse(BaseModel):
+    """门店二维码生成响应."""
+
+    code: str
+    image_base64: str
+    expires_at: datetime
+    page: str
+
+
+class BrokerQRCodeResolveResponse(BaseModel):
+    """门店二维码解析结果（扫码注册前展示）."""
+
+    valid: bool
+    store_id: str | None
+    store_name: str | None
+    inviter_employee_id: str | None
+    expires_at: datetime | None
+    reason: str | None
+
+
+class BrokerListItem(BaseModel):
+    """后台经纪人列表项."""
+
+    id: str
+    name: str
+    phone_masked: str
+    store_id: str | None
+    store_name: str | None
+    bind_status: str
+    source: str
+    inviter_employee_id: str | None
+    recommendation_count: int
+    updated_at: datetime
+
+
+class BrokerListResponse(BaseModel):
+    """后台经纪人分页列表."""
+
+    items: list[BrokerListItem]
+    total: int
+    page: int
+    page_size: int
+
+
+class BrokerAdminCreate(BaseModel):
+    """后台新建经纪人."""
+
+    name: str = Field(min_length=1, max_length=50)
+    phone: str = Field(min_length=1, max_length=20)
+    store_id: str | None = Field(default=None, max_length=36)
+    remark: str | None = Field(default=None, max_length=500)
+
+    @field_validator("phone")
+    @classmethod
+    def _strip_phone(cls, value: str) -> str:
+        return _normalize_phone(value) or value
+
+
+class BrokerAdminUpdate(BaseModel):
+    """后台编辑经纪人."""
+
+    name: str | None = Field(default=None, min_length=1, max_length=50)
+    phone: str | None = Field(default=None, max_length=20)
+    remark: str | None = Field(default=None, max_length=500)
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, value: str | None) -> str | None:
+        return value.strip() if value else value
+
+    @field_validator("phone")
+    @classmethod
+    def _strip_phone(cls, value: str | None) -> str | None:
+        return _normalize_phone(value)
+
+
+class BrokerStatusChangeRequest(BaseModel):
+    """后台停用/启用经纪人."""
+
+    target_status: Literal["disabled", "unbound"]
+    reason: str | None = Field(default=None, max_length=500)
+
+
+class BindingApprovalRequest(BaseModel):
+    """换绑/解绑审批."""
+
+    approve: bool
+    remark: str | None = Field(default=None, max_length=500)
+
+
+__all__ = [
+    "BindingApprovalRequest",
+    "BrokerAdminCreate",
+    "BrokerAdminUpdate",
+    "BrokerBindRequest",
+    "BrokerBindingResponse",
+    "BrokerChangeRequest",
+    "BrokerListItem",
+    "BrokerListResponse",
+    "BrokerMyStoreResponse",
+    "BrokerQRCodeResolveResponse",
+    "BrokerQRCodeResponse",
+    "BrokerRegisterRequest",
+    "BrokerRegisterResult",
+    "BrokerResponse",
+    "BrokerStatusChangeRequest",
+    "BrokerUnbindRequest",
+    "BrokerUpdateRequest",
+]

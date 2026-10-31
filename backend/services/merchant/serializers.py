@@ -1,12 +1,17 @@
 """商户域响应序列化（ORM → Pydantic，统一脱敏与字典展示名）."""
 
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from models.merchant import MerchantCompany, MerchantStore, MerchantVisit
+from models.merchant import MerchantBroker, MerchantBrokerBinding, MerchantCompany, MerchantStore, MerchantVisit
 from models.system import BizDictItem
 from schemas.merchant import (
+    BrokerBindingResponse,
+    BrokerListItem,
+    BrokerMyStoreResponse,
+    BrokerResponse,
     MerchantCompanyResponse,
     MerchantStoreListItem,
     MerchantStoreResponse,
@@ -156,7 +161,95 @@ def visit_response(
     )
 
 
+def broker_response(broker: MerchantBroker, *, store_name: str | None = None) -> BrokerResponse:
+    """经纪人档案响应（手机号脱敏）."""
+    return BrokerResponse(
+        id=str(broker.id),
+        user_id=str(broker.user_id) if broker.user_id else None,
+        name=broker.name,
+        phone_masked=mask_phone(broker.phone) or "",
+        store_id=str(broker.store_id) if broker.store_id else None,
+        store_name=store_name,
+        bind_status=broker.bind_status,
+        source=broker.source,
+        inviter_employee_id=str(broker.inviter_employee_id) if broker.inviter_employee_id else None,
+        bind_source=broker.bind_source,
+        bound_at=broker.bound_at,
+        unbound_at=broker.unbound_at,
+        remark=broker.remark,
+        created_at=broker.created_at,
+        updated_at=broker.updated_at,
+    )
+
+
+def broker_binding_response(row: MerchantBrokerBinding, *, broker_name: str | None = None) -> BrokerBindingResponse:
+    """绑定历史响应."""
+    return BrokerBindingResponse(
+        id=str(row.id),
+        broker_id=str(row.broker_id),
+        broker_name=broker_name,
+        store_id=str(row.store_id),
+        store_name=row.store_name_snapshot,
+        status=row.status,
+        applied_at=row.applied_at,
+        approved_at=row.approved_at,
+        unbound_at=row.unbound_at,
+        reason=row.reason,
+        bind_source=row.bind_source,
+        inviter_employee_id=str(row.inviter_employee_id) if row.inviter_employee_id else None,
+    )
+
+
+def broker_my_store(
+    store: MerchantStore,
+    labels: dict[str, str],
+    *,
+    bind_status: str,
+    bound_at: datetime | None,
+) -> BrokerMyStoreResponse:
+    """经纪人“我的门店”响应（不暴露内部联系人/电话/拜访信息）."""
+    return BrokerMyStoreResponse(
+        id=str(store.id),
+        store_name=store.store_name,
+        company_name=store.company_name,
+        address=store.address,
+        district=store.district,
+        business_circle=store.business_circle,
+        cooperation_status=store.cooperation_status,
+        cooperation_status_label=labels.get(store.cooperation_status, store.cooperation_status),
+        review_status=store.review_status,
+        photos=store.photos or [],
+        bind_status=bind_status,
+        bound_at=bound_at,
+    )
+
+
+def broker_list_item(
+    broker: MerchantBroker,
+    *,
+    store_name: str | None,
+    recommendation_count: int,
+) -> BrokerListItem:
+    """后台经纪人列表项."""
+    return BrokerListItem(
+        id=str(broker.id),
+        name=broker.name,
+        phone_masked=mask_phone(broker.phone) or "",
+        store_id=str(broker.store_id) if broker.store_id else None,
+        store_name=store_name,
+        bind_status=broker.bind_status,
+        source=broker.source,
+        inviter_employee_id=str(broker.inviter_employee_id) if broker.inviter_employee_id else None,
+        recommendation_count=recommendation_count,
+        updated_at=broker.updated_at,
+    )
+
+
 __all__ = [
+    "broker_binding_response",
+    "broker_list_item",
+    "broker_my_store",
+    "broker_response",
     "company_response",
     "cooperation_label_map",
     "photo_items",

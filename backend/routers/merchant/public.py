@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request, status
 
-from dependencies.auth import DbSessionDep
+from dependencies.auth import CurrentCustomerUserDep, DbSessionDep
 from dependencies.common import PaginationDep
 from routers.merchant.deps import (
     MerchantCReadDep,
@@ -13,6 +13,17 @@ from routers.merchant.deps import (
     MerchantCWriteVisitDep,
 )
 from schemas.merchant import (
+    BrokerBindingResponse,
+    BrokerBindRequest,
+    BrokerChangeRequest,
+    BrokerMyStoreResponse,
+    BrokerQRCodeResolveResponse,
+    BrokerQRCodeResponse,
+    BrokerRegisterRequest,
+    BrokerRegisterResult,
+    BrokerResponse,
+    BrokerUnbindRequest,
+    BrokerUpdateRequest,
     MerchantBusinessCircleResponse,
     MerchantCompanyCreate,
     MerchantCompanyListResponse,
@@ -32,6 +43,8 @@ from schemas.merchant import (
     MerchantVisitListResponse,
     MerchantVisitResponse,
 )
+from services.merchant.broker import MerchantBrokerService
+from services.merchant.broker_qr import MerchantBrokerQRCodeService
 from services.merchant.company import MerchantCompanyService
 from services.merchant.scope import ensure_scope_role
 from services.merchant.serializers import company_response, cooperation_label_map, store_response
@@ -215,6 +228,146 @@ def business_circles(
 ) -> MerchantBusinessCircleResponse:
     """商圈候选."""
     return MerchantBusinessCircleResponse(items=MerchantStoreService(db).business_circles(district=district))
+
+
+# -------------------- 经纪人（V04） --------------------
+@router.get("/broker-qrcodes/{code}", summary="解析门店邀请二维码")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def resolve_broker_qrcode(
+    request: Request,
+    code: Annotated[str, Path(description="二维码场景短码")],
+    db: DbSessionDep,
+) -> BrokerQRCodeResolveResponse:
+    """扫码后解析门店与邀请员工（无需登录）."""
+    return MerchantBrokerQRCodeService(db).resolve(code)
+
+
+@router.post("/stores/{store_id}/broker-qrcode", summary="生成门店邀请二维码")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def generate_broker_qrcode(
+    request: Request,
+    store_id: Annotated[str, Path(description="门店ID")],
+    db: DbSessionDep,
+    current_user: MerchantCWriteDep,
+) -> BrokerQRCodeResponse:
+    """门店归属员工生成二维码，经纪人扫码注册后自动绑定."""
+    return MerchantBrokerQRCodeService(db).generate(current_user, store_id)
+
+
+@router.post("/brokers/register", summary="经纪人认证建档")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def register_broker(
+    request: Request,
+    body: BrokerRegisterRequest,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+) -> BrokerRegisterResult:
+    """微信登录 + 已绑定手机号后填写姓名；支持二维码/员工分享归因."""
+    return MerchantBrokerService(db).register(current_user, body, request=request)
+
+
+@router.get("/brokers/me", summary="我的经纪人档案")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def get_my_broker(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+) -> BrokerResponse:
+    """当前登录用户的经纪人档案."""
+    profile = MerchantBrokerService(db).my_profile(current_user)
+    if profile is None:
+        from services.system.exceptions import ResourceNotFoundError
+
+        msg = "尚未完成经纪人认证"
+        raise ResourceNotFoundError(msg)
+    return profile
+
+
+@router.put("/brokers/me", summary="修改经纪人资料")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def update_my_broker(
+    request: Request,
+    body: BrokerUpdateRequest,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+) -> BrokerResponse:
+    """修改姓名/手机号/备注（手机号需先在用户侧验证）."""
+    return MerchantBrokerService(db).update_me(current_user, body, request=request)
+
+
+@router.get("/brokers/me/store", summary="我的门店")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def get_my_broker_store(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+) -> BrokerMyStoreResponse | None:
+    """当前有效绑定门店（只读，不暴露内部跟进信息）."""
+    return MerchantBrokerService(db).my_store(current_user)
+
+
+@router.post("/brokers/me/bind", summary="绑定门店")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def bind_broker_store(
+    request: Request,
+    body: BrokerBindRequest,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+) -> BrokerResponse:
+    """首次绑定免审直接生效；已有绑定时拒绝."""
+    return MerchantBrokerService(db).bind_initial(current_user, body, request=request)
+
+
+@router.post("/brokers/me/change", summary="换绑门店申请")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def request_broker_change(
+    request: Request,
+    body: BrokerChangeRequest,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+) -> BrokerBindingResponse:
+    """换绑需运营审核，审核前原绑定持续有效."""
+    return MerchantBrokerService(db).request_change(current_user, body, request=request)
+
+
+@router.post("/brokers/me/unbind", summary="解绑门店申请")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def request_broker_unbind(
+    request: Request,
+    body: BrokerUnbindRequest,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+) -> BrokerBindingResponse:
+    """解绑需运营审核，审核前绑定持续有效."""
+    return MerchantBrokerService(db).request_unbind(current_user, body, request=request)
+
+
+@router.get("/brokers/me/bindings", summary="绑定历史")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def list_my_bindings(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+) -> list[BrokerBindingResponse]:
+    """本人历次绑定门店记录."""
+    return MerchantBrokerService(db).history(current_user)
+
+
+@router.post("/brokers/me/store", status_code=status.HTTP_201_CREATED, summary="经纪人注册创建门店")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def create_store_as_broker(
+    request: Request,
+    body: MerchantStoreCreate,
+    db: DbSessionDep,
+    current_user: CurrentCustomerUserDep,
+) -> MerchantStoreCreateResult:
+    """经纪人创建待审核门店，并自动绑定创建人."""
+    store, duplicates = MerchantBrokerService(db).create_store_for_broker(current_user, body, request=request)
+    return MerchantStoreCreateResult(
+        store=store_response(store, cooperation_label_map(db)),
+        first_visit=None,
+        duplicate_candidates=duplicates,
+    )
 
 
 # -------------------- 拜访 --------------------

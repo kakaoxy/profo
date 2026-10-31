@@ -331,3 +331,44 @@ class MerchantStoreCreateResult(BaseModel):
 
 
 MerchantStoreCreate.model_rebuild()
+
+# 经纪人相关 Schema（V04）
+from .broker import (  # noqa: E402
+    BindingApprovalRequest,
+    BrokerAdminCreate,
+    BrokerAdminUpdate,
+    BrokerBindingResponse,
+    BrokerBindRequest,
+    BrokerChangeRequest,
+    BrokerListItem,
+    BrokerListResponse,
+    BrokerMyStoreResponse,
+    BrokerQRCodeResolveResponse,
+    BrokerQRCodeResponse,
+    BrokerRegisterRequest,
+    BrokerRegisterResult,
+    BrokerResponse,
+    BrokerStatusChangeRequest,
+    BrokerUnbindRequest,
+    BrokerUpdateRequest,
+)
+
+__all__ = [
+    "BindingApprovalRequest",
+    "BrokerAdminCreate",
+    "BrokerAdminUpdate",
+    "BrokerBindRequest",
+    "BrokerBindingResponse",
+    "BrokerChangeRequest",
+    "BrokerListItem",
+    "BrokerListResponse",
+    "BrokerMyStoreResponse",
+    "BrokerQRCodeResolveResponse",
+    "BrokerQRCodeResponse",
+    "BrokerRegisterRequest",
+    "BrokerRegisterResult",
+    "BrokerResponse",
+    "BrokerStatusChangeRequest",
+    "BrokerUnbindRequest",
+    "BrokerUpdateRequest",
+]

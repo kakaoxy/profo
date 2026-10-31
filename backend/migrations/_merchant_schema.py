@@ -106,6 +106,71 @@ def create_merchant_visit_tables(engine: Engine) -> None:
     _ensure_indexes(engine, _VISIT_INDEXES)
 
 
+def create_merchant_broker_tables(engine: Engine) -> None:
+    """v107：幂等创建经纪人/绑定历史/门店邀请二维码三表与索引."""
+    from models import Base, MerchantBroker, MerchantBrokerBinding, MerchantStoreQRCode
+
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[
+            MerchantBroker.__table__,
+            MerchantBrokerBinding.__table__,
+            MerchantStoreQRCode.__table__,
+        ],
+        checkfirst=True,
+    )
+    _ensure_indexes(
+        engine,
+        (
+            (
+                "uq_merchant_brokers_phone_hash",
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_merchant_brokers_phone_hash ON merchant_brokers (phone_hash)",
+            ),
+            (
+                "idx_merchant_brokers_user",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_brokers_user ON merchant_brokers (user_id)",
+            ),
+            (
+                "idx_merchant_brokers_store",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_brokers_store ON merchant_brokers (store_id)",
+            ),
+            (
+                "idx_merchant_brokers_inviter",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_brokers_inviter ON merchant_brokers (inviter_employee_id)",
+            ),
+            (
+                "idx_merchant_brokers_status",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_brokers_status ON merchant_brokers (bind_status)",
+            ),
+            (
+                "idx_merchant_bindings_broker_time",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_bindings_broker_time "
+                "ON merchant_broker_bindings (broker_id, applied_at)",
+            ),
+            (
+                "idx_merchant_bindings_store",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_bindings_store ON merchant_broker_bindings (store_id)",
+            ),
+            (
+                "idx_merchant_bindings_status",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_bindings_status ON merchant_broker_bindings (status)",
+            ),
+            (
+                "uq_merchant_store_qrcodes_code",
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_merchant_store_qrcodes_code ON merchant_store_qrcodes (code)",
+            ),
+            (
+                "idx_merchant_store_qrcodes_store",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_store_qrcodes_store ON merchant_store_qrcodes (store_id)",
+            ),
+            (
+                "idx_merchant_store_qrcodes_expires",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_store_qrcodes_expires ON merchant_store_qrcodes (expires_at)",
+            ),
+        ),
+    )
+
+
 def add_merchant_store_phone_hash_column(engine: Engine) -> None:
     """v106：为存量 merchant_stores 补 contact_phone_hash 列与索引（幂等）."""
     if not _column_exists(engine, "merchant_stores", "contact_phone_hash"):
