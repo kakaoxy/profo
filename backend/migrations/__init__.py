@@ -206,6 +206,11 @@ from migrations._marketing_notify import (
 
 # 独立迁移模块
 from migrations._merchant import seed_merchant_platform
+from migrations._merchant_schema import (
+    add_merchant_store_phone_hash_column,
+    create_merchant_core_tables,
+    create_merchant_visit_tables,
+)
 from migrations._notification import (
     create_notification_tables,
     create_user_preferences_table,
@@ -507,6 +512,12 @@ def _run_all_migrations(engine: Engine) -> None:
         add_lead_followup_conclusion(engine)
         # v103：商户管理 V01——6 个权限点 + 角色默认授权 + 4 个业务字典组种子项
         seed_merchant_platform(engine)
+        # v104：商户管理 V02——公司/门店/门店状态日志三表
+        create_merchant_core_tables(engine)
+        # v105：商户管理 V03——拜访记录表
+        create_merchant_visit_tables(engine)
+        # v106：门店补 contact_phone_hash 列与索引（电话查重）
+        add_merchant_store_phone_hash_column(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

@@ -76,6 +76,14 @@ from .marketing import (
     SendStatus,
 )
 
+# 商户管理模块（V02–V09）
+from .merchant import (
+    MerchantCompany,
+    MerchantStore,
+    MerchantStoreStatusLog,
+    MerchantVisit,
+)
+
 # 系统模块
 # 通知中心模块（迭代二：统一消息中心）
 from .notification import (
@@ -231,6 +239,11 @@ __all__ = [
     "LeadStatus",
     "MarketingProjectStatus",
     "MediaType",
+    # 商户管理
+    "MerchantCompany",
+    "MerchantStore",
+    "MerchantStoreStatusLog",
+    "MerchantVisit",
     "MigrationCompensation",
     "Notification",
     "NotificationDeliveryLog",

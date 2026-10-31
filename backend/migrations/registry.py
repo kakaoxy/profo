@@ -85,6 +85,11 @@ from migrations._marketing_notify import (
     widen_subscription_openid_columns,
 )
 from migrations._merchant import seed_merchant_platform
+from migrations._merchant_schema import (
+    add_merchant_store_phone_hash_column,
+    create_merchant_core_tables,
+    create_merchant_visit_tables,
+)
 from migrations._notification import (
     create_notification_tables,
     create_user_preferences_table,
@@ -1280,6 +1285,36 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=False,
         description="商户管理 V01：6 个权限点 + 角色默认授权 + 4 个业务字典组种子项",
     ),
+    Migration(
+        version=104,
+        name="create_merchant_core_tables",
+        fn=create_merchant_core_tables,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="商户管理 V02：公司、门店、门店合作状态日志三表与索引",
+    ),
+    Migration(
+        version=105,
+        name="create_merchant_visit_tables",
+        fn=create_merchant_visit_tables,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="商户管理 V03：拜访记录表与索引",
+    ),
+    Migration(
+        version=106,
+        name="add_merchant_store_phone_hash_column",
+        fn=add_merchant_store_phone_hash_column,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="门店补 contact_phone_hash 列与索引（电话查重精确匹配）",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1292,7 +1327,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 103）。"""
+"""登记总数（当前 106）。"""
 
-NEXT_VERSION = 104
+NEXT_VERSION = 107
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

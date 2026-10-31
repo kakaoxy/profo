@@ -492,6 +492,14 @@ L4MarketingWritePermDep = Annotated[User, Depends(require_permission("l4_marketi
 # recruit 模块（区域伙伴招募计划）
 RecruitReadPermDep = Annotated[User, Depends(require_permission("recruit:read"))]
 RecruitWritePermDep = Annotated[User, Depends(require_permission("recruit:write"))]
+
+# 商户管理模块（V01）
+MerchantReadPermDep = Annotated[User, Depends(require_permission("merchant:read"))]
+MerchantWritePermDep = Annotated[User, Depends(require_permission("merchant:write"))]
+MerchantVisitPermDep = Annotated[User, Depends(require_permission("merchant:visit"))]
+MerchantBrokerPermDep = Annotated[User, Depends(require_permission("merchant:broker"))]
+MerchantAgreementPermDep = Annotated[User, Depends(require_permission("merchant:agreement"))]
+MerchantMapPermDep = Annotated[User, Depends(require_permission("merchant:map"))]
 # operation_log 模块
 OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]
 # api_key 模块（API Key 管理端点；使用侧仍受 INTERNAL_ROLE_CODES 机器接口角色限制）
@@ -778,6 +786,12 @@ __all__ = [
     "LedgerReadPermDep",
     "LedgerSettlePermDep",
     "LedgerWritePermDep",
+    "MerchantAgreementPermDep",
+    "MerchantBrokerPermDep",
+    "MerchantMapPermDep",
+    "MerchantReadPermDep",
+    "MerchantVisitPermDep",
+    "MerchantWritePermDep",
     "OperationLogReadPermDep",
     "PermissionManagePermDep",
     "PermissionReadPermDep",

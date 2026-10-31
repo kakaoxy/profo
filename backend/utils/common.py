@@ -180,6 +180,11 @@ class RateLimits:
     DICT_WRITE = "200/hour"
     DICT_ADMIN_READ = "120/minute"
 
+    # ==================== 商户管理模块 ====================
+    MERCHANT_READ = "120/minute"
+    MERCHANT_WRITE = "600/hour"
+    MERCHANT_VISIT = "300/hour"
+
     # ==================== 营销管理模块 ====================
     MARKETING_CREATE = "1000/hour"
     MARKETING_UPDATE = "1000/hour"
