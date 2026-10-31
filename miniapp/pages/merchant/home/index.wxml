@@ -1,0 +1,71 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero__title">商户拓展</view>
+    <view class="hero__sub">门店建档 · 拜访留痕 · 合作跟进</view>
+  </view>
+
+  <view class="search-row">
+    <input
+      class="search-input"
+      placeholder="搜索门店名称 / 地址"
+      value="{{keyword}}"
+      confirm-type="search"
+      bindinput="onKeywordInput"
+      bindconfirm="onSearch"
+    />
+    <button class="search-btn" bindtap="onSearch">搜索</button>
+  </view>
+
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">请先登录</view>
+    <view class="state__text">商户拓展仅对已绑定后台账号的员工开放</view>
+    <view class="state__btn" bindtap="onGoLogin">去登录</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">网络异常，请重试</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'empty'}}">
+    <view class="state__title">还没有门店</view>
+    <view class="state__text">现场拜访新门店后，可直接建档并自动生成首访记录</view>
+    <view class="state__btn" bindtap="onCreate">新增门店</view>
+  </view>
+
+  <block wx:elif="{{state === 'items'}}">
+    <view class="list-head">
+      <text class="list-count">共 {{total}} 家</text>
+      <text class="list-refresh" bindtap="onSearch">刷新</text>
+    </view>
+    <view
+      class="store-card"
+      wx:for="{{stores}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onStoreTap"
+    >
+      <view class="store-card__top">
+        <view class="store-card__name">{{item.store_name}}</view>
+        <view class="chip {{item.review_status === 'pending' ? 'chip-apricot' : 'chip-fog'}}">
+          {{item.review_status === 'pending' ? '待审核' : item.cooperation_status_label}}
+        </view>
+      </view>
+      <view class="store-card__company">{{item.company_name}}</view>
+      <view class="store-card__address">{{item.district}} · {{item.business_circle}} · {{item.address}}</view>
+      <view class="store-card__meta">
+        <text>最近拜访：{{item.lastVisitText}}</text>
+        <text class="store-card__arrow">›</text>
+      </view>
+    </view>
+  </block>
+
+  <view class="footer">
+    <button class="btn-primary footer__btn" bindtap="onCreate">新增门店</button>
+  </view>
+</view>

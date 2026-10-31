@@ -56,6 +56,10 @@
       "pages": ["index/index"]
     },
     {
+      "root": "pages/merchant",
+      "pages": ["home/index", "store/create/index", "store/detail/index", "visit/create/index"]
+    },
+    {
       "root": "pages/keys",
       "pages": [
         "list/index",
@@ -76,6 +80,12 @@
       "packages": ["pages/ledger", "pages/viewing", "pages/renovation", "pages/analysis", "pages/community-analysis", "pages/keys"]
     }
   },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于门店拜访定位与门店地图选点"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation", "chooseLocation"],
   "window": {
     "navigationBarTitleText": "美房宝",
     "navigationBarBackgroundColor": "#ffffff",

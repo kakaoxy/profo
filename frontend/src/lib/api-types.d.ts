@@ -4031,6 +4031,8 @@ export interface paths {
         /**
          * 字典组概览
          * @description 列出本期支持的字典组（含条目总数与启用数）.
+         *
+         *     dict:manage 返回全量；仅商户权限时只返回 4 个商户域字典组。
          */
         get: operations["list_dict_groups_api_v1_admin_dicts_get"];
         put?: never;
@@ -4099,7 +4101,11 @@ export interface paths {
          */
         put: operations["update_dict_item_api_v1_admin_dicts__dict_code__items__item_id__put"];
         post?: never;
-        delete?: never;
+        /**
+         * 删除字典条目（仅未被引用）
+         * @description 删除商户域字典项；已被业务数据引用时拒绝，提示改为停用.
+         */
+        delete: operations["delete_dict_item_api_v1_admin_dicts__dict_code__items__item_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -6708,6 +6714,450 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 公司搜索
+         * @description 按名称搜索公司；空关键词返回空列表（REQ-M01A-002）.
+         */
+        get: operations["search_companies_api_v1_admin_merchant_companies_get"];
+        put?: never;
+        /**
+         * 新建公司
+         * @description 后台新建公司（同名提示不阻断，R-V02-02）.
+         */
+        post: operations["create_company_api_v1_admin_merchant_companies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/companies/{company_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 编辑公司
+         * @description 编辑公司；停用后不可再被新建门店选择.
+         */
+        put: operations["update_company_api_v1_admin_merchant_companies__company_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店列表
+         * @description 门店分页列表（按数据范围过滤）.
+         */
+        get: operations["list_stores_api_v1_admin_merchant_stores_get"];
+        put?: never;
+        /**
+         * 后台新建门店
+         * @description 后台代建门店（source=backoffice，不创建首访）.
+         */
+        post: operations["create_store_api_v1_admin_merchant_stores_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/check-duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 门店查重
+         * @description 按名称、地址、500 米、电话召回疑似重复门店（只提示不阻断）.
+         */
+        post: operations["check_store_duplicates_api_v1_admin_merchant_stores_check_duplicates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/{store_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店详情
+         * @description 门店详情（越权返回 403）.
+         */
+        get: operations["get_store_api_v1_admin_merchant_stores__store_id__get"];
+        /**
+         * 编辑门店
+         * @description 编辑门店；地址/坐标变化必须选择纠错或搬迁.
+         */
+        put: operations["update_store_api_v1_admin_merchant_stores__store_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/{store_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 变更门店合作状态
+         * @description 变更合作状态（已合作需已签协议）.
+         */
+        post: operations["change_store_status_api_v1_admin_merchant_stores__store_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/{store_id}/status-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店合作状态时间线
+         * @description 门店合作状态变更历史（倒序）.
+         */
+        get: operations["list_store_status_logs_api_v1_admin_merchant_stores__store_id__status_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/{store_id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 门店照片补录
+         * @description 补录/替换门店照片（全部选拍）.
+         */
+        put: operations["update_store_photos_api_v1_admin_merchant_stores__store_id__photos_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/{store_id}/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店拜访时间线
+         * @description 门店拜访时间线（倒序）.
+         */
+        get: operations["list_store_visits_api_v1_admin_merchant_stores__store_id__visits_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/business-circles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 商圈建议
+         * @description 商圈候选（小区商圈优先，允许手工新增）.
+         */
+        get: operations["business_circles_api_v1_admin_merchant_business_circles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 公司搜索
+         * @description 按名称搜索公司.
+         */
+        get: operations["search_companies_api_v1_public_merchant_companies_get"];
+        put?: never;
+        /**
+         * 新建公司
+         * @description 员工现场建档时新建公司.
+         */
+        post: operations["create_company_api_v1_public_merchant_companies_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/stores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店搜索
+         * @description 员工可搜索本人拓展/本人拜访的门店（D9/Q48）.
+         */
+        get: operations["search_stores_api_v1_public_merchant_stores_get"];
+        put?: never;
+        /**
+         * 员工新建门店并登记首访
+         * @description 员工现场新建门店（必须与首访同事务，S01）.
+         */
+        post: operations["create_store_api_v1_public_merchant_stores_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/stores/check-duplicates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 门店查重
+         * @description 门店查重提示（只提示不阻断）.
+         */
+        post: operations["check_store_duplicates_api_v1_public_merchant_stores_check_duplicates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/stores/{store_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店详情
+         * @description 门店详情.
+         */
+        get: operations["get_store_api_v1_public_merchant_stores__store_id__get"];
+        /**
+         * 编辑门店
+         * @description 编辑门店（地址变化需选择纠错/搬迁）.
+         */
+        put: operations["update_store_api_v1_public_merchant_stores__store_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/stores/{store_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 变更合作状态
+         * @description 员工仅可改为洽谈中；运营可改全部（Q19）.
+         */
+        post: operations["change_store_status_api_v1_public_merchant_stores__store_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/stores/{store_id}/status-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 合作状态时间线
+         * @description 合作状态变更历史.
+         */
+        get: operations["list_store_status_logs_api_v1_public_merchant_stores__store_id__status_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/stores/{store_id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 门店照片补录
+         * @description 门店照片补录/替换.
+         */
+        put: operations["update_store_photos_api_v1_public_merchant_stores__store_id__photos_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/business-circles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 商圈建议
+         * @description 商圈候选.
+         */
+        get: operations["business_circles_api_v1_public_merchant_business_circles_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 登记拜访
+         * @description 已有门店拜访登记/补录（Q05/Q08）.
+         */
+        post: operations["create_visit_api_v1_public_merchant_visits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/visits/{visit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 拜访详情
+         * @description 拜访详情（校验门店数据范围）.
+         */
+        get: operations["get_visit_api_v1_public_merchant_visits__visit_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/stores/{store_id}/visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店拜访时间线
+         * @description 门店拜访时间线（倒序）.
+         */
+        get: operations["list_store_visits_api_v1_public_merchant_stores__store_id__visits_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/workbench/config": {
         parameters: {
             query?: never;
@@ -7957,6 +8407,22 @@ export interface components {
              * @description 备注
              */
             remark?: string | null;
+        };
+        /**
+         * BizDictItemDeleteResponse
+         * @description 删除字典条目响应（仅商户域字典组支持）.
+         */
+        BizDictItemDeleteResponse: {
+            /**
+             * Deleted
+             * @description 是否删除成功
+             */
+            deleted: boolean;
+            /**
+             * Reference Count
+             * @description 业务引用数（>0 时拒绝删除）
+             */
+            reference_count: number;
         };
         /**
          * BizDictItemResponse
@@ -13966,6 +14432,635 @@ export interface components {
              * @description 排序值
              */
             sort_order: number;
+        };
+        /**
+         * MerchantBusinessCircleResponse
+         * @description 商圈建议响应.
+         */
+        MerchantBusinessCircleResponse: {
+            /** Items */
+            items: string[];
+        };
+        /**
+         * MerchantCompanyCreate
+         * @description 创建公司请求.
+         */
+        MerchantCompanyCreate: {
+            /**
+             * Company Name
+             * @description 公司名称
+             */
+            company_name: string;
+            /**
+             * Contact Name
+             * @description 联系人
+             */
+            contact_name?: string | null;
+            /**
+             * Contact Phone
+             * @description 联系电话
+             */
+            contact_phone?: string | null;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+        };
+        /**
+         * MerchantCompanyListResponse
+         * @description 公司搜索响应.
+         */
+        MerchantCompanyListResponse: {
+            /** Items */
+            items: components["schemas"]["MerchantCompanyResponse"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * MerchantCompanyResponse
+         * @description 公司响应（列表/详情）.
+         */
+        MerchantCompanyResponse: {
+            /** Id */
+            id: string;
+            /** Company Name */
+            company_name: string;
+            /** Status */
+            status: string;
+            /** Contact Name */
+            contact_name: string | null;
+            /** Contact Phone Masked */
+            contact_phone_masked: string | null;
+            /** Remark */
+            remark: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * MerchantCompanyUpdate
+         * @description 更新公司请求（全部可选）.
+         */
+        MerchantCompanyUpdate: {
+            /** Company Name */
+            company_name?: string | null;
+            /** Status */
+            status?: ("normal" | "disabled") | null;
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Contact Phone */
+            contact_phone?: string | null;
+            /** Remark */
+            remark?: string | null;
+        };
+        /**
+         * MerchantDuplicateCandidate
+         * @description 查重候选门店.
+         */
+        MerchantDuplicateCandidate: {
+            /** Id */
+            id: string;
+            /** Store Name */
+            store_name: string;
+            /** Address */
+            address: string;
+            /** Contact Name */
+            contact_name: string;
+            /** Cooperation Status */
+            cooperation_status: string;
+            /** Cooperation Status Label */
+            cooperation_status_label: string;
+            /** Distance M */
+            distance_m: number | null;
+            /** Matched By */
+            matched_by: string[];
+        };
+        /**
+         * MerchantDuplicateCheckRequest
+         * @description 门店查重请求.
+         */
+        MerchantDuplicateCheckRequest: {
+            /** Store Name */
+            store_name: string;
+            /** Address */
+            address: string;
+            /** Lng */
+            lng?: number | null;
+            /** Lat */
+            lat?: number | null;
+            /** Contact Phone */
+            contact_phone?: string | null;
+        };
+        /**
+         * MerchantDuplicateCheckResponse
+         * @description 门店查重响应（只提示不阻断）.
+         */
+        MerchantDuplicateCheckResponse: {
+            /** Candidates */
+            candidates: components["schemas"]["MerchantDuplicateCandidate"][];
+            /** Completed */
+            completed: boolean;
+        };
+        /**
+         * MerchantStoreCreate
+         * @description 创建门店请求（员工小程序 / 后台 / 经纪人复用）.
+         */
+        MerchantStoreCreate: {
+            /**
+             * Company Id
+             * @description 所属公司ID
+             */
+            company_id: string;
+            /**
+             * Store Name
+             * @description 门店名称
+             */
+            store_name: string;
+            /**
+             * Province
+             * @description 省
+             */
+            province: string;
+            /**
+             * City
+             * @description 市
+             */
+            city: string;
+            /**
+             * District
+             * @description 区县
+             */
+            district: string;
+            /**
+             * Business Circle
+             * @description 商圈
+             */
+            business_circle: string;
+            /**
+             * Address
+             * @description 详细地址
+             */
+            address: string;
+            /**
+             * Lng
+             * @description 经度 GCJ-02
+             */
+            lng: number;
+            /**
+             * Lat
+             * @description 纬度 GCJ-02
+             */
+            lat: number;
+            /**
+             * Contact Name
+             * @description 联系人
+             */
+            contact_name: string;
+            /**
+             * Contact Phone
+             * @description 联系电话
+             */
+            contact_phone: string;
+            /**
+             * Cooperation Status
+             * @description 新建门店合作状态仅允许未合作/洽谈中
+             * @default not_cooperated
+             * @enum {string}
+             */
+            cooperation_status: "not_cooperated" | "negotiating";
+            /**
+             * Owner Employee Id
+             * @description 负责人（后台新建时可指定）
+             */
+            owner_employee_id?: string | null;
+            /**
+             * Photos
+             * @description 门店照片
+             */
+            photos?: components["schemas"]["StorePhotoItem"][];
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+            /**
+             * Force Create Reason
+             * @description 查重命中时的强制新建理由
+             */
+            force_create_reason?: string | null;
+            /** @description 员工现场建档时的首访信息（与门店同事务） */
+            first_visit?: components["schemas"]["MerchantVisitCreate"] | null;
+        };
+        /**
+         * MerchantStoreCreateResult
+         * @description 门店创建结果（含首访与查重提示）.
+         */
+        MerchantStoreCreateResult: {
+            store: components["schemas"]["MerchantStoreResponse"];
+            first_visit?: components["schemas"]["MerchantVisitResponse"] | null;
+            /** Duplicate Candidates */
+            duplicate_candidates?: components["schemas"]["MerchantDuplicateCandidate"][];
+        };
+        /**
+         * MerchantStoreListItem
+         * @description 门店列表项（手机号脱敏）.
+         */
+        MerchantStoreListItem: {
+            /** Id */
+            id: string;
+            /** Company Name */
+            company_name: string;
+            /** Store Name */
+            store_name: string;
+            /** Province */
+            province: string;
+            /** City */
+            city: string;
+            /** District */
+            district: string;
+            /** Business Circle */
+            business_circle: string;
+            /** Address */
+            address: string;
+            /** Contact Name */
+            contact_name: string;
+            /** Contact Phone Masked */
+            contact_phone_masked: string;
+            /** Cooperation Status */
+            cooperation_status: string;
+            /** Cooperation Status Label */
+            cooperation_status_label: string;
+            /** Source */
+            source: string;
+            /** Review Status */
+            review_status: string;
+            /** Owner Employee Id */
+            owner_employee_id: string | null;
+            /** Owner Employee Name */
+            owner_employee_name: string | null;
+            /** Last Visit At */
+            last_visit_at: string | null;
+            /** Status */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * MerchantStoreListResponse
+         * @description 门店分页列表响应.
+         */
+        MerchantStoreListResponse: {
+            /** Items */
+            items: components["schemas"]["MerchantStoreListItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * MerchantStorePhotosUpdate
+         * @description 门店照片补录/替换请求.
+         */
+        MerchantStorePhotosUpdate: {
+            /**
+             * Photos
+             * @description 完整照片列表
+             */
+            photos: components["schemas"]["StorePhotoItem"][];
+        };
+        /**
+         * MerchantStoreRelocateResponse
+         * @description 门店搬迁结果（原门店标记已搬迁 + 新门店承接后续拜访）.
+         */
+        MerchantStoreRelocateResponse: {
+            /** Old Store Id */
+            old_store_id: string;
+            new_store: components["schemas"]["MerchantStoreResponse"];
+        };
+        /**
+         * MerchantStoreResponse
+         * @description 门店响应（详情）.
+         */
+        MerchantStoreResponse: {
+            /** Id */
+            id: string;
+            /** Company Id */
+            company_id: string;
+            /** Company Name */
+            company_name: string;
+            /** Store Name */
+            store_name: string;
+            /** Province */
+            province: string;
+            /** City */
+            city: string;
+            /** District */
+            district: string;
+            /** Business Circle */
+            business_circle: string;
+            /** Address */
+            address: string;
+            /** Lng */
+            lng: number;
+            /** Lat */
+            lat: number;
+            /** Coordinate System */
+            coordinate_system: string;
+            /** Contact Name */
+            contact_name: string;
+            /** Contact Phone */
+            contact_phone: string;
+            /** Cooperation Status */
+            cooperation_status: string;
+            /** Cooperation Status Label */
+            cooperation_status_label: string;
+            /** Source */
+            source: string;
+            /** Owner Employee Id */
+            owner_employee_id: string | null;
+            /** Last Visit At */
+            last_visit_at: string | null;
+            /** Status */
+            status: string;
+            /** Review Status */
+            review_status: string;
+            /** Created By Broker Id */
+            created_by_broker_id: string | null;
+            /** Merged To Store Id */
+            merged_to_store_id: string | null;
+            /** Former Store No */
+            former_store_no: string | null;
+            /** Relocated To Store Id */
+            relocated_to_store_id: string | null;
+            /** Photos */
+            photos: components["schemas"]["StorePhotoItem"][];
+            /** Remark */
+            remark: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * MerchantStoreStatusChangeRequest
+         * @description 门店合作状态变更请求.
+         */
+        MerchantStoreStatusChangeRequest: {
+            /**
+             * Target Status
+             * @enum {string}
+             */
+            target_status: "not_cooperated" | "negotiating" | "cooperated" | "paused" | "terminated";
+            /**
+             * Reason
+             * @description 变更原因
+             */
+            reason: string;
+        };
+        /**
+         * MerchantStoreStatusLogResponse
+         * @description 门店合作状态变更记录.
+         */
+        MerchantStoreStatusLogResponse: {
+            /** Id */
+            id: string;
+            /** From Status */
+            from_status: string;
+            /** To Status */
+            to_status: string;
+            /** Reason */
+            reason: string;
+            /** Operator Id */
+            operator_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * MerchantStoreUpdate
+         * @description 更新门店请求（全部可选；地址变更需声明 change_type）.
+         */
+        MerchantStoreUpdate: {
+            /** Company Id */
+            company_id?: string | null;
+            /** Store Name */
+            store_name?: string | null;
+            /** Province */
+            province?: string | null;
+            /** City */
+            city?: string | null;
+            /** District */
+            district?: string | null;
+            /** Business Circle */
+            business_circle?: string | null;
+            /** Address */
+            address?: string | null;
+            /** Lng */
+            lng?: number | null;
+            /** Lat */
+            lat?: number | null;
+            /** Contact Name */
+            contact_name?: string | null;
+            /** Contact Phone */
+            contact_phone?: string | null;
+            /** Owner Employee Id */
+            owner_employee_id?: string | null;
+            /** Photos */
+            photos?: components["schemas"]["StorePhotoItem"][] | null;
+            /** Remark */
+            remark?: string | null;
+            /**
+             * Change Type
+             * @description 变更类型：edit/correct/relocate
+             * @default edit
+             * @enum {string}
+             */
+            change_type: "edit" | "correct" | "relocate";
+            /**
+             * Change Reason
+             * @description 变更/搬迁原因
+             */
+            change_reason?: string | null;
+        };
+        /**
+         * MerchantVisitCreate
+         * @description 拜访登记/补录请求.
+         *
+         *     ``store_id`` 在首访内嵌场景可空（由门店创建服务回填）。
+         */
+        MerchantVisitCreate: {
+            /**
+             * Store Id
+             * @description 门店ID
+             */
+            store_id?: string | null;
+            /**
+             * Visited At
+             * @description 拜访时间（缺省当前时间）
+             */
+            visited_at?: string | null;
+            /**
+             * Contact Name
+             * @description 本次联系人
+             */
+            contact_name: string;
+            /**
+             * Contact Phone
+             * @description 联系电话
+             */
+            contact_phone?: string | null;
+            /**
+             * Photos
+             * @description 拜访照片
+             */
+            photos?: components["schemas"]["StorePhotoItem"][];
+            /**
+             * Lng
+             * @description 到店经度 GCJ-02
+             */
+            lng?: number | null;
+            /**
+             * Lat
+             * @description 到店纬度 GCJ-02
+             */
+            lat?: number | null;
+            /**
+             * Address
+             * @description 定位地址
+             */
+            address?: string | null;
+            /**
+             * Result
+             * @description 拜访结果字典 code
+             */
+            result?: string | null;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+            /**
+             * Is Backfill
+             * @description 是否补录
+             * @default false
+             */
+            is_backfill: boolean;
+            /**
+             * Backfill Reason
+             * @description 补录原因（写入 remark）
+             */
+            backfill_reason?: string | null;
+            /**
+             * Distance Abnormal Reason
+             * @description 距离超过 500 米的原因
+             */
+            distance_abnormal_reason?: string | null;
+            /**
+             * Location Failure Reason
+             * @description 无法定位的原因
+             */
+            location_failure_reason?: string | null;
+            /**
+             * Location Status
+             * @description 定位状态：normal/degraded/missing
+             * @default normal
+             * @enum {string}
+             */
+            location_status: "normal" | "degraded" | "missing";
+        };
+        /**
+         * MerchantVisitListResponse
+         * @description 门店拜访时间线响应.
+         */
+        MerchantVisitListResponse: {
+            /** Items */
+            items: components["schemas"]["MerchantVisitResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * MerchantVisitResponse
+         * @description 拜访记录响应.
+         */
+        MerchantVisitResponse: {
+            /** Id */
+            id: string;
+            /** Store Id */
+            store_id: string;
+            /** Store Name */
+            store_name: string | null;
+            /** Employee Id */
+            employee_id: string;
+            /** Employee Name */
+            employee_name: string | null;
+            /**
+             * Visited At
+             * Format: date-time
+             */
+            visited_at: string;
+            /** Contact Name */
+            contact_name: string;
+            /** Contact Phone */
+            contact_phone: string | null;
+            /** Photos */
+            photos: components["schemas"]["StorePhotoItem"][];
+            /** Lng */
+            lng: number | null;
+            /** Lat */
+            lat: number | null;
+            /** Distance M */
+            distance_m: number | null;
+            /** Distance Abnormal Reason */
+            distance_abnormal_reason: string | null;
+            /** Location Failure Reason */
+            location_failure_reason: string | null;
+            /** Location Status */
+            location_status: string;
+            /** Visit Source */
+            visit_source: string;
+            /** Address */
+            address: string | null;
+            /** Result */
+            result: string | null;
+            /** Remark */
+            remark: string | null;
+            /** Is Backfill */
+            is_backfill: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * MergeAccountRequest
@@ -20579,6 +21674,34 @@ export interface components {
              * @description 各模块线索数与占比
              */
             items: components["schemas"]["SourceBreakdownItem"][];
+        };
+        /**
+         * StorePhotoItem
+         * @description 门店照片项.
+         */
+        StorePhotoItem: {
+            /**
+             * File Url
+             * @description 文件地址
+             */
+            file_url: string;
+            /**
+             * Photo Type
+             * @description 照片类型：head/interior/other
+             * @default other
+             * @enum {string}
+             */
+            photo_type: "head" | "interior" | "other";
+            /**
+             * Uploaded By
+             * @description 上传人ID
+             */
+            uploaded_by?: string | null;
+            /**
+             * Uploaded At
+             * @description 上传时间
+             */
+            uploaded_at?: string | null;
         };
         /**
          * SubInvestorCreate
@@ -30015,6 +31138,38 @@ export interface operations {
             };
         };
     };
+    delete_dict_item_api_v1_admin_dicts__dict_code__items__item_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                dict_code: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BizDictItemDeleteResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     reorder_dict_items_api_v1_admin_dicts__dict_code__reorder_post: {
         parameters: {
             query?: never;
@@ -34509,6 +35664,946 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NotificationReadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_companies_api_v1_admin_merchant_companies_get: {
+        parameters: {
+            query?: {
+                /** @description 公司名称关键词 */
+                keyword?: string | null;
+                /** @description 是否包含已停用公司 */
+                include_disabled?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantCompanyListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_company_api_v1_admin_merchant_companies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantCompanyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantCompanyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_company_api_v1_admin_merchant_companies__company_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 公司ID */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantCompanyUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantCompanyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_stores_api_v1_admin_merchant_stores_get: {
+        parameters: {
+            query?: {
+                /** @description 名称/地址/公司/电话关键词 */
+                keyword?: string | null;
+                province?: string | null;
+                city?: string | null;
+                district?: string | null;
+                business_circle?: string | null;
+                cooperation_status?: string | null;
+                review_status?: string | null;
+                owner_employee_id?: string | null;
+                /** @description 门店状态筛选 */
+                status?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_store_api_v1_admin_merchant_stores_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreCreateResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_store_duplicates_api_v1_admin_merchant_stores_check_duplicates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantDuplicateCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantDuplicateCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_store_api_v1_admin_merchant_stores__store_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_store_api_v1_admin_merchant_stores__store_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"] | components["schemas"]["MerchantStoreRelocateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_store_status_api_v1_admin_merchant_stores__store_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreStatusChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_store_status_logs_api_v1_admin_merchant_stores__store_id__status_logs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreStatusLogResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_store_photos_api_v1_admin_merchant_stores__store_id__photos_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStorePhotosUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_store_visits_api_v1_admin_merchant_stores__store_id__visits_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantVisitListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    business_circles_api_v1_admin_merchant_business_circles_get: {
+        parameters: {
+            query?: {
+                /** @description 区县 */
+                district?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantBusinessCircleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_companies_api_v1_public_merchant_companies_get: {
+        parameters: {
+            query?: {
+                /** @description 公司名称关键词 */
+                keyword?: string | null;
+                /** @description 是否包含已停用公司 */
+                include_disabled?: boolean;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantCompanyListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_company_api_v1_public_merchant_companies_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantCompanyCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantCompanyResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_stores_api_v1_public_merchant_stores_get: {
+        parameters: {
+            query?: {
+                /** @description 名称/地址/公司/电话关键词 */
+                keyword?: string | null;
+                province?: string | null;
+                city?: string | null;
+                district?: string | null;
+                business_circle?: string | null;
+                cooperation_status?: string | null;
+                review_status?: string | null;
+                owner_employee_id?: string | null;
+                status?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_store_api_v1_public_merchant_stores_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreCreateResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_store_duplicates_api_v1_public_merchant_stores_check_duplicates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantDuplicateCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantDuplicateCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_store_api_v1_public_merchant_stores__store_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_store_api_v1_public_merchant_stores__store_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"] | components["schemas"]["MerchantStoreRelocateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_store_status_api_v1_public_merchant_stores__store_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreStatusChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_store_status_logs_api_v1_public_merchant_stores__store_id__status_logs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreStatusLogResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_store_photos_api_v1_public_merchant_stores__store_id__photos_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStorePhotosUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    business_circles_api_v1_public_merchant_business_circles_get: {
+        parameters: {
+            query?: {
+                /** @description 区县 */
+                district?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantBusinessCircleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_visit_api_v1_public_merchant_visits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantVisitCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantVisitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_visit_api_v1_public_merchant_visits__visit_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 拜访ID */
+                visit_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantVisitResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_store_visits_api_v1_public_merchant_stores__store_id__visits_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantVisitListResponse"];
                 };
             };
             /** @description Validation Error */

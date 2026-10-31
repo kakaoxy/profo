@@ -1,0 +1,97 @@
+<view class="page">
+  <view class="store-head" wx:if="{{store}}">
+    <view class="store-name">{{store.store_name}}</view>
+    <view class="store-address">{{store.address}}</view>
+    <view class="store-meta">{{store.cooperation_status_label}} · {{store.business_circle}}</view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">拜访信息</view>
+    <view class="form-row">
+      <view class="form-group form-group--flex">
+        <text class="form-label">联系人 *</text>
+        <input class="input" value="{{form.contact_name}}" bindinput="onInput" data-field="contact_name" />
+      </view>
+      <view class="form-group form-group--flex">
+        <text class="form-label">联系电话</text>
+        <input class="input" type="number" value="{{form.contact_phone}}" bindinput="onInput" data-field="contact_phone" />
+      </view>
+    </view>
+    <view class="form-group">
+      <text class="form-label">拜访结果</text>
+      <view class="chip-row">
+        <view
+          wx:for="{{resultOptions}}"
+          wx:key="code"
+          class="chip chip--tap {{form.result === item.code ? 'chip-sky' : 'chip-fog'}}"
+          data-code="{{item.code}}"
+          bindtap="onSelectResult"
+        >{{item.label}}</view>
+      </view>
+    </view>
+    <view class="form-group">
+      <text class="form-label">备注</text>
+      <textarea class="input textarea" placeholder="本次拜访情况" value="{{form.remark}}" bindinput="onInput" data-field="remark" />
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">定位打卡</view>
+    <view class="location-box {{locationOk ? 'location-box--ok' : ''}}">
+      <view wx:if="{{locationOk}}">已定位：{{lng}}, {{lat}}</view>
+      <view wx:elif="{{locationFailure}}">未定位：{{locationFailure}}</view>
+      <view wx:else>门店拜访需获取当前位置，用于距离校验</view>
+    </view>
+    <view class="row-actions">
+      <view class="mini-btn" bindtap="onGetLocation">获取定位</view>
+      <view class="mini-btn mini-btn--ghost" bindtap="onLocationFallback">定位失败</view>
+    </view>
+    <input
+      wx:if="{{locationFailure}}"
+      class="input"
+      placeholder="请填写无法定位的原因（弱网/超时）"
+      value="{{locationFailureReason}}"
+      bindinput="onLocationFailureReason"
+    />
+    <input
+      class="input"
+      placeholder="距离门店超过 500 米时请填写原因"
+      value="{{form.distance_abnormal_reason}}"
+      bindinput="onInput"
+      data-field="distance_abnormal_reason"
+    />
+  </view>
+
+  <view class="section">
+    <view class="section-title">补录</view>
+    <view class="switch-row">
+      <text>这是一次补录（仅支持 7 天内）</text>
+      <switch checked="{{form.is_backfill}}" bindchange="onToggleBackfill" />
+    </view>
+    <view class="form-group" wx:if="{{form.is_backfill}}">
+      <text class="form-label">拜访日期</text>
+      <picker mode="date" value="{{backfillDate}}" end="{{today}}" bindchange="onBackfillDate">
+        <view class="input picker-value">{{backfillDate || '请选择日期'}}</view>
+      </picker>
+      <input class="input" placeholder="补录原因" value="{{form.backfill_reason}}" bindinput="onInput" data-field="backfill_reason" />
+    </view>
+  </view>
+
+  <view class="section">
+    <view class="section-title">拜访照片（选拍）</view>
+    <view class="photo-grid">
+      <view class="photo-item" wx:for="{{photos}}" wx:key="file_url">
+        <image class="photo-img" src="{{item.displayUrl}}" mode="aspectFill" />
+        <view class="photo-remove" data-index="{{index}}" bindtap="onRemovePhoto">×</view>
+      </view>
+      <view class="photo-add" bindtap="onAddPhoto">
+        <text class="photo-add__icon">＋</text>
+        <text>添加照片</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="footer">
+    <button class="btn-primary footer__btn" loading="{{submitting}}" bindtap="onSubmit">提交拜访</button>
+  </view>
+</view>

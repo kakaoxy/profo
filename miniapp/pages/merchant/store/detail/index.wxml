@@ -1,0 +1,114 @@
+<view class="page">
+  <view class="state" wx:if="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">{{errorText}}</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <block wx:elif="{{store}}">
+    <view class="hero">
+      <view class="hero__top">
+        <view class="hero__name">{{store.store_name}}</view>
+        <view class="chip {{store.review_status === 'pending' ? 'chip-apricot' : 'chip-sky'}}">
+          {{store.review_status === 'pending' ? '待审核' : store.cooperation_status_label}}
+        </view>
+      </view>
+      <view class="hero__company">{{store.company_name}}</view>
+      <view class="hero__address">{{store.district}} · {{store.business_circle}} · {{store.address}}</view>
+      <view class="hero__meta">
+        <text>联系人：{{store.contact_name}}</text>
+        <text>电话：{{store.contact_phone}}</text>
+      </view>
+      <view class="hero__meta">
+        <text>最近拜访：{{lastVisitText}}</text>
+        <text wx:if="{{store.review_status === 'pending'}}">来源：经纪人创建（待审核）</text>
+      </view>
+    </view>
+
+    <view class="action-grid">
+      <view class="action" bindtap="onVisit">
+        <text class="action__icon">访</text>
+        <text>拜访登记</text>
+      </view>
+      <view class="action" bindtap="onEdit">
+        <text class="action__icon">编</text>
+        <text>编辑门店</text>
+      </view>
+      <view class="action" bindtap="onChangeStatus">
+        <text class="action__icon">状</text>
+        <text>合作状态</text>
+      </view>
+      <view class="action" bindtap="onAddPhotos">
+        <text class="action__icon">照</text>
+        <text>补录照片</text>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{photos.length}}">
+      <view class="section-title">门店照片</view>
+      <scroll-view scroll-x class="photo-scroll">
+        <view class="photo-item" wx:for="{{photos}}" wx:key="file_url">
+          <image class="photo-img" src="{{item.displayUrl}}" mode="aspectFill" data-url="{{item.displayUrl}}" bindtap="onPreviewPhoto" />
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <view class="section-title">拜访时间线</view>
+        <text class="link" bindtap="onVisit">＋ 登记拜访</text>
+      </view>
+      <view class="empty-line" wx:if="{{!visits.length}}">暂无拜访记录</view>
+      <view class="timeline-item" wx:for="{{visits}}" wx:key="id">
+        <view class="timeline-dot"></view>
+        <view class="timeline-body">
+          <view class="timeline-top">
+            <text class="timeline-time">{{item.visitedText}}</text>
+            <text class="timeline-employee">{{item.employee_name || '员工'}}</text>
+          </view>
+          <view class="timeline-row">联系人：{{item.contact_name}} · 结果：{{item.resultText}}</view>
+          <view class="timeline-row" wx:if="{{item.contact_phone}}">电话：{{item.contact_phone}}</view>
+          <view class="timeline-row" wx:if="{{item.remark}}">备注：{{item.remark}}</view>
+          <view class="timeline-tags">
+            <text class="chip chip-fog" wx:if="{{item.is_backfill}}">补录</text>
+            <text class="chip chip-fog" wx:if="{{item.distance_m}}">距离 {{item.distance_m}}m</text>
+            <text class="chip chip-apricot" wx:if="{{item.distance_m && item.distance_m > 500}}">距离异常</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-title">合作状态变更</view>
+      <view class="empty-line" wx:if="{{!statusLogs.length}}">暂无变更记录</view>
+      <view class="status-row" wx:for="{{statusLogs}}" wx:key="id">
+        <view class="status-change">{{item.fromLabel}} → {{item.toLabel}}</view>
+        <view class="status-meta">{{item.createdText}} · {{item.reason}}</view>
+      </view>
+    </view>
+  </block>
+
+  <view class="modal-mask" wx:if="{{statusOpen}}">
+    <view class="modal">
+      <view class="modal-title">变更合作状态</view>
+      <view class="chip-row">
+        <view
+          wx:for="{{statusOptions}}"
+          wx:key="code"
+          class="chip chip--tap {{statusTarget === item.code ? 'chip-apricot' : 'chip-fog'}}"
+          data-code="{{item.code}}"
+          bindtap="onSelectStatus"
+        >{{item.label}}</view>
+      </view>
+      <input class="input" placeholder="变更原因（必填）" value="{{statusReason}}" bindinput="onStatusReason" />
+      <view class="modal-actions">
+        <view class="mini-btn" bindtap="onCloseStatus">取消</view>
+        <view class="mini-btn mini-btn--primary" bindtap="onSubmitStatus">确认变更</view>
+      </view>
+    </view>
+  </view>
+</view>
