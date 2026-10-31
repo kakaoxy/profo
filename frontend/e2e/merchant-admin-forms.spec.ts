@@ -139,7 +139,10 @@ test("后台编辑门店并留痕原因", async ({ page }) => {
   await page.getByRole("link", { name: "编辑门店" }).click();
   await expect(page.getByRole("heading", { name: "编辑门店" })).toBeVisible();
 
-  await page.getByPlaceholder("门店名称 *").fill(`${MARK}门店改`);
+  // 等待异步回填完成后再修改，避免并行慢加载把输入覆盖回原值
+  const nameInput = page.getByPlaceholder("门店名称 *");
+  await expect(nameInput).toHaveValue(new RegExp(`${MARK}门店`), { timeout: 15_000 });
+  await nameInput.fill(`${MARK}门店改`);
   await page.getByPlaceholder("变更原因 *").fill("E2E 编辑留痕");
   await page.getByRole("button", { name: "保存修改" }).click();
 

@@ -216,12 +216,17 @@ test("门店地图在未配置 Key 时降级，筛选与统计/坐标缺失仍�
   await page.getByPlaceholder("区县").fill(seeded.district);
   await page.getByRole("button", { name: "刷新" }).click();
 
-  await expect(page.getByText(seeded.store1_name)).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText(seeded.store2_name)).toBeVisible();
-  await expect(page.getByText("坐标缺失")).toBeVisible();
-  await expect(page.getByText("门店总数").locator("..")).toContainText("2");
+  await expect(page.getByText("门店总数").locator("..")).toContainText("2", { timeout: 15_000 });
   await expect(page.getByText("合作中门店").locator("..")).toContainText("1");
   await expect(page.getByText("经纪人总数").locator("..")).toContainText("1");
+  await expect(page.getByText(seeded.store1_name)).toBeVisible();
+  await expect(page.getByText(seeded.store2_name)).toBeVisible();
+  // 仅在本门店行内断言「坐标缺失」徽标，避免与其他并行用例的无坐标门店冲突
+  await expect(
+    page.locator("button").filter({ hasText: seeded.store2_name }).getByText("坐标缺失", {
+      exact: true,
+    }),
+  ).toBeVisible();
 });
 
 test("拜访轨迹按员工/日期查询，时间线展示有坐标与无坐标拜访", async ({ page }) => {
