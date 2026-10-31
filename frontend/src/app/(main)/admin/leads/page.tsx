@@ -76,8 +76,9 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     client.GET("/api/v1/admin/merchant/stores", {
       params: { query: { page: 1, page_size: 200 } },
     }),
-    client.GET("/api/v1/admin/merchant/brokers", {
-      params: { query: { page: 1, page_size: 200 } },
+    // 经纪人选项走 merchant:read 轻量接口（不暴露手机号，员工也可用）
+    client.GET("/api/v1/admin/merchant/brokers/options", {
+      params: { query: {} },
     }),
     client.GET("/api/v1/users/simple", {
       params: { query: { status: "active" } },
@@ -110,7 +111,6 @@ export default async function LeadsPage({ searchParams }: PageProps) {
   const brokerOptions: LeadFilterOption[] = (brokersRes.data?.items || []).map((broker) => ({
     id: broker.id,
     name: broker.name,
-    description: broker.phone_masked,
   }));
   const employeeOptions: LeadFilterOption[] = (usersRes.data?.items || []).map((user) => ({
     id: user.id,

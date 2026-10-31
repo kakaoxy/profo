@@ -90,13 +90,22 @@ export default function MerchantStoreDetailPage() {
       });
     });
 
-  const merge = () =>
-    run(async () => {
+  const merge = () => {
+    // 合并二次确认（AC-V07-008）：未确认不执行
+    if (
+      !window.confirm(
+        "确认将当前门店合并到保留门店？合并后拜访/绑定/线索/协议将迁移，且不可撤销。",
+      )
+    ) {
+      return;
+    }
+    void run(async () => {
       await merchantApi("/admin/merchant/stores/merge", {
         method: "POST",
         body: JSON.stringify({ keep_store_id: mergeTarget, merged_store_id: storeId, reason: mergeReason }),
       });
     });
+  };
 
   const remove = () =>
     run(async () => {

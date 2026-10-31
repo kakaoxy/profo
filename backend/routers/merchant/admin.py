@@ -45,6 +45,7 @@ from schemas.merchant import (
     MerchantStoreUpdate,
     MerchantVisitListResponse,
 )
+from services.merchant.audit import add_audit_log
 from services.merchant.broker import MerchantBrokerService
 from services.merchant.company import MerchantCompanyService
 from services.merchant.serializers import company_response, cooperation_label_map, store_response
@@ -222,6 +223,30 @@ def export_stores(
         ]
         for item in result.items
     ]
+    # 导出审计（AC-V07-016）：记录操作人、筛选条件与条数
+    add_audit_log(
+        db,
+        user_id=str(current_user.id),
+        action="export",
+        resource_type="merchant_store",
+        resource_id=None,
+        after={
+            "filters": {
+                "keyword": keyword,
+                "province": province,
+                "city": city,
+                "district": district,
+                "business_circle": business_circle,
+                "cooperation_status": cooperation_status,
+                "review_status": review_status,
+                "owner_employee_id": owner_employee_id,
+                "status": store_status,
+            },
+            "count": len(rows),
+        },
+        request=request,
+    )
+    db.commit()
     return generate_csv_response(
         [
             "门店名称",
@@ -247,7 +272,7 @@ def export_stores(
 def export_brokers(
     request: Request,
     db: DbSessionDep,
-    _current_user: MerchantBrokerPermDep,
+    current_user: MerchantBrokerPermDep,
     keyword: Annotated[str | None, Query(description="姓名/手机号关键词")] = None,
     store_id: str | None = None,
     bind_status: str | None = None,
@@ -271,6 +296,24 @@ def export_brokers(
         ]
         for item in result.items
     ]
+    # 导出审计（AC-V07-016）：记录操作人、筛选条件与条数
+    add_audit_log(
+        db,
+        user_id=str(current_user.id),
+        action="export",
+        resource_type="merchant_broker",
+        resource_id=None,
+        after={
+            "filters": {
+                "keyword": keyword,
+                "store_id": store_id,
+                "bind_status": bind_status,
+            },
+            "count": len(rows),
+        },
+        request=request,
+    )
+    db.commit()
     return generate_csv_response(
         ["姓名", "手机号", "所属门店", "绑定状态", "来源", "推荐线索数"],
         rows,

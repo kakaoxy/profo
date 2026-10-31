@@ -16,6 +16,7 @@ from models import (
     MerchantBrokerBinding,
     MerchantStore,
     MerchantVisit,
+    OperationLog,
     Role,
     User,
 )
@@ -302,6 +303,48 @@ def test_export_stores_csv_masked(
     content = resp.content.decode("utf-8-sig")
     assert "门店名称" in content
     assert "****" in content
+
+    session: Session = seeded_db["session"]
+    log = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_store", OperationLog.action == "export")
+        .order_by(OperationLog.id.desc())
+        .first()
+    )
+    assert log is not None
+    assert log.after["count"] >= 1
+
+
+def test_export_brokers_csv_masked_with_audit(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """经纪人 CSV 导出脱敏且写导出审计（操作人/条件/条数）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    phone = f"135{uuid.uuid4().int % 10**8:08d}"
+    created = admin_client.post(
+        f"{API}/admin/merchant/brokers",
+        json={"name": "导出经纪人", "phone": phone, "store_id": store["id"]},
+    )
+    assert created.status_code == 201, created.text
+
+    resp = admin_client.get(f"{API}/admin/merchant/brokers/export")
+    assert resp.status_code == 200
+    content = resp.content.decode("utf-8-sig")
+    assert "导出经纪人" in content
+    assert phone not in content
+
+    session: Session = seeded_db["session"]
+    log = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_broker", OperationLog.action == "export")
+        .order_by(OperationLog.id.desc())
+        .first()
+    )
+    assert log is not None
+    assert log.after["count"] >= 1
 
 
 def test_edit_legacy_store_with_null_coordinates(
