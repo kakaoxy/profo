@@ -80,6 +80,23 @@ class LeadService:
         self.followup_service = LeadFollowUpService(db)
         self.eval_service = LeadEvalService(db)
 
+    def find_duplicate_lead(self, lead_data: LeadCreate) -> Lead | None:
+        """按楼盘字典地址查找同地址未删除线索（V06 REQ-M08-005）.
+
+        地址完整度决定查重粒度：有户室按户室、只有楼栋按楼栋；仅小区名（manual）
+        不查重，避免同小区不同房源被误判重复。
+        """
+        query = self.db.query(Lead).filter(Lead.is_deleted.is_(False))
+        if lead_data.room_id is not None:
+            query = query.filter(Lead.room_id == lead_data.room_id)
+        elif lead_data.building_id is not None:
+            query = query.filter(Lead.building_id == lead_data.building_id)
+        else:
+            return None
+        if lead_data.community_id:
+            query = query.filter(Lead.community_id == lead_data.community_id)
+        return query.first()
+
     def create_lead(
         self,
         lead_data: LeadCreate,
@@ -88,6 +105,8 @@ class LeadService:
         creator: User | None = None,
         referrer: str | None = None,
         apply_fallback: bool = False,
+        check_duplicate: bool = False,
+        confirm_duplicate: bool = False,
     ) -> Lead:
         """创建线索.
 
@@ -101,6 +120,8 @@ class LeadService:
                 后台/内部录入（`POST /api/v1/leads`）由员工本人录入，归属应为空，
                 不得兜底到「全局兜底负责人」，否则会污染「我的客户」归属口径
                 并给无关员工推送新线索通知。
+            check_duplicate: 是否按楼盘字典地址查重（默认 False，仅估价代填提交启用）
+            confirm_duplicate: 用户已确认重复继续提交（True 时跳过查重阻断）
 
         Returns:
             创建成功的线索对象
@@ -143,6 +164,13 @@ class LeadService:
             building_id=lead_payload.get("building_id"),
             room_id=lead_payload.get("room_id"),
         )
+        # 重复线索（V06 REQ-M08-005）：按楼盘字典地址（户室优先、楼栋次之）提示，
+        # 用户确认继续后以 confirm_duplicate=true 重提；不新增客户手机号验证
+        if check_duplicate and not confirm_duplicate:
+            duplicate = self.find_duplicate_lead(lead_data)
+            if duplicate is not None:
+                msg = "可能存在重复线索，请确认后继续提交"
+                raise ConflictError(msg)
         db_lead = Lead(
             **lead_payload,
             **attribution.as_dict(),

@@ -143,4 +143,42 @@ describe("经纪人代填身份（V06）", () => {
     expect(lastReq("/public/leads")).toBeUndefined();
     expect(ctx.data.submitting).toBe(false);
   });
+
+  it("重复线索 409：确认后带 confirm_duplicate 重提，取消则停止", async () => {
+    const ctx = createPageHarness({});
+    const body = { community_name: "梅花新村", floor_info: "5/18" } as AnyRecord;
+
+    void ctx.performSubmit(body);
+    await flush();
+    const first = lastReq("/public/leads");
+    expect(first).toBeTruthy();
+    first!.reject({ statusCode: 409 });
+    await flush();
+
+    expect(showModalMock).toHaveBeenCalledTimes(1);
+    const modal = showModalMock.mock.calls[0][0] as AnyRecord;
+    expect(modal.title).toContain("重复");
+
+    modal.success({ confirm: true });
+    await flush();
+    const retry = lastReq("/public/leads");
+    expect(retry).toBeTruthy();
+    expect((retry!.opts.data as AnyRecord).confirm_duplicate).toBe(true);
+  });
+
+  it("重复线索 409：取消确认则不重提", async () => {
+    const ctx = createPageHarness({});
+
+    void ctx.performSubmit({ community_name: "梅花新村", floor_info: "5/18" } as AnyRecord);
+    await flush();
+    lastReq("/public/leads")!.reject({ statusCode: 409 });
+    await flush();
+
+    const modal = showModalMock.mock.calls[0][0] as AnyRecord;
+    modal.success({ confirm: false });
+    await flush();
+
+    expect(pendingReqs().filter((r) => r.opts.url === "/public/leads")).toHaveLength(1);
+    expect(ctx.data.submitting).toBe(false);
+  });
 });

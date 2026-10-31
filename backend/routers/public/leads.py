@@ -208,6 +208,9 @@ def create_lead(
         creator_id=current_user.id,
         referrer=body.referrer,
         apply_fallback=True,
+        # V06 REQ-M08-005：估价代填按楼盘字典地址查重，首次命中返回 409 供前端确认
+        check_duplicate=True,
+        confirm_duplicate=body.confirm_duplicate,
     )
 
     return PublicLeadResponse(

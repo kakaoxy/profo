@@ -386,6 +386,9 @@ class PublicLeadCreate(BaseModel):
     new_community: dict | None = Field(None, description="新增小区载荷 {name,district,business_circle}")
     new_building: dict | None = Field(None, description="新增楼栋载荷 {name}")
     new_room: dict | None = Field(None, description="新增户室载荷 {name}")
+    # 重复线索二次确认（V06 REQ-M08-005）：首次提交命中同楼盘地址返回 409，
+    # 用户确认继续后以 confirm_duplicate=true 重提
+    confirm_duplicate: bool = Field(default=False, description="已确认重复线索继续提交")
 
     @field_validator("images")
     @classmethod

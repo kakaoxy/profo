@@ -20791,6 +20791,12 @@ export interface components {
             new_room?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Confirm Duplicate
+             * @description 已确认重复线索继续提交
+             * @default false
+             */
+            confirm_duplicate: boolean;
         };
         /**
          * PublicLeadDetail

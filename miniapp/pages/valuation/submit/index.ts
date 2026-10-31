@@ -804,6 +804,8 @@ Page<PageData, PageCustom>({
       images: images.length ? images : undefined,
       // 分享归因：透传进入时的 referrer（分享归属员工 ID），后端首次留资写入归属
       referrer: this.data.referrer || undefined,
+      // 重复线索二次确认（409 后由用户确认置 true 重提）
+      confirm_duplicate: false,
     };
 
     // 订阅授权（授权价提醒）：必须在 tap 手势回调内同步发起弹窗，
@@ -858,6 +860,21 @@ Page<PageData, PageCustom>({
         // 令牌过期或受众不匹配：内部员工（仅持 admin 令牌）无 C 端估价权限，
         // 普通用户令牌失效引导重新登录
         this.handleUnauthorized();
+      } else if (statusCode === 409) {
+        // 楼盘字典地址命中重复线索（V06 REQ-M08-005）：用户确认后带 confirm_duplicate 重提
+        this.setData({ submitting: false });
+        wx.showModal({
+          title: "可能存在重复线索",
+          content: "该楼盘地址已有线索，是否继续提交？",
+          confirmText: "继续提交",
+          cancelText: "返回修改",
+          success: (res) => {
+            if (res.confirm) {
+              void this.performSubmit({ ...body, confirm_duplicate: true });
+            }
+          },
+        });
+        return;
       } else {
         wx.showToast({ title: "提交失败，请重试", icon: "none" });
       }
