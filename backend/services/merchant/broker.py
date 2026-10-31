@@ -17,6 +17,7 @@ from models.lead import Lead, LeadFollowUp
 from models.merchant import (
     MerchantBroker,
     MerchantBrokerBinding,
+    MerchantCompany,
     MerchantStore,
     MerchantStoreQRCode,
 )
@@ -29,6 +30,9 @@ from schemas.merchant import (
     BrokerBindingResponse,
     BrokerBindRequest,
     BrokerChangeRequest,
+    BrokerCompanyOption,
+    BrokerCompanyOptionListResponse,
+    BrokerForceChangeRequest,
     BrokerLeadFollowUpItem,
     BrokerLeadItem,
     BrokerLeadListResponse,
@@ -436,6 +440,24 @@ class MerchantBrokerService:
         )
         return [broker_binding_response(row) for row in rows]
 
+    def search_active_companies(
+        self,
+        *,
+        keyword: str | None = None,
+        limit: int = 20,
+    ) -> BrokerCompanyOptionListResponse:
+        """经纪人注册建店可选公司（仅正常公司，只返回 id/名称）."""
+        query = self.db.query(MerchantCompany).filter(MerchantCompany.status == "normal")
+        keyword = (keyword or "").strip()
+        if keyword:
+            query = query.filter(MerchantCompany.company_name.ilike(f"%{keyword}%"))
+        total = query.count()
+        rows = query.order_by(MerchantCompany.company_name.asc()).limit(limit).all()
+        return BrokerCompanyOptionListResponse(
+            items=[BrokerCompanyOption(id=str(row.id), company_name=row.company_name) for row in rows],
+            total=total,
+        )
+
     def search_selectable_stores(
         self,
         *,
@@ -779,6 +801,50 @@ class MerchantBrokerService:
             resource_id=str(broker.id),
             before=before,
             after=self._snapshot(broker),
+            request=request,
+        )
+        self.db.commit()
+        self.db.refresh(broker)
+        return self._response(broker)
+
+    def force_change(
+        self,
+        broker_id: str,
+        req: BrokerForceChangeRequest,
+        *,
+        operator_id: str,
+        request: Request | None = None,
+    ) -> BrokerResponse:
+        """后台强制换绑：原绑定解绑留痕，新绑定立即生效."""
+        broker = self._get_broker(broker_id)
+        if broker.bind_status == MerchantBindStatus.DISABLED.value:
+            msg = "经纪人已停用，不能换绑"
+            raise ValidationError(msg)
+        store = self._selectable_store(req.store_id, allow_pending=False)
+        if broker.store_id == store.id:
+            msg = "经纪人已绑定该门店"
+            raise ConflictError(msg)
+        before = self._snapshot(broker)
+        self._unbind_active_bindings(
+            broker.id,
+            reason=req.reason,
+            operator_id=operator_id,
+        )
+        self._activate_binding(
+            broker,
+            store,
+            bind_source=MerchantBindSource.BACKOFFICE.value,
+            inviter_employee_id=broker.inviter_employee_id,
+            approved_by=operator_id,
+        )
+        add_audit_log(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="merchant_broker",
+            resource_id=str(broker.id),
+            before=before,
+            after=self._snapshot(broker) | {"reason": req.reason},
             request=request,
         )
         self.db.commit()

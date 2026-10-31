@@ -1,0 +1,50 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero__title">创建门店</view>
+    <view class="hero__sub">创建后进入后台审核，并自动绑定为你的门店</view>
+  </view>
+
+  <view class="card">
+    <view class="field-label">所属公司</view>
+    <view wx:if="{{companyName}}" class="hint">已选择：{{companyName}}</view>
+    <view wx:else>
+      <view class="search-row">
+        <input class="input input--flex" placeholder="输入公司名称搜索" value="{{companyKeyword}}" bindinput="onCompanyKeywordInput" bindconfirm="searchCompanies" />
+        <view class="mini-btn" bindtap="searchCompanies">搜索</view>
+      </view>
+      <view wx:if="{{companies.length}}" class="option-list">
+        <view
+          wx:for="{{companies}}"
+          wx:key="id"
+          class="option"
+          data-id="{{item.id}}"
+          bindtap="onPickCompany"
+        >{{item.company_name}}</view>
+      </view>
+    </view>
+
+    <view class="field-label">门店名称</view>
+    <input class="input" placeholder="门店名称" value="{{storeName}}" data-field="storeName" bindinput="onFieldInput" maxlength="200" />
+
+    <view class="grid">
+      <input class="input" placeholder="省" value="{{province}}" data-field="province" bindinput="onFieldInput" />
+      <input class="input" placeholder="市" value="{{city}}" data-field="city" bindinput="onFieldInput" />
+      <input class="input" placeholder="区县" value="{{district}}" data-field="district" bindinput="onFieldInput" />
+      <input class="input" placeholder="商圈" value="{{businessCircle}}" data-field="businessCircle" bindinput="onFieldInput" />
+    </view>
+
+    <view class="field-label">详细地址</view>
+    <input class="input" placeholder="详细地址" value="{{address}}" data-field="address" bindinput="onFieldInput" maxlength="500" />
+    <view class="link-btn" bindtap="onChooseLocation">选择门店位置</view>
+    <view class="hint" wx:if="{{lng && lat}}">坐标：{{lng}}, {{lat}}</view>
+
+    <view class="field-label">联系人</view>
+    <input class="input" placeholder="联系人" value="{{contactName}}" data-field="contactName" bindinput="onFieldInput" maxlength="50" />
+    <view class="field-label">联系电话</view>
+    <input class="input" type="number" placeholder="联系电话" value="{{contactPhone}}" data-field="contactPhone" bindinput="onFieldInput" maxlength="20" />
+    <view class="field-label">备注</view>
+    <input class="input" placeholder="备注（可选）" value="{{remark}}" data-field="remark" bindinput="onFieldInput" maxlength="500" />
+
+    <button class="btn-primary submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit">提交审核</button>
+  </view>
+</view>

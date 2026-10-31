@@ -33,6 +33,7 @@
         <view class="mini-btn" wx:if="{{fileDisplayUrl}}" bindtap="onOpenFile">查看协议文件</view>
         <view class="mini-btn mini-btn--primary" wx:if="{{agreement.status === 'pending_sign'}}" bindtap="onSign">去签署</view>
         <view class="mini-btn" wx:if="{{agreement.status !== 'voided' && agreement.status !== 'expired' && agreement.status !== 'signed'}}" bindtap="onOpenScan">上传盖章扫描件</view>
+        <view class="mini-btn" wx:if="{{agreement.status !== 'voided'}}" bindtap="onOpenSupplement">新增补充协议</view>
       </view>
       <view class="hint" wx:if="{{agreement.status === 'not_initiated' && agreement.review_status === 'pending'}}">
         协议已提交，等待运营审核；审核通过后可进入签署。
@@ -40,6 +41,20 @@
       <view class="hint" wx:if="{{agreement.status === 'signed'}}">门店主体协议签署完成后，门店合作状态将联动为「已合作」。</view>
     </view>
   </block>
+</view>
+
+<view class="modal-mask" wx:if="{{supplementOpen}}">
+  <view class="modal">
+    <view class="modal-title">新增补充协议</view>
+    <view class="hint">补充协议独立归档并关联原协议，可上传盖章件或补充说明附件。</view>
+    <view class="mini-btn" bindtap="onChooseSupplementFile">{{supplementFileUrl ? '重新选择文件' : '选择文件'}}</view>
+    <view class="hint" wx:if="{{supplementFileName}}">已上传：{{supplementFileName}}</view>
+    <input class="input" placeholder="补充说明（可空）" value="{{supplementRemark}}" bindinput="onSupplementRemarkInput" maxlength="500" />
+    <view class="modal-actions">
+      <view class="mini-btn" bindtap="onCloseSupplement">取消</view>
+      <view class="mini-btn mini-btn--primary" bindtap="onSubmitSupplement">保存</view>
+    </view>
+  </view>
 </view>
 
 <view class="modal-mask" wx:if="{{scanOpen}}">

@@ -98,12 +98,14 @@ finally:
 `;
 
 let storeName = "";
+let storeId = "";
 
 test.beforeAll(() => {
   test.setTimeout(120_000);
   backendPython(CLEANUP_SCRIPT);
-  const seeded = JSON.parse(backendPython(SEED_SCRIPT)) as { store_name: string };
+  const seeded = JSON.parse(backendPython(SEED_SCRIPT)) as { store_name: string; store_id: string };
   storeName = seeded.store_name;
+  storeId = seeded.store_id;
 });
 
 test.afterAll(() => {
@@ -130,6 +132,18 @@ test("后台新建与编辑经纪人", async ({ page }) => {
   await page.getByRole("button", { name: "保存" }).click();
 
   await expect(page.locator("tr").filter({ hasText: `${MARK}经纪人改` }).first()).toBeVisible();
+});
+
+test("后台编辑门店并留痕原因", async ({ page }) => {
+  await page.goto(`/admin/merchant/stores/${storeId}`);
+  await page.getByRole("link", { name: "编辑门店" }).click();
+  await expect(page.getByRole("heading", { name: "编辑门店" })).toBeVisible();
+
+  await page.getByPlaceholder("门店名称 *").fill(`${MARK}门店改`);
+  await page.getByPlaceholder("变更原因 *").fill("E2E 编辑留痕");
+  await page.getByRole("button", { name: "保存修改" }).click();
+
+  await expect(page.getByText(`${MARK}门店改`).first()).toBeVisible();
 });
 
 test("后台发起协议", async ({ page }) => {

@@ -334,6 +334,10 @@ Page({
     }
   },
 
+  onCreateStore() {
+    wx.navigateTo({ url: "/pages/merchant/broker/store-create/index" });
+  },
+
   onOpenBind() {
     this.setData({
       storePanelOpen: true,

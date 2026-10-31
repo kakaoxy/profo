@@ -38,6 +38,8 @@ export default function MerchantAgreementsPage() {
   const [data, setData] = useState<AgreementList | null>(null);
   const [status, setStatus] = useState("all");
   const [reason, setReason] = useState("");
+  const [filterStoreId, setFilterStoreId] = useState("all");
+  const [agreementNo, setAgreementNo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -65,6 +67,8 @@ export default function MerchantAgreementsPage() {
             page: 1,
             page_size: 50,
             status: status === "all" ? undefined : status,
+            store_id: filterStoreId === "all" ? undefined : filterStoreId,
+            agreement_no: agreementNo.trim() || undefined,
           })}`,
         ),
         merchantApi<AgreementTemplate[]>("/admin/merchant/agreement-templates"),
@@ -289,6 +293,26 @@ export default function MerchantAgreementsPage() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={filterStoreId} onValueChange={setFilterStoreId}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="门店筛选" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">全部门店</SelectItem>
+              {stores.map((store) => (
+                <SelectItem key={store.id} value={store.id}>
+                  {store.store_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            className="w-56"
+            placeholder="协议编号"
+            value={agreementNo}
+            onChange={(event) => setAgreementNo(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && void load()}
+          />
           <Input
             className="w-80"
             placeholder="审核意见 / 作废原因"

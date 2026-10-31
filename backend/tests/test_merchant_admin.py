@@ -304,6 +304,29 @@ def test_export_stores_csv_masked(
     assert "****" in content
 
 
+def test_edit_legacy_store_with_null_coordinates(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """存量门店经纬度为空时编辑坐标不应触发 500."""
+    session: Session = seeded_db["session"]
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    row = session.query(MerchantStore).filter(MerchantStore.id == store["id"]).one()
+    row.lng = None
+    row.lat = None
+    session.commit()
+
+    resp = admin_client.put(
+        f"{API}/admin/merchant/stores/{store['id']}",
+        json={"lng": 121.5, "lat": 31.24, "change_type": "correct", "change_reason": "补齐坐标"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["lng"] == 121.5
+    assert resp.json()["lat"] == 31.24
+
+
 def test_review_broker_store_approve_and_merge(
     admin_client: TestClient,
     employee: User,

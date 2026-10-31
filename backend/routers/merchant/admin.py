@@ -18,6 +18,7 @@ from schemas.merchant import (
     BrokerAdminCreate,
     BrokerAdminUpdate,
     BrokerBindingResponse,
+    BrokerForceChangeRequest,
     BrokerListResponse,
     BrokerResponse,
     BrokerStatusChangeRequest,
@@ -512,6 +513,24 @@ def force_unbind_broker(
     return MerchantBrokerService(db).force_unbind(
         broker_id,
         reason,
+        operator_id=str(current_user.id),
+        request=request,
+    )
+
+
+@router.post("/brokers/{broker_id}/change", summary="强制换绑经纪人")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def force_change_broker(
+    request: Request,
+    broker_id: Annotated[str, Path(description="经纪人ID")],
+    body: BrokerForceChangeRequest,
+    db: DbSessionDep,
+    current_user: MerchantBrokerPermDep,
+) -> BrokerResponse:
+    """原绑定解绑留痕，新门店绑定立即生效（不迁移历史线索）."""
+    return MerchantBrokerService(db).force_change(
+        broker_id,
+        body,
         operator_id=str(current_user.id),
         request=request,
     )

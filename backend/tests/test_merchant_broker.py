@@ -14,6 +14,7 @@ from models import (
     Lead,
     LeadFollowUp,
     MerchantBroker,
+    MerchantCompany,
     MerchantStore,
     MerchantStoreQRCode,
     RecruitLead,
@@ -440,6 +441,32 @@ def test_admin_broker_crud_and_disable_unbind(
     assert disabled.json()["store_id"] is None
 
 
+def test_admin_force_change_keeps_history(
+    broker_client: TestClient,
+    admin_client: TestClient,
+) -> None:
+    """后台强制换绑：原绑定解绑留痕，新门店立即生效."""
+    company = _create_company(admin_client)
+    old_store = _create_store(admin_client, company["id"])
+    new_store = _create_store(admin_client, company["id"])
+    broker = _register(broker_client)["broker"]
+    broker_client.post(f"{API}/public/merchant/brokers/me/bind", json={"store_id": old_store["id"]})
+
+    change = admin_client.post(
+        f"{API}/admin/merchant/brokers/{broker['id']}/change",
+        json={"store_id": new_store["id"], "reason": "运营调整"},
+    )
+    assert change.status_code == 200, change.text
+    assert change.json()["store_id"] == new_store["id"]
+
+    history = broker_client.get(f"{API}/public/merchant/brokers/me/bindings").json()
+    old = next(row for row in history if row["store_id"] == old_store["id"])
+    new = next(row for row in history if row["store_id"] == new_store["id"])
+    assert old["status"] == "unbound"
+    assert old["reason"] == "运营调整"
+    assert new["status"] == "active"
+
+
 def test_qr_invalid_and_expired(
     admin_client: TestClient,
     employee: User,
@@ -505,6 +532,23 @@ def test_selectable_store_search_filters_and_hides_contact(
         params={"keyword": approved["store_name"]},
     ).json()
     assert keyword["items"][0]["id"] == approved["id"]
+
+    # 建店可选公司：仅正常公司，字段只含 id/名称
+    disabled_company = _create_company(admin_client)
+    session.query(MerchantStore).filter(MerchantStore.company_id == disabled_company["id"]).delete(
+        synchronize_session=False
+    )
+    db_company = session.query(MerchantCompany).filter(MerchantCompany.id == disabled_company["id"]).one()
+    db_company.status = "disabled"
+    session.commit()
+    companies = broker_client.get(
+        f"{API}/public/merchant/broker-companies",
+        params={"keyword": "经纪公司"},
+    ).json()
+    ids = {item["id"] for item in companies["items"]}
+    assert disabled_company["id"] not in ids
+    assert companies["items"][0]["company_name"]
+    assert "contact_phone" not in companies["items"][0]
 
 
 def test_my_recommended_leads_with_followups(

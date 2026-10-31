@@ -54,6 +54,12 @@ Page({
     scanSignedDate: "",
     uploading: false,
     submitting: false,
+    supplementOpen: false,
+    supplementFileUrl: "",
+    supplementFileName: "",
+    supplementRemark: "",
+    supplementUploading: false,
+    supplementSaving: false,
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -179,6 +185,74 @@ Page({
       },
       fail: () => wx.showToast({ title: "选择文件失败", icon: "none" }),
     });
+  },
+
+  onOpenSupplement() {
+    this.setData({
+      supplementOpen: true,
+      supplementFileUrl: "",
+      supplementFileName: "",
+      supplementRemark: "",
+    });
+  },
+
+  onCloseSupplement() {
+    this.setData({ supplementOpen: false });
+  },
+
+  onSupplementRemarkInput(e: WechatMiniprogram.Input) {
+    this.setData({ supplementRemark: e.detail.value });
+  },
+
+  onChooseSupplementFile() {
+    wx.chooseMessageFile({
+      count: 1,
+      type: "file",
+      extension: ["pdf", "jpg", "jpeg", "png"],
+      success: async (res) => {
+        const file = res.tempFiles[0];
+        if (!file) return;
+        this.setData({ supplementUploading: true });
+        wx.showLoading({ title: "上传中", mask: true });
+        try {
+          const url = await uploadFileToServer(file.path);
+          this.setData({ supplementFileUrl: url, supplementFileName: file.name });
+        } catch (err) {
+          wx.showToast({ title: errMessage(err), icon: "none" });
+        } finally {
+          wx.hideLoading();
+          this.setData({ supplementUploading: false });
+        }
+      },
+      fail: () => wx.showToast({ title: "选择文件失败", icon: "none" }),
+    });
+  },
+
+  async onSubmitSupplement(): Promise<void> {
+    const agreement = this.data.agreement;
+    if (!agreement) return;
+    if (!this.data.supplementFileUrl) {
+      wx.showToast({ title: "请先上传补充协议文件", icon: "none" });
+      return;
+    }
+    this.setData({ supplementSaving: true });
+    try {
+      await request<Agreement>({
+        url: `/public/merchant/agreements/${agreement.id}/supplement`,
+        method: "POST",
+        data: {
+          file_url: this.data.supplementFileUrl,
+          remark: this.data.supplementRemark.trim() || undefined,
+        },
+      });
+      this.setData({ supplementOpen: false });
+      wx.showToast({ title: "补充协议已创建", icon: "success" });
+      await this.load();
+    } catch (err) {
+      wx.showToast({ title: errMessage(err), icon: "none" });
+    } finally {
+      this.setData({ supplementSaving: false });
+    }
   },
 
   async onSubmitScan(): Promise<void> {

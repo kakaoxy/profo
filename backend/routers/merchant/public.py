@@ -16,6 +16,7 @@ from schemas.merchant import (
     BrokerBindingResponse,
     BrokerBindRequest,
     BrokerChangeRequest,
+    BrokerCompanyOptionListResponse,
     BrokerLeadListResponse,
     BrokerMyStoreResponse,
     BrokerQRCodeResolveResponse,
@@ -369,6 +370,19 @@ def list_my_broker_leads(
         page=pagination.page,
         page_size=pagination.page_size,
     )
+
+
+@router.get("/broker-companies", summary="经纪人注册建店可选公司")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def search_broker_companies(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: CurrentCustomerUserDep,
+    keyword: Annotated[str | None, Query(max_length=100, description="公司名称关键词")] = None,
+    limit: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> BrokerCompanyOptionListResponse:
+    """仅返回正常公司，不暴露联系人/电话."""
+    return MerchantBrokerService(db).search_active_companies(keyword=keyword, limit=limit)
 
 
 @router.get("/broker-stores", summary="经纪人可选门店搜索")

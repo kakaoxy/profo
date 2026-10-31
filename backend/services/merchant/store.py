@@ -369,8 +369,8 @@ class MerchantStoreService:
 
         address_changed = (
             (req.address is not None and req.address.strip() != store.address)
-            or (req.lng is not None and float(req.lng) != float(store.lng))
-            or (req.lat is not None and float(req.lat) != float(store.lat))
+            or (req.lng is not None and (store.lng is None or float(req.lng) != float(store.lng)))
+            or (req.lat is not None and (store.lat is None or float(req.lat) != float(store.lat)))
             or (req.district is not None and req.district.strip() != store.district)
         )
         if address_changed and req.change_type == "edit":

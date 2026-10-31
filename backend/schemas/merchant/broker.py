@@ -117,6 +117,20 @@ class BrokerMyStoreResponse(BaseModel):
     bound_at: datetime | None
 
 
+class BrokerCompanyOption(BaseModel):
+    """经纪人注册建店可选公司（仅 id/名称）."""
+
+    id: str
+    company_name: str
+
+
+class BrokerCompanyOptionListResponse(BaseModel):
+    """经纪人可选公司搜索响应."""
+
+    items: list[BrokerCompanyOption]
+    total: int
+
+
 class BrokerStoreOption(BaseModel):
     """经纪人可选门店（不含联系人/电话等内部跟进信息）."""
 
@@ -257,6 +271,13 @@ class BrokerAdminUpdate(BaseModel):
         return _normalize_phone(value)
 
 
+class BrokerForceChangeRequest(BaseModel):
+    """后台强制换绑经纪人."""
+
+    store_id: str = Field(min_length=1, max_length=36)
+    reason: str = Field(min_length=1, max_length=500)
+
+
 class BrokerStatusChangeRequest(BaseModel):
     """后台停用/启用经纪人."""
 
@@ -278,6 +299,9 @@ __all__ = [
     "BrokerBindRequest",
     "BrokerBindingResponse",
     "BrokerChangeRequest",
+    "BrokerCompanyOption",
+    "BrokerCompanyOptionListResponse",
+    "BrokerForceChangeRequest",
     "BrokerLeadFollowUpItem",
     "BrokerLeadItem",
     "BrokerLeadListResponse",

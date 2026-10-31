@@ -113,9 +113,14 @@ export default function MerchantStoreDetailPage() {
           title="门店详情"
           description="档案 · 经纪人 · 拜访时间线 · 协议 · 线索统计"
           actions={
-            <Button variant="outline" asChild>
-              <Link href="/admin/merchant/stores">返回列表</Link>
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" asChild>
+                <Link href={`/admin/merchant/stores/new?mode=edit&store_id=${storeId}`}>编辑门店</Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <Link href="/admin/merchant/stores">返回列表</Link>
+              </Button>
+            </div>
           }
         />
 

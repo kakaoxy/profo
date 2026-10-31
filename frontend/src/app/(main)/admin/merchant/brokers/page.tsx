@@ -46,6 +46,9 @@ export default function MerchantBrokersPage() {
   const [formStoreId, setFormStoreId] = useState("");
   const [formRemark, setFormRemark] = useState("");
   const [saving, setSaving] = useState(false);
+  const [changeTarget, setChangeTarget] = useState<BrokerList["items"][number] | null>(null);
+  const [changeStoreId, setChangeStoreId] = useState("");
+  const [changeReasonText, setChangeReasonText] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -162,6 +165,27 @@ export default function MerchantBrokersPage() {
     }
   };
 
+  const submitForceChange = async () => {
+    if (!changeTarget || !changeStoreId || !changeReasonText.trim()) {
+      setError("请选择新门店并填写换绑原因");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await merchantApi(`/admin/merchant/brokers/${changeTarget.id}/change`, {
+        method: "POST",
+        body: JSON.stringify({ store_id: changeStoreId, reason: changeReasonText.trim() }),
+      });
+      setChangeTarget(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "强制换绑失败");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const approveBinding = async (id: string, approve: boolean) => {
     try {
       await merchantApi(`/admin/merchant/bindings/${id}/approve`, {
@@ -242,7 +266,47 @@ export default function MerchantBrokersPage() {
           <Button variant="outline" onClick={() => void load()} disabled={loading}>
             查询
           </Button>
+          <Button variant="outline" asChild>
+            <a
+              href={`/api/v1/admin/merchant/brokers/export${queryString({
+                keyword: keyword.trim() || undefined,
+              })}`}
+            >
+              导出 CSV
+            </a>
+          </Button>
         </Card>
+
+        {changeTarget ? (
+          <Card className="flex flex-col gap-3 p-4">
+            <div className="text-sm font-medium">强制换绑：{changeTarget.name}</div>
+            <Select value={changeStoreId} onValueChange={setChangeStoreId}>
+              <SelectTrigger>
+                <SelectValue placeholder="选择新门店" />
+              </SelectTrigger>
+              <SelectContent>
+                {stores.map((store) => (
+                  <SelectItem key={store.id} value={store.id}>
+                    {store.store_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              placeholder="换绑原因（必填）"
+              value={changeReasonText}
+              onChange={(event) => setChangeReasonText(event.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button onClick={() => void submitForceChange()} disabled={saving}>
+                确认换绑
+              </Button>
+              <Button variant="outline" onClick={() => setChangeTarget(null)}>
+                取消
+              </Button>
+            </div>
+          </Card>
+        ) : null}
 
         {error ? <Card className="p-4 text-sm text-error">{error}</Card> : null}
 
@@ -304,9 +368,22 @@ export default function MerchantBrokersPage() {
                           编辑
                         </Button>
                         {item.store_id ? (
-                          <Button size="sm" variant="outline" onClick={() => void forceUnbind(item.id)}>
-                            强制解绑
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setChangeTarget(item);
+                                setChangeStoreId("");
+                                setChangeReasonText("");
+                              }}
+                            >
+                              换绑
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => void forceUnbind(item.id)}>
+                              强制解绑
+                            </Button>
+                          </>
                         ) : null}
                         {item.bind_status === "disabled" ? (
                           <Button size="sm" variant="outline" onClick={() => void changeStatus(item.id, "unbound")}>

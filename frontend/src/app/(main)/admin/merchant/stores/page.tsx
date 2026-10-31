@@ -105,6 +105,17 @@ export default function MerchantStoresPage() {
             <Button variant="outline" onClick={() => void load(1)} disabled={loading}>
               <RefreshCw className="mr-1 h-4 w-4" /> 查询
             </Button>
+            <Button variant="outline" asChild>
+              <a
+                href={`/api/v1/admin/merchant/stores/export${queryString({
+                  keyword: keyword.trim() || undefined,
+                  status: status === "all" ? undefined : status,
+                  review_status: reviewStatus === "all" ? undefined : reviewStatus,
+                })}`}
+              >
+                导出 CSV
+              </a>
+            </Button>
             <Button asChild className="ml-auto">
               <Link href="/admin/merchant/stores/new">
                 <Plus className="mr-1 h-4 w-4" /> 新建门店

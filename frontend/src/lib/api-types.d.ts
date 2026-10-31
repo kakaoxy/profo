@@ -7114,6 +7114,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/brokers/{broker_id}/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 强制换绑经纪人
+         * @description 原绑定解绑留痕，新门店绑定立即生效（不迁移历史线索）.
+         */
+        post: operations["force_change_broker_api_v1_admin_merchant_brokers__broker_id__change_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/bindings/pending": {
         parameters: {
             query?: never;
@@ -7546,6 +7566,26 @@ export interface paths {
          * @description 经纪人本人推荐线索及完整跟进记录（只读）.
          */
         get: operations["list_my_broker_leads_api_v1_public_merchant_brokers_me_leads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/broker-companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 经纪人注册建店可选公司
+         * @description 仅返回正常公司，不暴露联系人/电话.
+         */
+        get: operations["search_broker_companies_api_v1_public_merchant_broker_companies_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -9903,6 +9943,36 @@ export interface components {
              * Reason
              * @description 换绑原因
              */
+            reason: string;
+        };
+        /**
+         * BrokerCompanyOption
+         * @description 经纪人注册建店可选公司（仅 id/名称）.
+         */
+        BrokerCompanyOption: {
+            /** Id */
+            id: string;
+            /** Company Name */
+            company_name: string;
+        };
+        /**
+         * BrokerCompanyOptionListResponse
+         * @description 经纪人可选公司搜索响应.
+         */
+        BrokerCompanyOptionListResponse: {
+            /** Items */
+            items: components["schemas"]["BrokerCompanyOption"][];
+            /** Total */
+            total: number;
+        };
+        /**
+         * BrokerForceChangeRequest
+         * @description 后台强制换绑经纪人.
+         */
+        BrokerForceChangeRequest: {
+            /** Store Id */
+            store_id: string;
+            /** Reason */
             reason: string;
         };
         /**
@@ -38447,6 +38517,42 @@ export interface operations {
             };
         };
     };
+    force_change_broker_api_v1_admin_merchant_brokers__broker_id__change_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 经纪人ID */
+                broker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerForceChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_pending_bindings_api_v1_admin_merchant_bindings_pending_get: {
         parameters: {
             query?: never;
@@ -39260,6 +39366,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BrokerLeadListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_broker_companies_api_v1_public_merchant_broker_companies_get: {
+        parameters: {
+            query?: {
+                /** @description 公司名称关键词 */
+                keyword?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerCompanyOptionListResponse"];
                 };
             };
             /** @description Validation Error */
