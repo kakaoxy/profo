@@ -42,6 +42,7 @@
 
 .action-grid {
   display: flex;
+  flex-wrap: wrap;
   background: var(--pure-white);
   border-radius: 32rpx;
   box-shadow: var(--shadow-sm);
@@ -49,11 +50,12 @@
   margin-bottom: 28rpx;
 }
 .action {
-  flex: 1;
+  flex: 0 0 33.33%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10rpx;
+  padding: 12rpx 0;
   font-size: 24rpx;
   color: var(--graphite);
 }
@@ -151,6 +153,47 @@
   display: flex;
   gap: 12rpx;
   margin-top: 14rpx;
+}
+
+.agreement-row {
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--fog);
+}
+.agreement-row:last-child {
+  border-bottom: none;
+}
+.agreement-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16rpx;
+}
+.agreement-title {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+.agreement-meta {
+  margin-top: 8rpx;
+  display: flex;
+  justify-content: space-between;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+.chevron {
+  font-size: 30rpx;
+}
+.qr-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 16rpx 0;
+}
+.qr-image {
+  width: 420rpx;
+}
+.hint {
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: var(--graphite);
 }
 
 .status-row {

@@ -1,0 +1,80 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero__title">发起合作协议</view>
+    <view class="hero__sub">提交后由运营审核，审核通过进入待签署</view>
+  </view>
+
+  <view class="state" wx:if="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">{{errorText}}</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <block wx:elif="{{state === 'ok'}}">
+    <view class="card">
+      <view class="field-label">签约门店</view>
+      <view class="select-row" bindtap="onOpenStorePicker">
+        <text class="{{storeName ? '' : 'placeholder'}}">{{storeName || '请选择门店'}}</text>
+        <text class="chevron">›</text>
+      </view>
+
+      <view class="field-label">协议模板</view>
+      <picker range="{{templates}}" range-key="template_name" value="{{templateIndex}}" bindchange="onTemplateChange">
+        <view class="select-row">
+          <text class="{{templateName ? '' : 'placeholder'}}">{{templateName || '请选择模板'}}</text>
+          <text class="chevron">›</text>
+        </view>
+      </picker>
+
+      <view class="field-label">签署人姓名</view>
+      <input class="input" value="{{signerName}}" bindinput="onSignerNameInput" maxlength="50" />
+
+      <view class="field-label">签署人手机号</view>
+      <input class="input" type="number" value="{{signerPhone}}" bindinput="onSignerPhoneInput" maxlength="20" />
+
+      <view class="field-label">协议编号（可空）</view>
+      <input class="input" value="{{agreementNo}}" bindinput="onAgreementNoInput" maxlength="100" />
+
+      <view class="field-label">到期日期（可选）</view>
+      <picker mode="date" value="{{expireDate}}" bindchange="onExpireChange">
+        <view class="select-row">
+          <text class="{{expireDate ? '' : 'placeholder'}}">{{expireDate || '选择到期日期'}}</text>
+          <text class="chevron">›</text>
+        </view>
+      </picker>
+
+      <view class="field-label">备注</view>
+      <input class="input" value="{{remark}}" bindinput="onRemarkInput" maxlength="500" />
+
+      <button class="btn-primary submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit">
+        提交审核
+      </button>
+    </view>
+  </block>
+</view>
+
+<view class="modal-mask" wx:if="{{storePickerOpen}}">
+  <view class="modal">
+    <view class="modal-title">选择门店</view>
+    <scroll-view scroll-y class="store-list">
+      <view class="empty-line" wx:if="{{!stores.length}}">暂无可选门店</view>
+      <view
+        wx:for="{{stores}}"
+        wx:key="id"
+        class="option {{storeId === item.id ? 'option--active' : ''}}"
+        data-id="{{item.id}}"
+        bindtap="onPickStore"
+      >
+        <view class="option-title">{{item.name}}</view>
+        <view class="option-sub">{{item.company_name}}</view>
+        <view class="option-sub">{{item.address}}</view>
+      </view>
+    </scroll-view>
+    <view class="modal-actions">
+      <view class="mini-btn" bindtap="onCloseStorePicker">取消</view>
+    </view>
+  </view>
+</view>

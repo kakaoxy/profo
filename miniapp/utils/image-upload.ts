@@ -30,6 +30,15 @@ function uploadFile(filePath: string, token: string): Promise<UploadResult> {
   });
 }
 
+/**
+ * 上传任意允许类型文件（图片/PDF 等）并返回服务端 URL.
+ *
+ * 供协议签名图、盖章扫描件等非 chooseMedia 场景复用。
+ */
+export async function uploadFileToServer(filePath: string): Promise<string> {
+  return uploadOne(filePath);
+}
+
 async function uploadOne(filePath: string): Promise<string> {
   let token = getCAccessToken() || getAccessToken();
   let res = await uploadFile(filePath, token);

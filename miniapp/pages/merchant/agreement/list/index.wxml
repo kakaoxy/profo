@@ -1,0 +1,54 @@
+<view class="page">
+  <view class="hero">
+    <view class="hero__title">合作协议</view>
+    <view class="hero__sub">发起、审核、签署与归档</view>
+  </view>
+
+  <view class="tabs">
+    <view
+      wx:for="{{tabs}}"
+      wx:key="code"
+      class="tab {{status === item.code ? 'tab--active' : ''}}"
+      data-code="{{item.code}}"
+      bindtap="onSelectTab"
+    >{{item.label}}</view>
+  </view>
+
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">请先登录</view>
+    <view class="state__text">协议功能仅对具备商户协议权限的员工开放</view>
+    <view class="state__btn" bindtap="onGoLogin">去登录</view>
+  </view>
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">{{errorText}}</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+  <view class="state" wx:elif="{{state === 'empty'}}">
+    <view class="state__title">暂无协议</view>
+    <view class="state__text">选择门店与模板后发起合作协议</view>
+  </view>
+
+  <block wx:elif="{{state === 'items'}}">
+    <view class="list-head">共 {{total}} 份协议</view>
+    <view class="agreement-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapItem">
+      <view class="agreement-top">
+        <view class="agreement-title">{{item.title}}</view>
+        <text class="chip {{item.statusText === '待签署' ? 'chip-apricot' : 'chip-fog'}}">{{item.statusText}}</text>
+      </view>
+      <view class="agreement-line">签约主体：{{item.subject_name}}</view>
+      <view class="agreement-line">签署人：{{item.signerText}} · 审核：{{item.reviewText}}</view>
+      <view class="agreement-meta">
+        <text>到期：{{item.expireText}}</text>
+        <text class="chevron">›</text>
+      </view>
+    </view>
+  </block>
+
+  <view class="footer">
+    <button class="btn-primary footer__btn" bindtap="onCreate">发起协议</button>
+  </view>
+</view>

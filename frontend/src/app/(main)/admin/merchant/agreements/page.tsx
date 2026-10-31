@@ -21,6 +21,9 @@ import { merchantApi, queryString } from "../_components/merchant-api";
 
 type AgreementList = components["schemas"]["AgreementListResponse"];
 type Agreement = components["schemas"]["AgreementResponse"];
+type AgreementTemplate = components["schemas"]["AgreementTemplateResponse"];
+type StoreList = components["schemas"]["MerchantStoreListResponse"];
+type CompanyList = components["schemas"]["MerchantCompanyListResponse"];
 
 const STATUS_LABELS: Record<string, string> = {
   not_initiated: "未发起",
@@ -37,23 +40,103 @@ export default function MerchantAgreementsPage() {
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [templates, setTemplates] = useState<AgreementTemplate[]>([]);
+  const [stores, setStores] = useState<StoreList["items"]>([]);
+  const [companies, setCompanies] = useState<CompanyList["items"]>([]);
+  const [subjectType, setSubjectType] = useState<"store" | "company">("store");
+  const [formStoreId, setFormStoreId] = useState("");
+  const [formCompanyId, setFormCompanyId] = useState("");
+  const [formTemplateId, setFormTemplateId] = useState("");
+  const [formSignerName, setFormSignerName] = useState("");
+  const [formSignerPhone, setFormSignerPhone] = useState("");
+  const [formAgreementNo, setFormAgreementNo] = useState("");
+  const [formExpireDate, setFormExpireDate] = useState("");
+  const [formRemark, setFormRemark] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
     setError("");
     try {
-      const result = await merchantApi<AgreementList>(
-        `/admin/merchant/agreements${queryString({
-          page: 1,
-          page_size: 50,
-          status: status === "all" ? undefined : status,
-        })}`,
-      );
+      const [result, templateList, storeList, companyList] = await Promise.all([
+        merchantApi<AgreementList>(
+          `/admin/merchant/agreements${queryString({
+            page: 1,
+            page_size: 50,
+            status: status === "all" ? undefined : status,
+          })}`,
+        ),
+        merchantApi<AgreementTemplate[]>("/admin/merchant/agreement-templates"),
+        merchantApi<StoreList>("/admin/merchant/stores?page=1&page_size=200"),
+        merchantApi<CompanyList>("/admin/merchant/companies?limit=100"),
+      ]);
       setData(result);
+      setTemplates(templateList.filter((item) => item.status === "enabled"));
+      setStores(storeList.items);
+      setCompanies(companyList.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openCreate = () => {
+    setSubjectType("store");
+    setFormStoreId(stores[0]?.id || "");
+    setFormCompanyId(companies[0]?.id || "");
+    setFormTemplateId(templates[0]?.id || "");
+    setFormSignerName("");
+    setFormSignerPhone("");
+    setFormAgreementNo("");
+    setFormExpireDate("");
+    setFormRemark("");
+    setCreateOpen(true);
+  };
+
+  const onPickStore = (storeId: string) => {
+    setFormStoreId(storeId);
+    const store = stores.find((item) => item.id === storeId);
+    if (store) setFormSignerName(store.contact_name);
+  };
+
+  const createAgreement = async () => {
+    if (!formTemplateId || !formSignerName.trim() || !formSignerPhone.trim()) {
+      setError("请填写模板与签署人姓名、手机号");
+      return;
+    }
+    if (subjectType === "store" && !formStoreId) {
+      setError("请选择签约门店");
+      return;
+    }
+    if (subjectType === "company" && !formCompanyId) {
+      setError("请选择签约公司");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      await merchantApi("/admin/merchant/agreements", {
+        method: "POST",
+        body: JSON.stringify({
+          subject_type: subjectType,
+          store_id: subjectType === "store" ? formStoreId : undefined,
+          company_id: subjectType === "company" ? formCompanyId : undefined,
+          template_id: formTemplateId,
+          agreement_no: formAgreementNo.trim() || undefined,
+          signer_name: formSignerName.trim(),
+          signer_phone: formSignerPhone.trim(),
+          expire_at: formExpireDate ? new Date(`${formExpireDate}T23:59:59+08:00`).toISOString() : undefined,
+          remark: formRemark.trim() || undefined,
+        }),
+      });
+      setCreateOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "发起失败");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -97,7 +180,100 @@ export default function MerchantAgreementsPage() {
   return (
     <div className="min-h-screen bg-fog">
       <PageContainer className="flex flex-col gap-6">
-        <PageHeader title="协议管理" description="发起、审核、签署归档、到期与作废" />
+        <PageHeader
+          title="协议管理"
+          description="发起、审核、签署归档、到期与作废"
+          actions={<Button onClick={openCreate}>发起协议</Button>}
+        />
+
+        {createOpen ? (
+          <Card className="flex flex-col gap-3 p-4">
+            <div className="text-sm font-medium">发起合作协议</div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <Select value={subjectType} onValueChange={(value) => setSubjectType(value as "store" | "company")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="签约主体" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="store">门店主体</SelectItem>
+                  <SelectItem value="company">公司主体</SelectItem>
+                </SelectContent>
+              </Select>
+              {subjectType === "store" ? (
+                <Select value={formStoreId} onValueChange={onPickStore}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择门店" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {stores.map((store) => (
+                      <SelectItem key={store.id} value={store.id}>
+                        {store.store_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={formCompanyId} onValueChange={setFormCompanyId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择公司" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {companies.map((company) => (
+                      <SelectItem key={company.id} value={company.id}>
+                        {company.company_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Select value={formTemplateId} onValueChange={setFormTemplateId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="协议模板" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.template_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Input
+                placeholder="协议编号（可空）"
+                value={formAgreementNo}
+                onChange={(event) => setFormAgreementNo(event.target.value)}
+              />
+              <Input
+                placeholder="签署人姓名"
+                value={formSignerName}
+                onChange={(event) => setFormSignerName(event.target.value)}
+              />
+              <Input
+                placeholder="签署人手机号"
+                value={formSignerPhone}
+                onChange={(event) => setFormSignerPhone(event.target.value)}
+              />
+              <Input
+                type="date"
+                value={formExpireDate}
+                onChange={(event) => setFormExpireDate(event.target.value)}
+              />
+              <Input
+                placeholder="备注"
+                value={formRemark}
+                onChange={(event) => setFormRemark(event.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => void createAgreement()} disabled={saving}>
+                {saving ? "提交中…" : "提交审核"}
+              </Button>
+              <Button variant="outline" onClick={() => setCreateOpen(false)}>
+                取消
+              </Button>
+            </div>
+          </Card>
+        ) : null}
 
         <Card className="flex flex-wrap gap-3 p-4">
           <Select value={status} onValueChange={setStatus}>

@@ -7,7 +7,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { components } from "@/lib/api-types";
 import { merchantApi } from "../../_components/merchant-api";
 
@@ -33,26 +35,95 @@ export default function MerchantAgreementDetailPage() {
   const [agreement, setAgreement] = useState<Agreement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [scanOpen, setScanOpen] = useState(false);
+  const [scanFileUrl, setScanFileUrl] = useState("");
+  const [scanFileName, setScanFileName] = useState("");
+  const [scanSignerName, setScanSignerName] = useState("");
+  const [scanSignerPhone, setScanSignerPhone] = useState("");
+  const [scanSignedDate, setScanSignedDate] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [savingScan, setSavingScan] = useState(false);
 
-  useEffect(() => {
+  const load = async () => {
     if (!agreementId) return;
-    let cancelled = false;
     setLoading(true);
     setError("");
-    merchantApi<Agreement>(`/admin/merchant/agreements/${agreementId}`)
-      .then((result) => {
-        if (!cancelled) setAgreement(result);
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "加载失败");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    try {
+      const result = await merchantApi<Agreement>(`/admin/merchant/agreements/${agreementId}`);
+      setAgreement(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agreementId]);
+
+  const openScan = () => {
+    setScanFileUrl("");
+    setScanFileName("");
+    setScanSignerName(agreement?.signer_name || "");
+    setScanSignerPhone("");
+    setScanSignedDate("");
+    setScanOpen(true);
+  };
+
+  const uploadScanFile = async (file: File) => {
+    setUploading(true);
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/v1/files/upload", {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        credentials: "include",
+        body: form,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.message ?? "文件上传失败");
+        return;
+      }
+      setScanFileUrl(body.url);
+      setScanFileName(file.name);
+    } catch {
+      setError("文件上传失败，请重试");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const submitScan = async () => {
+    if (!agreement) return;
+    if (!scanFileUrl || !scanSignerName.trim() || !scanSignerPhone.trim()) {
+      setError("请上传扫描件并填写签署人姓名与手机号");
+      return;
+    }
+    setSavingScan(true);
+    setError("");
+    try {
+      await merchantApi(`/admin/merchant/agreements/${agreement.id}/scan`, {
+        method: "POST",
+        body: JSON.stringify({
+          file_url: scanFileUrl,
+          signer_name: scanSignerName.trim(),
+          signer_phone: scanSignerPhone.trim(),
+          signed_at: scanSignedDate ? new Date(`${scanSignedDate}T12:00:00+08:00`).toISOString() : null,
+        }),
+      });
+      setScanOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "扫描件归档失败");
+    } finally {
+      setSavingScan(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-fog">
@@ -121,6 +192,13 @@ export default function MerchantAgreementDetailPage() {
                 ) : (
                   <span className="text-graphite">尚未生成协议文件</span>
                 )}
+                {agreement.status !== "signed" &&
+                agreement.status !== "voided" &&
+                agreement.status !== "expired" ? (
+                  <Button size="sm" variant="outline" onClick={openScan}>
+                    上传盖章扫描件
+                  </Button>
+                ) : null}
               </div>
             </Card>
 
@@ -165,6 +243,46 @@ export default function MerchantAgreementDetailPage() {
               </Card>
             ) : null}
           </>
+        ) : null}
+
+        {scanOpen ? (
+          <Card className="fixed inset-0 z-50 m-auto flex h-fit max-h-[85vh] w-[min(560px,92vw)] flex-col gap-3 overflow-y-auto p-5">
+            <div className="text-sm font-medium">上传盖章扫描件</div>
+            <p className="text-xs text-graphite">支持 PDF/JPG/PNG，提交后协议状态变为已签署。</p>
+            <Input
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              disabled={uploading}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void uploadScanFile(file);
+              }}
+            />
+            {scanFileName ? <p className="text-xs text-graphite">已上传：{scanFileName}</p> : null}
+            <Input
+              placeholder="签署人姓名"
+              value={scanSignerName}
+              onChange={(event) => setScanSignerName(event.target.value)}
+            />
+            <Input
+              placeholder="签署人手机号"
+              value={scanSignerPhone}
+              onChange={(event) => setScanSignerPhone(event.target.value)}
+            />
+            <Input
+              type="date"
+              value={scanSignedDate}
+              onChange={(event) => setScanSignedDate(event.target.value)}
+            />
+            <div className="flex gap-2">
+              <Button onClick={() => void submitScan()} disabled={savingScan || uploading}>
+                {savingScan ? "提交中…" : "提交归档"}
+              </Button>
+              <Button variant="outline" onClick={() => setScanOpen(false)}>
+                取消
+              </Button>
+            </div>
+          </Card>
         ) : null}
       </PageContainer>
     </div>

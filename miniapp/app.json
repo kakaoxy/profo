@@ -57,7 +57,17 @@
     },
     {
       "root": "pages/merchant",
-      "pages": ["home/index", "store/create/index", "store/detail/index", "visit/create/index"]
+      "pages": [
+        "home/index",
+        "store/create/index",
+        "store/detail/index",
+        "visit/create/index",
+        "broker/index",
+        "agreement/list/index",
+        "agreement/create/index",
+        "agreement/detail/index",
+        "agreement/sign/index"
+      ]
     },
     {
       "root": "pages/keys",

@@ -12,6 +12,24 @@ type VisitList = components["schemas"]["MerchantVisitListResponse"];
 type StatusLog = components["schemas"]["MerchantStoreStatusLogResponse"];
 type DictResponse = components["schemas"]["PublicDictListResponse"];
 type DictItem = components["schemas"]["PublicDictItemResponse"];
+type AgreementListResponse = components["schemas"]["AgreementListResponse"];
+type Agreement = components["schemas"]["AgreementResponse"];
+type BrokerQRCode = components["schemas"]["BrokerQRCodeResponse"];
+
+const AGREEMENT_STATUS_LABELS: Record<string, string> = {
+  not_initiated: "未发起",
+  pending_sign: "待签署",
+  signed: "已签署",
+  expired: "已过期",
+  voided: "已作废",
+};
+
+interface DisplayAgreement {
+  id: string;
+  title: string;
+  statusText: string;
+  expireText: string;
+}
 
 interface DisplayPhoto extends MerchantPhoto {
   displayUrl: string;
@@ -74,6 +92,10 @@ Page({
     statusReason: "",
     visitResultLabels: {} as Record<string, string>,
     cooperationLabels: {} as Record<string, string>,
+    agreements: [] as DisplayAgreement[],
+    qrOpen: false,
+    qrImage: "",
+    qrExpiresText: "",
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -94,12 +116,16 @@ Page({
     this.setData({ state: "loading" });
     try {
       const storeId = (this as unknown as { storeId: string }).storeId;
-      const [store, visits, logs, cooperationDict, resultDict] = await Promise.all([
+      const [store, visits, logs, cooperationDict, resultDict, agreements] = await Promise.all([
         request<StoreResponse>({ url: `/public/merchant/stores/${storeId}` }),
         request<VisitList>({ url: `/public/merchant/stores/${storeId}/visits`, data: { page: 1, page_size: 50 } }),
         request<StatusLog[]>({ url: `/public/merchant/stores/${storeId}/status-logs` }),
         request<DictResponse>({ url: "/public/dicts/merchant_cooperation_status", skipAuth: true }),
         request<DictResponse>({ url: "/public/dicts/merchant_visit_result", skipAuth: true }),
+        request<AgreementListResponse>({
+          url: "/public/merchant/agreements",
+          data: { page: 1, page_size: 20, store_id: storeId },
+        }).catch(() => ({ items: [], total: 0, page: 1, page_size: 20 })),
       ]);
       const cooperationLabels: Record<string, string> = {};
       cooperationDict.items.forEach((item: DictItem) => {
@@ -137,6 +163,12 @@ Page({
         cooperationLabels,
         visitResultLabels,
         statusOptions: cooperationDict.items.filter((item: DictItem) => item.code !== store.cooperation_status),
+        agreements: agreements.items.map((item: Agreement) => ({
+          id: item.id,
+          title: item.agreement_no || item.id.slice(0, 8),
+          statusText: AGREEMENT_STATUS_LABELS[item.status] || item.status,
+          expireText: item.expire_at ? formatDate(item.expire_at).slice(0, 10) : "—",
+        })),
       });
     } catch (err) {
       this.setData({ state: "error", errorText: errMessage(err) });
@@ -155,6 +187,60 @@ Page({
   onEdit() {
     const storeId = (this as unknown as { storeId: string }).storeId;
     wx.navigateTo({ url: `/pages/merchant/store/create/index?mode=edit&store_id=${storeId}` });
+  },
+
+  onOpenAgreements() {
+    const storeId = (this as unknown as { storeId: string }).storeId;
+    wx.navigateTo({ url: `/pages/merchant/agreement/list/index?store_id=${storeId}` });
+  },
+
+  onCreateAgreement() {
+    const storeId = (this as unknown as { storeId: string }).storeId;
+    wx.navigateTo({ url: `/pages/merchant/agreement/create/index?store_id=${storeId}` });
+  },
+
+  onAgreementTap(e: WechatMiniprogram.BaseEvent) {
+    const id = e.currentTarget.dataset.id as string;
+    wx.navigateTo({ url: `/pages/merchant/agreement/detail/index?id=${id}` });
+  },
+
+  async onInviteBroker(): Promise<void> {
+    const storeId = (this as unknown as { storeId: string }).storeId;
+    wx.showLoading({ title: "生成中", mask: true });
+    try {
+      const qr = await request<BrokerQRCode>({
+        url: `/public/merchant/stores/${storeId}/broker-qrcode`,
+        method: "POST",
+      });
+      this.setData({
+        qrOpen: true,
+        qrImage: qr.image_base64,
+        qrExpiresText: formatDate(qr.expires_at),
+      });
+    } catch (err) {
+      wx.showToast({ title: errMessage(err), icon: "none" });
+    } finally {
+      wx.hideLoading();
+    }
+  },
+
+  onCloseQr() {
+    this.setData({ qrOpen: false });
+  },
+
+  onSaveQr() {
+    if (!this.data.qrImage) return;
+    try {
+      const path = `${wx.env.USER_DATA_PATH}/merchant-broker-qr-${Date.now()}.png`;
+      wx.getFileSystemManager().writeFileSync(path, this.data.qrImage, "base64");
+      wx.saveImageToPhotosAlbum({
+        filePath: path,
+        success: () => wx.showToast({ title: "已保存到相册", icon: "success" }),
+        fail: () => wx.showToast({ title: "保存失败，请授权相册权限", icon: "none" }),
+      });
+    } catch {
+      wx.showToast({ title: "保存失败", icon: "none" });
+    }
   },
 
   onChangeStatus() {

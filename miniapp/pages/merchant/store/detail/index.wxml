@@ -46,6 +46,29 @@
         <text class="action__icon">照</text>
         <text>补录照片</text>
       </view>
+      <view class="action" bindtap="onOpenAgreements">
+        <text class="action__icon">协</text>
+        <text>合作协议</text>
+      </view>
+      <view class="action" bindtap="onInviteBroker">
+        <text class="action__icon">邀</text>
+        <text>邀请经纪人</text>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-head">
+        <view class="section-title">合作协议</view>
+        <text class="link" bindtap="onCreateAgreement">＋ 发起协议</text>
+      </view>
+      <view class="empty-line" wx:if="{{!agreements.length}}">暂无协议</view>
+      <view class="agreement-row" wx:for="{{agreements}}" wx:key="id" data-id="{{item.id}}" bindtap="onAgreementTap">
+        <view class="agreement-top">
+          <text class="agreement-title">{{item.title}}</text>
+          <text class="chip chip-fog">{{item.statusText}}</text>
+        </view>
+        <view class="agreement-meta">到期：{{item.expireText}} <text class="chevron">›</text></view>
+      </view>
     </view>
 
     <view class="section" wx:if="{{photos.length}}">
@@ -91,6 +114,20 @@
       </view>
     </view>
   </block>
+
+  <view class="modal-mask" wx:if="{{qrOpen}}">
+    <view class="modal">
+      <view class="modal-title">门店经纪人邀请</view>
+      <view class="qr-wrap">
+        <image class="qr-image" mode="widthFix" src="data:image/png;base64,{{qrImage}}" />
+      </view>
+      <view class="hint">经纪人扫码后完成认证并自动绑定本门店；有效期至 {{qrExpiresText}}。</view>
+      <view class="modal-actions">
+        <view class="mini-btn" bindtap="onCloseQr">关闭</view>
+        <view class="mini-btn mini-btn--primary" bindtap="onSaveQr">保存到相册</view>
+      </view>
+    </view>
+  </view>
 
   <view class="modal-mask" wx:if="{{statusOpen}}">
     <view class="modal">

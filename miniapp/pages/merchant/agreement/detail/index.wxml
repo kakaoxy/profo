@@ -1,0 +1,63 @@
+<view class="page">
+  <view class="state" wx:if="{{state === 'loading'}}">
+    <view class="state__text">加载中...</view>
+  </view>
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">加载失败</view>
+    <view class="state__text">{{errorText}}</view>
+    <view class="state__btn" bindtap="onRetry">重试</view>
+  </view>
+
+  <block wx:elif="{{state === 'ok' && agreement}}">
+    <view class="hero">
+      <view class="hero__top">
+        <view class="hero__title">{{agreement.agreement_no || '合作协议'}}</view>
+        <text class="chip {{agreement.status === 'signed' ? 'chip-sky' : 'chip-apricot'}}">{{statusText}}</text>
+      </view>
+      <view class="hero__sub">{{agreement.template_name || '协议模板'}} · {{agreement.subject_type === 'store' ? '门店主体' : '公司主体'}}</view>
+    </view>
+
+    <view class="card">
+      <view class="row"><text class="row-label">签约主体</text><text>{{agreement.subject_name || '—'}}</text></view>
+      <view class="row"><text class="row-label">审核状态</text><text>{{reviewText}}</text></view>
+      <view class="row"><text class="row-label">签署人</text><text>{{agreement.signer_name || '—'}} · {{signerPhoneMasked}}</text></view>
+      <view class="row"><text class="row-label">签署时间</text><text>{{signedAtText}}</text></view>
+      <view class="row"><text class="row-label">到期时间</text><text>{{expireAtText}}</text></view>
+      <view class="row"><text class="row-label">创建时间</text><text>{{createdAtText}}</text></view>
+      <view class="row" wx:if="{{agreement.review_remark}}"><text class="row-label">审核意见</text><text>{{agreement.review_remark}}</text></view>
+      <view class="row" wx:if="{{agreement.remark}}"><text class="row-label">备注</text><text>{{agreement.remark}}</text></view>
+    </view>
+
+    <view class="card">
+      <view class="actions">
+        <view class="mini-btn" wx:if="{{fileDisplayUrl}}" bindtap="onOpenFile">查看协议文件</view>
+        <view class="mini-btn mini-btn--primary" wx:if="{{agreement.status === 'pending_sign'}}" bindtap="onSign">去签署</view>
+        <view class="mini-btn" wx:if="{{agreement.status !== 'voided' && agreement.status !== 'expired' && agreement.status !== 'signed'}}" bindtap="onOpenScan">上传盖章扫描件</view>
+      </view>
+      <view class="hint" wx:if="{{agreement.status === 'not_initiated' && agreement.review_status === 'pending'}}">
+        协议已提交，等待运营审核；审核通过后可进入签署。
+      </view>
+      <view class="hint" wx:if="{{agreement.status === 'signed'}}">门店主体协议签署完成后，门店合作状态将联动为「已合作」。</view>
+    </view>
+  </block>
+</view>
+
+<view class="modal-mask" wx:if="{{scanOpen}}">
+  <view class="modal">
+    <view class="modal-title">上传盖章扫描件</view>
+    <view class="hint">上传线下盖章后的 PDF 或图片，提交后协议状态变为已签署。</view>
+    <view class="mini-btn" bindtap="onChooseScanFile">{{scanFileUrl ? '重新选择文件' : '选择文件'}}</view>
+    <view class="hint" wx:if="{{scanFileName}}">已上传：{{scanFileName}}</view>
+    <input class="input" placeholder="签署人姓名" value="{{scanSignerName}}" bindinput="onScanSignerNameInput" maxlength="50" />
+    <input class="input" type="number" placeholder="签署人手机号" value="{{scanSignerPhone}}" bindinput="onScanSignerPhoneInput" maxlength="20" />
+    <picker mode="date" value="{{scanSignedDate}}" bindchange="onScanSignedDateChange">
+      <view class="input picker-row">
+        <text class="{{scanSignedDate ? '' : 'placeholder'}}">{{scanSignedDate || '签署日期（可选）'}}</text>
+      </view>
+    </picker>
+    <view class="modal-actions">
+      <view class="mini-btn" bindtap="onCloseScan">取消</view>
+      <view class="mini-btn mini-btn--primary" bindtap="onSubmitScan">提交归档</view>
+    </view>
+  </view>
+</view>

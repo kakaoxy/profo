@@ -8,10 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
 import { merchantApi, queryString } from "../_components/merchant-api";
 
 type BrokerList = components["schemas"]["BrokerListResponse"];
+type Broker = components["schemas"]["BrokerResponse"];
+type StoreList = components["schemas"]["MerchantStoreListResponse"];
 type PendingBinding = components["schemas"]["BrokerBindingResponse"];
 
 const STATUS_LABELS: Record<string, string> = {
@@ -26,25 +35,98 @@ export default function MerchantBrokersPage() {
   const [data, setData] = useState<BrokerList | null>(null);
   const [pending, setPending] = useState<PendingBinding[]>([]);
   const [keyword, setKeyword] = useState("");
+  const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [stores, setStores] = useState<StoreList["items"]>([]);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Broker | null>(null);
+  const [formName, setFormName] = useState("");
+  const [formPhone, setFormPhone] = useState("");
+  const [formStoreId, setFormStoreId] = useState("");
+  const [formRemark, setFormRemark] = useState("");
+  const [saving, setSaving] = useState(false);
 
   const load = async () => {
     setLoading(true);
     setError("");
     try {
-      const [list, bindings] = await Promise.all([
+      const [list, bindings, storeList] = await Promise.all([
         merchantApi<BrokerList>(
           `/admin/merchant/brokers${queryString({ page: 1, page_size: 50, keyword: keyword.trim() || undefined })}`,
         ),
         merchantApi<PendingBinding[]>("/admin/merchant/bindings/pending"),
+        merchantApi<StoreList>("/admin/merchant/stores?page=1&page_size=200"),
       ]);
       setData(list);
       setPending(bindings);
+      setStores(storeList.items);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openCreate = () => {
+    setEditing(null);
+    setFormName("");
+    setFormPhone("");
+    setFormStoreId("");
+    setFormRemark("");
+    setFormOpen(true);
+  };
+
+  const openEdit = async (item: BrokerList["items"][number]) => {
+    try {
+      const broker = await merchantApi<Broker>(`/admin/merchant/brokers/${item.id}`);
+      setEditing(broker);
+      setFormName(broker.name);
+      setFormPhone("");
+      setFormStoreId(broker.store_id || "");
+      setFormRemark(broker.remark || "");
+      setFormOpen(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载经纪人失败");
+    }
+  };
+
+  const saveBroker = async () => {
+    const name = formName.trim();
+    const phone = formPhone.trim();
+    if (!name || (!editing && !phone)) {
+      setError("新建需填写姓名和手机号；编辑时手机号留空表示不修改");
+      return;
+    }
+    setSaving(true);
+    setError("");
+    try {
+      if (editing) {
+        await merchantApi(`/admin/merchant/brokers/${editing.id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            name,
+            phone: phone || undefined,
+            remark: formRemark.trim() || null,
+          }),
+        });
+      } else {
+        await merchantApi("/admin/merchant/brokers", {
+          method: "POST",
+          body: JSON.stringify({
+            name,
+            phone,
+            store_id: formStoreId || undefined,
+            remark: formRemark.trim() || null,
+          }),
+        });
+      }
+      setFormOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存失败");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -57,11 +139,26 @@ export default function MerchantBrokersPage() {
     try {
       await merchantApi(`/admin/merchant/brokers/${id}/status`, {
         method: "POST",
-        body: JSON.stringify({ target_status: target, reason: "后台操作" }),
+        body: JSON.stringify({ target_status: target, reason: reason.trim() || "后台操作" }),
       });
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "操作失败");
+    }
+  };
+
+  const forceUnbind = async (id: string) => {
+    if (!reason.trim()) {
+      setError("强制解绑必须填写原因");
+      return;
+    }
+    try {
+      await merchantApi(`/admin/merchant/brokers/${id}/unbind?reason=${encodeURIComponent(reason.trim())}`, {
+        method: "POST",
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "解绑失败");
     }
   };
 
@@ -80,7 +177,53 @@ export default function MerchantBrokersPage() {
   return (
     <div className="min-h-screen bg-fog">
       <PageContainer className="flex flex-col gap-6">
-        <PageHeader title="经纪人管理" description="经纪人档案、门店绑定与换绑/解绑审批" />
+        <PageHeader
+          title="经纪人管理"
+          description="经纪人档案、门店绑定与换绑/解绑审批"
+          actions={<Button onClick={openCreate}>新建经纪人</Button>}
+        />
+
+        {formOpen ? (
+          <Card className="flex flex-col gap-3 p-4">
+            <div className="text-sm font-medium">{editing ? `编辑经纪人：${editing.name}` : "新建经纪人"}</div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <Input placeholder="姓名" value={formName} onChange={(event) => setFormName(event.target.value)} />
+              <Input
+                placeholder={editing ? "新手机号（留空不修改）" : "手机号"}
+                value={formPhone}
+                onChange={(event) => setFormPhone(event.target.value)}
+              />
+              {!editing ? (
+                <Select value={formStoreId || "none"} onValueChange={(value) => setFormStoreId(value === "none" ? "" : value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="绑定门店（可选）" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">暂不绑定门店</SelectItem>
+                    {stores.map((store) => (
+                      <SelectItem key={store.id} value={store.id}>
+                        {store.store_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : null}
+              <Input
+                placeholder="备注"
+                value={formRemark}
+                onChange={(event) => setFormRemark(event.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={() => void saveBroker()} disabled={saving}>
+                {saving ? "保存中…" : "保存"}
+              </Button>
+              <Button variant="outline" onClick={() => setFormOpen(false)}>
+                取消
+              </Button>
+            </div>
+          </Card>
+        ) : null}
 
         <Card className="flex flex-wrap gap-3 p-4">
           <Input
@@ -89,6 +232,12 @@ export default function MerchantBrokersPage() {
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onKeyDown={(event) => event.key === "Enter" && void load()}
+          />
+          <Input
+            className="w-72"
+            placeholder="操作原因（停用/强制解绑）"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
           />
           <Button variant="outline" onClick={() => void load()} disabled={loading}>
             查询
@@ -150,15 +299,25 @@ export default function MerchantBrokersPage() {
                     <td className="px-4 py-3 text-xs text-graphite">{item.source}</td>
                     <td className="px-4 py-3">{item.recommendation_count}</td>
                     <td className="px-4 py-3">
-                      {item.bind_status === "disabled" ? (
-                        <Button size="sm" variant="outline" onClick={() => void changeStatus(item.id, "unbound")}>
-                          启用
+                      <div className="flex flex-wrap gap-1">
+                        <Button size="sm" variant="outline" onClick={() => void openEdit(item)}>
+                          编辑
                         </Button>
-                      ) : (
-                        <Button size="sm" variant="outline" onClick={() => void changeStatus(item.id, "disabled")}>
-                          停用
-                        </Button>
-                      )}
+                        {item.store_id ? (
+                          <Button size="sm" variant="outline" onClick={() => void forceUnbind(item.id)}>
+                            强制解绑
+                          </Button>
+                        ) : null}
+                        {item.bind_status === "disabled" ? (
+                          <Button size="sm" variant="outline" onClick={() => void changeStatus(item.id, "unbound")}>
+                            启用
+                          </Button>
+                        ) : (
+                          <Button size="sm" variant="outline" onClick={() => void changeStatus(item.id, "disabled")}>
+                            停用
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -160,6 +160,8 @@ interface PageCustom {
   onHouseSimulatorTap(): void;
   /** 投资测算器：仅已完善手机号的用户可用（未登录/未绑定手机号均拦截）. */
   onInvestCalculatorTap(): void;
+  /** 经纪人中心：C 端用户认证、绑定门店与推荐记录（内部员工不展示）. */
+  onBrokerTap(): void;
   onRecruitTap(): void;
   onMenuTap(e: WechatMiniprogram.BaseEvent): void;
   onPhoneModalSkip(): void;
@@ -579,6 +581,11 @@ Page<PageData, PageCustom>({
       return;
     }
     wx.navigateTo({ url: "/pages/invest-calculator/index/index" });
+  },
+
+  /** 经纪人中心：仅 C 端用户可见（内部员工不可注册经纪人）. */
+  onBrokerTap() {
+    wx.navigateTo({ url: "/pages/merchant/broker/index" });
   },
 
   /**
