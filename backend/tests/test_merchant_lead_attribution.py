@@ -248,6 +248,37 @@ def test_attribution_change_writes_audit_log(
     assert logs[0].after["broker_id"] == broker["id"]
 
 
+def test_employee_lead_list_scoped_to_own_attribution(seeded_db: dict) -> None:
+    """员工（非 admin/operator）线索列表仅返回本人创建或本人归因线索."""
+    session: Session = seeded_db["session"]
+    user_role = session.query(Role).filter(Role.code == "user").one()
+    employee = User(
+        id=str(uuid.uuid4()),
+        username=f"scope-{uuid.uuid4().hex[:8]}",
+        password=get_password_hash(f"pw-{uuid.uuid4().hex}"),
+        nickname="范围员工",
+        role_id=user_role.id,
+        status="active",
+    )
+    session.add(employee)
+    session.flush()
+    session.add_all(
+        [
+            Lead(community_name="本人创建线索", creator_id=employee.id),
+            Lead(community_name="本人归因线索", store_owner_employee_id=employee.id),
+            Lead(community_name="他人线索"),
+        ],
+    )
+    session.commit()
+
+    employee_client = _client(session, employee, c_side=False)
+    resp = employee_client.get(f"{API}/leads")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["total"] == 2
+    assert {item["community_name"] for item in body["items"]} == {"本人创建线索", "本人归因线索"}
+
+
 def test_lead_list_marks_disabled_or_deleted_attribution(
     admin_client: TestClient,
     employee: User,

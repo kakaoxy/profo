@@ -73,6 +73,7 @@ class LeadQueryService:
         attribution_employee_id: str | None = None,
         layout: str | None = None,
         floor: str | None = None,
+        scope_employee_id: str | None = None,
     ) -> dict[str, Any]:
         """获取线索列表（分页）.
 
@@ -88,6 +89,7 @@ class LeadQueryService:
             attribution_employee_id: 归属员工筛选（分享/门店归属/经纪人邀请任一命中）
             layout: 户型筛选
             floor: 楼层筛选
+            scope_employee_id: 员工数据范围（仅本人创建/归因线索；admin/operator 为空）
 
         Returns:
             包含线索列表和分页信息的字典
@@ -140,6 +142,16 @@ class LeadQueryService:
                     Lead.referrer_id == attribution_employee_id,
                     Lead.store_owner_employee_id == attribution_employee_id,
                     Lead.broker_inviter_employee_id == attribution_employee_id,
+                ),
+            )
+        if scope_employee_id:
+            # 员工数据范围（V06 REQ-M07-004）：仅本人创建或本人归因线索
+            query = query.filter(
+                or_(
+                    Lead.creator_id == scope_employee_id,
+                    Lead.referrer_id == scope_employee_id,
+                    Lead.store_owner_employee_id == scope_employee_id,
+                    Lead.broker_inviter_employee_id == scope_employee_id,
                 ),
             )
         if layout:

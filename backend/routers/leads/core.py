@@ -5,6 +5,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Path, Query, Request
 from sqlalchemy.orm import Session
 
+from constants.role_codes import INTERNAL_ROLE_CODES
 from dependencies.auth import (
     DbSessionDep,
     LeadCreatePermDep,
@@ -166,6 +167,10 @@ def get_leads(
     使用手动序列化避免 ORM 关系遍历导致的性能问题.
     """
     service = LeadService(db)
+    # 数据范围（V06 REQ-M07-004）：admin/operator 全量；员工仅本人归因线索
+    role_codes = {_current_user.role.code if _current_user.role else ""}
+    role_codes.update(role.code for role in (_current_user.roles or []))
+    scope_employee_id = None if role_codes & INTERNAL_ROLE_CODES else str(_current_user.id)
     result = service.get_leads(
         page=pagination.page,
         page_size=pagination.page_size,
@@ -178,6 +183,7 @@ def get_leads(
         attribution_employee_id=attribution_employee_id,
         layout=layout,
         floor=floor,
+        scope_employee_id=scope_employee_id,
     )
 
     # 字典名称批量解析（单次两查询，无 N+1）
