@@ -6,11 +6,24 @@ from typing import Annotated
 from fastapi import APIRouter, Query, Request
 
 from dependencies.auth import DbSessionDep, MerchantMapPermDep
+from schemas.amap_config import AmapConfigResponse
 from schemas.merchant import MerchantMapResponse, MerchantTrackResponse
 from services.merchant.map import MerchantMapService
+from services.system import amap_config
 from utils.common import RateLimits, limiter
 
 router = APIRouter(prefix="/admin/merchant", tags=["merchant-map"])
+
+
+@router.get("/map/config", summary="地图配置（高德 Key）")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def map_config(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: MerchantMapPermDep,
+) -> AmapConfigResponse:
+    """地图页按需读取高德 Key；未配置时返回空串，前端降级为列表."""
+    return amap_config.get_amap_config(db)
 
 
 @router.get("/map/stores", summary="门店地图点位与统计")

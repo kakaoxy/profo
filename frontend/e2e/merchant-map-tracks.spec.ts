@@ -207,10 +207,8 @@ test.beforeEach(async ({ page }) => {
   await loginPage(page);
 });
 
-test("门店地图在未配置 Key 时降级，筛选与统计/坐标缺失仍可用", async ({ page }) => {
+test("门店地图降级/列表筛选/统计/坐标缺失可用", async ({ page }) => {
   await page.goto("/admin/merchant/map");
-  await expect(page.getByText("未配置 NEXT_PUBLIC_AMAP_KEY")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("地图未配置")).toBeVisible();
 
   // 按唯一区县筛选 → 统计与列表同步
   await page.getByPlaceholder("区县").fill(seeded.district);
@@ -231,11 +229,8 @@ test("门店地图在未配置 Key 时降级，筛选与统计/坐标缺失仍�
 
 test("拜访轨迹按员工/日期查询，时间线展示有坐标与无坐标拜访", async ({ page }) => {
   await page.goto("/admin/merchant/tracks");
-  await expect(page.getByText("未配置 NEXT_PUBLIC_AMAP_KEY")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("地图未配置")).toBeVisible();
-
-  // 等首屏自动加载完成后再切到目标员工，避免自动加载结果覆盖
-  await expect(page.getByText(/拜访 \d+ 次/)).toBeVisible({ timeout: 15_000 });
+  // 地图 Key 由后台配置：不强制地图区域，时间线与统计在两种模式下均应可用
+  await expect(page.getByText(/拜访 \d+ 次/)).toBeVisible({ timeout: 30_000 });
   await page.getByRole("combobox").first().click();
   await page.getByRole("option", { name: seeded.employee_name }).click();
   await page.getByRole("button", { name: "查询轨迹" }).click();

@@ -260,6 +260,11 @@ export const navMain: NavItem[] = [
         roles: [ROLE_CODES.ADMIN],
       },
       {
+        title: "高德地图",
+        url: "/admin/settings/amap",
+        roles: [ROLE_CODES.ADMIN],
+      },
+      {
         title: "业务字典",
         url: "/admin/settings/dicts",
         roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],

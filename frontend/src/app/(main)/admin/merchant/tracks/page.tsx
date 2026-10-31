@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
@@ -22,8 +23,7 @@ import { merchantApi, queryString } from "../_components/merchant-api";
 type TrackResponse = components["schemas"]["MerchantTrackResponse"];
 type TrackItem = components["schemas"]["MerchantTrackItem"];
 type UserSimple = components["schemas"]["UserSimpleResponse"];
-
-const AMAP_KEY = process.env.NEXT_PUBLIC_AMAP_KEY;
+type AmapConfig = components["schemas"]["AmapConfigResponse"];
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
@@ -38,6 +38,8 @@ export default function MerchantTracksPage() {
   const [selectedId, setSelectedId] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // 高德 Key 由后台「系统设置 → 高德地图」配置，按需读取（null=加载中）
+  const [amapKey, setAmapKey] = useState<string | null>(null);
   const mapRef = useRef<AMapMap | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const markersRef = useRef<Map<string, AMapMarker>>(new Map());
@@ -50,6 +52,12 @@ export default function MerchantTracksPage() {
         if (result.items.length) setEmployeeId(result.items[0].id);
       })
       .catch(() => setUsers([]));
+  }, []);
+
+  useEffect(() => {
+    merchantApi<AmapConfig>("/admin/merchant/map/config")
+      .then((config) => setAmapKey(config.js_key || ""))
+      .catch(() => setAmapKey(""));
   }, []);
 
   const load = async () => {
@@ -79,7 +87,7 @@ export default function MerchantTracksPage() {
   }, [users]);
 
   useEffect(() => {
-    if (!data || !AMAP_KEY || !containerRef.current) return;
+    if (!data || !amapKey || !containerRef.current) return;
     let disposed = false;
     const render = () => {
       if (disposed || !containerRef.current || !window.AMap) return;
@@ -127,9 +135,15 @@ export default function MerchantTracksPage() {
       render();
     } else {
       const script = document.createElement("script");
-      script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}`;
+      script.src = `https://webapi.amap.com/maps?v=2.0&key=${amapKey}`;
       script.async = true;
-      script.onload = render;
+      script.onload = () => {
+        if (!window.AMap) {
+          setError("高德地图加载失败（Key 无效或平台不是 Web 端 JS API），时间线仍可使用");
+          return;
+        }
+        render();
+      };
       script.onerror = () => setError("高德地图加载失败，时间线仍可使用");
       document.body.appendChild(script);
     }
@@ -141,7 +155,7 @@ export default function MerchantTracksPage() {
       createdMap?.destroy();
       if (mapRef.current === createdMap) mapRef.current = null;
     };
-  }, [data]);
+  }, [data, amapKey]);
 
   const focus = (item: TrackItem) => {
     setSelectedId(item.visit_id);
@@ -155,9 +169,13 @@ export default function MerchantTracksPage() {
       <PageContainer className="flex flex-col gap-6">
         <PageHeader title="拜访轨迹" description="按员工与日期查看到店打卡点顺序连线；不采集连续 GPS" />
 
-        {!AMAP_KEY ? (
+        {amapKey === "" ? (
           <Card className="p-4 text-sm text-graphite">
-            未配置 NEXT_PUBLIC_AMAP_KEY，地图轨迹不可用；时间线与统计仍可正常使用。
+            未配置高德地图 Key，地图轨迹不可用；时间线与统计仍可正常使用。请前往
+            <Link className="mx-1 text-rust hover:underline" href="/admin/settings/amap">
+              系统设置 · 高德地图
+            </Link>
+            配置后刷新本页。
           </Card>
         ) : null}
         {error ? <Card className="p-4 text-sm text-error">{error}</Card> : null}
@@ -214,9 +232,12 @@ export default function MerchantTracksPage() {
             ) : null}
           </Card>
           <Card className="min-h-[420px] overflow-hidden p-0">
-            {AMAP_KEY ? <div ref={containerRef} className="h-[520px] w-full" /> : null}
-            {!AMAP_KEY ? (
+            {amapKey ? <div ref={containerRef} className="h-[520px] w-full" /> : null}
+            {amapKey === "" ? (
               <div className="flex h-[420px] items-center justify-center text-sm text-graphite">地图未配置</div>
+            ) : null}
+            {amapKey === null ? (
+              <div className="flex h-[420px] items-center justify-center text-sm text-graphite">地图配置加载中…</div>
             ) : null}
           </Card>
         </div>

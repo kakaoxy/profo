@@ -4021,6 +4021,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/amap-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Amap Config
+         * @description 读取高德 Web 端 Key（未配置时 configured=false）.
+         */
+        get: operations["get_amap_config_api_v1_amap_config_get"];
+        /**
+         * Update Amap Config
+         * @description 保存高德 Web 端 Key；留空保存 = 清除配置.
+         */
+        put: operations["update_amap_config_api_v1_amap_config_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/dicts": {
         parameters: {
             query?: never;
@@ -8046,6 +8070,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/map/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 地图配置（高德 Key）
+         * @description 地图页按需读取高德 Key；未配置时返回空串，前端降级为列表.
+         */
+        get: operations["map_config_api_v1_admin_merchant_map_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/map/stores": {
         parameters: {
             query?: never;
@@ -8698,6 +8742,46 @@ export interface components {
         AgreementVoidRequest: {
             /** Reason */
             reason: string;
+        };
+        /**
+         * AmapConfigResponse
+         * @description 高德地图配置响应.
+         */
+        AmapConfigResponse: {
+            /**
+             * Js Key
+             * @description 高德 Web 端（JS API）Key
+             * @default
+             */
+            js_key: string;
+            /**
+             * Configured
+             * @description 是否已配置
+             * @default false
+             */
+            configured: boolean;
+            /**
+             * Updated At
+             * @description 最后更新时间
+             */
+            updated_at?: string | null;
+            /**
+             * Updated By Name
+             * @description 最后修改人
+             */
+            updated_by_name?: string | null;
+        };
+        /**
+         * AmapConfigUpdateRequest
+         * @description 高德地图配置保存请求（空串 = 清除配置）.
+         */
+        AmapConfigUpdateRequest: {
+            /**
+             * Js Key
+             * @description 高德 Web 端（JS API）Key
+             * @default
+             */
+            js_key: string;
         };
         /**
          * ApiKeyCreateResponse
@@ -33037,6 +33121,59 @@ export interface operations {
             };
         };
     };
+    get_amap_config_api_v1_amap_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmapConfigResponse"];
+                };
+            };
+        };
+    };
+    update_amap_config_api_v1_amap_config_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AmapConfigUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmapConfigResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_dict_groups_api_v1_admin_dicts_get: {
         parameters: {
             query?: never;
@@ -40293,6 +40430,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    map_config_api_v1_admin_merchant_map_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AmapConfigResponse"];
                 };
             };
         };

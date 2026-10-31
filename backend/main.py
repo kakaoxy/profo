@@ -73,6 +73,7 @@ from routers.public import (
 from routers.recruit import admin_recruit_router, public_recruit_router
 from routers.reports import reports_router
 from routers.system import (
+    amap_config_router,
     auth_router,
     dicts_router,
     operation_logs_router,
@@ -480,6 +481,7 @@ app.include_router(roles_router, prefix=API_V1_PREFIX)
 app.include_router(permissions_router, prefix=API_V1_PREFIX)
 app.include_router(operation_logs_router, prefix=API_V1_PREFIX)
 app.include_router(subscribe_templates_router, prefix=API_V1_PREFIX)
+app.include_router(amap_config_router, prefix=API_V1_PREFIX)
 app.include_router(dicts_router, prefix=API_V1_PREFIX)
 app.include_router(upload_router, prefix=API_V1_PREFIX)
 app.include_router(push_router, prefix=API_V1_PREFIX)

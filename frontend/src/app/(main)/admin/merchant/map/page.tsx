@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
@@ -21,8 +22,8 @@ import { merchantApi, queryString } from "../_components/merchant-api";
 
 type MapResponse = components["schemas"]["MerchantMapResponse"];
 type MapPoint = components["schemas"]["MerchantMapPoint"];
+type AmapConfig = components["schemas"]["AmapConfigResponse"];
 
-const AMAP_KEY = process.env.NEXT_PUBLIC_AMAP_KEY;
 const STATUS_COLORS: Record<string, string> = {
   not_cooperated: "#8b8c8d",
   negotiating: "#c98a4b",
@@ -39,6 +40,8 @@ export default function MerchantMapPage() {
   const [selectedId, setSelectedId] = useState("");
   const [mapError, setMapError] = useState("");
   const [loading, setLoading] = useState(true);
+  // 高德 Key 由后台「系统设置 → 高德地图」配置，按需读取（null=加载中）
+  const [amapKey, setAmapKey] = useState<string | null>(null);
   const mapRef = useRef<AMapMap | null>(null);
   const markersRef = useRef<Map<string, AMapMarker>>(new Map());
   const infoRef = useRef<AMapInfoWindow | null>(null);
@@ -68,7 +71,13 @@ export default function MerchantMapPage() {
   }, []);
 
   useEffect(() => {
-    if (!data || !AMAP_KEY || !mapContainer.current) return;
+    merchantApi<AmapConfig>("/admin/merchant/map/config")
+      .then((config) => setAmapKey(config.js_key || ""))
+      .catch(() => setAmapKey(""));
+  }, []);
+
+  useEffect(() => {
+    if (!data || !amapKey || !mapContainer.current) return;
     let disposed = false;
     const init = () => {
       if (disposed || !mapContainer.current || !window.AMap) return;
@@ -133,9 +142,15 @@ export default function MerchantMapPage() {
       init();
     } else {
       const script = document.createElement("script");
-      script.src = `https://webapi.amap.com/maps?v=2.0&key=${AMAP_KEY}`;
+      script.src = `https://webapi.amap.com/maps?v=2.0&key=${amapKey}`;
       script.async = true;
-      script.onload = init;
+      script.onload = () => {
+        if (!window.AMap) {
+          setMapError("高德地图加载失败（Key 无效或平台不是 Web 端 JS API），列表仍可使用");
+          return;
+        }
+        init();
+      };
       script.onerror = () => setMapError("高德地图加载失败，列表仍可使用");
       document.body.appendChild(script);
     }
@@ -147,7 +162,7 @@ export default function MerchantMapPage() {
       createdMap?.destroy();
       if (mapRef.current === createdMap) mapRef.current = null;
     };
-  }, [data]);
+  }, [data, amapKey]);
 
   const focusPoint = (point: MapPoint) => {
     setSelectedId(point.id);
@@ -165,9 +180,14 @@ export default function MerchantMapPage() {
       <PageContainer className="flex flex-col gap-6">
         <PageHeader title="门店地图" description="区域门店分布、合作状态与经纪人数量" />
 
-        {!AMAP_KEY ? (
+        {amapKey === "" ? (
           <Card className="p-4 text-sm text-graphite">
-            未配置 NEXT_PUBLIC_AMAP_KEY，地图区域不可用；门店列表与统计仍可正常使用。
+            未配置高德地图 Key，地图区域不可用；门店列表与统计仍可正常使用。
+            请前往
+            <Link className="mx-1 text-rust hover:underline" href="/admin/settings/amap">
+              系统设置 · 高德地图
+            </Link>
+            配置后刷新本页。
           </Card>
         ) : null}
         {mapError ? <Card className="p-4 text-sm text-error">{mapError}</Card> : null}
@@ -243,9 +263,12 @@ export default function MerchantMapPage() {
             {data && data.points.length === 0 ? <div className="p-4 text-sm text-graphite">没有符合条件的门店</div> : null}
           </Card>
           <Card className="relative min-h-[420px] overflow-hidden p-0">
-            {AMAP_KEY ? <div ref={mapContainer} className="h-[520px] w-full" /> : null}
-            {!AMAP_KEY ? (
+            {amapKey ? <div ref={mapContainer} className="h-[520px] w-full" /> : null}
+            {amapKey === "" ? (
               <div className="flex h-[420px] items-center justify-center text-sm text-graphite">地图未配置</div>
+            ) : null}
+            {amapKey === null ? (
+              <div className="flex h-[420px] items-center justify-center text-sm text-graphite">地图配置加载中…</div>
             ) : null}
           </Card>
         </div>
