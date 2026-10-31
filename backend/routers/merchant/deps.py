@@ -42,9 +42,11 @@ def _two_permission_checker(first: str, second: str) -> Callable[..., User]:
 MerchantCReadDep = Annotated[User, Depends(_checker("merchant:read"))]
 MerchantCWriteDep = Annotated[User, Depends(_checker("merchant:write"))]
 MerchantCVisitDep = Annotated[User, Depends(_checker("merchant:visit"))]
+MerchantCAgreementDep = Annotated[User, Depends(_checker("merchant:agreement"))]
 MerchantCWriteVisitDep = Annotated[User, Depends(_two_permission_checker("merchant:write", "merchant:visit"))]
 
 __all__ = [
+    "MerchantCAgreementDep",
     "MerchantCReadDep",
     "MerchantCVisitDep",
     "MerchantCWriteDep",

@@ -78,6 +78,8 @@ from .marketing import (
 
 # 商户管理模块（V02–V09）
 from .merchant import (
+    MerchantAgreement,
+    MerchantAgreementTemplate,
     MerchantBroker,
     MerchantBrokerBinding,
     MerchantCompany,
@@ -243,6 +245,8 @@ __all__ = [
     "MarketingProjectStatus",
     "MediaType",
     # 商户管理
+    "MerchantAgreement",
+    "MerchantAgreementTemplate",
     "MerchantBroker",
     "MerchantBrokerBinding",
     "MerchantCompany",

@@ -171,6 +171,52 @@ def create_merchant_broker_tables(engine: Engine) -> None:
     )
 
 
+def create_merchant_agreement_tables(engine: Engine) -> None:
+    """v108：幂等创建协议模板与协议表及索引."""
+    from models import Base, MerchantAgreement, MerchantAgreementTemplate
+
+    Base.metadata.create_all(
+        bind=engine,
+        tables=[MerchantAgreementTemplate.__table__, MerchantAgreement.__table__],
+        checkfirst=True,
+    )
+    _ensure_indexes(
+        engine,
+        (
+            (
+                "idx_merchant_agreement_templates_type",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_agreement_templates_type "
+                "ON merchant_agreement_templates (cooperation_type, status)",
+            ),
+            (
+                "idx_merchant_agreements_store_status",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_agreements_store_status "
+                "ON merchant_agreements (store_id, status)",
+            ),
+            (
+                "idx_merchant_agreements_company_status",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_agreements_company_status "
+                "ON merchant_agreements (company_id, status)",
+            ),
+            (
+                "idx_merchant_agreements_expire",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_agreements_expire "
+                "ON merchant_agreements (expire_at, status)",
+            ),
+            (
+                "idx_merchant_agreements_review",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_agreements_review "
+                "ON merchant_agreements (review_status)",
+            ),
+            (
+                "idx_merchant_agreements_parent",
+                "CREATE INDEX IF NOT EXISTS idx_merchant_agreements_parent "
+                "ON merchant_agreements (parent_agreement_id)",
+            ),
+        ),
+    )
+
+
 def add_merchant_store_phone_hash_column(engine: Engine) -> None:
     """v106：为存量 merchant_stores 补 contact_phone_hash 列与索引（幂等）."""
     if not _column_exists(engine, "merchant_stores", "contact_phone_hash"):

@@ -333,6 +333,21 @@ class MerchantStoreCreateResult(BaseModel):
 MerchantStoreCreate.model_rebuild()
 
 # 经纪人相关 Schema（V04）
+# 合作协议 Schema（V05）
+from .agreement import (  # noqa: E402
+    AgreementCreateRequest,
+    AgreementExpiringEvent,
+    AgreementListResponse,
+    AgreementResponse,
+    AgreementReviewRequest,
+    AgreementScanUploadRequest,
+    AgreementSignRequest,
+    AgreementSupplementCreate,
+    AgreementTemplateCreate,
+    AgreementTemplateResponse,
+    AgreementTemplateUpdate,
+    AgreementVoidRequest,
+)
 from .broker import (  # noqa: E402
     BindingApprovalRequest,
     BrokerAdminCreate,
@@ -354,6 +369,18 @@ from .broker import (  # noqa: E402
 )
 
 __all__ = [
+    "AgreementCreateRequest",
+    "AgreementExpiringEvent",
+    "AgreementListResponse",
+    "AgreementResponse",
+    "AgreementReviewRequest",
+    "AgreementScanUploadRequest",
+    "AgreementSignRequest",
+    "AgreementSupplementCreate",
+    "AgreementTemplateCreate",
+    "AgreementTemplateResponse",
+    "AgreementTemplateUpdate",
+    "AgreementVoidRequest",
     "BindingApprovalRequest",
     "BrokerAdminCreate",
     "BrokerAdminUpdate",

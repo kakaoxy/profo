@@ -562,6 +562,43 @@ class MerchantStoreService:
         self.db.refresh(store)
         return store_response(store, cooperation_label_map(self.db))
 
+    def set_cooperation_status_system(
+        self,
+        store: MerchantStore,
+        target: str,
+        *,
+        reason: str,
+        operator_id: str | None = None,
+        request: Request | None = None,
+    ) -> None:
+        """系统/协议联动变更合作状态（不校验员工手动权限，不提交事务）.
+
+        V05 协议签署完成后联动门店为“已合作”（BR-M04-011）。
+        """
+        if store.cooperation_status == target:
+            return
+        before = self._snapshot(store)
+        self.db.add(
+            MerchantStoreStatusLog(
+                store_id=store.id,
+                from_status=store.cooperation_status,
+                to_status=target,
+                reason=reason,
+                operator_id=operator_id,
+            ),
+        )
+        store.cooperation_status = target
+        add_audit_log(
+            self.db,
+            user_id=operator_id,
+            action="update",
+            resource_type="merchant_store",
+            resource_id=str(store.id),
+            before=before,
+            after=self._snapshot(store) | {"reason": reason},
+            request=request,
+        )
+
     # -------------------- 照片 --------------------
     def update_photos(
         self,

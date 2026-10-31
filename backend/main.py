@@ -42,7 +42,12 @@ from routers.leads import leads_router
 from routers.market import communities_router, community_images_router, properties_router
 from routers.marketing import import_router as marketing_import_router
 from routers.marketing import projects_router as marketing_projects_router
-from routers.merchant import merchant_admin_router, merchant_public_router
+from routers.merchant import (
+    merchant_admin_router,
+    merchant_agreement_admin_router,
+    merchant_agreement_public_router,
+    merchant_public_router,
+)
 from routers.monitor import monitor_router
 from routers.notification import router as notification_router
 from routers.projects import core_router
@@ -466,6 +471,8 @@ app.include_router(growth_center_router, prefix=API_V1_PREFIX)
 app.include_router(notification_router, prefix=API_V1_PREFIX)
 app.include_router(merchant_admin_router, prefix=API_V1_PREFIX)
 app.include_router(merchant_public_router, prefix=API_V1_PREFIX)
+app.include_router(merchant_agreement_admin_router, prefix=API_V1_PREFIX)
+app.include_router(merchant_agreement_public_router, prefix=API_V1_PREFIX)
 app.include_router(workbench_router, prefix=API_V1_PREFIX)
 app.include_router(reports_router, prefix=API_V1_PREFIX)
 

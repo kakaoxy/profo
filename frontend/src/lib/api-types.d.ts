@@ -7474,6 +7474,298 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/agreement-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 协议模板列表
+         * @description 协议模板列表（含停用，便于维护）.
+         */
+        get: operations["list_templates_api_v1_admin_merchant_agreement_templates_get"];
+        put?: never;
+        /**
+         * 新建协议模板
+         * @description 运营维护多套模板.
+         */
+        post: operations["create_template_api_v1_admin_merchant_agreement_templates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/agreement-templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 编辑协议模板
+         * @description 停用不影响已发起协议.
+         */
+        put: operations["update_template_api_v1_admin_merchant_agreement_templates__template_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/agreements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 协议列表
+         * @description 后台协议列表（数据范围过滤）.
+         */
+        get: operations["list_agreements_api_v1_admin_merchant_agreements_get"];
+        put?: never;
+        /**
+         * 后台发起协议
+         * @description 运营代发起协议.
+         */
+        post: operations["create_agreement_api_v1_admin_merchant_agreements_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/agreements/expiring-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 协议到期事件扫描
+         * @description 返回距到期 ≤N 天的已签署协议事件（V09 消费）.
+         */
+        get: operations["scan_agreement_expiring_api_v1_admin_merchant_agreements_expiring_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/agreements/expire-scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 手动执行到期状态扫描
+         * @description 将已到期协议置为已过期，返回更新条数.
+         */
+        post: operations["run_expire_scan_api_v1_admin_merchant_agreements_expire_scan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/agreements/{agreement_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 协议详情
+         * @description 协议详情.
+         */
+        get: operations["get_agreement_api_v1_admin_merchant_agreements__agreement_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/agreements/{agreement_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 审核协议
+         * @description 通过进入待签署；驳回记录原因.
+         */
+        post: operations["review_agreement_api_v1_admin_merchant_agreements__agreement_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/agreements/{agreement_id}/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 上传盖章扫描件
+         * @description 线下盖章件归档，协议置已签署.
+         */
+        post: operations["upload_agreement_scan_api_v1_admin_merchant_agreements__agreement_id__scan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/agreements/{agreement_id}/void": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 作废协议
+         * @description 作废保留文件与历史.
+         */
+        post: operations["void_agreement_api_v1_admin_merchant_agreements__agreement_id__void_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/agreement-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 可用协议模板
+         * @description 员工发起协议时可选模板（仅启用）.
+         */
+        get: operations["list_agreement_templates_api_v1_public_merchant_agreement_templates_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/agreements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 协议列表
+         * @description 按门店/公司/状态/编号筛选（数据范围过滤）.
+         */
+        get: operations["list_agreements_api_v1_public_merchant_agreements_get"];
+        put?: never;
+        /**
+         * 发起协议
+         * @description 发起后状态未发起、review_status=待审核（S05）.
+         */
+        post: operations["create_agreement_api_v1_public_merchant_agreements_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/agreements/{agreement_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 协议详情
+         * @description 协议详情（校验数据范围）.
+         */
+        get: operations["get_agreement_api_v1_public_merchant_agreements__agreement_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/agreements/{agreement_id}/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 手写签名并生成 PDF
+         * @description 签署后生成 PDF；门店主体协议联动合作状态为已合作.
+         */
+        post: operations["sign_agreement_api_v1_public_merchant_agreements__agreement_id__sign_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/agreements/{agreement_id}/supplement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 新增补充协议
+         * @description 补充协议独立记录并关联原协议.
+         */
+        post: operations["add_supplement_api_v1_public_merchant_agreements__agreement_id__supplement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/workbench/config": {
         parameters: {
             query?: never;
@@ -7791,6 +8083,261 @@ export interface components {
              * @description 完整手机号（解密）
              */
             phone: string;
+        };
+        /**
+         * AgreementCreateRequest
+         * @description 发起协议请求（门店主体或公司主体二选一）.
+         */
+        AgreementCreateRequest: {
+            /**
+             * Subject Type
+             * @enum {string}
+             */
+            subject_type: "store" | "company";
+            /** Store Id */
+            store_id?: string | null;
+            /** Company Id */
+            company_id?: string | null;
+            /** Template Id */
+            template_id: string;
+            /** Agreement No */
+            agreement_no?: string | null;
+            /** Signer Name */
+            signer_name: string;
+            /** Signer Phone */
+            signer_phone: string;
+            /** Expire At */
+            expire_at?: string | null;
+            /** Remark */
+            remark?: string | null;
+            /** Attachment Urls */
+            attachment_urls?: string[];
+        };
+        /**
+         * AgreementExpiringEvent
+         * @description 协议到期提醒事件（V05 生产，V09 消费）.
+         */
+        AgreementExpiringEvent: {
+            /** Agreement Id */
+            agreement_id: string;
+            /** Subject Type */
+            subject_type: string;
+            /** Store Id */
+            store_id: string | null;
+            /** Company Id */
+            company_id: string | null;
+            /** Subject Name */
+            subject_name: string | null;
+            /**
+             * Expire At
+             * Format: date-time
+             */
+            expire_at: string;
+        };
+        /**
+         * AgreementListResponse
+         * @description 协议分页列表.
+         */
+        AgreementListResponse: {
+            /** Items */
+            items: components["schemas"]["AgreementResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * AgreementResponse
+         * @description 协议响应.
+         */
+        AgreementResponse: {
+            /** Id */
+            id: string;
+            /** Store Id */
+            store_id: string | null;
+            /** Company Id */
+            company_id: string | null;
+            /** Subject Type */
+            subject_type: string;
+            /** Subject Name */
+            subject_name: string | null;
+            /** Agreement No */
+            agreement_no: string | null;
+            /** Template Id */
+            template_id: string | null;
+            /** Template Name */
+            template_name: string | null;
+            /** Parent Agreement Id */
+            parent_agreement_id: string | null;
+            /** Status */
+            status: string;
+            /** Review Status */
+            review_status: string;
+            /** Reviewed At */
+            reviewed_at: string | null;
+            /** Reviewed By */
+            reviewed_by: string | null;
+            /** Review Remark */
+            review_remark: string | null;
+            /** Signer Name */
+            signer_name: string | null;
+            /** Signer Phone Masked */
+            signer_phone_masked: string | null;
+            /** Signed At */
+            signed_at: string | null;
+            /** Expire At */
+            expire_at: string | null;
+            /** File Url */
+            file_url: string | null;
+            /** Attachment Urls */
+            attachment_urls: string[];
+            /** Supplement Agreement Ids */
+            supplement_agreement_ids: string[];
+            /** Remark */
+            remark: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * AgreementReviewRequest
+         * @description 协议审核请求.
+         */
+        AgreementReviewRequest: {
+            /** Approve */
+            approve: boolean;
+            /** Remark */
+            remark?: string | null;
+        };
+        /**
+         * AgreementScanUploadRequest
+         * @description 线下盖章扫描件上传请求.
+         */
+        AgreementScanUploadRequest: {
+            /** File Url */
+            file_url: string;
+            /** Signer Name */
+            signer_name: string;
+            /** Signer Phone */
+            signer_phone: string;
+            /** Signed At */
+            signed_at?: string | null;
+        };
+        /**
+         * AgreementSignRequest
+         * @description 手写签名提交请求（签名 PNG 由文件服务上传）.
+         */
+        AgreementSignRequest: {
+            /** Signer Name */
+            signer_name: string;
+            /** Signer Phone */
+            signer_phone: string;
+            /**
+             * Signature Url
+             * @description 签名图片地址
+             */
+            signature_url: string;
+        };
+        /**
+         * AgreementSupplementCreate
+         * @description 新增补充协议（关联原协议）.
+         */
+        AgreementSupplementCreate: {
+            /**
+             * File Url
+             * @description 补充协议文件地址
+             */
+            file_url?: string | null;
+            /**
+             * Remark
+             * @description 补充说明
+             */
+            remark: string;
+            /** Signer Name */
+            signer_name?: string | null;
+            /** Signer Phone */
+            signer_phone?: string | null;
+        };
+        /**
+         * AgreementTemplateCreate
+         * @description 新建协议模板.
+         */
+        AgreementTemplateCreate: {
+            /** Template Name */
+            template_name: string;
+            /** Cooperation Type */
+            cooperation_type: string;
+            /**
+             * Content
+             * @description 协议正文
+             */
+            content: string;
+            /**
+             * Version
+             * @default v1
+             */
+            version: string;
+        };
+        /**
+         * AgreementTemplateResponse
+         * @description 协议模板响应.
+         */
+        AgreementTemplateResponse: {
+            /** Id */
+            id: string;
+            /** Template Name */
+            template_name: string;
+            /** Cooperation Type */
+            cooperation_type: string;
+            /** Content */
+            content: string;
+            /** Version */
+            version: string;
+            /** Status */
+            status: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * AgreementTemplateUpdate
+         * @description 编辑协议模板.
+         */
+        AgreementTemplateUpdate: {
+            /** Template Name */
+            template_name?: string | null;
+            /** Cooperation Type */
+            cooperation_type?: string | null;
+            /** Content */
+            content?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Status */
+            status?: ("enabled" | "disabled") | null;
+        };
+        /**
+         * AgreementVoidRequest
+         * @description 作废协议请求.
+         */
+        AgreementVoidRequest: {
+            /** Reason */
+            reason: string;
         };
         /**
          * ApiKeyCreateResponse
@@ -37828,6 +38375,554 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MerchantVisitListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_templates_api_v1_admin_merchant_agreement_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementTemplateResponse"][];
+                };
+            };
+        };
+    };
+    create_template_api_v1_admin_merchant_agreement_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementTemplateCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_template_api_v1_admin_merchant_agreement_templates__template_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 模板ID */
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementTemplateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_agreements_api_v1_admin_merchant_agreements_get: {
+        parameters: {
+            query?: {
+                store_id?: string | null;
+                company_id?: string | null;
+                status?: string | null;
+                agreement_no?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_agreement_api_v1_admin_merchant_agreements_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scan_agreement_expiring_api_v1_admin_merchant_agreements_expiring_events_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementExpiringEvent"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_expire_scan_api_v1_admin_merchant_agreements_expire_scan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+        };
+    };
+    get_agreement_api_v1_admin_merchant_agreements__agreement_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_agreement_api_v1_admin_merchant_agreements__agreement_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_agreement_scan_api_v1_admin_merchant_agreements__agreement_id__scan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementScanUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    void_agreement_api_v1_admin_merchant_agreements__agreement_id__void_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementVoidRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_agreement_templates_api_v1_public_merchant_agreement_templates_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementTemplateResponse"][];
+                };
+            };
+        };
+    };
+    list_agreements_api_v1_public_merchant_agreements_get: {
+        parameters: {
+            query?: {
+                store_id?: string | null;
+                company_id?: string | null;
+                status?: string | null;
+                agreement_no?: string | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_agreement_api_v1_public_merchant_agreements_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_agreement_api_v1_public_merchant_agreements__agreement_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sign_agreement_api_v1_public_merchant_agreements__agreement_id__sign_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementSignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_supplement_api_v1_public_merchant_agreements__agreement_id__supplement_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 原协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementSupplementCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
                 };
             };
             /** @description Validation Error */

@@ -208,6 +208,7 @@ from migrations._marketing_notify import (
 from migrations._merchant import seed_merchant_platform
 from migrations._merchant_schema import (
     add_merchant_store_phone_hash_column,
+    create_merchant_agreement_tables,
     create_merchant_broker_tables,
     create_merchant_core_tables,
     create_merchant_visit_tables,
@@ -521,6 +522,8 @@ def _run_all_migrations(engine: Engine) -> None:
         add_merchant_store_phone_hash_column(engine)
         # v107：经纪人/绑定历史/门店邀请二维码三表
         create_merchant_broker_tables(engine)
+        # v108：协议模板与电子协议表
+        create_merchant_agreement_tables(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise
