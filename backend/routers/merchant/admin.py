@@ -3,6 +3,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request, status
+from fastapi.responses import StreamingResponse
 
 from dependencies.auth import (
     DbSessionDep,
@@ -29,10 +30,14 @@ from schemas.merchant import (
     MerchantDuplicateCheckResponse,
     MerchantStoreCreate,
     MerchantStoreCreateResult,
+    MerchantStoreDeleteRequest,
+    MerchantStoreDetailResponse,
     MerchantStoreListResponse,
+    MerchantStoreMergeRequest,
     MerchantStorePhotosUpdate,
     MerchantStoreRelocateResponse,
     MerchantStoreResponse,
+    MerchantStoreReviewRequest,
     MerchantStoreStatusChangeRequest,
     MerchantStoreStatusLogResponse,
     MerchantStoreUpdate,
@@ -44,6 +49,7 @@ from services.merchant.serializers import company_response, cooperation_label_ma
 from services.merchant.store import MerchantStoreService
 from services.merchant.visit import MerchantVisitService
 from utils.common import RateLimits, limiter
+from utils.csv_exporter import generate_csv_response
 
 router = APIRouter(prefix="/admin/merchant", tags=["merchant-admin"])
 
@@ -164,6 +170,166 @@ def create_store(
         first_visit=None,
         duplicate_candidates=duplicates,
     )
+
+
+@router.get("/stores/export", summary="导出门店 CSV")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def export_stores(
+    request: Request,
+    db: DbSessionDep,
+    current_user: MerchantReadPermDep,
+    keyword: Annotated[str | None, Query(description="名称/地址/公司/电话关键词")] = None,
+    province: str | None = None,
+    city: str | None = None,
+    district: str | None = None,
+    business_circle: str | None = None,
+    cooperation_status: str | None = None,
+    review_status: str | None = None,
+    owner_employee_id: str | None = None,
+    store_status: Annotated[str | None, Query(alias="status")] = None,
+) -> StreamingResponse:
+    """按当前筛选导出商店列表（手机号脱敏）."""
+    result = MerchantStoreService(db).search(
+        current_user,
+        page=1,
+        page_size=10000,
+        keyword=keyword,
+        province=province,
+        city=city,
+        district=district,
+        business_circle=business_circle,
+        cooperation_status=cooperation_status,
+        review_status=review_status,
+        owner_employee_id=owner_employee_id,
+        status=store_status,
+    )
+    rows = [
+        [
+            item.store_name,
+            item.company_name,
+            f"{item.province}{item.city}{item.district}",
+            item.business_circle,
+            item.address,
+            item.contact_name,
+            item.contact_phone_masked,
+            item.cooperation_status_label,
+            item.review_status,
+            item.owner_employee_name or "",
+            item.last_visit_at.isoformat() if item.last_visit_at else "",
+            item.status,
+        ]
+        for item in result.items
+    ]
+    return generate_csv_response(
+        [
+            "门店名称",
+            "公司",
+            "区域",
+            "商圈",
+            "地址",
+            "联系人",
+            "联系电话",
+            "合作状态",
+            "审核状态",
+            "负责人",
+            "最近拜访",
+            "门店状态",
+        ],
+        rows,
+        "merchant_stores_export",
+    )
+
+
+@router.get("/brokers/export", summary="导出经纪人 CSV")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def export_brokers(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: MerchantBrokerPermDep,
+    keyword: Annotated[str | None, Query(description="姓名/手机号关键词")] = None,
+    store_id: str | None = None,
+    bind_status: str | None = None,
+) -> StreamingResponse:
+    """按当前筛选导出经纪人列表（手机号脱敏）."""
+    result = MerchantBrokerService(db).list_admin(
+        page=1,
+        page_size=10000,
+        keyword=keyword,
+        store_id=store_id,
+        bind_status=bind_status,
+    )
+    rows = [
+        [
+            item.name,
+            item.phone_masked,
+            item.store_name or "",
+            item.bind_status,
+            item.source,
+            item.recommendation_count,
+        ]
+        for item in result.items
+    ]
+    return generate_csv_response(
+        ["姓名", "手机号", "所属门店", "绑定状态", "来源", "推荐线索数"],
+        rows,
+        "merchant_brokers_export",
+    )
+
+
+@router.get("/stores/{store_id}/detail", summary="门店详情聚合")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def get_store_detail(
+    request: Request,
+    store_id: Annotated[str, Path(description="门店ID")],
+    db: DbSessionDep,
+    current_user: MerchantReadPermDep,
+) -> MerchantStoreDetailResponse:
+    """门店档案 + 经纪人 + 拜访 + 协议 + 线索统计."""
+    return MerchantStoreService(db).detail(current_user, store_id)
+
+
+@router.post("/stores/{store_id}/delete", summary="门店软删除")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def delete_store(
+    request: Request,
+    store_id: Annotated[str, Path(description="门店ID")],
+    body: MerchantStoreDeleteRequest,
+    db: DbSessionDep,
+    current_user: MerchantWritePermDep,
+) -> dict[str, bool]:
+    """有关联数据时拒绝删除."""
+    MerchantStoreService(db).soft_delete(current_user, store_id, body, request=request)
+    return {"deleted": True}
+
+
+@router.post("/stores/merge", summary="门店合并")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def merge_stores(
+    request: Request,
+    body: MerchantStoreMergeRequest,
+    db: DbSessionDep,
+    current_user: MerchantWritePermDep,
+) -> dict[str, int]:
+    """迁移拜访/绑定/线索/协议并标记原门店已合并."""
+    return MerchantStoreService(db).merge_stores(current_user, body, request=request)
+
+
+@router.post("/stores/{store_id}/review", summary="经纪人自建门店审核")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def review_broker_store(
+    request: Request,
+    store_id: Annotated[str, Path(description="门店ID")],
+    body: MerchantStoreReviewRequest,
+    db: DbSessionDep,
+    current_user: MerchantWritePermDep,
+) -> MerchantStoreResponse:
+    """转正或合并待审核门店（仅 admin）."""
+    if (current_user.role.code if current_user.role else None) != "admin":
+        msg = "仅管理员可审核经纪人自建门店"
+        from services.system.exceptions import PermissionDeniedError
+
+        raise PermissionDeniedError(msg)
+    return MerchantStoreService(db).review_broker_store(current_user, store_id, body, request=request)
 
 
 @router.get("/stores/{store_id}", summary="门店详情")

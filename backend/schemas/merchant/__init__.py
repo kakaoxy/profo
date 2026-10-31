@@ -224,6 +224,35 @@ class MerchantStoreRelocateResponse(BaseModel):
     new_store: MerchantStoreResponse
 
 
+class MerchantStoreDeleteRequest(BaseModel):
+    """门店软删除请求."""
+
+    reason: str = Field(min_length=1, max_length=500, description="删除原因")
+
+
+class MerchantStoreMergeRequest(BaseModel):
+    """门店合并请求."""
+
+    keep_store_id: str = Field(min_length=1, max_length=36, description="保留门店ID")
+    merged_store_id: str = Field(min_length=1, max_length=36, description="被合并门店ID")
+    reason: str = Field(min_length=1, max_length=500, description="合并原因")
+
+
+class MerchantStoreReviewRequest(BaseModel):
+    """经纪人自建门店审核请求."""
+
+    action: Literal["approve", "merge"]
+    target_store_id: str | None = Field(default=None, max_length=36, description="合并时保留门店ID")
+    remark: str | None = Field(default=None, max_length=500)
+
+
+class MerchantLeadStats(BaseModel):
+    """门店线索统计."""
+
+    total: int
+    month_new: int
+
+
 class MerchantStoreStatusChangeRequest(BaseModel):
     """门店合作状态变更请求."""
 
@@ -330,6 +359,17 @@ class MerchantStoreCreateResult(BaseModel):
     duplicate_candidates: list[MerchantDuplicateCandidate] = Field(default_factory=list)
 
 
+class MerchantStoreDetailResponse(BaseModel):
+    """门店详情聚合（Q39：档案、经纪人、拜访、协议、线索统计）."""
+
+    store: MerchantStoreResponse
+    brokers: list[dict] = Field(default_factory=list)
+    visits: MerchantVisitListResponse
+    agreements: list[dict] = Field(default_factory=list)
+    lead_stats: MerchantLeadStats
+    status_logs: list[MerchantStoreStatusLogResponse] = Field(default_factory=list)
+
+
 MerchantStoreCreate.model_rebuild()
 
 # 经纪人相关 Schema（V04）
@@ -398,4 +438,9 @@ __all__ = [
     "BrokerStatusChangeRequest",
     "BrokerUnbindRequest",
     "BrokerUpdateRequest",
+    "MerchantLeadStats",
+    "MerchantStoreDeleteRequest",
+    "MerchantStoreDetailResponse",
+    "MerchantStoreMergeRequest",
+    "MerchantStoreReviewRequest",
 ]

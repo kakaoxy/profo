@@ -6802,6 +6802,126 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/stores/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 导出门店 CSV
+         * @description 按当前筛选导出商店列表（手机号脱敏）.
+         */
+        get: operations["export_stores_api_v1_admin_merchant_stores_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/brokers/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 导出经纪人 CSV
+         * @description 按当前筛选导出经纪人列表（手机号脱敏）.
+         */
+        get: operations["export_brokers_api_v1_admin_merchant_brokers_export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/{store_id}/detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店详情聚合
+         * @description 门店档案 + 经纪人 + 拜访 + 协议 + 线索统计.
+         */
+        get: operations["get_store_detail_api_v1_admin_merchant_stores__store_id__detail_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/{store_id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 门店软删除
+         * @description 有关联数据时拒绝删除.
+         */
+        post: operations["delete_store_api_v1_admin_merchant_stores__store_id__delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/merge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 门店合并
+         * @description 迁移拜访/绑定/线索/协议并标记原门店已合并.
+         */
+        post: operations["merge_stores_api_v1_admin_merchant_stores_merge_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/{store_id}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 经纪人自建门店审核
+         * @description 转正或合并待审核门店（仅 admin）.
+         */
+        post: operations["review_broker_store_api_v1_admin_merchant_stores__store_id__review_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/stores/{store_id}": {
         parameters: {
             query?: never;
@@ -15849,6 +15969,16 @@ export interface components {
             completed: boolean;
         };
         /**
+         * MerchantLeadStats
+         * @description 门店线索统计.
+         */
+        MerchantLeadStats: {
+            /** Total */
+            total: number;
+            /** Month New */
+            month_new: number;
+        };
+        /**
          * MerchantStoreCreate
          * @description 创建门店请求（员工小程序 / 后台 / 经纪人复用）.
          */
@@ -15949,6 +16079,36 @@ export interface components {
             duplicate_candidates?: components["schemas"]["MerchantDuplicateCandidate"][];
         };
         /**
+         * MerchantStoreDeleteRequest
+         * @description 门店软删除请求.
+         */
+        MerchantStoreDeleteRequest: {
+            /**
+             * Reason
+             * @description 删除原因
+             */
+            reason: string;
+        };
+        /**
+         * MerchantStoreDetailResponse
+         * @description 门店详情聚合（Q39：档案、经纪人、拜访、协议、线索统计）.
+         */
+        MerchantStoreDetailResponse: {
+            store: components["schemas"]["MerchantStoreResponse"];
+            /** Brokers */
+            brokers?: {
+                [key: string]: unknown;
+            }[];
+            visits: components["schemas"]["MerchantVisitListResponse"];
+            /** Agreements */
+            agreements?: {
+                [key: string]: unknown;
+            }[];
+            lead_stats: components["schemas"]["MerchantLeadStats"];
+            /** Status Logs */
+            status_logs?: components["schemas"]["MerchantStoreStatusLogResponse"][];
+        };
+        /**
          * MerchantStoreListItem
          * @description 门店列表项（手机号脱敏）.
          */
@@ -16013,6 +16173,27 @@ export interface components {
             page: number;
             /** Page Size */
             page_size: number;
+        };
+        /**
+         * MerchantStoreMergeRequest
+         * @description 门店合并请求.
+         */
+        MerchantStoreMergeRequest: {
+            /**
+             * Keep Store Id
+             * @description 保留门店ID
+             */
+            keep_store_id: string;
+            /**
+             * Merged Store Id
+             * @description 被合并门店ID
+             */
+            merged_store_id: string;
+            /**
+             * Reason
+             * @description 合并原因
+             */
+            reason: string;
         };
         /**
          * MerchantStorePhotosUpdate
@@ -16103,6 +16284,24 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /**
+         * MerchantStoreReviewRequest
+         * @description 经纪人自建门店审核请求.
+         */
+        MerchantStoreReviewRequest: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "approve" | "merge";
+            /**
+             * Target Store Id
+             * @description 合并时保留门店ID
+             */
+            target_store_id?: string | null;
+            /** Remark */
+            remark?: string | null;
         };
         /**
          * MerchantStoreStatusChangeRequest
@@ -37162,6 +37361,221 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MerchantDuplicateCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_stores_api_v1_admin_merchant_stores_export_get: {
+        parameters: {
+            query?: {
+                /** @description 名称/地址/公司/电话关键词 */
+                keyword?: string | null;
+                province?: string | null;
+                city?: string | null;
+                district?: string | null;
+                business_circle?: string | null;
+                cooperation_status?: string | null;
+                review_status?: string | null;
+                owner_employee_id?: string | null;
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_brokers_api_v1_admin_merchant_brokers_export_get: {
+        parameters: {
+            query?: {
+                /** @description 姓名/手机号关键词 */
+                keyword?: string | null;
+                store_id?: string | null;
+                bind_status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_store_detail_api_v1_admin_merchant_stores__store_id__detail_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreDetailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_store_api_v1_admin_merchant_stores__store_id__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_stores_api_v1_admin_merchant_stores_merge_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreMergeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    review_broker_store_api_v1_admin_merchant_stores__store_id__review_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"];
                 };
             };
             /** @description Validation Error */

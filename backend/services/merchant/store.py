@@ -2,6 +2,7 @@
 
 import math
 from collections.abc import Sequence
+from datetime import datetime, timezone
 
 from fastapi import Request
 from sqlalchemy import func, inspect, or_, text
@@ -13,7 +14,16 @@ from constants.merchant import (
     MerchantStoreSource,
     MerchantStoreStatus,
 )
-from models.merchant import MerchantCompany, MerchantStore, MerchantStoreStatusLog, MerchantVisit
+from models.lead import Lead
+from models.merchant import (
+    MerchantAgreement,
+    MerchantBroker,
+    MerchantBrokerBinding,
+    MerchantCompany,
+    MerchantStore,
+    MerchantStoreStatusLog,
+    MerchantVisit,
+)
 from models.property import Community
 from models.system import BizDictItem
 from models.user.user import User
@@ -21,10 +31,15 @@ from schemas.merchant import (
     MerchantDuplicateCandidate,
     MerchantDuplicateCheckRequest,
     MerchantDuplicateCheckResponse,
+    MerchantLeadStats,
     MerchantStoreCreate,
+    MerchantStoreDeleteRequest,
+    MerchantStoreDetailResponse,
     MerchantStoreListResponse,
+    MerchantStoreMergeRequest,
     MerchantStoreRelocateResponse,
     MerchantStoreResponse,
+    MerchantStoreReviewRequest,
     MerchantStoreStatusChangeRequest,
     MerchantStoreStatusLogResponse,
     MerchantStoreUpdate,
@@ -505,6 +520,274 @@ class MerchantStoreService:
         return MerchantStoreRelocateResponse(
             old_store_id=str(store.id),
             new_store=store_response(new_store, cooperation_label_map(self.db)),
+        )
+
+    # -------------------- 后台删除/合并/审核 --------------------
+    def soft_delete(
+        self,
+        user: User,
+        store_id: str,
+        req: MerchantStoreDeleteRequest,
+        *,
+        request: Request | None = None,
+    ) -> None:
+        """门店软删除：存在拜访/绑定/线索/协议关联时拒绝（Q44）."""
+        store = self._get_store(store_id)
+        ensure_store_visible(self.db, user, store)
+        relations = (
+            (
+                self.db.query(MerchantVisit.id)
+                .filter(MerchantVisit.store_id == store.id, MerchantVisit.is_deleted.is_(False))
+                .count(),
+                "拜访记录",
+            ),
+            (
+                self.db.query(MerchantBrokerBinding.id)
+                .filter(MerchantBrokerBinding.store_id == store.id)
+                .count(),
+                "经纪人绑定",
+            ),
+            (
+                self.db.query(Lead.id)
+                .filter(Lead.store_id == store.id, Lead.is_deleted.is_(False))
+                .count(),
+                "线索",
+            ),
+            (
+                self.db.query(MerchantAgreement.id)
+                .filter(MerchantAgreement.store_id == store.id)
+                .count(),
+                "协议",
+            ),
+        )
+        blocked = [label for count, label in relations if count > 0]
+        if blocked:
+            msg = f"门店存在关联数据（{'、'.join(blocked)}），不能删除，请改用停用"
+            raise ConflictError(msg)
+
+        before = self._snapshot(store)
+        store.is_deleted = True
+        store.deleted_at = datetime.now(timezone.utc)
+        store.deleted_by = str(user.id)
+        add_audit_log(
+            self.db,
+            user_id=str(user.id),
+            action="delete",
+            resource_type="merchant_store",
+            resource_id=str(store.id),
+            before=before,
+            after=self._snapshot(store) | {"reason": req.reason},
+            request=request,
+        )
+        self.db.commit()
+
+    def merge_stores(
+        self,
+        user: User,
+        req: MerchantStoreMergeRequest,
+        *,
+        request: Request | None = None,
+    ) -> dict[str, int]:
+        """门店合并：迁移拜访/绑定/经纪人/线索/协议，原门店标记已合并."""
+        keep = self._get_store(req.keep_store_id)
+        merged = self._get_store(req.merged_store_id)
+        if keep.id == merged.id:
+            msg = "保留门店与被合并门店不能相同"
+            raise ValidationError(msg)
+        if merged.status == MerchantStoreStatus.MERGED.value:
+            msg = "被合并门店已是已合并状态"
+            raise ValidationError(msg)
+        if keep.company_id != merged.company_id:
+            msg = "不允许跨公司合并门店"
+            raise ValidationError(msg)
+
+        visit_count = (
+            self.db.query(MerchantVisit)
+            .filter(MerchantVisit.store_id == merged.id)
+            .update({MerchantVisit.store_id: keep.id}, synchronize_session=False)
+        )
+        lead_count = (
+            self.db.query(Lead)
+            .filter(Lead.store_id == merged.id)
+            .update({Lead.store_id: keep.id}, synchronize_session=False)
+        )
+        agreement_count = (
+            self.db.query(MerchantAgreement)
+            .filter(MerchantAgreement.store_id == merged.id)
+            .update({MerchantAgreement.store_id: keep.id}, synchronize_session=False)
+        )
+
+        merged_bindings = (
+            self.db.query(MerchantBrokerBinding)
+            .filter(
+                MerchantBrokerBinding.store_id == merged.id,
+                MerchantBrokerBinding.status == "active",
+            )
+            .all()
+        )
+        for binding in merged_bindings:
+            broker = self.db.query(MerchantBroker).filter(MerchantBroker.id == binding.broker_id).first()
+            if broker is not None and broker.store_id == keep.id:
+                binding.status = "unbound"
+                binding.unbound_at = datetime.now(timezone.utc)
+        binding_count = (
+            self.db.query(MerchantBrokerBinding)
+            .filter(MerchantBrokerBinding.store_id == merged.id)
+            .update({MerchantBrokerBinding.store_id: keep.id}, synchronize_session=False)
+        )
+        broker_count = (
+            self.db.query(MerchantBroker)
+            .filter(MerchantBroker.store_id == merged.id)
+            .update({MerchantBroker.store_id: keep.id}, synchronize_session=False)
+        )
+
+        before = self._snapshot(merged)
+        merged.status = MerchantStoreStatus.MERGED.value
+        merged.review_status = MerchantStoreReviewStatus.MERGED.value
+        merged.merged_to_store_id = keep.id
+        merged.former_store_no = merged.store_name
+        merged.is_deleted = False
+
+        max_visit = (
+            self.db.query(func.max(MerchantVisit.visited_at))
+            .filter(MerchantVisit.store_id == keep.id, MerchantVisit.is_deleted.is_(False))
+            .scalar()
+        )
+        keep.last_visit_at = max_visit
+
+        add_audit_log(
+            self.db,
+            user_id=str(user.id),
+            action="merge",
+            resource_type="merchant_store",
+            resource_id=str(merged.id),
+            before=before,
+            after=self._snapshot(merged) | {"keep_store_id": str(keep.id), "reason": req.reason},
+            request=request,
+        )
+        self.db.commit()
+        return {
+            "visits": int(visit_count),
+            "leads": int(lead_count),
+            "agreements": int(agreement_count),
+            "bindings": int(binding_count),
+            "brokers": int(broker_count),
+        }
+
+    def review_broker_store(
+        self,
+        user: User,
+        store_id: str,
+        req: MerchantStoreReviewRequest,
+        *,
+        request: Request | None = None,
+    ) -> MerchantStoreResponse:
+        """经纪人自建门店转正/合并（m02721；仅 admin 在路由层校验）."""
+        store = self._get_store(store_id)
+        if store.review_status != MerchantStoreReviewStatus.PENDING.value:
+            msg = "仅未审核门店可执行审核"
+            raise ValidationError(msg)
+        if req.action == "merge":
+            if not req.target_store_id:
+                msg = "合并必须选择保留门店"
+                raise ValidationError(msg)
+            self.merge_stores(
+                user,
+                MerchantStoreMergeRequest(
+                    keep_store_id=req.target_store_id,
+                    merged_store_id=store.id,
+                    reason=req.remark or "经纪人自建门店合并",
+                ),
+                request=request,
+            )
+            self.db.refresh(store)
+            return store_response(store, cooperation_label_map(self.db))
+
+        before = self._snapshot(store)
+        store.review_status = MerchantStoreReviewStatus.APPROVED.value
+        if store.created_by_broker_id:
+            broker = self.db.query(MerchantBroker).filter(MerchantBroker.id == store.created_by_broker_id).first()
+            if broker is not None and broker.store_id is None and broker.bind_status != "disabled":
+                self.db.add(
+                    MerchantBrokerBinding(
+                        broker_id=broker.id,
+                        store_id=store.id,
+                        status="active",
+                        approved_at=datetime.now(timezone.utc),
+                        approved_by=str(user.id),
+                        bind_source="backoffice",
+                        store_name_snapshot=store.store_name,
+                    ),
+                )
+                broker.store_id = store.id
+                broker.bind_status = "bound"
+                broker.bound_at = datetime.now(timezone.utc)
+        add_audit_log(
+            self.db,
+            user_id=str(user.id),
+            action="update",
+            resource_type="merchant_store",
+            resource_id=str(store.id),
+            before=before,
+            after=self._snapshot(store) | {"review_remark": req.remark},
+            request=request,
+        )
+        self.db.commit()
+        self.db.refresh(store)
+        return store_response(store, cooperation_label_map(self.db))
+
+    def detail(self, user: User, store_id: str) -> MerchantStoreDetailResponse:
+        """门店详情聚合（Q39）."""
+        store = self._get_store(store_id)
+        ensure_store_visible(self.db, user, store)
+        from services.merchant.agreement import MerchantAgreementService
+        from services.merchant.broker import MerchantBrokerService
+        from services.merchant.serializers import broker_response
+        from services.merchant.visit import MerchantVisitService
+
+        brokers = [
+            broker_response(row, store_name=store.store_name)
+            for row in MerchantBrokerService(self.db).effective_brokers_for_store(str(store.id))
+        ]
+        visits = MerchantVisitService(self.db).list_store_visits(
+            user,
+            store_id,
+            page=1,
+            page_size=20,
+        )
+        agreements = []
+        if ensure_scope_role(user):
+            agreements = [
+                item.model_dump(mode="json")
+                for item in MerchantAgreementService(self.db)
+                .search(
+                    user,
+                    page=1,
+                    page_size=20,
+                    store_id=str(store.id),
+                )
+                .items
+            ]
+
+        now = datetime.now(timezone.utc)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        total = self.db.query(Lead.id).filter(Lead.store_id == store.id, Lead.is_deleted.is_(False)).count()
+        month_new = (
+            self.db.query(Lead.id)
+            .filter(
+                Lead.store_id == store.id,
+                Lead.is_deleted.is_(False),
+                Lead.created_at >= month_start,
+            )
+            .count()
+        )
+        return MerchantStoreDetailResponse(
+            store=store_response(store, cooperation_label_map(self.db)),
+            brokers=[item.model_dump(mode="json") for item in brokers],
+            visits=visits,
+            agreements=agreements,
+            lead_stats=MerchantLeadStats(total=int(total), month_new=int(month_new)),
+            status_logs=self.status_logs(user, store_id),
         )
 
     # -------------------- 合作状态 --------------------
