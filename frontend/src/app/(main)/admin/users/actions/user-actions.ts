@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
+import { isRedirectError } from "@/lib/auth/server/session";
 import { z } from "zod";
 import { passwordSchema } from "../_components/password-schema";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
@@ -88,6 +89,9 @@ export async function getUsersAction(params: {
 
     return { success: true, data };
   } catch (error) {
+    // Server Component 中 fetchClient 遇 401 会 redirect(...) 抛 NEXT_REDIRECT，
+    // 必须放行否则会话刷新重定向链断裂（AGENTS §1）
+    if (isRedirectError(error)) throw error;
     logger.error("Get users exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
@@ -107,6 +111,8 @@ export async function getUsersSimpleAction(params?: { nickname?: string; status?
 
     return { success: true, data };
   } catch (error) {
+    // 同上：audit-logs 等页面在 Server Component 中调用本函数，需放行 NEXT_REDIRECT
+    if (isRedirectError(error)) throw error;
     logger.error("Get users simple exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }

@@ -361,19 +361,31 @@ function doRequest<T>(
         // - /public/* 与 /keys/*（aud=c）→ renewCToken（刷新失败时静默重新微信登录）
         // - 其余后台接口 → refreshAccessToken
         if (statusCode === 401 && !skipAuth && !retried) {
-          const renew = isCAudiencePath(url) ? renewCToken : refreshAccessToken;
-          renew().then((newToken) => {
-            if (newToken) {
-              requestHeader.Authorization = `Bearer ${newToken}`;
-              doRequest<T>(url, method, data, requestHeader, skipAuth, true, networkRetried, timeout)
-                .then(resolve)
-                .catch(reject);
-            } else {
-              const error: HttpResponseError = { statusCode, body: res.data };
-              reject(error);
-            }
-          });
-          return;
+          // 业务层 401（如 /public/users/merge 密码错误 → body.code=40001）不代表令牌失效，
+          // 不能续期后重试：非幂等请求会重复提交，且额外消耗后端限流额度。
+          // 鉴权层 401 由后端统一返回 body.code=401；无数字 code（如网关/空响应）按鉴权失败处理。
+          const bodyCode = (res.data as { code?: unknown } | undefined)?.code;
+          if (typeof bodyCode !== "number" || bodyCode === 401) {
+            const renew = isCAudiencePath(url) ? renewCToken : refreshAccessToken;
+            renew()
+              .then((newToken) => {
+                if (newToken) {
+                  requestHeader.Authorization = `Bearer ${newToken}`;
+                  doRequest<T>(url, method, data, requestHeader, skipAuth, true, networkRetried, timeout)
+                    .then(resolve)
+                    .catch(reject);
+                } else {
+                  const error: HttpResponseError = { statusCode, body: res.data };
+                  reject(error);
+                }
+              })
+              // 续期链路异常兜底：保证请求 Promise 一定有结果，避免调用方 loading 永久挂起
+              .catch(() => {
+                const error: HttpResponseError = { statusCode, body: res.data };
+                reject(error);
+              });
+            return;
+          }
         }
         const error: HttpResponseError = { statusCode, body: res.data };
         reject(error);

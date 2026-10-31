@@ -373,3 +373,37 @@ describe("C 端会话恢复（refresh_token 失效后静默重登）", () => {
     expect(recoveryCalls).toBe(0);
   });
 });
+
+describe("401 分流：业务错误与续期异常", () => {
+  it("业务层 401（body.code≠401）不刷新/不恢复/不重试（避免重复提交与限流额度消耗）", async () => {
+    storage.set("c_access_token", "c-tok");
+    storage.set("c_refresh_token", "c-ref");
+    let recoveryCalls = 0;
+    registerCSessionRecovery(async () => {
+      recoveryCalls += 1;
+      return true;
+    });
+    // /public/users/merge 密码错误：HTTP 401 + body.code=40001，并非令牌失效
+    queueResponses([ok({ code: 40001, message: "INVALID_CREDENTIALS" }, 401)]);
+
+    await expect(
+      request({ url: "/public/users/merge", method: "POST", data: {} }),
+    ).rejects.toMatchObject({ statusCode: 401, body: { code: 40001 } });
+    expect(recoveryCalls).toBe(0);
+    expect((wx.request as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
+  });
+
+  it("续期回调同步抛异常时请求仍以 401 reject（Promise 不挂起）", async () => {
+    storage.set("c_access_token", "c-tok");
+    storage.set("c_refresh_token", "c-ref");
+    // 同步抛异常的回调：renewCToken 会 reject，请求层必须兜底 reject 而非永久 pending
+    registerCSessionRecovery((() => {
+      throw new Error("boom");
+    }) as () => Promise<boolean>);
+    queueResponses([ok({ code: 401 }, 401), ok({}, 401)]);
+
+    await expect(
+      request({ url: "/public/users/merge", method: "POST", data: {} }),
+    ).rejects.toMatchObject({ statusCode: 401 });
+  });
+});

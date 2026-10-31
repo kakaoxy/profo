@@ -41,6 +41,8 @@ async function getAllUsers(filters: {
     ),
   );
   const items = [...first.data.items];
+  // 多次分页请求不是同一快照：期间有用户新建/删除时行会位移，可能跨页重复，按 id 去重
+  const seenIds = new Set(items.map((user) => user.id));
   for (const result of rest) {
     if (!result.success) {
       return { success: false, message: result.message ?? "获取用户列表失败" };
@@ -48,7 +50,13 @@ async function getAllUsers(filters: {
     if (!result.data) {
       return { success: false, message: "获取用户列表失败" };
     }
-    items.push(...result.data.items);
+    for (const user of result.data.items) {
+      if (seenIds.has(user.id)) {
+        continue;
+      }
+      seenIds.add(user.id);
+      items.push(user);
+    }
   }
   return {
     success: true,

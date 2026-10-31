@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 import { fetchClient } from "@/lib/api-server";
 import { revalidatePath } from "next/cache";
 import { components } from "@/lib/api-types";
+import { isRedirectError } from "@/lib/auth/server/session";
 import { z } from "zod";
 import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { requirePermission } from "@/lib/auth/server/require-permission";
@@ -61,6 +62,9 @@ export async function getRolesAction(params: {
 
     return { success: true, data };
   } catch (error) {
+    // Server Component（users / users/roles 页）中调用本函数时，fetchClient 遇 401
+    // 会 redirect(...) 抛 NEXT_REDIRECT，必须放行否则会话刷新重定向链断裂（AGENTS §1）
+    if (isRedirectError(error)) throw error;
     logger.error("Get roles exception:", error);
     return { success: false, message: "网络错误，请稍后重试" };
   }
