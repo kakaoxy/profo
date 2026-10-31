@@ -7966,6 +7966,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/notify/run-daily": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 手动补跑商户通知每日任务
+         * @description 补跑协议到期 + 拜访超期通知（幂等，重复执行命中去重键）.
+         */
+        post: operations["run_merchant_notify_daily_api_v1_admin_merchant_notify_run_daily_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/notify/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 商户通知任务执行记录
+         * @description 按日期/通知类型查询任务统计（admin/operator）.
+         */
+        get: operations["list_merchant_notify_runs_api_v1_admin_merchant_notify_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/workbench/config": {
         parameters: {
             query?: never;
@@ -15827,7 +15867,7 @@ export interface components {
              * Category
              * @description 仅该分类；省略=全部
              */
-            category?: ("lead" | "growth" | "project" | "key" | "marketing" | "finance" | "system" | "security") | null;
+            category?: ("lead" | "growth" | "project" | "key" | "marketing" | "finance" | "system" | "security" | "merchant") | null;
         };
         /**
          * MarkAllReadResponse
@@ -16076,6 +16116,92 @@ export interface components {
             cooperated_count: number;
             /** Broker Count */
             broker_count: number;
+        };
+        /**
+         * MerchantNotifyRunRecord
+         * @description 历史任务执行记录（operation_logs 读取）.
+         */
+        MerchantNotifyRunRecord: {
+            /** Id */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            stats?: components["schemas"]["MerchantNotifyRunResponse"] | null;
+        };
+        /**
+         * MerchantNotifyRunResponse
+         * @description 一次商户通知任务执行结果.
+         */
+        MerchantNotifyRunResponse: {
+            /**
+             * Run Date
+             * @description 任务日期（Asia/Shanghai，YYYY-MM-DD）
+             */
+            run_date: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Finished At
+             * Format: date-time
+             */
+            finished_at: string;
+            /** Duration Ms */
+            duration_ms: number;
+            /**
+             * Locked
+             * @description 是否因并发锁未执行
+             * @default false
+             */
+            locked: boolean;
+            agreements: components["schemas"]["MerchantNotifyTypeStats"];
+            visits: components["schemas"]["MerchantNotifyTypeStats"];
+        };
+        /**
+         * MerchantNotifyTypeStats
+         * @description 单类通知任务的扫描/生成统计.
+         */
+        MerchantNotifyTypeStats: {
+            /**
+             * Scanned
+             * @description 扫描到的候选数
+             * @default 0
+             */
+            scanned: number;
+            /**
+             * Created
+             * @description 新建通知数
+             * @default 0
+             */
+            created: number;
+            /**
+             * Deduped
+             * @description dedupe_key 命中跳过数
+             * @default 0
+             */
+            deduped: number;
+            /**
+             * Skipped
+             * @description 业务条件不满足跳过数
+             * @default 0
+             */
+            skipped: number;
+            /**
+             * Failed
+             * @description 单条失败数（不中断整批）
+             * @default 0
+             */
+            failed: number;
+            /**
+             * Errors
+             * @description 失败明细（脱敏，最多 20 条）
+             */
+            errors?: string[];
         };
         /**
          * MerchantStoreCreate
@@ -17434,7 +17560,7 @@ export interface components {
         NotificationPreferencesResponse: {
             /**
              * Categories
-             * @description 8 个分类的完整配置
+             * @description 9 个分类的完整配置
              */
             categories: {
                 [key: string]: components["schemas"]["PreferenceCategory"];
@@ -37147,7 +37273,7 @@ export interface operations {
                 /** @description 仅未读 */
                 unread?: boolean;
                 /** @description 分类筛选 */
-                category?: ("lead" | "growth" | "project" | "key" | "marketing" | "finance" | "system" | "security") | null;
+                category?: ("lead" | "growth" | "project" | "key" | "marketing" | "finance" | "system" | "security" | "merchant") | null;
                 /** @description 优先级筛选 */
                 priority?: ("low" | "normal" | "high" | "urgent") | null;
                 /** @description 最近 N 天（设计稿「近 30 天」筛选） */
@@ -39730,6 +39856,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MerchantTrackResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_merchant_notify_daily_api_v1_admin_merchant_notify_run_daily_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantNotifyRunResponse"];
+                };
+            };
+        };
+    };
+    list_merchant_notify_runs_api_v1_admin_merchant_notify_runs_get: {
+        parameters: {
+            query?: {
+                date?: string | null;
+                notify_type?: ("agreement" | "visit") | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantNotifyRunRecord"][];
                 };
             };
             /** @description Validation Error */

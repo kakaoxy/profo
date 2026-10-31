@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Plus, RefreshCw } from "lucide-react";
 
-import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
+import { PageContainer } from "@/app/(main)/admin/_components/page-container";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

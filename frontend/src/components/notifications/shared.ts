@@ -27,10 +27,11 @@ export const CATEGORY_LABELS: Record<string, string> = {
   finance: "资金",
   system: "系统",
   security: "安全",
+  merchant: "商户",
 };
 
 /** 抽屉/消息中心 tabs 展示的分类（其余分类仅在偏好页出现） */
-export const DISPLAY_CATEGORIES = ["lead", "growth", "project", "security"] as const;
+export const DISPLAY_CATEGORIES = ["lead", "growth", "project", "security", "merchant"] as const;
 
 /** 相对时间（「8 分钟前」「昨天 18:20」），仅用于展示 */
 export function formatRelativeTime(iso: string): string {

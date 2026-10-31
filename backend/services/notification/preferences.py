@@ -44,7 +44,7 @@ def load_preferences(db: Session, user_id: str) -> dict[str, dict[str, bool]]:
         user_id: 用户ID
 
     Returns:
-        分类 → 渠道开关的完整字典（8 个分类齐全）。
+        分类 → 渠道开关的完整字典（9 个分类齐全）。
 
     """
     row = (

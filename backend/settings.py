@@ -20,6 +20,9 @@ _MIGRATION_MIN_FREE_MB_FLOOR = 100
 # 通知清理线程的最小执行间隔（秒）：低于 1 分钟会让守护线程变成忙轮询
 _NOTIFICATION_CLEANUP_MIN_INTERVAL = 60
 
+# 商户通知每日任务的最小执行间隔（秒）
+_MERCHANT_NOTIFY_MIN_INTERVAL = 60
+
 
 class Settings(BaseSettings):
     """应用配置."""
@@ -124,6 +127,12 @@ class Settings(BaseSettings):
     notification_cleanup_interval_seconds: int = 86400
     # 消息列表单页上限（防 page_size=10000）
     notification_page_size_max: int = 100
+
+    # ==================== 商户通知任务（V09） ====================
+    # 协议到期 / 拜访超期每日提醒任务开关
+    merchant_notify_enabled: bool = True
+    # 任务执行间隔秒数（默认 24h；测试可调小，手动补跑不受此限）
+    merchant_notify_interval_seconds: int = 86400
 
     # ==================== 角色化工作台（迭代二） ====================
     # 工作台开关（false → /admin 回落到 v0 单套仪表盘，回退用）
@@ -301,6 +310,9 @@ class Settings(BaseSettings):
             raise ValueError(msg)
         if self.notification_cleanup_interval_seconds < _NOTIFICATION_CLEANUP_MIN_INTERVAL:
             msg = "NOTIFICATION_CLEANUP_INTERVAL_SECONDS 必须 >= 60"
+            raise ValueError(msg)
+        if self.merchant_notify_interval_seconds < _MERCHANT_NOTIFY_MIN_INTERVAL:
+            msg = "MERCHANT_NOTIFY_INTERVAL_SECONDS 必须 >= 60"
             raise ValueError(msg)
         return self
 

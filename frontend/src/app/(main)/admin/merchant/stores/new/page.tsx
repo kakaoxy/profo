@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
+import { PageContainer } from "@/app/(main)/admin/_components/page-container";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

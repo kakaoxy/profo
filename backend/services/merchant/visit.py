@@ -165,12 +165,7 @@ class MerchantVisitService:
             .filter(MerchantVisit.store_id == store.id, MerchantVisit.is_deleted.is_(False))
         )
         total = query.count()
-        rows = (
-            query.order_by(MerchantVisit.visited_at.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-            .all()
-        )
+        rows = query.order_by(MerchantVisit.visited_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
         return MerchantVisitListResponse(
             items=[visit_response(visit, store_name=store.store_name, employee_name=name) for visit, name in rows],
             total=total,

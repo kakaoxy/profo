@@ -63,11 +63,7 @@ class LeadAttributionService:
         """
         broker = self._get_broker(broker_id) if broker_id else None
         if broker is None and creator_id:
-            broker = (
-                self.db.query(MerchantBroker)
-                .filter(MerchantBroker.user_id == creator_id)
-                .first()
-            )
+            broker = self.db.query(MerchantBroker).filter(MerchantBroker.user_id == creator_id).first()
         store = self._get_store(store_id) if store_id else None
 
         if broker is not None and broker.bind_status == MerchantBindStatus.DISABLED.value:
@@ -141,27 +137,21 @@ class LeadAttributionService:
 
         store_names = (
             dict(
-                self.db.query(MerchantStore.id, MerchantStore.store_name)
-                .filter(MerchantStore.id.in_(store_ids))
-                .all(),
+                self.db.query(MerchantStore.id, MerchantStore.store_name).filter(MerchantStore.id.in_(store_ids)).all(),
             )
             if store_ids
             else {}
         )
         broker_names = (
             dict(
-                self.db.query(MerchantBroker.id, MerchantBroker.name)
-                .filter(MerchantBroker.id.in_(broker_ids))
-                .all(),
+                self.db.query(MerchantBroker.id, MerchantBroker.name).filter(MerchantBroker.id.in_(broker_ids)).all(),
             )
             if broker_ids
             else {}
         )
         user_names = (
             dict(
-                self.db.query(User.id, func.coalesce(User.nickname, User.username))
-                .filter(User.id.in_(user_ids))
-                .all(),
+                self.db.query(User.id, func.coalesce(User.nickname, User.username)).filter(User.id.in_(user_ids)).all(),
             )
             if user_ids
             else {}

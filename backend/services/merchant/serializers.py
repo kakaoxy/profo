@@ -26,21 +26,13 @@ VISIT_RESULT_DICT = "merchant_visit_result"
 
 def cooperation_label_map(db: Session) -> dict[str, str]:
     """合作状态 {code: label}（含停用项，历史值可展示）."""
-    rows = (
-        db.query(BizDictItem.code, BizDictItem.label)
-        .filter(BizDictItem.dict_code == COOPERATION_DICT)
-        .all()
-    )
+    rows = db.query(BizDictItem.code, BizDictItem.label).filter(BizDictItem.dict_code == COOPERATION_DICT).all()
     return dict(rows)
 
 
 def visit_result_label_map(db: Session) -> dict[str, str]:
     """拜访结果 {code: label}（含停用项）."""
-    rows = (
-        db.query(BizDictItem.code, BizDictItem.label)
-        .filter(BizDictItem.dict_code == VISIT_RESULT_DICT)
-        .all()
-    )
+    rows = db.query(BizDictItem.code, BizDictItem.label).filter(BizDictItem.dict_code == VISIT_RESULT_DICT).all()
     return dict(rows)
 
 

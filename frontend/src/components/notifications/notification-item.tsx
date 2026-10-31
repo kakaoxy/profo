@@ -1,4 +1,14 @@
-import { Phone, Megaphone, Kanban, KeyRound, Smartphone, Wallet, Settings, ShieldCheck } from "lucide-react";
+import {
+  Phone,
+  Megaphone,
+  Kanban,
+  KeyRound,
+  Smartphone,
+  Wallet,
+  Settings,
+  ShieldCheck,
+  Store,
+} from "lucide-react";
 import type { NotificationDeliverySnapshot, NotificationListItem } from "./shared";
 import { formatRelativeTime } from "./shared";
 
@@ -12,6 +22,7 @@ const CATEGORY_ICONS: Record<string, typeof Phone> = {
   finance: Wallet,
   system: Settings,
   security: ShieldCheck,
+  merchant: Store,
 };
 
 interface DeliveryTagProps {

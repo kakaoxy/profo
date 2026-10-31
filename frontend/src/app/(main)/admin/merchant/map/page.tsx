@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
+import { PageContainer } from "@/app/(main)/admin/_components/page-container";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -138,13 +139,14 @@ export default function MerchantMapPage() {
       script.onerror = () => setMapError("高德地图加载失败，列表仍可使用");
       document.body.appendChild(script);
     }
+    const markers = markersRef.current;
+    const createdMap = mapRef.current;
     return () => {
       disposed = true;
-      markersRef.current.clear();
-      mapRef.current?.destroy();
-      mapRef.current = null;
+      markers.clear();
+      createdMap?.destroy();
+      if (mapRef.current === createdMap) mapRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
   const focusPoint = (point: MapPoint) => {

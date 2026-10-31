@@ -1,6 +1,7 @@
-"""通知事件字典（迭代二 SPEC §5.1）.
+"""通知事件字典（迭代二 SPEC §5.1 + 商户管理 V09）.
 
 12 条事件 = 站内信有 UI 的 5 条 + 触发点延后的 3 条 + 仅审计的 3 条 + 系统告警 1 条。
+商户管理新增 2 条（协议到期、门店拜访超期），分类为 ``merchant``。
 字典是**唯一事实源**：新增事件必须先在此登记，否则 ``NotificationService.emit`` 抛
 ``ValueError``（Fail Loud，不静默丢事件）。
 """
@@ -9,7 +10,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Literal
 
-# 通知分类（与前端偏好页 8 分类、消息中心 tabs 一一对应）
+# 通知分类（与前端偏好页 9 分类、消息中心 tabs 一一对应）
 Category = Literal[
     "lead",
     "growth",
@@ -19,6 +20,7 @@ Category = Literal[
     "finance",
     "system",
     "security",
+    "merchant",
 ]
 
 # 优先级
@@ -43,6 +45,8 @@ class EventType(StrEnum):
     MARKETING_PUBLISHED = "marketing.published"
     MARKETING_PRICE_CHANGED = "marketing.price_changed"
     LEAD_EVAL_PRICE_CHANGED = "lead.eval_price_changed"
+    MERCHANT_AGREEMENT_EXPIRING = "merchant.agreement.expiring"
+    MERCHANT_VISIT_OVERDUE = "merchant.visit.overdue"
 
 
 @dataclass(frozen=True, slots=True)
@@ -236,10 +240,37 @@ EVENT_SPECS: dict[EventType, EventSpec] = {
         action_template="pages/valuation/detail/index?id={id}",
         closeable=True,
     ),
+    # ---- 商户管理（V09）：仅站内信，微信模板待确认（R-V09-02）----
+    EventType.MERCHANT_AGREEMENT_EXPIRING: EventSpec(
+        type=EventType.MERCHANT_AGREEMENT_EXPIRING,
+        category="merchant",
+        priority="normal",
+        in_app=True,
+        wechat=False,
+        dedupe_template="merchant:agreement_expiring:{agreement_id}:{expire_date}",
+        title_template="合作协议即将到期：{subject_name}",
+        body_template="将于 {expire_date} 到期，请及时续签",
+        action_type="route",
+        action_template="/admin/merchant/agreements/{agreement_id}",
+        closeable=True,
+    ),
+    EventType.MERCHANT_VISIT_OVERDUE: EventSpec(
+        type=EventType.MERCHANT_VISIT_OVERDUE,
+        category="merchant",
+        priority="normal",
+        in_app=True,
+        wechat=False,
+        dedupe_template="merchant:visit_overdue:{store_id}:{last_visit_date}",
+        title_template="门店超期未拜访：{store_name}",
+        body_template="最近拜访 {last_visit_date}，已超过 30 天",
+        action_type="route",
+        action_template="/admin/merchant/stores/{store_id}",
+        closeable=True,
+    ),
 }
 
 
-# 偏好页展示的 8 个分类元数据（SPEC §6.1：label/description/wechat_only）
+# 偏好页展示的 9 个分类元数据（SPEC §6.1：label/description/wechat_only）
 CATEGORY_META: dict[str, dict[str, object]] = {
     "lead": {"label": "线索", "description": "线索分配、状态变更", "wechat_only": False},
     "growth": {"label": "获客", "description": "新客户线索、客户状态变更、招募推荐", "wechat_only": False},
@@ -249,6 +280,7 @@ CATEGORY_META: dict[str, dict[str, object]] = {
     "finance": {"label": "资金", "description": "资金流水与结算异常", "wechat_only": False},
     "system": {"label": "系统", "description": "站内信不可关闭", "wechat_only": False},
     "security": {"label": "安全", "description": "站内信不可关闭", "wechat_only": False},
+    "merchant": {"label": "商户", "description": "协议到期、门店拜访超期", "wechat_only": False},
 }
 
 # 分类 → 与之绑定的微信模板 key（用于判断「该分类微信开关是否可用」，K18）
@@ -262,6 +294,7 @@ CATEGORY_TEMPLATE_KEY: dict[str, str | None] = {
     "finance": None,
     "system": None,
     "security": None,
+    "merchant": None,
 }
 
 

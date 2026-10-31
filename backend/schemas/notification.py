@@ -22,6 +22,7 @@ NotificationCategory = Literal[
     "finance",
     "system",
     "security",
+    "merchant",
 ]
 
 
@@ -114,7 +115,7 @@ class PreferenceCategory(BaseModel):
 class NotificationPreferencesResponse(BaseModel):
     """偏好读取/保存响应."""
 
-    categories: dict[str, PreferenceCategory] = Field(description="8 个分类的完整配置")
+    categories: dict[str, PreferenceCategory] = Field(description="9 个分类的完整配置")
     wechat_available: bool = Field(description="微信渠道整体是否可用（未绑定微信则为 False）")
     template_missing_count: int = Field(description="5 个订阅模板中未配置的个数（横幅文案）")
 

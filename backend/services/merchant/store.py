@@ -312,12 +312,7 @@ class MerchantStoreService:
             query = query.filter(MerchantStore.owner_employee_id == owner_employee_id)
 
         total = query.count()
-        rows = (
-            query.order_by(MerchantStore.updated_at.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-            .all()
-        )
+        rows = query.order_by(MerchantStore.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
         return MerchantStoreListResponse(
             items=[store_list_item(store, labels, owner_employee_name=name) for store, name in rows],
             total=total,
@@ -542,21 +537,15 @@ class MerchantStoreService:
                 "拜访记录",
             ),
             (
-                self.db.query(MerchantBrokerBinding.id)
-                .filter(MerchantBrokerBinding.store_id == store.id)
-                .count(),
+                self.db.query(MerchantBrokerBinding.id).filter(MerchantBrokerBinding.store_id == store.id).count(),
                 "经纪人绑定",
             ),
             (
-                self.db.query(Lead.id)
-                .filter(Lead.store_id == store.id, Lead.is_deleted.is_(False))
-                .count(),
+                self.db.query(Lead.id).filter(Lead.store_id == store.id, Lead.is_deleted.is_(False)).count(),
                 "线索",
             ),
             (
-                self.db.query(MerchantAgreement.id)
-                .filter(MerchantAgreement.store_id == store.id)
-                .count(),
+                self.db.query(MerchantAgreement.id).filter(MerchantAgreement.store_id == store.id).count(),
                 "协议",
             ),
         )
@@ -987,8 +976,7 @@ class MerchantStoreService:
             return False
         count = self.db.execute(
             text(
-                'SELECT COUNT(*) FROM "merchant_agreements" '
-                'WHERE "store_id" = :store_id AND "status" = :status',
+                'SELECT COUNT(*) FROM "merchant_agreements" WHERE "store_id" = :store_id AND "status" = :status',
             ),
             {"store_id": store_id, "status": "signed"},
         ).scalar_one()

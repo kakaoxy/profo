@@ -468,12 +468,7 @@ class MerchantAgreementService:
             query = query.filter(MerchantAgreement.agreement_no.ilike(f"%{agreement_no}%"))
 
         total = query.count()
-        rows = (
-            query.order_by(MerchantAgreement.created_at.desc())
-            .offset((page - 1) * page_size)
-            .limit(page_size)
-            .all()
-        )
+        rows = query.order_by(MerchantAgreement.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
         return AgreementListResponse(
             items=[self._response(row) for row in rows],
             total=total,
@@ -546,11 +541,7 @@ class MerchantAgreementService:
 
     # -------------------- 内部辅助 --------------------
     def _get_template(self, template_id: str) -> MerchantAgreementTemplate:
-        template = (
-            self.db.query(MerchantAgreementTemplate)
-            .filter(MerchantAgreementTemplate.id == template_id)
-            .first()
-        )
+        template = self.db.query(MerchantAgreementTemplate).filter(MerchantAgreementTemplate.id == template_id).first()
         if template is None:
             msg = "协议模板不存在"
             raise ResourceNotFoundError(msg)
@@ -661,9 +652,7 @@ class MerchantAgreementService:
 
     def _agreement_no_exists(self, agreement_no: str) -> bool:
         return (
-            self.db.query(MerchantAgreement.id)
-            .filter(MerchantAgreement.agreement_no == agreement_no)
-            .first()
+            self.db.query(MerchantAgreement.id).filter(MerchantAgreement.agreement_no == agreement_no).first()
             is not None
         )
 

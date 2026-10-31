@@ -63,6 +63,7 @@ export const getNotificationInitialData = cache(
               | "finance"
               | "system"
               | "security"
+              | "merchant"
               | undefined,
             priority: query.priority,
             days: query.days,

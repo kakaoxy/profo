@@ -35,9 +35,7 @@ class MerchantAgreementTemplate(Base):
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("idx_merchant_agreement_templates_type", "cooperation_type", "status"),
-    )
+    __table_args__ = (Index("idx_merchant_agreement_templates_type", "cooperation_type", "status"),)
 
 
 class MerchantAgreement(Base):

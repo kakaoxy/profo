@@ -19,6 +19,7 @@ const CATEGORY_ORDER = [
   "finance",
   "system",
   "security",
+  "merchant",
 ] as const;
 
 /**

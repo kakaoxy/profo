@@ -47,6 +47,7 @@ from routers.merchant import (
     merchant_agreement_admin_router,
     merchant_agreement_public_router,
     merchant_map_router,
+    merchant_notify_admin_router,
     merchant_public_router,
 )
 from routers.monitor import monitor_router
@@ -240,6 +241,38 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
 
         threading.Thread(target=_notification_daily_cleanup, name="notification-cleanup", daemon=True).start()
         logger.info("站内信保留清理线程已启动（每 %d 秒）", settings.notification_cleanup_interval_seconds)
+
+    # 商户管理 V09：协议到期 + 门店拜访超期每日提醒。
+    # 与上面的清理线程同范式：独立守护线程随进程退出，单次失败只记日志。
+    # 多实例由 services.merchant.tasks 的 Redis 锁收敛；通知本身按 dedupe_key 幂等。
+    if settings.merchant_notify_enabled:
+
+        def _merchant_notify_daily() -> None:
+            from db import SessionLocal
+            from services.merchant.tasks import run_daily
+
+            while True:
+                time.sleep(settings.merchant_notify_interval_seconds)
+                try:
+                    with SessionLocal() as session:
+                        result = run_daily(session)
+                    if result.locked:
+                        logger.info("商户通知任务被其他实例占用，本轮跳过")
+                        continue
+                    logger.info(
+                        "商户通知任务完成：协议新增 %d / 去重 %d / 失败 %d；拜访新增 %d / 去重 %d / 失败 %d",
+                        result.agreements.created,
+                        result.agreements.deduped,
+                        result.agreements.failed,
+                        result.visits.created,
+                        result.visits.deduped,
+                        result.visits.failed,
+                    )
+                except Exception:
+                    logger.exception("商户通知任务执行失败")
+
+        threading.Thread(target=_merchant_notify_daily, name="merchant-notify-daily", daemon=True).start()
+        logger.info("商户通知每日任务线程已启动（每 %d 秒）", settings.merchant_notify_interval_seconds)
 
     yield
 
@@ -475,6 +508,7 @@ app.include_router(merchant_public_router, prefix=API_V1_PREFIX)
 app.include_router(merchant_agreement_admin_router, prefix=API_V1_PREFIX)
 app.include_router(merchant_agreement_public_router, prefix=API_V1_PREFIX)
 app.include_router(merchant_map_router, prefix=API_V1_PREFIX)
+app.include_router(merchant_notify_admin_router, prefix=API_V1_PREFIX)
 app.include_router(workbench_router, prefix=API_V1_PREFIX)
 app.include_router(reports_router, prefix=API_V1_PREFIX)
 

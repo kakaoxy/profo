@@ -10,9 +10,10 @@ K3 收件人最小化：``Audience`` 三类条件之一必须非空，否则 ``V
 
 from dataclasses import dataclass
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from constants.role_codes import BACKEND_ROLE_CODES
 from models import Permission, Role, User, role_permissions, user_roles
 
 
@@ -65,16 +66,22 @@ def resolve_recipients(db: Session, audience: Audience) -> list[str]:
     if not user_ids:
         return []
 
-    # 统一过滤：仅 active 且具备后台身份（admin/operator/user）的用户可收站内信
+    # 统一过滤：仅 active 且具备后台身份的用户可收站内信。
+    # 后台身份 = 主角色**或附加角色**命中 BACKEND_ROLE_CODES：
+    # 小程序员工账号是「customer 主角色 + user 附加角色」（见
+    # services/system/identity.py），只查主角色会把商户拜访提醒等
+    # 员工收件人整体过滤掉。
+    backend_role_ids = db.execute(select(Role.id).where(Role.code.in_(tuple(BACKEND_ROLE_CODES)))).scalars().all()
+    extra_user_ids = (
+        db.execute(select(user_roles.c.user_id).where(user_roles.c.role_id.in_(backend_role_ids))).scalars().all()
+    )
     active_ids = [
         row[0]
         for row in db.execute(
-            select(User.id)
-            .join(Role, Role.id == User.role_id)
-            .where(
+            select(User.id).where(
                 User.id.in_(user_ids),
                 User.status == "active",
-                Role.code.in_(("admin", "operator", "user")),
+                or_(User.role_id.in_(backend_role_ids), User.id.in_(extra_user_ids)),
             )
         ).all()
     ]

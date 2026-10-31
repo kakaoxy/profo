@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
+import { PageContainer } from "@/app/(main)/admin/_components/page-container";
+import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -143,7 +145,12 @@ export default function MerchantAgreementsPage() {
                 {data.items.map((item) => (
                   <tr key={item.id} className="border-t border-mist">
                     <td className="px-4 py-3">
-                      <div className="font-medium">{item.agreement_no || item.id.slice(0, 8)}</div>
+                      <Link
+                        href={`/admin/merchant/agreements/${item.id}`}
+                        className="font-medium underline-offset-4 hover:underline"
+                      >
+                        {item.agreement_no || item.id.slice(0, 8)}
+                      </Link>
                       <div className="text-xs text-graphite">{item.template_name || "—"}</div>
                     </td>
                     <td className="px-4 py-3">

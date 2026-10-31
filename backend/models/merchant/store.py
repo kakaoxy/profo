@@ -131,9 +131,7 @@ class MerchantStoreStatusLog(Base):
         nullable=False,
     )
 
-    __table_args__ = (
-        Index("idx_merchant_store_status_logs_store", "store_id", "created_at"),
-    )
+    __table_args__ = (Index("idx_merchant_store_status_logs_store", "store_id", "created_at"),)
 
 
 __all__ = ["MerchantStore", "MerchantStoreStatusLog"]

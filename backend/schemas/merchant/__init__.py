@@ -416,6 +416,11 @@ from .map import (  # noqa: E402
     MerchantTrackResponse,
     MerchantTrackStats,
 )
+from .notify import (  # noqa: E402
+    MerchantNotifyRunRecord,
+    MerchantNotifyRunResponse,
+    MerchantNotifyTypeStats,
+)
 
 __all__ = [
     "AgreementCreateRequest",
@@ -451,6 +456,9 @@ __all__ = [
     "MerchantMapPoint",
     "MerchantMapResponse",
     "MerchantMapStats",
+    "MerchantNotifyRunRecord",
+    "MerchantNotifyRunResponse",
+    "MerchantNotifyTypeStats",
     "MerchantStoreDeleteRequest",
     "MerchantStoreDetailResponse",
     "MerchantStoreMergeRequest",

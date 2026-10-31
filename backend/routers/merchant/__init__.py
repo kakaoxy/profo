@@ -4,6 +4,7 @@ from .admin import router as merchant_admin_router
 from .agreement_admin import router as merchant_agreement_admin_router
 from .agreement_public import router as merchant_agreement_public_router
 from .map import router as merchant_map_router
+from .notify_admin import router as merchant_notify_admin_router
 from .public import router as merchant_public_router
 
 __all__ = [
@@ -11,5 +12,6 @@ __all__ = [
     "merchant_agreement_admin_router",
     "merchant_agreement_public_router",
     "merchant_map_router",
+    "merchant_notify_admin_router",
     "merchant_public_router",
 ]
