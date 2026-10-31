@@ -171,6 +171,13 @@ def create_merchant_broker_tables(engine: Engine) -> None:
     )
 
 
+def alter_merchant_store_coordinates_nullable(engine: Engine) -> None:
+    """v110：门店经纬度允许为空（存量/导入门店可缺坐标，V08 Q37）."""
+    with engine.begin() as conn:
+        conn.execute(text("ALTER TABLE merchant_stores ALTER COLUMN lng DROP NOT NULL"))
+        conn.execute(text("ALTER TABLE merchant_stores ALTER COLUMN lat DROP NOT NULL"))
+
+
 def add_lead_merchant_attribution_columns(engine: Engine) -> None:
     """v109：leads 补门店/经纪人/员工归因快照四列与索引（幂等）."""
     columns = (

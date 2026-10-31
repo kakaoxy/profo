@@ -46,6 +46,7 @@ from routers.merchant import (
     merchant_admin_router,
     merchant_agreement_admin_router,
     merchant_agreement_public_router,
+    merchant_map_router,
     merchant_public_router,
 )
 from routers.monitor import monitor_router
@@ -473,6 +474,7 @@ app.include_router(merchant_admin_router, prefix=API_V1_PREFIX)
 app.include_router(merchant_public_router, prefix=API_V1_PREFIX)
 app.include_router(merchant_agreement_admin_router, prefix=API_V1_PREFIX)
 app.include_router(merchant_agreement_public_router, prefix=API_V1_PREFIX)
+app.include_router(merchant_map_router, prefix=API_V1_PREFIX)
 app.include_router(workbench_router, prefix=API_V1_PREFIX)
 app.include_router(reports_router, prefix=API_V1_PREFIX)
 

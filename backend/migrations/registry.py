@@ -88,6 +88,7 @@ from migrations._merchant import seed_merchant_platform
 from migrations._merchant_schema import (
     add_lead_merchant_attribution_columns,
     add_merchant_store_phone_hash_column,
+    alter_merchant_store_coordinates_nullable,
     create_merchant_agreement_tables,
     create_merchant_broker_tables,
     create_merchant_core_tables,
@@ -1348,6 +1349,16 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=True,
         description="商户管理 V06：leads 补门店/经纪人/员工归因快照四列与索引",
     ),
+    Migration(
+        version=110,
+        name="alter_merchant_store_coordinates_nullable",
+        fn=alter_merchant_store_coordinates_nullable,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="商户管理 V08：门店经纬度允许为空（坐标缺失门店仅列表展示）",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1360,7 +1371,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 109）。"""
+"""登记总数（当前 110）。"""
 
-NEXT_VERSION = 110
+NEXT_VERSION = 111
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

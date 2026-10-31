@@ -7926,6 +7926,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/map/stores": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店地图点位与统计
+         * @description 按区域/商圈/合作/审核状态筛选门店点位.
+         */
+        get: operations["map_stores_api_v1_admin_merchant_map_stores_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/tracks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 员工拜访轨迹
+         * @description 按员工与日期查询到店打卡点（默认当天，最长 31 天）.
+         */
+        get: operations["employee_track_api_v1_admin_merchant_tracks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/workbench/config": {
         parameters: {
             query?: never;
@@ -15979,6 +16019,65 @@ export interface components {
             month_new: number;
         };
         /**
+         * MerchantMapPoint
+         * @description 地图门店点位.
+         */
+        MerchantMapPoint: {
+            /** Id */
+            id: string;
+            /** Store Name */
+            store_name: string;
+            /** Company Name */
+            company_name: string;
+            /** Province */
+            province: string;
+            /** City */
+            city: string;
+            /** District */
+            district: string;
+            /** Business Circle */
+            business_circle: string;
+            /** Address */
+            address: string;
+            /** Lng */
+            lng: number | null;
+            /** Lat */
+            lat: number | null;
+            /** Has Coordinate */
+            has_coordinate: boolean;
+            /** Cooperation Status */
+            cooperation_status: string;
+            /** Cooperation Status Label */
+            cooperation_status_label: string;
+            /** Review Status */
+            review_status: string;
+            /** Broker Count */
+            broker_count: number;
+            /** Last Visit At */
+            last_visit_at: string | null;
+        };
+        /**
+         * MerchantMapResponse
+         * @description 地图点位与统计.
+         */
+        MerchantMapResponse: {
+            /** Points */
+            points: components["schemas"]["MerchantMapPoint"][];
+            stats: components["schemas"]["MerchantMapStats"];
+        };
+        /**
+         * MerchantMapStats
+         * @description 地图统计条.
+         */
+        MerchantMapStats: {
+            /** Store Count */
+            store_count: number;
+            /** Cooperated Count */
+            cooperated_count: number;
+            /** Broker Count */
+            broker_count: number;
+        };
+        /**
          * MerchantStoreCreate
          * @description 创建门店请求（员工小程序 / 后台 / 经纪人复用）.
          */
@@ -16239,9 +16338,9 @@ export interface components {
             /** Address */
             address: string;
             /** Lng */
-            lng: number;
+            lng: number | null;
             /** Lat */
-            lat: number;
+            lat: number | null;
             /** Coordinate System */
             coordinate_system: string;
             /** Contact Name */
@@ -16385,6 +16484,64 @@ export interface components {
              * @description 变更/搬迁原因
              */
             change_reason?: string | null;
+        };
+        /**
+         * MerchantTrackItem
+         * @description 拜访轨迹点（时间线/地图共用）.
+         */
+        MerchantTrackItem: {
+            /** Visit Id */
+            visit_id: string;
+            /** Store Id */
+            store_id: string;
+            /** Store Name */
+            store_name: string;
+            /** Employee Id */
+            employee_id: string;
+            /** Employee Name */
+            employee_name: string | null;
+            /**
+             * Visited At
+             * Format: date-time
+             */
+            visited_at: string;
+            /** Lng */
+            lng: number | null;
+            /** Lat */
+            lat: number | null;
+            /** Address */
+            address: string | null;
+            /** Contact Name */
+            contact_name: string;
+            /** Result */
+            result: string | null;
+            /** Remark */
+            remark: string | null;
+            /** Photos */
+            photos?: {
+                [key: string]: unknown;
+            }[];
+            /** Has Coordinate */
+            has_coordinate: boolean;
+        };
+        /**
+         * MerchantTrackResponse
+         * @description 员工拜访轨迹响应.
+         */
+        MerchantTrackResponse: {
+            /** Items */
+            items: components["schemas"]["MerchantTrackItem"][];
+            stats: components["schemas"]["MerchantTrackStats"];
+        };
+        /**
+         * MerchantTrackStats
+         * @description 轨迹统计.
+         */
+        MerchantTrackStats: {
+            /** Visit Count */
+            visit_count: number;
+            /** Store Count */
+            store_count: number;
         };
         /**
          * MerchantVisitCreate
@@ -39501,6 +39658,78 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    map_stores_api_v1_admin_merchant_map_stores_get: {
+        parameters: {
+            query?: {
+                province?: string | null;
+                city?: string | null;
+                district?: string | null;
+                business_circle?: string | null;
+                cooperation_status?: string | null;
+                review_status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantMapResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    employee_track_api_v1_admin_merchant_tracks_get: {
+        parameters: {
+            query: {
+                /** @description 员工ID */
+                employee_id: string;
+                /** @description 开始日期 */
+                start_date?: string | null;
+                /** @description 结束日期 */
+                end_date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantTrackResponse"];
                 };
             };
             /** @description Validation Error */

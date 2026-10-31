@@ -36,8 +36,8 @@ class MerchantStore(Base):
     district: Mapped[str] = mapped_column(String(50), nullable=False, comment="区县")
     business_circle: Mapped[str] = mapped_column(String(100), nullable=False, comment="商圈")
     address: Mapped[str] = mapped_column(String(500), nullable=False, comment="详细地址")
-    lng: Mapped[float] = mapped_column(Numeric(10, 6), nullable=False, comment="经度 GCJ-02")
-    lat: Mapped[float] = mapped_column(Numeric(10, 6), nullable=False, comment="纬度 GCJ-02")
+    lng: Mapped[float | None] = mapped_column(Numeric(10, 6), nullable=True, comment="经度 GCJ-02(存量可空)")
+    lat: Mapped[float | None] = mapped_column(Numeric(10, 6), nullable=True, comment="纬度 GCJ-02(存量可空)")
     coordinate_system: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

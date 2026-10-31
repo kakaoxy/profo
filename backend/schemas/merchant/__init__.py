@@ -131,8 +131,8 @@ class MerchantStoreResponse(BaseModel):
     district: str
     business_circle: str
     address: str
-    lng: float
-    lat: float
+    lng: float | None
+    lat: float | None
     coordinate_system: str
     contact_name: str
     contact_phone: str
@@ -373,6 +373,7 @@ class MerchantStoreDetailResponse(BaseModel):
 MerchantStoreCreate.model_rebuild()
 
 # 经纪人相关 Schema（V04）
+# 地图与轨迹 Schema（V08）
 # 合作协议 Schema（V05）
 from .agreement import (  # noqa: E402
     AgreementCreateRequest,
@@ -407,6 +408,14 @@ from .broker import (  # noqa: E402
     BrokerUnbindRequest,
     BrokerUpdateRequest,
 )
+from .map import (  # noqa: E402
+    MerchantMapPoint,
+    MerchantMapResponse,
+    MerchantMapStats,
+    MerchantTrackItem,
+    MerchantTrackResponse,
+    MerchantTrackStats,
+)
 
 __all__ = [
     "AgreementCreateRequest",
@@ -439,8 +448,14 @@ __all__ = [
     "BrokerUnbindRequest",
     "BrokerUpdateRequest",
     "MerchantLeadStats",
+    "MerchantMapPoint",
+    "MerchantMapResponse",
+    "MerchantMapStats",
     "MerchantStoreDeleteRequest",
     "MerchantStoreDetailResponse",
     "MerchantStoreMergeRequest",
     "MerchantStoreReviewRequest",
+    "MerchantTrackItem",
+    "MerchantTrackResponse",
+    "MerchantTrackStats",
 ]
