@@ -135,20 +135,30 @@ class LeadAttributionService:
             if user_id
         }
 
-        store_names = (
-            dict(
-                self.db.query(MerchantStore.id, MerchantStore.store_name).filter(MerchantStore.id.in_(store_ids)).all(),
+        store_rows = (
+            self.db.query(
+                MerchantStore.id,
+                MerchantStore.store_name,
+                MerchantStore.status,
+                MerchantStore.is_deleted,
             )
+            .filter(MerchantStore.id.in_(store_ids))
+            .all()
             if store_ids
-            else {}
+            else []
         )
-        broker_names = (
-            dict(
-                self.db.query(MerchantBroker.id, MerchantBroker.name).filter(MerchantBroker.id.in_(broker_ids)).all(),
-            )
+        store_names = {row[0]: row[1] for row in store_rows}
+        # 历史归属展示（REQ-M07-004 分支 1）：停用/合并/搬迁/已删除仍展示名称并标记
+        store_statuses = {row[0]: ("deleted" if row[3] else row[2]) for row in store_rows}
+        broker_rows = (
+            self.db.query(MerchantBroker.id, MerchantBroker.name, MerchantBroker.bind_status)
+            .filter(MerchantBroker.id.in_(broker_ids))
+            .all()
             if broker_ids
-            else {}
+            else []
         )
+        broker_names = {row[0]: row[1] for row in broker_rows}
+        broker_statuses = {row[0]: row[2] for row in broker_rows}
         user_names = (
             dict(
                 self.db.query(User.id, func.coalesce(User.nickname, User.username)).filter(User.id.in_(user_ids)).all(),
@@ -159,7 +169,9 @@ class LeadAttributionService:
 
         for item in items:
             item.store_name = store_names.get(item.store_id) if item.store_id else None
+            item.store_status = store_statuses.get(item.store_id) if item.store_id else None
             item.broker_name = broker_names.get(item.broker_id) if item.broker_id else None
+            item.broker_status = broker_statuses.get(item.broker_id) if item.broker_id else None
             item.store_owner_name = (
                 user_names.get(item.store_owner_employee_id) if item.store_owner_employee_id else None
             )

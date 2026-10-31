@@ -15411,10 +15411,14 @@ export interface components {
             store_id?: string | null;
             /** Store Name */
             store_name?: string | null;
+            /** Store Status */
+            store_status?: string | null;
             /** Broker Id */
             broker_id?: string | null;
             /** Broker Name */
             broker_name?: string | null;
+            /** Broker Status */
+            broker_status?: string | null;
             /** Store Owner Employee Id */
             store_owner_employee_id?: string | null;
             /** Store Owner Name */
@@ -15537,10 +15541,20 @@ export interface components {
             store_id?: string | null;
             /** Store Name */
             store_name?: string | null;
+            /**
+             * Store Status
+             * @description 门店状态（disabled/merged/relocated/deleted 历史标记）
+             */
+            store_status?: string | null;
             /** Broker Id */
             broker_id?: string | null;
             /** Broker Name */
             broker_name?: string | null;
+            /**
+             * Broker Status
+             * @description 经纪人绑定状态（disabled=已停用）
+             */
+            broker_status?: string | null;
             /** Store Owner Employee Id */
             store_owner_employee_id?: string | null;
             /** Store Owner Name */

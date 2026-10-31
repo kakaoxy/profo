@@ -1,3 +1,8 @@
+"use client";
+
+import Link from "next/link";
+import { usePermission } from "@/hooks/use-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 import { Lead } from "../../types";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -7,6 +12,18 @@ const STATUS_LABELS: Record<string, string> = {
   missing_store_broker: "缺门店与经纪人",
   missing_referrer: "缺员工归因",
   none: "无归属",
+};
+
+/** 历史归属标记（REQ-M07-004 分支 1）：门店/经纪人已停用、合并、搬迁或删除 */
+const STORE_STATUS_SUFFIX: Record<string, string> = {
+  disabled: "（已停用）",
+  merged: "（已合并）",
+  relocated: "（已搬迁）",
+  deleted: "（已删除）",
+};
+const BROKER_STATUS_SUFFIX: Record<string, string> = {
+  disabled: "（已停用）",
+  unbound_after: "（已解绑）",
 };
 
 const FIELDS: { key: keyof Lead; label: string }[] = [
@@ -19,6 +36,38 @@ const FIELDS: { key: keyof Lead; label: string }[] = [
 
 /** 线索五维归属卡片（V06 REQ-M07-004）：缺值显示「—」，不伪造。 */
 export function LeadAttributionCard({ lead }: { lead: Lead }) {
+  const { hasPermission } = usePermission();
+  const canOpenStore = hasPermission(PERMISSION_CODES.MERCHANT_READ);
+  const canOpenBroker = hasPermission(PERMISSION_CODES.MERCHANT_BROKER);
+
+  const renderValue = (fieldKey: keyof Lead, value?: string) => {
+    if (!value) return "—";
+    const suffix =
+      fieldKey === "storeName"
+        ? (STORE_STATUS_SUFFIX[lead.storeStatus || ""] ?? "")
+        : fieldKey === "brokerName"
+          ? (BROKER_STATUS_SUFFIX[lead.brokerStatus || ""] ?? "")
+          : "";
+    const href =
+      fieldKey === "storeName" && lead.storeId && lead.storeStatus !== "deleted" && canOpenStore
+        ? `/admin/merchant/stores/${lead.storeId}`
+        : fieldKey === "brokerName" && lead.brokerId && canOpenBroker
+          ? `/admin/merchant/brokers?keyword=${encodeURIComponent(value)}`
+          : null;
+    return (
+      <>
+        {href ? (
+          <Link href={href} className="hover:text-rust hover:underline">
+            {value}
+          </Link>
+        ) : (
+          value
+        )}
+        {suffix}
+      </>
+    );
+  };
+
   return (
     <div className="rounded-2xl border border-dove bg-card p-4">
       <div className="mb-3 flex items-center justify-between gap-2">
@@ -30,9 +79,11 @@ export function LeadAttributionCard({ lead }: { lead: Lead }) {
       <div className="grid grid-cols-2 gap-3">
         {FIELDS.map((field) => (
           <div key={field.label} className="flex flex-col gap-0.5">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{field.label}</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+              {field.label}
+            </span>
             <span className="text-sm font-semibold text-foreground">
-              {(lead[field.key] as string | undefined) || "—"}
+              {renderValue(field.key, lead[field.key] as string | undefined)}
             </span>
           </div>
         ))}

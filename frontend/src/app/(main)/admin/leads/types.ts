@@ -106,8 +106,12 @@ export interface Lead {
   /** 商户域五维归属（V06）：门店 / 经纪人 / 门店归属员工 / 经纪人邀请员工 */
   storeId?: string | null;
   storeName?: string;
+  /** 门店状态（disabled/merged/relocated/deleted，历史归属标记用） */
+  storeStatus?: string | null;
   brokerId?: string | null;
   brokerName?: string;
+  /** 经纪人绑定状态（disabled=已停用） */
+  brokerStatus?: string | null;
   storeOwnerEmployeeId?: string;
   storeOwnerName?: string;
   brokerInviterEmployeeId?: string;

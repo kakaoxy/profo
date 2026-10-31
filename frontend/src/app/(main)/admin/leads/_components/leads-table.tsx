@@ -33,6 +33,18 @@ interface LeadsTableProps {
   onDelete: (id: string) => void;
 }
 
+/** 历史归属标记（REQ-M07-004 分支 1） */
+const STORE_STATUS_SUFFIX: Record<string, string> = {
+  disabled: "（已停用）",
+  merged: "（已合并）",
+  relocated: "（已搬迁）",
+  deleted: "（已删除）",
+};
+const BROKER_STATUS_SUFFIX: Record<string, string> = {
+  disabled: "（已停用）",
+  unbound_after: "（已解绑）",
+};
+
 /**
  * 线索列表（列宽用 table-fixed + th 宽度类：断点隐藏 th 后剩余列按宽度类重排，
  * 容器 overflow-x-auto，窄屏横向滚动不挤压文字列）。
@@ -178,30 +190,44 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                 <div className="space-y-0.5 text-[12px] leading-tight">
                   <div className="truncate text-ash">
                     <span className="text-graphite">店 </span>
-                    {lead.storeId && lead.storeName && canOpenStore ? (
-                      <Link
-                        href={`/admin/merchant/stores/${lead.storeId}`}
-                        className="hover:text-rust hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {lead.storeName}
-                      </Link>
+                    {lead.storeName ? (
+                      <>
+                        {lead.storeId && lead.storeStatus !== "deleted" && canOpenStore ? (
+                          <Link
+                            href={`/admin/merchant/stores/${lead.storeId}`}
+                            className="hover:text-rust hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {lead.storeName}
+                          </Link>
+                        ) : (
+                          lead.storeName
+                        )}
+                        {STORE_STATUS_SUFFIX[lead.storeStatus || ""] || ""}
+                      </>
                     ) : (
-                      lead.storeName || "—"
+                      "—"
                     )}
                   </div>
                   <div className="truncate text-ash">
                     <span className="text-graphite">纪 </span>
-                    {lead.brokerId && lead.brokerName && canOpenBroker ? (
-                      <Link
-                        href={`/admin/merchant/brokers?keyword=${encodeURIComponent(lead.brokerName)}`}
-                        className="hover:text-rust hover:underline"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {lead.brokerName}
-                      </Link>
+                    {lead.brokerName ? (
+                      <>
+                        {lead.brokerId && canOpenBroker ? (
+                          <Link
+                            href={`/admin/merchant/brokers?keyword=${encodeURIComponent(lead.brokerName)}`}
+                            className="hover:text-rust hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {lead.brokerName}
+                          </Link>
+                        ) : (
+                          lead.brokerName
+                        )}
+                        {BROKER_STATUS_SUFFIX[lead.brokerStatus || ""] || ""}
+                      </>
                     ) : (
-                      lead.brokerName || "—"
+                      "—"
                     )}
                   </div>
                   <div className="truncate text-ash">

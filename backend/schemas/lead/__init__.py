@@ -242,8 +242,10 @@ class LeadResponse(LeadBase):
     # 商户域五维归属（V06）
     store_id: str | None = None
     store_name: str | None = None
+    store_status: str | None = Field(None, description="门店状态（disabled/merged/relocated/deleted 历史标记）")
     broker_id: str | None = None
     broker_name: str | None = None
+    broker_status: str | None = Field(None, description="经纪人绑定状态（disabled=已停用）")
     store_owner_employee_id: str | None = None
     store_owner_name: str | None = None
     broker_inviter_employee_id: str | None = None
@@ -311,8 +313,10 @@ class LeadListItem(BaseModel):
     # 商户域五维归属（V06）
     store_id: str | None = None
     store_name: str | None = None
+    store_status: str | None = None
     broker_id: str | None = None
     broker_name: str | None = None
+    broker_status: str | None = None
     store_owner_employee_id: str | None = None
     store_owner_name: str | None = None
     broker_inviter_employee_id: str | None = None

@@ -9,7 +9,7 @@ from sqlalchemy import inspect
 from sqlalchemy.orm import Session
 
 import db
-from models import BizDictItem, Lead, OperationLog, Role, User
+from models import BizDictItem, Lead, MerchantBroker, MerchantStore, OperationLog, Role, User
 from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C, create_access_token, get_password_hash
 from utils.crypto import hash_phone
 
@@ -246,6 +246,41 @@ def test_attribution_change_writes_audit_log(
     assert logs[0].after["store_id"] == store["id"]
     assert logs[0].after["store_owner_employee_id"] == employee.id
     assert logs[0].after["broker_id"] == broker["id"]
+
+
+def test_lead_list_marks_disabled_or_deleted_attribution(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """门店/经纪人停用或门店删除：保留历史名称并返回状态标记（REQ-M07-004 分支 1）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    broker = _create_broker(admin_client, store["id"])
+    lead = _create_lead(admin_client, store_id=store["id"], broker_id=broker["id"])
+
+    session: Session = seeded_db["session"]
+    store_row = session.query(MerchantStore).filter(MerchantStore.id == store["id"]).one()
+    broker_row = session.query(MerchantBroker).filter(MerchantBroker.id == broker["id"]).one()
+    store_row.status = "disabled"
+    broker_row.bind_status = "disabled"
+    session.commit()
+
+    listed = admin_client.get(f"{API}/leads?store_id={store['id']}")
+    assert listed.status_code == 200, listed.text
+    item = listed.json()["items"][0]
+    assert item["id"] == lead["id"]
+    assert item["store_name"] == store["store_name"]
+    assert item["store_status"] == "disabled"
+    assert item["broker_status"] == "disabled"
+
+    # 门店软删除后仍展示历史名称，状态标记为 deleted
+    store_row.is_deleted = True
+    session.commit()
+    listed = admin_client.get(f"{API}/leads?store_id={store['id']}")
+    item = listed.json()["items"][0]
+    assert item["store_name"] == store["store_name"]
+    assert item["store_status"] == "deleted"
 
 
 def test_broker_options_for_lead_entry(admin_client: TestClient, employee: User, seeded_db: dict) -> None:
