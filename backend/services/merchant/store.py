@@ -25,7 +25,7 @@ from models.merchant import (
     MerchantStoreStatusLog,
     MerchantVisit,
 )
-from models.property import Community
+from models.property import Community, RegionDictType
 from models.system import BizDictItem
 from models.user.user import User
 from schemas.merchant import (
@@ -50,6 +50,7 @@ from schemas.merchant import (
 from services.merchant.audit import add_audit_log
 from services.merchant.scope import ensure_scope_role, ensure_store_visible, store_scope_condition
 from services.merchant.serializers import cooperation_label_map, store_list_item, store_response
+from services.property.region_dict import RegionDictService
 from services.system.exceptions import (
     ConflictError,
     PermissionDeniedError,
@@ -189,7 +190,7 @@ class MerchantStoreService:
         request: Request | None = None,
         commit: bool = True,
     ) -> tuple[MerchantStore, list[MerchantDuplicateCandidate], MerchantVisit | None]:
-        """创建门店（员工/后台/经纪人共用；员工现场建档必须携带首访）."""
+        """创建门店（员工/后台/经纪人共用；首访改为可选，不再强制建档时登记）."""
         self._validate_gcj02(req.lng, req.lat)
         company = self._active_company(req.company_id)
         self._validate_dict_code(COOPERATION_DICT, req.cooperation_status)
@@ -210,9 +211,6 @@ class MerchantStoreService:
             msg = "存在疑似重复门店，请选择已有门店拜访，或填写强制新建理由"
             raise ValidationError(msg)
 
-        if source == MerchantStoreSource.EMPLOYEE.value and req.first_visit is None:
-            msg = "员工现场新建门店必须同时登记首访"
-            raise ValidationError(msg)
         if source == MerchantStoreSource.EMPLOYEE.value and actor_id is None:
             msg = "缺少拜访员工身份"
             raise PermissionDeniedError(msg)
@@ -252,7 +250,8 @@ class MerchantStoreService:
         self.db.flush()
 
         first_visit: MerchantVisit | None = None
-        if source == MerchantStoreSource.EMPLOYEE.value:
+        # REQ-IT2-02：首访改为可选，仅在前端显式提交时登记
+        if source == MerchantStoreSource.EMPLOYEE.value and req.first_visit is not None:
             from services.merchant.visit import MerchantVisitService
 
             try:
@@ -1200,7 +1199,14 @@ class MerchantStoreService:
 
     # -------------------- 区域 / 商圈字典 --------------------
     def districts(self) -> list[str]:
-        """区域（区县）字典：小区主数据优先 + 已建门店兜底（REQ-IT1-04，供选择而非手填）."""
+        """区域候选（REQ-IT2-01：取字典启用项；字典为空时回退业务数据聚合）."""
+        values = RegionDictService(self.db).active_names(RegionDictType.DISTRICT.value)
+        if values:
+            return values
+        return self._legacy_districts()
+
+    def _legacy_districts(self) -> list[str]:
+        """回退实现：小区主数据 + 已建门店聚合（字典为空时才用）."""
         values: list[str] = []
         community_query = self.db.query(Community.district).filter(Community.district.isnot(None))
         values.extend(row[0] for row in community_query.distinct().limit(200).all())
@@ -1212,7 +1218,14 @@ class MerchantStoreService:
         return deduped[:100]
 
     def business_circles(self, *, district: str | None = None) -> list[str]:
-        """商圈建议：小区商圈优先 + 已建门店商圈兜底（Q03）."""
+        """商圈候选（REQ-IT2-01：取字典启用项；字典为空时回退业务数据聚合）."""
+        values = RegionDictService(self.db).active_business_circles(district)
+        if values:
+            return values
+        return self._legacy_business_circles(district)
+
+    def _legacy_business_circles(self, district: str | None) -> list[str]:
+        """回退实现：小区商圈 + 已建门店商圈聚合（字典为空时才用）."""
         values: list[str] = []
         query = self.db.query(Community.business_circle).filter(Community.business_circle.isnot(None))
         if district:

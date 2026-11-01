@@ -9,7 +9,7 @@
 
 import logging
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, File, Query, Request, UploadFile
 from fastapi import Path as PathParam
@@ -46,6 +46,11 @@ from schemas.building_dict import (
     BdReviewResolveResponse,
     BdRoomCreateRequest,
     BdRoomRenameRequest,
+    RegionDictCreate,
+    RegionDictItem,
+    RegionDictListResponse,
+    RegionDictStatusRequest,
+    RegionDictUpdate,
 )
 from services.property.building_review_service import (
     get_building_review_service,
@@ -55,6 +60,7 @@ from services.property.building_review_service import (
 from services.property.dict_read_service import DEFAULT_ROOM_PAGE_SIZE, MAX_ROOM_PAGE_SIZE, BuildingDictReadService
 from services.property.dict_submit_service import get_dict_submit_service
 from services.property.dict_write_service import get_dict_write_service
+from services.property.region_dict import RegionDictService, region_dict_item
 from services.system.exceptions import FileProcessingError, ResourceNotFoundError
 from settings import settings
 from utils.common import RateLimits, limiter
@@ -157,6 +163,83 @@ def get_dict_filter_options(
 ) -> BdFilterOptionsResponse:
     """总览筛选下拉选项（M3：区域/板块动态值域，取代前端硬编码 16 区）."""
     return service.get_filter_options(db, district=district)
+
+
+# -------------------- 区域 / 商圈字典（REQ-IT2-01 / REQ-IT3-01）--------------------
+# 区域与商圈属于楼盘字典的一部分；商户门店建档只是复用这里的候选值，
+# 因此维护入口挂在楼盘字典模块，权限沿用楼盘字典口径（读=PropertyRead，写=admin）。
+@router.get("/region-dicts")
+def list_region_dicts(
+    db: DbSessionDep,
+    _current_user: PropertyReadPermDep,
+    pagination: PaginationDep,
+    dict_type: Annotated[
+        Literal["district", "business_circle"],
+        Query(description="字典类型：district=区域，business_circle=商圈"),
+    ] = "district",
+    keyword: Annotated[str | None, Query(max_length=50, description="名称关键词")] = None,
+    status_filter: Annotated[Literal["active", "disabled"] | None, Query(alias="status", description="状态")] = None,
+) -> RegionDictListResponse:
+    """区域/商圈字典分页列表（首次访问会把小区与门店上的现有值补录进字典）."""
+    return RegionDictService(db).list_(
+        dict_type,
+        keyword=keyword,
+        status=status_filter,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
+
+
+@router.post("/region-dicts", status_code=201)
+@limiter.limit(RateLimits.COMMUNITY_CREATE)
+def create_region_dict(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    body: RegionDictCreate,
+) -> RegionDictItem:
+    """新增字典项；同名停用项会被重新启用（admin + 审计）."""
+    row = RegionDictService(db).create(body, operator_id=str(current_user.id), request=request)
+    return region_dict_item(row)
+
+
+@router.post("/region-dicts/sync")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def sync_region_dicts(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: CurrentAdminUserDep,
+) -> dict[str, int]:
+    """把小区主数据与商户门店上的区域/商圈值补录进字典（幂等）."""
+    return RegionDictService(db).sync_from_business_data()
+
+
+@router.put("/region-dicts/{dict_id}")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def rename_region_dict(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    dict_id: Annotated[str, PathParam(description="字典项ID")],
+    body: RegionDictUpdate,
+) -> RegionDictItem:
+    """重命名字典项并同步业务数据（小区主数据 + 商户门店）上的同值记录."""
+    row = RegionDictService(db).rename(dict_id, body, operator_id=str(current_user.id), request=request)
+    return region_dict_item(row)
+
+
+@router.post("/region-dicts/{dict_id}/status")
+@limiter.limit(RateLimits.COMMUNITY_UPDATE)
+def set_region_dict_status(
+    request: Request,
+    db: DbSessionDep,
+    current_user: CurrentAdminUserDep,
+    dict_id: Annotated[str, PathParam(description="字典项ID")],
+    body: RegionDictStatusRequest,
+) -> RegionDictItem:
+    """启用 / 停用字典项；停用后该值不再出现在门店表单候选中."""
+    row = RegionDictService(db).set_status(dict_id, body, operator_id=str(current_user.id), request=request)
+    return region_dict_item(row)
 
 
 @router.get("/communities")

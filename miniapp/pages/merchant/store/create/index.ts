@@ -40,13 +40,6 @@ interface StoreForm {
   photos: DisplayPhoto[];
 }
 
-interface FirstVisitForm {
-  contact_name: string;
-  contact_phone: string;
-  result: string;
-  remark: string;
-}
-
 interface Option {
   code: string;
   label: string;
@@ -68,9 +61,7 @@ interface PageData {
   newCompanyContact: string;
   newCompanyPhone: string;
   form: StoreForm;
-  firstVisit: FirstVisitForm;
   cooperationOptions: Option[];
-  visitResultOptions: Option[];
   districts: string[];
   districtIndex: number;
   businessCircles: string[];
@@ -87,13 +78,6 @@ const DEFAULT_COOPERATION_OPTIONS: Option[] = [
   { code: "not_cooperated", label: "未合作" },
   { code: "negotiating", label: "洽谈中" },
 ];
-const DEFAULT_VISIT_RESULT_OPTIONS: Option[] = [
-  { code: "not_met", label: "未见到人" },
-  { code: "interested", label: "有意向" },
-  { code: "cooperated", label: "已合作" },
-  { code: "other", label: "其他" },
-];
-
 function errMessage(err: unknown): string {
   const body = (err as { body?: { message?: string } }).body;
   if (body?.message) {
@@ -132,14 +116,7 @@ Page({
       remark: "",
       photos: [] as DisplayPhoto[],
     },
-    firstVisit: {
-      contact_name: "",
-      contact_phone: "",
-      result: "",
-      remark: "",
-    },
     cooperationOptions: DEFAULT_COOPERATION_OPTIONS,
-    visitResultOptions: DEFAULT_VISIT_RESULT_OPTIONS,
     districts: [] as string[],
     districtIndex: -1,
     businessCircles: [] as string[],
@@ -177,15 +154,14 @@ Page({
 
   async loadDictOptions(): Promise<void> {
     try {
-      const [cooperation, result] = await Promise.all([
-        request<DictResponse>({ url: "/public/dicts/merchant_cooperation_status", skipAuth: true }),
-        request<DictResponse>({ url: "/public/dicts/merchant_visit_result", skipAuth: true }),
-      ]);
+      const cooperation = await request<DictResponse>({
+        url: "/public/dicts/merchant_cooperation_status",
+        skipAuth: true,
+      });
       this.setData({
         cooperationOptions: cooperation.items.filter((item: DictItem) =>
           ["not_cooperated", "negotiating"].includes(item.code),
         ),
-        visitResultOptions: result.items,
       });
     } catch {
       // 字典接口不可用时使用本地兜底选项，不阻断建档
@@ -233,11 +209,6 @@ Page({
   onInput(e: WechatMiniprogram.Input) {
     const field = e.currentTarget.dataset.field as keyof StoreForm;
     this.setData({ [`form.${field}`]: e.detail.value });
-  },
-
-  onFirstVisitInput(e: WechatMiniprogram.Input) {
-    const field = e.currentTarget.dataset.field as keyof FirstVisitForm;
-    this.setData({ [`firstVisit.${field}`]: e.detail.value });
   },
 
   onCompanyKeyword(e: WechatMiniprogram.Input) {
@@ -383,10 +354,6 @@ Page({
     this.setData({ "form.cooperation_status": e.currentTarget.dataset.code as string });
   },
 
-  onSelectVisitResult(e: WechatMiniprogram.BaseEvent) {
-    this.setData({ "firstVisit.result": e.currentTarget.dataset.code as string });
-  },
-
   onSelectChangeType(e: WechatMiniprogram.BaseEvent) {
     this.setData({ changeType: e.currentTarget.dataset.type as "edit" | "correct" | "relocate" });
   },
@@ -443,7 +410,7 @@ Page({
   },
 
   validate(): string | null {
-    const { form, firstVisit, mode, selectedCompany } = this.data;
+    const { form, selectedCompany } = this.data;
     if (!selectedCompany) {
       return "请选择或创建公司";
     }
@@ -465,9 +432,6 @@ Page({
     if (!form.contact_name.trim() || !form.contact_phone.trim()) {
       return "请填写联系人及联系电话";
     }
-    if (mode === "create" && (!firstVisit.contact_name.trim() || !firstVisit.contact_phone.trim())) {
-      return "请填写首访联系人及联系电话";
-    }
     return null;
   },
 
@@ -480,7 +444,7 @@ Page({
       wx.showToast({ title: error, icon: "none" });
       return;
     }
-    const { form, firstVisit, mode, storeId, selectedCompany, changeType, changeReason } = this.data;
+    const { form, mode, storeId, selectedCompany, changeType, changeReason } = this.data;
     if (!selectedCompany) {
       return;
     }
@@ -565,16 +529,6 @@ Page({
           photos,
           remark: form.remark || null,
           force_create_reason: this.data.forceReason || null,
-          first_visit: {
-            contact_name: firstVisit.contact_name,
-            contact_phone: firstVisit.contact_phone,
-            lng: form.lng,
-            lat: form.lat,
-            address: form.address,
-            result: firstVisit.result || null,
-            remark: firstVisit.remark || null,
-            location_status: "normal",
-          },
         },
       });
       wx.showToast({ title: "建档成功", icon: "success" });

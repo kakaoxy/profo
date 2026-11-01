@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Pagination } from "@/components/common/pagination";
 import { PageContainer } from "../../_components/page-container";
 import { PageHeader } from "../../_components/page-header";
-import { StatusBadge } from "../_components/status-badge";
-import { Field } from "../_components/field";
+import { StatusBadge } from "@/app/(main)/admin/_components/status-badge";
+import { Field } from "@/app/(main)/admin/_components/field";
 import { merchantApi } from "../_components/merchant-api";
 import type { components } from "@/lib/api-types";
 

@@ -136,6 +136,9 @@ from .property import (
     PropertyCurrent,
     PropertyHistory,
     PropertyMedia,
+    RegionDict,
+    RegionDictStatus,
+    RegionDictType,
 )
 
 # 区域伙伴招募计划模块
@@ -299,6 +302,10 @@ __all__ = [
     "RecruitVisit",
     # 用户
     "RefreshToken",
+    # 楼盘字典（区域 / 商圈）
+    "RegionDict",
+    "RegionDictStatus",
+    "RegionDictType",
     "RenovationPhoto",
     "RenovationStage",
     "ReturnAdjustment",

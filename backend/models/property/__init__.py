@@ -17,8 +17,10 @@ from .community import Community, CommunityAlias, CommunityCompetitor
 from .community_image import CommunityImage, CommunityImageSource
 from .media import PropertyMedia
 from .property import PropertyCurrent, PropertyHistory
+from .region_dict import REGION_DICT_TYPE_LABELS, RegionDict, RegionDictStatus, RegionDictType
 
 __all__ = [
+    "REGION_DICT_TYPE_LABELS",
     "BdBuilding",
     "BdEntryKind",
     "BdEntryStatus",
@@ -35,4 +37,7 @@ __all__ = [
     "PropertyCurrent",
     "PropertyHistory",
     "PropertyMedia",
+    "RegionDict",
+    "RegionDictStatus",
+    "RegionDictType",
 ]

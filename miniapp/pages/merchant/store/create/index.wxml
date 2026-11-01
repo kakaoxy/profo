@@ -141,37 +141,6 @@
     </view>
   </view>
 
-  <!-- 首访（仅新建） -->
-  <view class="section" wx:if="{{mode === 'create'}}">
-    <view class="section-title">首次拜访</view>
-    <view class="form-row">
-      <view class="form-group form-group--flex">
-        <text class="form-label">联系人 *</text>
-        <input class="input" value="{{firstVisit.contact_name}}" bindinput="onFirstVisitInput" data-field="contact_name" />
-      </view>
-      <view class="form-group form-group--flex">
-        <text class="form-label">联系电话</text>
-        <input class="input" type="number" value="{{firstVisit.contact_phone}}" bindinput="onFirstVisitInput" data-field="contact_phone" />
-      </view>
-    </view>
-    <view class="form-group">
-      <text class="form-label">拜访结果</text>
-      <view class="chip-row">
-        <view
-          wx:for="{{visitResultOptions}}"
-          wx:key="code"
-          class="chip chip--tap {{firstVisit.result === item.code ? 'chip-sky' : 'chip-fog'}}"
-          data-code="{{item.code}}"
-          bindtap="onSelectVisitResult"
-        >{{item.label}}</view>
-      </view>
-    </view>
-    <view class="form-group">
-      <text class="form-label">备注</text>
-      <textarea class="input textarea" placeholder="本次拜访情况" value="{{firstVisit.remark}}" bindinput="onFirstVisitInput" data-field="remark" />
-    </view>
-  </view>
-
   <!-- 编辑模式：变更类型 -->
   <view class="section" wx:if="{{mode === 'edit'}}">
     <view class="section-title">地址变更方式</view>

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { PageContainer } from "../../_components/page-container";
 import { PageHeader } from "../../_components/page-header";
-import { StatusBadge } from "../_components/status-badge";
+import { StatusBadge } from "@/app/(main)/admin/_components/status-badge";
 import { merchantApi, queryString } from "../_components/merchant-api";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";

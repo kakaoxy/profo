@@ -233,16 +233,23 @@ def test_employee_create_store_with_first_visit(
     assert [log.action for log in visit_logs] == ["create"]
 
 
-def test_employee_store_requires_first_visit(
+def test_employee_create_store_without_first_visit(
     admin_http: TestClient,
     employee_http: TestClient,
+    employee_user: User,
     seeded_db: dict,
 ) -> None:
-    """员工新建门店缺少首访 → 拒绝，不产生门店."""
+    """REQ-IT2-02：员工建档可不带首访，门店落库且不产生拜访记录."""
     company = _create_company(admin_http)
     resp = employee_http.post(f"{API}/public/merchant/stores", json=_store_payload(company["id"]))
-    assert resp.status_code == 400, resp.text
-    assert seeded_db["session"].query(MerchantStore).count() == 0
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert body["first_visit"] is None
+    assert body["store"]["source"] == "employee"
+    assert body["store"]["owner_employee_id"] == employee_user.id
+    assert body["store"]["last_visit_at"] is None
+    assert seeded_db["session"].query(MerchantStore).count() == 1
+    assert seeded_db["session"].query(MerchantVisit).count() == 0
 
 
 def test_first_visit_failure_rolls_back_store(

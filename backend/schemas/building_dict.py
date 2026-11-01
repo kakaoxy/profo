@@ -1,9 +1,11 @@
 """楼盘字典相关 Schema（SRS §9 端点规格）.
 
-覆盖：导入任务、字典总览/详情、楼栋/户室、admin 补录、审核池、pending、存量绑定。
+覆盖：导入任务、字典总览/详情、楼栋/户室、admin 补录、审核池、pending、存量绑定、
+区域/商圈字典维护（REQ-IT3-01：区域与商圈属于楼盘字典，商户门店复用其候选值）。
 """
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -93,6 +95,57 @@ class BdFilterOptionsResponse(BaseModel):
 
     districts: list[BdFilterOption] = Field(default_factory=list)
     business_circles: list[BdFilterOption] = Field(default_factory=list)
+
+
+class RegionDictItem(BaseModel):
+    """区域 / 商圈字典项（REQ-IT2-01 / REQ-IT3-01）."""
+
+    id: str
+    dict_type: str
+    district: str | None
+    name: str
+    status: str
+    sort_order: int
+    remark: str | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class RegionDictListResponse(BaseModel):
+    """区域 / 商圈字典分页列表响应."""
+
+    items: list[RegionDictItem]
+    total: int
+    page: int = 1
+    page_size: int = 20
+
+
+class RegionDictCreate(BaseModel):
+    """新增区域 / 商圈字典项."""
+
+    dict_type: Literal["district", "business_circle"]
+    name: str = Field(min_length=1, max_length=50, description="区域名 / 商圈名")
+    district: str | None = Field(
+        default=None,
+        max_length=50,
+        description="所属区域（dict_type=business_circle 时填，用于按区域过滤候选）",
+    )
+    sort_order: int = Field(default=0, ge=0, le=9999, description="排序值（升序）")
+    remark: str | None = Field(default=None, max_length=200, description="备注")
+
+
+class RegionDictUpdate(BaseModel):
+    """重命名字典项（同步业务数据上的同值记录）."""
+
+    name: str = Field(min_length=1, max_length=50, description="新名称")
+    district: str | None = Field(default=None, max_length=50, description="所属区域（商圈可空）")
+
+
+class RegionDictStatusRequest(BaseModel):
+    """启用 / 停用字典项."""
+
+    status: Literal["active", "disabled"]
+    reason: str | None = Field(default=None, max_length=200, description="停用原因")
 
 
 class BdKpiResponse(BaseModel):

@@ -244,6 +244,7 @@ from migrations._recruit import (
     ensure_campaign_status_created_index,
     ensure_visit_referrer_index,
 )
+from migrations._region_dict import create_region_dict_table, migrate_legacy_merchant_region_dict
 from migrations._role_system import add_permission_risk_level_column, add_role_is_system_column
 from migrations._schema_columns import (
     add_contact_person_id_column,
@@ -539,6 +540,10 @@ def _run_all_migrations(engine: Engine) -> None:
         add_merchant_visit_client_request_id(engine)
         # v113：线索补客户端幂等键（重复提交不产生重复线索）
         add_lead_client_request_id(engine)
+        # v114：楼盘字典——幂等创建区域/商圈字典表 region_dicts
+        create_region_dict_table(engine)
+        # v115：把历史表 merchant_region_dicts（迭代 2 初版）改名为 region_dicts（幂等）
+        migrate_legacy_merchant_region_dict(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

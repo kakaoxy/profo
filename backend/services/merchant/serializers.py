@@ -5,7 +5,13 @@ from typing import Any
 
 from sqlalchemy.orm import Session
 
-from models.merchant import MerchantBroker, MerchantBrokerBinding, MerchantCompany, MerchantStore, MerchantVisit
+from models.merchant import (
+    MerchantBroker,
+    MerchantBrokerBinding,
+    MerchantCompany,
+    MerchantStore,
+    MerchantVisit,
+)
 from models.system import BizDictItem
 from schemas.merchant import (
     BrokerBindingResponse,

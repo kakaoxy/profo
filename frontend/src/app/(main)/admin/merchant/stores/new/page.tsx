@@ -8,7 +8,7 @@ import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Field } from "@/app/(main)/admin/merchant/_components/field";
+import { Field } from "@/app/(main)/admin/_components/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -133,11 +133,20 @@ export default function MerchantStoreCreatePage() {
       setCircleOptions([]);
       return;
     }
+    // 手填区域时每次输入都会触发请求，用 cancelled 丢弃过期响应避免乱序覆盖
+    let cancelled = false;
     merchantApi<components["schemas"]["MerchantBusinessCircleResponse"]>(
       `/admin/merchant/business-circles?district=${encodeURIComponent(district)}`,
     )
-      .then((result) => setCircleOptions(result.items))
-      .catch(() => setCircleOptions([]));
+      .then((result) => {
+        if (!cancelled) setCircleOptions(result.items);
+      })
+      .catch(() => {
+        if (!cancelled) setCircleOptions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [form.district]);
 
   const searchCompany = async () => {
@@ -163,6 +172,15 @@ export default function MerchantStoreCreatePage() {
     }
     if (!editStoreId && (!form.lng || !form.lat)) {
       setError("新建门店必须填写经纬度");
+      return;
+    }
+    // REQ-IT2-01：区域/商圈为必填，未选择不允许建店
+    if (!form.district.trim()) {
+      setError("请选择或填写区域");
+      return;
+    }
+    if (!form.business_circle.trim()) {
+      setError("请选择或填写商圈");
       return;
     }
     if (editStoreId && changeType === "relocate" && !changeReason.trim()) {
@@ -324,22 +342,40 @@ export default function MerchantStoreCreatePage() {
           <Field label="纬度（GCJ-02）" required hint="取高德坐标拾取器的 GCJ-02 纬度，非 WGS-84">
             <Input value={form.lat} onChange={update("lat")} inputMode="decimal" />
           </Field>
-          <Field label="区域" required hint="来自系统区域列表（小区主数据），不可手工填写">
-            <Select
-              value={form.district}
-              onValueChange={(value) => setForm((previous) => ({ ...previous, district: value, business_circle: "" }))}
-            >
-              <SelectTrigger aria-label="区域">
-                <SelectValue placeholder={districtOptions.length ? "请选择区域" : "区域列表加载失败"} />
-              </SelectTrigger>
-              <SelectContent>
-                {districtOptions.map((district) => (
-                  <SelectItem key={district} value={district}>
-                    {district}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <Field
+            label="区域"
+            required
+            hint={
+              districtOptions.length
+                ? "来自系统区域字典，不可手工填写"
+                : "系统暂无区域候选，可手工填写；建议先到「区域商圈」页维护字典"
+            }
+          >
+            {/* REQ-IT2-01：有系统候选时只能选择；候选为空时允许手填，未填仍无法提交 */}
+            {districtOptions.length ? (
+              <Select
+                value={form.district}
+                onValueChange={(value) => setForm((previous) => ({ ...previous, district: value, business_circle: "" }))}
+              >
+                <SelectTrigger aria-label="区域">
+                  <SelectValue placeholder="请选择区域" />
+                </SelectTrigger>
+                <SelectContent>
+                  {districtOptions.map((district) => (
+                    <SelectItem key={district} value={district}>
+                      {district}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                aria-label="区域"
+                value={form.district}
+                onChange={update("district")}
+                placeholder="系统暂无区域候选，请手工填写区域"
+              />
+            )}
           </Field>
           <Field
             label="商圈"

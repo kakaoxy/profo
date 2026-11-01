@@ -63,6 +63,13 @@ export const navMain: NavItem[] = [
         permission: PERMISSION_CODES.PROPERTY_READ,
       },
       {
+        // 区域/商圈是楼盘字典的一部分（REQ-IT3-01）：商户门店只是复用其候选值
+        title: "区域商圈",
+        url: "/admin/building-dictionary/region-dicts",
+        roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
+        permission: PERMISSION_CODES.PROPERTY_READ,
+      },
+      {
         title: "批量上传",
         url: "/admin/properties/upload",
         roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],

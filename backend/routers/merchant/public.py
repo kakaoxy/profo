@@ -134,7 +134,7 @@ def check_store_duplicates(
     return MerchantStoreService(db).check_duplicates(body)
 
 
-@router.post("/stores", status_code=status.HTTP_201_CREATED, summary="员工新建门店并登记首访")
+@router.post("/stores", status_code=status.HTTP_201_CREATED, summary="员工新建门店（首访可选）")
 @limiter.limit(RateLimits.MERCHANT_WRITE)
 def create_store(
     request: Request,
@@ -142,7 +142,7 @@ def create_store(
     db: DbSessionDep,
     current_user: MerchantCWriteVisitDep,
 ) -> MerchantStoreCreateResult:
-    """员工现场新建门店（必须与首访同事务，S01）."""
+    """员工现场新建门店（REQ-IT2-02：首访改为可选，不再强制登记）."""
     service = MerchantStoreService(db)
     store, duplicates, first_visit = service.create(
         body,

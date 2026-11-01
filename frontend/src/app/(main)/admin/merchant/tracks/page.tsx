@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
-import { StatusBadge } from "@/app/(main)/admin/merchant/_components/status-badge";
+import { StatusBadge } from "@/app/(main)/admin/_components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";

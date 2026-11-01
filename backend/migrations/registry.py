@@ -123,6 +123,7 @@ from migrations._recruit import (
     ensure_campaign_status_created_index,
     ensure_visit_referrer_index,
 )
+from migrations._region_dict import create_region_dict_table, migrate_legacy_merchant_region_dict
 from migrations._role_system import (
     add_permission_risk_level_column,
     add_role_is_system_column,
@@ -1392,6 +1393,26 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=True,
         description="商户管理 V06：线索补客户端幂等键（重复提交不产生重复线索）",
     ),
+    Migration(
+        version=114,
+        name="create_region_dict_table",
+        fn=create_region_dict_table,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="楼盘字典：区域/商圈字典表 region_dicts（后台可维护，重命名同步业务数据）",
+    ),
+    Migration(
+        version=115,
+        name="migrate_legacy_merchant_region_dict",
+        fn=migrate_legacy_merchant_region_dict,
+        kind="schema",
+        risk="A",
+        backup="none",
+        reversible=True,
+        description="楼盘字典：历史表 merchant_region_dicts 改名为 region_dicts（幂等，保留字典项）",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1404,7 +1425,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 114）。"""
+"""登记总数（当前 116）。"""
 
-NEXT_VERSION = 114
+NEXT_VERSION = 116
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

@@ -61,6 +61,23 @@
   color: var(--ink);
   box-sizing: border-box;
 }
+
+/* 拜访人选择器（REQ-IT2-03）：与输入框同视觉，右侧箭头提示可点 */
+.input--picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  line-height: 88rpx;
+}
+.input--picker::after {
+  content: "›";
+  color: var(--graphite);
+  font-size: 32rpx;
+  transform: rotate(90deg);
+}
+.input--placeholder {
+  color: var(--graphite);
+}
 .textarea {
   height: 150rpx;
   padding: 20rpx 24rpx;

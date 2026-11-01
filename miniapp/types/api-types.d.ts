@@ -463,6 +463,90 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/building-dictionary/region-dicts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Region Dicts
+         * @description 区域/商圈字典分页列表（首次访问会把小区与门店上的现有值补录进字典）.
+         */
+        get: operations["list_region_dicts_api_v1_admin_building_dictionary_region_dicts_get"];
+        put?: never;
+        /**
+         * Create Region Dict
+         * @description 新增字典项；同名停用项会被重新启用（admin + 审计）.
+         */
+        post: operations["create_region_dict_api_v1_admin_building_dictionary_region_dicts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/region-dicts/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Region Dicts
+         * @description 把小区主数据与商户门店上的区域/商圈值补录进字典（幂等）.
+         */
+        post: operations["sync_region_dicts_api_v1_admin_building_dictionary_region_dicts_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/region-dicts/{dict_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Rename Region Dict
+         * @description 重命名字典项并同步业务数据（小区主数据 + 商户门店）上的同值记录.
+         */
+        put: operations["rename_region_dict_api_v1_admin_building_dictionary_region_dicts__dict_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/building-dictionary/region-dicts/{dict_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set Region Dict Status
+         * @description 启用 / 停用字典项；停用后该值不再出现在门店表单候选中.
+         */
+        post: operations["set_region_dict_status_api_v1_admin_building_dictionary_region_dicts__dict_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/building-dictionary/communities": {
         parameters: {
             query?: never;
@@ -7356,8 +7440,8 @@ export interface paths {
         get: operations["search_stores_api_v1_public_merchant_stores_get"];
         put?: never;
         /**
-         * 员工新建门店并登记首访
-         * @description 员工现场新建门店（必须与首访同事务，S01）.
+         * 员工新建门店（首访可选）
+         * @description 员工现场新建门店（REQ-IT2-02：首访改为可选，不再强制登记）.
          */
         post: operations["create_store_api_v1_public_merchant_stores_post"];
         delete?: never;
@@ -23137,6 +23221,120 @@ export interface components {
             refresh_token: string;
         };
         /**
+         * RegionDictCreate
+         * @description 新增区域 / 商圈字典项.
+         */
+        RegionDictCreate: {
+            /**
+             * Dict Type
+             * @enum {string}
+             */
+            dict_type: "district" | "business_circle";
+            /**
+             * Name
+             * @description 区域名 / 商圈名
+             */
+            name: string;
+            /**
+             * District
+             * @description 所属区域（dict_type=business_circle 时填，用于按区域过滤候选）
+             */
+            district?: string | null;
+            /**
+             * Sort Order
+             * @description 排序值（升序）
+             * @default 0
+             */
+            sort_order: number;
+            /**
+             * Remark
+             * @description 备注
+             */
+            remark?: string | null;
+        };
+        /**
+         * RegionDictItem
+         * @description 区域 / 商圈字典项（REQ-IT2-01 / REQ-IT3-01）.
+         */
+        RegionDictItem: {
+            /** Id */
+            id: string;
+            /** Dict Type */
+            dict_type: string;
+            /** District */
+            district: string | null;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /** Sort Order */
+            sort_order: number;
+            /** Remark */
+            remark: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
+         * RegionDictListResponse
+         * @description 区域 / 商圈字典分页列表响应.
+         */
+        RegionDictListResponse: {
+            /** Items */
+            items: components["schemas"]["RegionDictItem"][];
+            /** Total */
+            total: number;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 20
+             */
+            page_size: number;
+        };
+        /**
+         * RegionDictStatusRequest
+         * @description 启用 / 停用字典项.
+         */
+        RegionDictStatusRequest: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "disabled";
+            /**
+             * Reason
+             * @description 停用原因
+             */
+            reason?: string | null;
+        };
+        /**
+         * RegionDictUpdate
+         * @description 重命名字典项（同步业务数据上的同值记录）.
+         */
+        RegionDictUpdate: {
+            /**
+             * Name
+             * @description 新名称
+             */
+            name: string;
+            /**
+             * District
+             * @description 所属区域（商圈可空）
+             */
+            district?: string | null;
+        };
+        /**
          * RenovationContractResponse
          * @description 装修合同信息响应模型.
          */
@@ -26254,6 +26452,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BdFilterOptionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_region_dicts_api_v1_admin_building_dictionary_region_dicts_get: {
+        parameters: {
+            query?: {
+                /** @description 字典类型：district=区域，business_circle=商圈 */
+                dict_type?: "district" | "business_circle";
+                /** @description 名称关键词 */
+                keyword?: string | null;
+                /** @description 状态 */
+                status?: ("active" | "disabled") | null;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionDictListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_region_dict_api_v1_admin_building_dictionary_region_dicts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegionDictCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionDictItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_region_dicts_api_v1_admin_building_dictionary_region_dicts_sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
+                };
+            };
+        };
+    };
+    rename_region_dict_api_v1_admin_building_dictionary_region_dicts__dict_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 字典项ID */
+                dict_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegionDictUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionDictItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_region_dict_status_api_v1_admin_building_dictionary_region_dicts__dict_id__status_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 字典项ID */
+                dict_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegionDictStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegionDictItem"];
                 };
             };
             /** @description Validation Error */

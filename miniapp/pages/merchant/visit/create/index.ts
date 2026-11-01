@@ -13,6 +13,7 @@ import { resolveAssetUrl } from "../../../../utils/url";
 type StoreResponse = components["schemas"]["MerchantStoreResponse"];
 type VisitResponse = components["schemas"]["MerchantVisitResponse"];
 type DictResponse = components["schemas"]["PublicDictListResponse"];
+type BrokerResponse = components["schemas"]["BrokerResponse"];
 type DictItem = components["schemas"]["PublicDictItemResponse"];
 
 interface DisplayPhoto extends MerchantPhoto {
@@ -32,6 +33,13 @@ interface VisitForm {
 interface Option {
   code: string;
   label: string;
+}
+
+/** 门店经纪人选项（REQ-IT2-03：拜访人从门店经纪人中选，不再手填） */
+interface BrokerOption {
+  id: string;
+  name: string;
+  phone_masked: string;
 }
 
 function errMessage(err: unknown): string {
@@ -61,6 +69,9 @@ Page({
       distance_abnormal_reason: "",
     } as VisitForm,
     resultOptions: [] as Option[],
+    brokers: [] as BrokerOption[],
+    brokerLabels: [] as string[],
+    brokerIndex: -1,
     photos: [] as DisplayPhoto[],
     lng: null as number | null,
     lat: null as number | null,
@@ -87,16 +98,13 @@ Page({
     this.setData({ storeId, clientRequestId: newClientRequestId() });
     this.loadStore(storeId);
     this.loadResults();
+    this.loadBrokers(storeId);
   },
 
   async loadStore(storeId: string): Promise<void> {
     try {
       const store = await request<StoreResponse>({ url: `/public/merchant/stores/${storeId}` });
-      this.setData({
-        store,
-        "form.contact_name": store.contact_name,
-        "form.contact_phone": store.contact_phone,
-      });
+      this.setData({ store, "form.contact_phone": store.contact_phone });
     } catch (err) {
       wx.showToast({ title: errMessage(err), icon: "none" });
     }
@@ -116,6 +124,33 @@ Page({
         ],
       });
     }
+  },
+
+  /** 门店经纪人列表：作为拜访人候选；为空时退回手填联系人 */
+  async loadBrokers(storeId: string): Promise<void> {
+    try {
+      const brokers = await request<BrokerResponse[]>({ url: `/public/merchant/stores/${storeId}/brokers` });
+      const list = (brokers || []).map((item) => ({ id: item.id, name: item.name, phone_masked: item.phone_masked }));
+      this.setData({
+        brokers: list,
+        brokerLabels: list.map((item) => item.name),
+        brokerIndex: list.length ? 0 : -1,
+      });
+      // 拜访人默认选第一位经纪人；无经纪人时退回门店联系人
+      this.setData({ "form.contact_name": list.length ? list[0].name : (this.data.store?.contact_name ?? "") });
+    } catch {
+      // 经纪人列表不可用时不阻断拜访登记，退回手填联系人
+      this.setData({ brokers: [], brokerLabels: [], brokerIndex: -1 });
+    }
+  },
+
+  onSelectBroker(e: WechatMiniprogram.PickerChange) {
+    const index = Number(e.detail.value);
+    const broker = this.data.brokers[index];
+    if (!broker) {
+      return;
+    }
+    this.setData({ brokerIndex: index, "form.contact_name": broker.name });
   },
 
   onInput(e: WechatMiniprogram.Input) {
