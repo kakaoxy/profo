@@ -12,6 +12,7 @@ from utils.auth import AUDIENCE_ADMIN, create_access_token, get_password_hash
 
 API = "/api/v1"
 AMAP_KEY = "amap_js_key"
+AMAP_SECURITY_KEY = "amap_security_js_code"
 
 
 def _client(session, user: User) -> TestClient:
@@ -55,30 +56,37 @@ def operator_client(seeded_db: dict) -> TestClient:
 
 
 def test_amap_config_save_read_and_clear(admin_client: TestClient, seeded_db: dict) -> None:
-    """管理员保存 Key → 已配置；地图页读取同值；空值保存 = 清除."""
+    """管理员保存 Key 与安全密钥 → 已配置；地图页读取同值；空值保存 = 清除."""
     initial = admin_client.get(f"{API}/amap-config")
     assert initial.status_code == 200, initial.text
     assert initial.json()["configured"] is False
     assert initial.json()["js_key"] == ""
+    assert initial.json()["security_js_code"] == ""
 
-    saved = admin_client.put(f"{API}/amap-config", json={"js_key": "  test-amap-key  "})
+    saved = admin_client.put(
+        f"{API}/amap-config",
+        json={"js_key": "  test-amap-key  ", "security_js_code": "  test-security-code  "},
+    )
     assert saved.status_code == 200, saved.text
     assert saved.json()["configured"] is True
     assert saved.json()["js_key"] == "test-amap-key"
+    assert saved.json()["security_js_code"] == "test-security-code"
     assert saved.json()["updated_by_name"]
 
     map_config = admin_client.get(f"{API}/admin/merchant/map/config")
     assert map_config.status_code == 200, map_config.text
     assert map_config.json()["js_key"] == "test-amap-key"
+    assert map_config.json()["security_js_code"] == "test-security-code"
 
     cleared = admin_client.put(f"{API}/amap-config", json={"js_key": "   "})
     assert cleared.status_code == 200, cleared.text
     assert cleared.json()["configured"] is False
     assert cleared.json()["js_key"] == ""
+    assert cleared.json()["security_js_code"] == ""
 
     session = seeded_db["session"]
-    row = session.query(SystemConfig).filter(SystemConfig.key == AMAP_KEY).one()
-    assert row.value == ""
+    assert session.query(SystemConfig).filter(SystemConfig.key == AMAP_KEY).one().value == ""
+    assert session.query(SystemConfig).filter(SystemConfig.key == AMAP_SECURITY_KEY).one().value == ""
 
 
 def test_amap_config_requires_admin(operator_client: TestClient) -> None:

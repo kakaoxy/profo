@@ -44,8 +44,9 @@ export default function MerchantTracksPage() {
   // 地图加载失败单独标记：错误横幅提示，地图区用占位层避免白屏
   const [mapError, setMapError] = useState(false);
   const [loading, setLoading] = useState(false);
-  // 高德 Key 由后台「系统设置 → 高德地图」配置，按需读取（null=加载中）
+  // 高德 Key 与安全密钥由后台「系统设置 → 高德地图」配置，按需读取（null=加载中）
   const [amapKey, setAmapKey] = useState<string | null>(null);
+  const [amapSecurityCode, setAmapSecurityCode] = useState("");
   const mapRef = useRef<AMapMap | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const markersRef = useRef<Map<string, AMapMarker>>(new Map());
@@ -62,7 +63,10 @@ export default function MerchantTracksPage() {
 
   useEffect(() => {
     merchantApi<AmapConfig>("/admin/merchant/map/config")
-      .then((config) => setAmapKey(config.js_key || ""))
+      .then((config) => {
+        setAmapKey(config.js_key || "");
+        setAmapSecurityCode(config.security_js_code || "");
+      })
       .catch(() => setAmapKey(""));
   }, []);
 
@@ -150,6 +154,10 @@ export default function MerchantTracksPage() {
     if (window.AMap) {
       render();
     } else {
+      // 安全密钥必须在加载 JS API 脚本前设置，否则服务请求会返回 10008
+      if (amapSecurityCode) {
+        window._AMapSecurityConfig = { securityJsCode: amapSecurityCode };
+      }
       const script = document.createElement("script");
       script.src = `https://webapi.amap.com/maps?v=2.0&key=${amapKey}`;
       script.async = true;
@@ -175,7 +183,7 @@ export default function MerchantTracksPage() {
       createdMap?.destroy();
       if (mapRef.current === createdMap) mapRef.current = null;
     };
-  }, [data, amapKey]);
+  }, [data, amapKey, amapSecurityCode]);
 
   const focus = (item: TrackItem) => {
     setSelectedId(item.visit_id);

@@ -53,5 +53,7 @@ export interface AMapNamespace {
 declare global {
   interface Window {
     AMap?: AMapNamespace;
+    /** 高德 JS API 安全密钥配置，必须在加载脚本前设置。 */
+    _AMapSecurityConfig?: { securityJsCode?: string };
   }
 }

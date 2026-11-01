@@ -79,8 +79,9 @@ export default function MerchantMapPage() {
   const [selectedId, setSelectedId] = useState("");
   const [mapError, setMapError] = useState("");
   const [loading, setLoading] = useState(true);
-  // 高德 Key 由后台「系统设置 → 高德地图」配置，按需读取（null=加载中）
+  // 高德 Key 与安全密钥由后台「系统设置 → 高德地图」配置，按需读取（null=加载中）
   const [amapKey, setAmapKey] = useState<string | null>(null);
+  const [amapSecurityCode, setAmapSecurityCode] = useState("");
   const mapRef = useRef<AMapMap | null>(null);
   const markersRef = useRef<Map<string, AMapMarker>>(new Map());
   const infoRef = useRef<AMapInfoWindow | null>(null);
@@ -112,7 +113,10 @@ export default function MerchantMapPage() {
 
   useEffect(() => {
     merchantApi<AmapConfig>("/admin/merchant/map/config")
-      .then((config) => setAmapKey(config.js_key || ""))
+      .then((config) => {
+        setAmapKey(config.js_key || "");
+        setAmapSecurityCode(config.security_js_code || "");
+      })
       .catch(() => setAmapKey(""));
   }, []);
 
@@ -179,6 +183,10 @@ export default function MerchantMapPage() {
     if (window.AMap) {
       init();
     } else {
+      // 安全密钥必须在加载 JS API 脚本前设置，否则服务请求会返回 10008
+      if (amapSecurityCode) {
+        window._AMapSecurityConfig = { securityJsCode: amapSecurityCode };
+      }
       const script = document.createElement("script");
       script.src = `https://webapi.amap.com/maps?v=2.0&key=${amapKey}`;
       script.async = true;
@@ -200,7 +208,7 @@ export default function MerchantMapPage() {
       createdMap?.destroy();
       if (mapRef.current === createdMap) mapRef.current = null;
     };
-  }, [data, amapKey]);
+  }, [data, amapKey, amapSecurityCode]);
 
   useEffect(() => {
     // 地图 marker 点击会更新 selectedId，这里把对应列表项滚进可视区（M09-003）

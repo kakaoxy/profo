@@ -27,5 +27,10 @@ def update_amap_config(
     db: DbSessionDep,
     current_user: CurrentAdminUserDep,
 ) -> AmapConfigResponse:
-    """保存高德 Web 端 Key；留空保存 = 清除配置."""
-    return amap_config.save_amap_config(db, js_key=req.js_key, operator_id=str(current_user.id))
+    """保存高德 Web 端 Key 与安全密钥；留空保存 = 清除配置."""
+    return amap_config.save_amap_config(
+        db,
+        js_key=req.js_key,
+        security_js_code=req.security_js_code,
+        operator_id=str(current_user.id),
+    )

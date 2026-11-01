@@ -11,6 +11,7 @@ from models import SystemConfig, User
 from schemas.amap_config import AmapConfigResponse
 
 AMAP_CONFIG_KEY = "amap_js_key"
+AMAP_SECURITY_CONFIG_KEY = "amap_security_js_code"
 
 
 def _user_display_name(db: Session, user_id: str | None) -> str | None:
@@ -28,11 +29,14 @@ def resolve_amap_js_key(db: Session) -> str:
 
 
 def get_amap_config(db: Session) -> AmapConfigResponse:
-    """读取高德地图配置与审计元信息."""
+    """读取高德地图配置（Key + 安全密钥）与审计元信息."""
     row = db.query(SystemConfig).filter(SystemConfig.key == AMAP_CONFIG_KEY).first()
+    security_row = db.query(SystemConfig).filter(SystemConfig.key == AMAP_SECURITY_CONFIG_KEY).first()
     js_key = (row.value or "").strip() if row is not None else ""
+    security_js_code = (security_row.value or "").strip() if security_row is not None else ""
     return AmapConfigResponse(
         js_key=js_key,
+        security_js_code=security_js_code,
         configured=bool(js_key),
         updated_at=row.updated_at if row is not None else None,
         updated_by_name=_user_display_name(db, row.updated_by_id) if row is not None else None,
@@ -43,26 +47,38 @@ def save_amap_config(
     db: Session,
     *,
     js_key: str,
+    security_js_code: str,
     operator_id: str,
 ) -> AmapConfigResponse:
-    """保存高德 Key（strip 后落库；空串保留行但 configured=False）."""
-    value = js_key.strip()
-    row = db.query(SystemConfig).filter(SystemConfig.key == AMAP_CONFIG_KEY).with_for_update().first()
-    if row is None:
-        db.add(SystemConfig(key=AMAP_CONFIG_KEY, value=value, updated_by_id=operator_id))
+    """保存高德 Key 与安全密钥（strip 后落库；空串保留行但 configured=False）."""
+    values = {
+        AMAP_CONFIG_KEY: js_key.strip(),
+        AMAP_SECURITY_CONFIG_KEY: security_js_code.strip(),
+    }
+    # 两行同一事务提交；并发首次写入撞唯一约束时回滚重试一次
+    for attempt in range(2):
+        rows = {key: db.query(SystemConfig).filter(SystemConfig.key == key).with_for_update().first() for key in values}
+        for key, value in values.items():
+            row = rows[key]
+            if row is None:
+                db.add(SystemConfig(key=key, value=value, updated_by_id=operator_id))
+            else:
+                row.value = value
+                row.updated_by_id = operator_id
         try:
-            db.flush()
+            db.commit()
+            break
         except IntegrityError:
             db.rollback()
-        row = db.query(SystemConfig).filter(SystemConfig.key == AMAP_CONFIG_KEY).with_for_update().first()
-    if row is None:
-        msg = "高德地图配置写入失败"
-        raise RuntimeError(msg)
-    row.value = value
-    row.updated_by_id = operator_id
-    db.commit()
-    db.refresh(row)
+            if attempt == 1:
+                raise
     return get_amap_config(db)
 
 
-__all__ = ["AMAP_CONFIG_KEY", "get_amap_config", "resolve_amap_js_key", "save_amap_config"]
+__all__ = [
+    "AMAP_CONFIG_KEY",
+    "AMAP_SECURITY_CONFIG_KEY",
+    "get_amap_config",
+    "resolve_amap_js_key",
+    "save_amap_config",
+]

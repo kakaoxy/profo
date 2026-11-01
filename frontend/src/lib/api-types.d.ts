@@ -4035,7 +4035,7 @@ export interface paths {
         get: operations["get_amap_config_api_v1_amap_config_get"];
         /**
          * Update Amap Config
-         * @description 保存高德 Web 端 Key；留空保存 = 清除配置.
+         * @description 保存高德 Web 端 Key 与安全密钥；留空保存 = 清除配置.
          */
         put: operations["update_amap_config_api_v1_amap_config_put"];
         post?: never;
@@ -6957,7 +6957,7 @@ export interface paths {
         put?: never;
         /**
          * 经纪人自建门店审核
-         * @description 转正或合并待审核门店（仅 admin）.
+         * @description 转正或合并待审核门店（仅 admin/operator）.
          */
         post: operations["review_broker_store_api_v1_admin_merchant_stores__store_id__review_post"];
         delete?: never;
@@ -8845,6 +8845,12 @@ export interface components {
              */
             js_key: string;
             /**
+             * Security Js Code
+             * @description 高德 Web 端（JS API）安全密钥
+             * @default
+             */
+            security_js_code: string;
+            /**
              * Configured
              * @description 是否已配置
              * @default false
@@ -8872,6 +8878,12 @@ export interface components {
              * @default
              */
             js_key: string;
+            /**
+             * Security Js Code
+             * @description 高德 Web 端（JS API）安全密钥
+             * @default
+             */
+            security_js_code: string;
         };
         /**
          * ApiKeyCreateResponse
@@ -17188,6 +17200,11 @@ export interface components {
              * @description 变更/搬迁原因
              */
             change_reason?: string | null;
+            /**
+             * Expected Updated At
+             * @description 乐观锁：加载时的 updated_at
+             */
+            expected_updated_at?: string | null;
         };
         /**
          * MerchantTrackItem

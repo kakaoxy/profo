@@ -12,6 +12,7 @@ import { client } from "@/lib/api-client";
 
 type AmapConfig = {
   js_key: string;
+  security_js_code: string;
   configured: boolean;
   updated_at?: string | null;
   updated_by_name?: string | null;
@@ -33,12 +34,14 @@ export function AmapConfigClient() {
   const [error, setError] = useState("");
   const [saved, setSaved] = useState<AmapConfig | null>(null);
   const [value, setValue] = useState("");
+  const [securityValue, setSecurityValue] = useState("");
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const apply = useCallback((data: AmapConfig) => {
     setSaved(data);
     setValue(data.js_key);
+    setSecurityValue(data.security_js_code ?? "");
     setDirty(false);
   }, []);
 
@@ -67,7 +70,7 @@ export function AmapConfigClient() {
     setSaving(true);
     try {
       const { data, error: reqError } = await client.PUT("/api/v1/amap-config", {
-        body: { js_key: value.trim() },
+        body: { js_key: value.trim(), security_js_code: securityValue.trim() },
       });
       if (reqError || !data) {
         toast.error("保存失败，请确认当前账号为管理员");
@@ -108,8 +111,8 @@ export function AmapConfigClient() {
                 </Badge>
               </div>
               <p className="mt-1 text-[13px] leading-relaxed text-graphite">
-                用于后台门店地图与拜访轨迹。在高德开放平台创建「Web 端（JS API）」应用后获取；
-                保存后刷新地图/轨迹页生效。
+                用于后台门店地图与拜访轨迹。在高德开放平台创建「Web端（JS API）」应用后获取；
+                2021-12-02 之后申请的 Key 必须同时填写安全密钥；保存后刷新地图/轨迹页生效。
               </p>
             </div>
             <div className="text-right text-xs text-graphite">
@@ -128,6 +131,17 @@ export function AmapConfigClient() {
                 setDirty(true);
               }}
               autoComplete="off"
+            />
+            <Input
+              type="password"
+              placeholder="请输入高德 Web 端（JS API）安全密钥"
+              value={securityValue}
+              disabled={!canEdit || saving}
+              onChange={(event) => {
+                setSecurityValue(event.target.value);
+                setDirty(true);
+              }}
+              autoComplete="new-password"
             />
             {!canEdit ? (
               <p className="ml-1 text-[11px] text-graphite">仅管理员可修改该配置。</p>
