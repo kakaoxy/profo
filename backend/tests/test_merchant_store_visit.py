@@ -612,6 +612,29 @@ def test_broker_options_scoped_to_visible_stores(
     assert {item["name"] for item in admin_options.json()["items"]} == {"我的经纪人", "他人经纪人"}
 
 
+def test_visit_create_is_idempotent_with_client_request_id(
+    admin_http: TestClient,
+    employee_http: TestClient,
+    seeded_db: dict,
+) -> None:
+    """REQ-M03-002：同一员工重复提交同一 client_request_id 只落一条拜访."""
+    from models.merchant import MerchantVisit
+
+    company = _create_company(admin_http)
+    store = _create_employee_store(employee_http, company["id"])["store"]
+    payload = _first_visit(client_request_id="first-visit-key-001")
+
+    first = employee_http.post(f"{API}/public/merchant/visits", json=payload | {"store_id": store["id"]})
+    assert first.status_code == 201, first.text
+    second = employee_http.post(f"{API}/public/merchant/visits", json=payload | {"store_id": store["id"]})
+    assert second.status_code == 201, second.text
+    assert second.json()["id"] == first.json()["id"], (first.text, second.text)
+
+    session = seeded_db["session"]
+    count = session.query(MerchantVisit).filter(MerchantVisit.client_request_id == "first-visit-key-001").count()
+    assert count == 1
+
+
 def test_duplicate_check_tolerates_store_without_coordinates(
     admin_http: TestClient,
     employee_http: TestClient,

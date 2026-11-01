@@ -53,6 +53,7 @@ export default function MerchantBrokersPage() {
   const [formName, setFormName] = useState("");
   const [formPhone, setFormPhone] = useState("");
   const [formStoreId, setFormStoreId] = useState("");
+  const [formStatus, setFormStatus] = useState<"normal" | "disabled">("normal");
   const [formRemark, setFormRemark] = useState("");
   const [saving, setSaving] = useState(false);
   const [changeTarget, setChangeTarget] = useState<BrokerList["items"][number] | null>(null);
@@ -86,6 +87,7 @@ export default function MerchantBrokersPage() {
     setFormPhone("");
     setFormStoreId("");
     setFormRemark("");
+    setFormStatus("normal");
     setFormOpen(true);
   };
 
@@ -97,6 +99,7 @@ export default function MerchantBrokersPage() {
       setFormPhone("");
       setFormStoreId(broker.store_id || "");
       setFormRemark(broker.remark || "");
+      setFormStatus(broker.bind_status === "disabled" ? "disabled" : "normal");
       setFormOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载经纪人失败");
@@ -122,8 +125,20 @@ export default function MerchantBrokersPage() {
             remark: formRemark.trim() || null,
           }),
         });
+        const wasDisabled = editing.bind_status === "disabled";
+        if (formStatus === "disabled" && !wasDisabled) {
+          await merchantApi(`/admin/merchant/brokers/${editing.id}/status`, {
+            method: "POST",
+            body: JSON.stringify({ target_status: "disabled", reason: "后台编辑时设置" }),
+          });
+        } else if (formStatus === "normal" && wasDisabled) {
+          await merchantApi(`/admin/merchant/brokers/${editing.id}/status`, {
+            method: "POST",
+            body: JSON.stringify({ target_status: "unbound", reason: "后台编辑时恢复" }),
+          });
+        }
       } else {
-        await merchantApi("/admin/merchant/brokers", {
+        const created = await merchantApi<Broker>("/admin/merchant/brokers", {
           method: "POST",
           body: JSON.stringify({
             name,
@@ -132,6 +147,12 @@ export default function MerchantBrokersPage() {
             remark: formRemark.trim() || null,
           }),
         });
+        if (formStatus === "disabled") {
+          await merchantApi(`/admin/merchant/brokers/${created.id}/status`, {
+            method: "POST",
+            body: JSON.stringify({ target_status: "disabled", reason: "后台新建时设置" }),
+          });
+        }
       }
       setFormOpen(false);
       await load();
@@ -254,6 +275,20 @@ export default function MerchantBrokersPage() {
                   </Select>
                 </Field>
               ) : null}
+              <Field label="状态" hint="停用后不可登录、不可被新绑定">
+                <Select
+                  value={formStatus}
+                  onValueChange={(value) => setFormStatus(value === "disabled" ? "disabled" : "normal")}
+                >
+                  <SelectTrigger aria-label="经纪人状态">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">正常</SelectItem>
+                    <SelectItem value="disabled">已停用</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
               <Field label="备注">
                 <Input
                   value={formRemark}

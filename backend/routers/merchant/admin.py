@@ -1,5 +1,6 @@
 """商户管理后台路由（前缀 /admin/merchant）."""
 
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request, status
@@ -132,6 +133,8 @@ def list_stores(
     source: Annotated[str | None, Query(description="门店来源筛选")] = None,
     broker_count_min: Annotated[int | None, Query(ge=0, description="经纪人数量下限")] = None,
     broker_count_max: Annotated[int | None, Query(ge=0, description="经纪人数量上限")] = None,
+    created_from: Annotated[date | None, Query(description="创建日期起（含）")] = None,
+    created_to: Annotated[date | None, Query(description="创建日期止（含）")] = None,
 ) -> MerchantStoreListResponse:
     """门店分页列表（按数据范围过滤）."""
     return MerchantStoreService(db).search(
@@ -150,6 +153,8 @@ def list_stores(
         source=source,
         broker_count_min=broker_count_min,
         broker_count_max=broker_count_max,
+        created_from=created_from,
+        created_to=created_to,
     )
 
 
@@ -207,6 +212,8 @@ def export_stores(
     source: Annotated[str | None, Query(description="门店来源筛选")] = None,
     broker_count_min: Annotated[int | None, Query(ge=0, description="经纪人数量下限")] = None,
     broker_count_max: Annotated[int | None, Query(ge=0, description="经纪人数量上限")] = None,
+    created_from: Annotated[date | None, Query(description="创建日期起（含）")] = None,
+    created_to: Annotated[date | None, Query(description="创建日期止（含）")] = None,
 ) -> StreamingResponse:
     """按当前筛选导出商店列表（手机号脱敏）."""
     result = MerchantStoreService(db).search(
@@ -225,6 +232,8 @@ def export_stores(
         source=source,
         broker_count_min=broker_count_min,
         broker_count_max=broker_count_max,
+        created_from=created_from,
+        created_to=created_to,
     )
     if result.total > EXPORT_MAX_ROWS:
         msg = f"导出数据超过 {EXPORT_MAX_ROWS} 条，请缩小筛选范围后重试"

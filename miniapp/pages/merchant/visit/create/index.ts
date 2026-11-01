@@ -38,6 +38,10 @@ function errMessage(err: unknown): string {
   return (err as { body?: { message?: string } }).body?.message || "操作失败，请重试";
 }
 
+function newClientRequestId(): string {
+  return `visit-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 function todayStr(): string {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -71,6 +75,7 @@ Page({
     today: todayStr(),
     submitting: false,
     storeId: "",
+    clientRequestId: "",
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -79,7 +84,7 @@ Page({
       wx.showToast({ title: "缺少门店ID", icon: "none" });
       return;
     }
-    this.setData({ storeId });
+    this.setData({ storeId, clientRequestId: newClientRequestId() });
     this.loadStore(storeId);
     this.loadResults();
   },
@@ -273,6 +278,7 @@ Page({
       backfillTime,
       storeId,
       store,
+      clientRequestId,
     } = this.data;
     const payload: components["schemas"]["MerchantVisitCreate"] = {
       store_id: storeId,
@@ -290,6 +296,7 @@ Page({
       location_failure_reason: locationFailure ? locationFailureReason.trim() : null,
       location_failure_type: locationFailure ? locationFailureType || "unavailable" : null,
       photos: photos.map(({ displayUrl: _displayUrl, ...photo }) => photo),
+      client_request_id: clientRequestId || null,
     };
     if (form.is_backfill) {
       payload.visited_at = `${backfillDate}T${backfillTime}:00+08:00`;

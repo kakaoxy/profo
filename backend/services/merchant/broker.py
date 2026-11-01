@@ -469,6 +469,7 @@ class MerchantBrokerService:
             is_privileged=False,
             created_by_broker_id=str(broker.id),
             request=request,
+            commit=False,
         )
         if broker.store_id is None:
             self._activate_binding(
@@ -478,7 +479,9 @@ class MerchantBrokerService:
                 inviter_employee_id=broker.inviter_employee_id,
                 approved_by=None,
             )
-            self.db.commit()
+        # 建店与绑定同一事务：绑定失败时门店创建一并回滚，避免产生未绑定的孤儿门店
+        self.db.commit()
+        self.db.refresh(store)
         return store, duplicates
 
     def history(self, user: User) -> list[BrokerBindingResponse]:

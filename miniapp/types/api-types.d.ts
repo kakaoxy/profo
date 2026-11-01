@@ -7937,7 +7937,7 @@ export interface paths {
         put?: never;
         /**
          * 审核协议
-         * @description 通过进入待签署；驳回记录原因（仅 admin/operator，BR-M04-031）.
+         * @description 通过进入待签署；驳回记录原因.
          */
         post: operations["review_agreement_api_v1_admin_merchant_agreements__agreement_id__review_post"];
         delete?: never;
@@ -17237,6 +17237,11 @@ export interface components {
              * @description 定位失败类型：auth_denied 不允许提交；timeout/unavailable 允许降级（AC-V03-007）
              */
             location_failure_type?: ("auth_denied" | "timeout" | "unavailable") | null;
+            /**
+             * Client Request Id
+             * @description 客户端幂等键：重复提交同一 key 时返回已创建的拜访记录
+             */
+            client_request_id?: string | null;
             /**
              * Location Status
              * @description 定位状态：normal/degraded/missing
@@ -38115,6 +38120,14 @@ export interface operations {
                 status?: string | null;
                 /** @description 门店来源筛选 */
                 source?: string | null;
+                /** @description 经纪人数量下限 */
+                broker_count_min?: number | null;
+                /** @description 经纪人数量上限 */
+                broker_count_max?: number | null;
+                /** @description 创建日期起（含） */
+                created_from?: string | null;
+                /** @description 创建日期止（含） */
+                created_to?: string | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
@@ -38227,6 +38240,14 @@ export interface operations {
                 status?: string | null;
                 /** @description 门店来源筛选 */
                 source?: string | null;
+                /** @description 经纪人数量下限 */
+                broker_count_min?: number | null;
+                /** @description 经纪人数量上限 */
+                broker_count_max?: number | null;
+                /** @description 创建日期起（含） */
+                created_from?: string | null;
+                /** @description 创建日期止（含） */
+                created_to?: string | null;
             };
             header?: never;
             path?: never;

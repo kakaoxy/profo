@@ -293,3 +293,25 @@ def add_merchant_visit_location_failure_type(engine: Engine) -> None:
                     "ALTER TABLE merchant_visits ADD COLUMN location_failure_type VARCHAR(20)",
                 ),
             )
+
+
+def add_merchant_visit_client_request_id(engine: Engine) -> None:
+    """v112：merchant_visits 补 client_request_id 列与索引（首访/拜访幂等，幂等）.
+
+    同一员工重复提交同一 client_request_id 时复用已创建的拜访记录，
+    避免网络重试导致重复拜访与重复首访。
+    """
+    if not _column_exists(engine, "merchant_visits", "client_request_id"):
+        logger.info("迁移 v112：为 merchant_visits 补 client_request_id 列")
+        with engine.begin() as conn:
+            conn.execute(
+                text("ALTER TABLE merchant_visits ADD COLUMN client_request_id VARCHAR(64)"),
+            )
+    if not _index_exists(engine, "ix_merchant_visits_client_request_id"):
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_merchant_visits_client_request_id "
+                    "ON merchant_visits (client_request_id)",
+                ),
+            )

@@ -332,6 +332,11 @@ class MerchantVisitCreate(BaseModel):
         default=None,
         description="定位失败类型：auth_denied 不允许提交；timeout/unavailable 允许降级（AC-V03-007）",
     )
+    client_request_id: str | None = Field(
+        default=None,
+        max_length=64,
+        description="客户端幂等键：重复提交同一 key 时返回已创建的拜访记录",
+    )
     location_status: Literal["normal", "degraded", "missing"] = Field(
         default="normal",
         description="定位状态：normal/degraded/missing",

@@ -2,10 +2,10 @@
 
 import math
 from collections.abc import Sequence
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import Request
-from sqlalchemy import func, inspect, or_, text
+from sqlalchemy import and_, func, inspect, or_, text
 from sqlalchemy.orm import Session
 
 from constants.merchant import (
@@ -64,6 +64,8 @@ _CREATE_ALLOWED_COOPERATION = {
     MerchantCooperationStatus.NEGOTIATING.value,
 }
 _DISTANCE_LIMIT_M = 500
+# 1 度纬度约 111.32km，用于把 500m 半径换算成经纬度包围盒（仅作召回，精确距离仍用 haversine_m）
+_METERS_PER_DEGREE_LAT = 111_320.0
 # 查重召回上限与返回上限（超出即视为「未扫描完全部候选」）
 _DUPLICATE_SCAN_LIMIT = 100
 _DUPLICATE_RETURN_LIMIT = 20
@@ -107,6 +109,21 @@ class MerchantStoreService:
         phone_hash = hash_phone(req.contact_phone) if req.contact_phone else None
         if phone_hash:
             conditions.append(MerchantStore.contact_phone_hash == phone_hash)
+        # 500m 作为独立召回信号：名称/地址/电话都不相似的近距离门店也必须进入候选
+        if req.lng is not None and req.lat is not None:
+            lat_delta = _DISTANCE_LIMIT_M / _METERS_PER_DEGREE_LAT
+            cos_lat = max(math.cos(math.radians(req.lat)), 0.2)
+            lng_delta = _DISTANCE_LIMIT_M / (_METERS_PER_DEGREE_LAT * cos_lat)
+            conditions.append(
+                and_(
+                    MerchantStore.lng.isnot(None),
+                    MerchantStore.lat.isnot(None),
+                    MerchantStore.lng >= req.lng - lng_delta,
+                    MerchantStore.lng <= req.lng + lng_delta,
+                    MerchantStore.lat >= req.lat - lat_delta,
+                    MerchantStore.lat <= req.lat + lat_delta,
+                ),
+            )
 
         rows = (
             self.db.query(MerchantStore)
@@ -166,6 +183,7 @@ class MerchantStoreService:
         is_privileged: bool,
         created_by_broker_id: str | None = None,
         request: Request | None = None,
+        commit: bool = True,
     ) -> tuple[MerchantStore, list[MerchantDuplicateCandidate], MerchantVisit | None]:
         """创建门店（员工/后台/经纪人共用；员工现场建档必须携带首访）."""
         self._validate_gcj02(req.lng, req.lat)
@@ -256,8 +274,11 @@ class MerchantStoreService:
             after=self._snapshot(store) | {"force_create_reason": req.force_create_reason},
             request=request,
         )
-        self.db.commit()
-        self.db.refresh(store)
+        if commit:
+            self.db.commit()
+            self.db.refresh(store)
+        else:
+            self.db.flush()
         return store, duplicates, first_visit
 
     # -------------------- 查询 --------------------
@@ -279,6 +300,8 @@ class MerchantStoreService:
         source: str | None = None,
         broker_count_min: int | None = None,
         broker_count_max: int | None = None,
+        created_from: date | None = None,
+        created_to: date | None = None,
     ) -> MerchantStoreListResponse:
         """门店分页搜索（按数据范围过滤，默认排除已合并/已搬迁/已删除）."""
         ensure_scope_role(user)
@@ -329,6 +352,10 @@ class MerchantStoreService:
             query = query.filter(MerchantStore.owner_employee_id == owner_employee_id)
         if source:
             query = query.filter(MerchantStore.source == source)
+        if created_from is not None:
+            query = query.filter(func.date(MerchantStore.created_at) >= created_from)
+        if created_to is not None:
+            query = query.filter(func.date(MerchantStore.created_at) <= created_to)
         if broker_count_min is not None or broker_count_max is not None:
             broker_counts = (
                 self.db.query(

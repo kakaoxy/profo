@@ -46,6 +46,8 @@ export default function MerchantStoresPage() {
   const [source, setSource] = useState("all");
   const [brokerCountMin, setBrokerCountMin] = useState("");
   const [brokerCountMax, setBrokerCountMax] = useState("");
+  const [createdFrom, setCreatedFrom] = useState("");
+  const [createdTo, setCreatedTo] = useState("");
   const [ownerId, setOwnerId] = useState("all");
   const [employees, setEmployees] = useState<components["schemas"]["UserSimpleResponse"][]>([]);
   const [page, setPage] = useState(1);
@@ -69,6 +71,8 @@ export default function MerchantStoresPage() {
           source: source === "all" ? undefined : source,
           broker_count_min: brokerCountMin.trim() || undefined,
           broker_count_max: brokerCountMax.trim() || undefined,
+          created_from: createdFrom || undefined,
+          created_to: createdTo || undefined,
         })}`,
       );
       setData(result);
@@ -115,6 +119,8 @@ export default function MerchantStoresPage() {
                     source: source === "all" ? undefined : source,
                     broker_count_min: brokerCountMin.trim() || undefined,
                     broker_count_max: brokerCountMax.trim() || undefined,
+                    created_from: createdFrom || undefined,
+                    created_to: createdTo || undefined,
                   })}`}
                 >
                   导出 CSV
@@ -217,6 +223,24 @@ export default function MerchantStoresPage() {
                 value={brokerCountMax}
                 onChange={(event) => setBrokerCountMax(event.target.value)}
                 onKeyDown={(event) => event.key === "Enter" && void load(1)}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="whitespace-nowrap text-[13px] text-graphite">创建日期</span>
+              <Input
+                className="w-36"
+                type="date"
+                aria-label="创建日期起"
+                value={createdFrom}
+                onChange={(event) => setCreatedFrom(event.target.value)}
+              />
+              <span className="text-xs text-graphite">至</span>
+              <Input
+                className="w-36"
+                type="date"
+                aria-label="创建日期止"
+                value={createdTo}
+                onChange={(event) => setCreatedTo(event.target.value)}
               />
             </div>
             <Select value={source} onValueChange={setSource}>

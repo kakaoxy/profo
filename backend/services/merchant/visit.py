@@ -71,6 +71,18 @@ class MerchantVisitService:
                 msg = "仅允许补录 7 天内的拜访"
                 raise ValidationError(msg)
 
+        if req.client_request_id:
+            existing = (
+                self.db.query(MerchantVisit)
+                .filter(
+                    MerchantVisit.employee_id == employee_id,
+                    MerchantVisit.client_request_id == req.client_request_id,
+                )
+                .first()
+            )
+            if existing is not None:
+                return existing
+
         self._validate_location(req)
         if req.result:
             self._validate_result(req.result)
@@ -100,6 +112,7 @@ class MerchantVisitService:
             distance_abnormal_reason=req.distance_abnormal_reason,
             location_failure_reason=req.location_failure_reason,
             location_failure_type=req.location_failure_type,
+            client_request_id=req.client_request_id,
             location_status=req.location_status,
             visit_source=visit_source,
             address=req.address,

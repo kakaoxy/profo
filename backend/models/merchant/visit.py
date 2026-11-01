@@ -49,6 +49,12 @@ class MerchantVisit(Base):
         nullable=True,
         comment="定位失败类型：auth_denied/timeout/unavailable（AC-V03-007）",
     )
+    client_request_id: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,
+        comment="客户端幂等键：同一员工重复提交同一 key 只落一条拜访",
+    )
     location_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

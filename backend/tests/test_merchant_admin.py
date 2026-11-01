@@ -498,6 +498,56 @@ def test_store_list_broker_count_range_filter(
     assert staffed_store["id"] not in zero_ids
 
 
+def test_store_list_created_date_range_filter(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-M11-001：门店列表支持按创建日期区间筛选."""
+    from datetime import datetime, timedelta, timezone
+
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id, name="日期筛选门店")
+    today = datetime.now(timezone.utc).date()
+    yesterday = today - timedelta(days=1)
+
+    resp = admin_client.get(f"{API}/admin/merchant/stores", params={"created_from": today.isoformat()})
+    assert resp.status_code == 200, resp.text
+    assert store["id"] in [item["id"] for item in resp.json()["items"]]
+
+    resp_before = admin_client.get(f"{API}/admin/merchant/stores", params={"created_to": yesterday.isoformat()})
+    assert resp_before.status_code == 200, resp_before.text
+    assert store["id"] not in [item["id"] for item in resp_before.json()["items"]]
+
+
+def test_duplicate_check_recalls_by_distance_alone(
+    admin_client: TestClient,
+    employee: User,
+    employee_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """REQ-M01B-002：500m 必须作为独立召回信号，名称/地址/电话都不同也能命中."""
+    company = _create_company(admin_client)
+    _create_store(admin_client, company["id"], employee.id, name="远洋大厦店")
+
+    resp = employee_client.post(
+        f"{API}/public/merchant/stores/check-duplicates",
+        json={
+            "store_name": "完全不同的名字",
+            "address": "完全不同的路 88 号",
+            "lng": 121.5058,
+            "lat": 31.2454,
+            "contact_phone": "13900008888",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    candidates = resp.json()["candidates"]
+    assert candidates, "500m 内门店应作为候选返回"
+    assert "distance" in candidates[0]["matched_by"]
+    assert "name" not in candidates[0]["matched_by"]
+    assert "address" not in candidates[0]["matched_by"]
+
+
 def test_merge_preview_returns_migration_counts(
     admin_client: TestClient,
     employee_client: TestClient,
