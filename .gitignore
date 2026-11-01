@@ -206,3 +206,5 @@ backend/tests/e2e/artifacts/
 backend/tests/e2e/.fund_accounts_password_backup.json
 # 运行时落盘的上传/临时文件
 backend/temp/
+
+tmp/
