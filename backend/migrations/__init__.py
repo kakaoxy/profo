@@ -207,6 +207,7 @@ from migrations._marketing_notify import (
 # 独立迁移模块
 from migrations._merchant import seed_merchant_platform
 from migrations._merchant_schema import (
+    add_lead_client_request_id,
     add_lead_merchant_attribution_columns,
     add_merchant_store_phone_hash_column,
     add_merchant_visit_client_request_id,
@@ -536,6 +537,8 @@ def _run_all_migrations(engine: Engine) -> None:
         add_merchant_visit_location_failure_type(engine)
         # v112：拜访记录补客户端幂等键（重复提交不产生重复拜访）
         add_merchant_visit_client_request_id(engine)
+        # v113：线索补客户端幂等键（重复提交不产生重复线索）
+        add_lead_client_request_id(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

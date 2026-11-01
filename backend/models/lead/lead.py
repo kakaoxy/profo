@@ -86,6 +86,9 @@ class Lead(Base):
     # Linkage
     creator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="创建人ID")
     referrer_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="分享归属员工ID(逻辑外键)")
+    client_request_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, index=True, comment="客户端幂等键（重复提交不产生重复线索）"
+    )
     # 商户域五维归属（V06 / D7 / m02721）：门店、经纪人及提交时员工快照
     store_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="推荐门店ID(逻辑外键)")
     broker_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="推荐经纪人ID(逻辑外键)")

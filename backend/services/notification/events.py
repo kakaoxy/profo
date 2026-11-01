@@ -46,6 +46,7 @@ class EventType(StrEnum):
     MARKETING_PRICE_CHANGED = "marketing.price_changed"
     LEAD_EVAL_PRICE_CHANGED = "lead.eval_price_changed"
     MERCHANT_AGREEMENT_EXPIRING = "merchant.agreement.expiring"
+    MERCHANT_AGREEMENT_REVIEWED = "merchant.agreement.reviewed"
     MERCHANT_VISIT_OVERDUE = "merchant.visit.overdue"
 
 
@@ -250,6 +251,19 @@ EVENT_SPECS: dict[EventType, EventSpec] = {
         dedupe_template="merchant:agreement_expiring:{agreement_id}:{expire_date}",
         title_template="合作协议即将到期：{subject_name}",
         body_template="将于 {expire_date} 到期，请及时续签",
+        action_type="route",
+        action_template="/admin/merchant/agreements/{agreement_id}",
+        closeable=True,
+    ),
+    EventType.MERCHANT_AGREEMENT_REVIEWED: EventSpec(
+        type=EventType.MERCHANT_AGREEMENT_REVIEWED,
+        category="merchant",
+        priority="normal",
+        in_app=True,
+        wechat=False,
+        dedupe_template="merchant:agreement_reviewed:{agreement_id}:{review_status}",
+        title_template="协议审核结果：{subject_name}",
+        body_template="{review_label}。审核意见：{remark}",
         action_type="route",
         action_template="/admin/merchant/agreements/{agreement_id}",
         closeable=True,

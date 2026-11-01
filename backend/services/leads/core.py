@@ -128,6 +128,21 @@ class LeadService:
             创建成功的线索对象
 
         """
+        # REQ-M08-004 分支 5：同一创建人重复提交同一 client_request_id 时复用已有线索，
+        # 避免网络重试/重复点击产生重复线索（幂等键由调用端生成，仅对本人生效）
+        if lead_data.client_request_id:
+            existing = (
+                self.db.query(Lead)
+                .filter(
+                    Lead.creator_id == creator_id,
+                    Lead.client_request_id == lead_data.client_request_id,
+                    Lead.is_deleted.is_(False),
+                )
+                .first()
+            )
+            if existing is not None:
+                return existing
+
         referrer_id = self._resolve_referrer_id(referrer)
         # 兜底链（分享归因未命中时逐级降级，仅 C 端留资启用）：
         # 房源单承接线索（source_property_id 非空）→ 讲房人（L4→Project→ProjectSale）；

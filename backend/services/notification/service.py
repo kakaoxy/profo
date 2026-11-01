@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import and_, func, select, update
+from sqlalchemy import and_, case, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
@@ -408,6 +408,13 @@ class NotificationService:
             self.db.query(Notification, NotificationRecipient)
             .join(NotificationRecipient, NotificationRecipient.notification_id == Notification.id)
             .filter(NotificationRecipient.user_id == user_id)
+            # REQ-M14-005 分支 2：已过期通知不展示（NULL 视为永不过期）
+            .filter(
+                or_(
+                    Notification.expires_at.is_(None),
+                    Notification.expires_at > datetime.now(timezone.utc),
+                ),
+            )
         )
         base = self._apply_filter(base, filter_spec)
 
@@ -416,7 +423,12 @@ class NotificationService:
         unread_in_filter = base.filter(NotificationRecipient.read_at.is_(None)).count()
 
         rows = (
-            base.order_by(Notification.created_at.desc(), Notification.id.desc())
+            # REQ-M14-005 主流程 2：默认未读优先、同组内时间倒序
+            base.order_by(
+                case((NotificationRecipient.read_at.is_(None), 0), else_=1),
+                Notification.created_at.desc(),
+                Notification.id.desc(),
+            )
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
@@ -442,6 +454,13 @@ class NotificationService:
             )
             .join(NotificationRecipient, NotificationRecipient.notification_id == Notification.id)
             .where(NotificationRecipient.user_id == user_id)
+            # 过期通知不计入未读角标
+            .where(
+                or_(
+                    Notification.expires_at.is_(None),
+                    Notification.expires_at > datetime.now(timezone.utc),
+                ),
+            )
             .group_by(Notification.category)
         ).all()
         by_category: dict[str, int] = {}

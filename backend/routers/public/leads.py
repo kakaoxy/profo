@@ -198,6 +198,7 @@ def create_lead(
         new_community=body.new_community,
         new_building=body.new_building,
         new_room=body.new_room,
+        client_request_id=body.client_request_id,
     )
 
     # 分享归因：referrer 透传 Service，由其校验员工存在、active 且有后台身份；

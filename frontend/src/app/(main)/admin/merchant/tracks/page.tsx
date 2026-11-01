@@ -242,27 +242,49 @@ export default function MerchantTracksPage() {
           </p>
         </Card>
 
-        <div className="grid gap-4 lg:grid-cols-[420px_1fr]">
+        <div className="grid items-start gap-4 lg:grid-cols-[420px_1fr]">
           <Card className="rounded-cards border-0 shadow-steep-sm max-h-[560px] overflow-auto p-3">
             {data?.items.map((item, index) => (
-              <button
-                key={item.visit_id}
-                type="button"
-                className={`mb-2 w-full rounded-images p-3 text-left text-sm hover:bg-fog ${selectedId === item.visit_id ? "bg-fog" : ""}`}
-                onClick={() => focus(item)}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium">
-                    {index + 1}. {item.store_name}
-                  </span>
-                  <span className="text-xs text-graphite">{new Date(item.visited_at).toLocaleTimeString("zh-CN")}</span>
-                </div>
-                <div className="mt-1 text-xs text-graphite">
-                  联系人：{item.contact_name}
-                  {item.result ? ` · 结果：${item.result}` : ""}
-                </div>
-                {!item.has_coordinate ? <StatusBadge tone="attention">无坐标</StatusBadge> : null}
-              </button>
+              <div key={item.visit_id} className="mb-2">
+                <button
+                  type="button"
+                  className={`w-full rounded-images p-3 text-left text-sm hover:bg-fog ${selectedId === item.visit_id ? "bg-fog" : ""}`}
+                  onClick={() => focus(item)}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium">
+                      {index + 1}. {item.store_name}
+                    </span>
+                    <span className="text-xs text-graphite">{new Date(item.visited_at).toLocaleTimeString("zh-CN")}</span>
+                  </div>
+                  <div className="mt-1 text-xs text-graphite">
+                    联系人：{item.contact_name}
+                    {item.result ? ` · 结果：${item.result}` : ""}
+                  </div>
+                  {item.remark ? <div className="mt-1 line-clamp-2 text-xs text-graphite">{item.remark}</div> : null}
+                  {(item.photos ?? []).length > 0 ? (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {(item.photos ?? []).slice(0, 4).map((photo) => (
+                        // 对象存储直链无固定尺寸，next/image 需远端白名单，故用原生 img
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          key={String(photo.file_url)}
+                          src={String(photo.file_url)}
+                          alt="拜访照片"
+                          className="h-10 w-10 rounded-images border border-dove object-cover"
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                  {!item.has_coordinate ? <StatusBadge tone="attention">无坐标</StatusBadge> : null}
+                </button>
+                <Link
+                  href={`/admin/merchant/stores/${item.store_id}`}
+                  className="mt-1 inline-block text-xs text-rust hover:underline"
+                >
+                  查看门店详情
+                </Link>
+              </div>
             ))}
             {data && data.items.length === 0 ? (
               <div className="p-4 text-sm text-graphite">该员工在所选日期内没有拜访记录</div>

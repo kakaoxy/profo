@@ -4,7 +4,7 @@
  * 业务字典配置页（/admin/settings/dicts，仅 admin · 权限码 dict:manage）.
  *
  * 四组字典：线索归因渠道 / 招募来源 / 文书模板 / 改造阶段别名。
- * - 只增不删（spec D6）：条目「停用」而非删除，历史单据按存储值原样展示；
+ * - 默认停用而非删除；未被业务引用的条目可删除（AC-V01-018/019），被引用时后端拒绝并提示改停用；
  * - 归因渠道支持「未纳管值」面板：宽松校验（spec D5）落库的字典外值可一键转正；
  * - 改造阶段别名仅影响展示名，入库中文值不变（spec D4，页面显式提示）；
  * - 所有写操作经后端 Service 并写 operation_logs（D7）。
@@ -61,6 +61,8 @@ export function DictManageClient() {
   const [loading, setLoading] = useState(true);
   const [forbidden, setForbidden] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, RowDraft>>({});
   const [creating, setCreating] = useState(false);
   const [newCode, setNewCode] = useState("");
@@ -171,6 +173,26 @@ export function DictManageClient() {
       return;
     }
     toast.success(enabled ? "已启用" : "已停用（历史单据展示不变）");
+    await refresh();
+  };
+
+  /** 删除条目：首次点击进入二次确认，被引用时后端返回 409 */
+  const deleteItem = async (item: DictItem) => {
+    if (confirmDeleteId !== item.id) {
+      setConfirmDeleteId(item.id);
+      return;
+    }
+    setDeletingId(item.id);
+    const { error } = await client.DELETE("/api/v1/admin/dicts/{dict_code}/items/{item_id}", {
+      params: { path: { dict_code: activeCode, item_id: item.id } },
+    });
+    setDeletingId(null);
+    setConfirmDeleteId(null);
+    if (error) {
+      toast.error(errorMessage(error, "删除失败"));
+      return;
+    }
+    toast.success("已删除");
     await refresh();
   };
 
@@ -343,18 +365,34 @@ export function DictManageClient() {
                         />
                       </td>
                       <td className="px-3 py-2 text-right">
-                        <Button
-                          size="sm"
-                          variant={dirty ? "default" : "outline"}
-                          disabled={!dirty || savingId === item.id}
-                          onClick={() => void saveRow(item)}
-                        >
-                          {savingId === item.id ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            "保存"
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant={dirty ? "default" : "outline"}
+                            disabled={!dirty || savingId === item.id}
+                            onClick={() => void saveRow(item)}
+                          >
+                            {savingId === item.id ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              "保存"
+                            )}
+                          </Button>
+                          {item.is_builtin ? null : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={deletingId === item.id}
+                              onClick={() => void deleteItem(item)}
+                            >
+                              {deletingId === item.id
+                                ? "删除中…"
+                                : confirmDeleteId === item.id
+                                  ? "确认删除"
+                                  : "删除"}
+                            </Button>
                           )}
-                        </Button>
+                        </div>
                       </td>
                     </tr>
                   );

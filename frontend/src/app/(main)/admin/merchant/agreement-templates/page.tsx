@@ -33,6 +33,12 @@ export default function AgreementTemplatesPage() {
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Template | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState("store");
+  const [editContent, setEditContent] = useState("");
+  const [editVersion, setEditVersion] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -70,6 +76,41 @@ export default function AgreementTemplatesPage() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存失败");
+    }
+  };
+
+  const openEdit = (item: Template) => {
+    setEditing(item);
+    setEditName(item.template_name);
+    setEditType(item.cooperation_type);
+    setEditContent(item.content);
+    setEditVersion(item.version);
+    setError("");
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    if (!editName.trim() || !editContent.trim()) {
+      setError("模板名称与正文必填");
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      await merchantApi(`/admin/merchant/agreement-templates/${editing.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          template_name: editName.trim(),
+          cooperation_type: editType,
+          content: editContent.trim(),
+          version: editVersion.trim() || "v1",
+        }),
+      });
+      setEditing(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "保存失败");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -146,6 +187,9 @@ export default function AgreementTemplatesPage() {
                     <StatusBadge tone={item.status === "enabled" ? "positive" : "neutral"}>
                       {item.status === "enabled" ? "启用" : "停用"}
                     </StatusBadge>
+                    <Button size="sm" variant="outline" onClick={() => openEdit(item)}>
+                      编辑
+                    </Button>
                     <Button size="sm" variant="outline" onClick={() => void toggle(item)}>
                       {item.status === "enabled" ? "停用" : "启用"}
                     </Button>
@@ -154,6 +198,43 @@ export default function AgreementTemplatesPage() {
               </Card>
             ))}
           </div>
+        ) : null}
+        {editing ? (
+          <Card className="rounded-cards border-0 shadow-steep-sm fixed inset-0 z-50 m-auto flex h-fit max-h-[85vh] w-[min(640px,92vw)] flex-col gap-3 overflow-y-auto p-5">
+            <div className="text-sm font-medium">编辑协议模板</div>
+            <Field label="模板名称" required>
+              <Input value={editName} onChange={(event) => setEditName(event.target.value)} />
+            </Field>
+            <Field label="适用合作类型" required>
+              <Select value={editType} onValueChange={setEditType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="store">门店协议</SelectItem>
+                  <SelectItem value="company">公司协议</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="协议正文" required hint="支持 {{变量}} 占位符">
+              <textarea
+                className="min-h-40 rounded-inputs border border-input bg-background p-3 text-sm"
+                value={editContent}
+                onChange={(event) => setEditContent(event.target.value)}
+              />
+            </Field>
+            <Field label="版本">
+              <Input value={editVersion} onChange={(event) => setEditVersion(event.target.value)} />
+            </Field>
+            <div className="flex gap-2">
+              <Button onClick={() => void saveEdit()} disabled={savingEdit}>
+                {savingEdit ? "保存中…" : "保存"}
+              </Button>
+              <Button variant="outline" onClick={() => setEditing(null)}>
+                取消
+              </Button>
+            </div>
+          </Card>
         ) : null}
       </PageContainer>
     </div>

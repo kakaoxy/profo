@@ -166,7 +166,7 @@
       <view class="chip chip--tap {{changeType === 'correct' ? 'chip-apricot' : 'chip-fog'}}" data-type="correct" bindtap="onSelectChangeType">地址纠错</view>
       <view class="chip chip--tap {{changeType === 'relocate' ? 'chip-apricot' : 'chip-fog'}}" data-type="relocate" bindtap="onSelectChangeType">门店搬迁</view>
     </view>
-    <input class="input" wx:if="{{changeType !== 'edit'}}" placeholder="变更原因（选填）" value="{{changeReason}}" bindinput="onChangeReason" />
+    <input class="input" wx:if="{{changeType !== 'edit'}}" placeholder="变更原因（地址纠错/搬迁必填）" value="{{changeReason}}" bindinput="onChangeReason" />
   </view>
 
   <view class="form-group">

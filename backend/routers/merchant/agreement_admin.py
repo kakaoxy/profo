@@ -1,5 +1,6 @@
 """后台电子协议与模板路由（前缀 /admin/merchant）."""
 
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request, status
@@ -17,6 +18,7 @@ from schemas.merchant import (
     AgreementResponse,
     AgreementReviewRequest,
     AgreementScanUploadRequest,
+    AgreementSupplementCreate,
     AgreementTemplateCreate,
     AgreementTemplateResponse,
     AgreementTemplateUpdate,
@@ -86,6 +88,8 @@ def list_agreements(
     company_id: str | None = None,
     agreement_status: Annotated[str | None, Query(alias="status")] = None,
     agreement_no: str | None = None,
+    expire_from: Annotated[date | None, Query(description="到期日期起")] = None,
+    expire_to: Annotated[date | None, Query(description="到期日期止")] = None,
 ) -> AgreementListResponse:
     """后台协议列表（数据范围过滤）."""
     return MerchantAgreementService(db).search(
@@ -96,6 +100,8 @@ def list_agreements(
         company_id=company_id,
         status=agreement_status,
         agreement_no=agreement_no,
+        expire_from=expire_from,
+        expire_to=expire_to,
     )
 
 
@@ -109,6 +115,23 @@ def create_agreement(
 ) -> AgreementResponse:
     """运营代发起协议."""
     return MerchantAgreementService(db).create(current_user, body, request=request)
+
+
+@router.post(
+    "/agreements/{agreement_id}/supplements",
+    status_code=status.HTTP_201_CREATED,
+    summary="新增补充协议",
+)
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def create_supplement(
+    request: Request,
+    agreement_id: Annotated[str, Path(description="原协议ID")],
+    body: AgreementSupplementCreate,
+    db: DbSessionDep,
+    current_user: MerchantAgreementPermDep,
+) -> AgreementResponse:
+    """后台新增补充协议并关联原协议（REQ-M04-007）."""
+    return MerchantAgreementService(db).add_supplement(current_user, agreement_id, body, request=request)
 
 
 @router.get("/agreements/expiring-events", summary="协议到期事件扫描")

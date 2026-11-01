@@ -128,10 +128,20 @@ class LeadAttributionService:
             return
         store_ids = {item.store_id for item in items if item.store_id}
         broker_ids = {item.broker_id for item in items if item.broker_id}
+        employee_attribution: dict[str, str] = {}
+        for item in items:
+            for candidate in (item.referrer_id, item.broker_inviter_employee_id, item.store_owner_employee_id):
+                if candidate:
+                    employee_attribution[item.id] = candidate
+                    break
         user_ids = {
             user_id
             for item in items
-            for user_id in (item.store_owner_employee_id, item.broker_inviter_employee_id)
+            for user_id in (
+                item.store_owner_employee_id,
+                item.broker_inviter_employee_id,
+                employee_attribution.get(item.id),
+            )
             if user_id
         }
 
@@ -178,6 +188,9 @@ class LeadAttributionService:
             item.broker_inviter_name = (
                 user_names.get(item.broker_inviter_employee_id) if item.broker_inviter_employee_id else None
             )
+            resolved_employee = employee_attribution.get(item.id)
+            item.employee_attribution_id = resolved_employee
+            item.employee_attribution_name = user_names.get(resolved_employee) if resolved_employee else None
             item.attribution_status = compute_status(
                 store_id=item.store_id,
                 broker_id=item.broker_id,

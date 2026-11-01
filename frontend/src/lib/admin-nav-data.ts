@@ -75,12 +75,16 @@ export const navMain: NavItem[] = [
     url: "/admin/merchant/stores",
     icon: Store,
     section: "业务",
-    // 任一 merchant:* 权限即可见；默认角色均含 merchant:read
-    permission: PERMISSION_CODES.MERCHANT_READ,
+    // 分组本身不设权限：任一子项可见即显示分组（避免仅有 merchant:map 的角色看不到入口）
     items: [
       {
         title: "门店列表",
         url: "/admin/merchant/stores",
+        permission: PERMISSION_CODES.MERCHANT_READ,
+      },
+      {
+        title: "公司管理",
+        url: "/admin/merchant/companies",
         permission: PERMISSION_CODES.MERCHANT_READ,
       },
       {

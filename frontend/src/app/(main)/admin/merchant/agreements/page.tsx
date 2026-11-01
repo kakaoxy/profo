@@ -41,6 +41,8 @@ export default function MerchantAgreementsPage() {
   const [reason, setReason] = useState("");
   const [filterStoreId, setFilterStoreId] = useState("all");
   const [agreementNo, setAgreementNo] = useState("");
+  const [expireFrom, setExpireFrom] = useState("");
+  const [expireTo, setExpireTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
@@ -59,6 +61,9 @@ export default function MerchantAgreementsPage() {
   const [formRemark, setFormRemark] = useState("");
   const [saving, setSaving] = useState(false);
 
+  // 协议模板按签约主体类型过滤（门店主体只看 store 模板，公司主体只看 company 模板）
+  const visibleTemplates = templates.filter((template) => template.cooperation_type === subjectType);
+
   const load = async () => {
     setLoading(true);
     setError("");
@@ -71,6 +76,8 @@ export default function MerchantAgreementsPage() {
             status: status === "all" ? undefined : status,
             store_id: filterStoreId === "all" ? undefined : filterStoreId,
             agreement_no: agreementNo.trim() || undefined,
+            expire_from: expireFrom || undefined,
+            expire_to: expireTo || undefined,
           })}`,
         ),
         merchantApi<AgreementTemplate[]>("/admin/merchant/agreement-templates"),
@@ -166,8 +173,12 @@ export default function MerchantAgreementsPage() {
     if (!createOpen) return;
     setFormStoreId((current) => current || stores[0]?.id || "");
     setFormCompanyId((current) => current || companies[0]?.id || "");
-    setFormTemplateId((current) => current || templates[0]?.id || "");
-  }, [createOpen, stores, companies, templates]);
+    const firstVisible = templates.find((template) => template.cooperation_type === subjectType);
+    setFormTemplateId((current) => {
+      const stillVisible = templates.some((template) => template.id === current && template.cooperation_type === subjectType);
+      return stillVisible ? current : firstVisible?.id || "";
+    });
+  }, [createOpen, stores, companies, templates, subjectType]);
 
   const review = async (item: Agreement, approve: boolean) => {
     if (!approve && !reason.trim()) {
@@ -262,7 +273,7 @@ export default function MerchantAgreementsPage() {
                     <SelectValue placeholder="请选择模板" />
                   </SelectTrigger>
                   <SelectContent>
-                    {templates.map((template) => (
+                    {visibleTemplates.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.template_name}
                       </SelectItem>
@@ -352,6 +363,20 @@ export default function MerchantAgreementsPage() {
               onKeyDown={(event) => event.key === "Enter" && void load()}
             />
             <Input
+              type="date"
+              className="w-40"
+              aria-label="到期日期起"
+              value={expireFrom}
+              onChange={(event) => setExpireFrom(event.target.value)}
+            />
+            <Input
+              type="date"
+              className="w-40"
+              aria-label="到期日期止"
+              value={expireTo}
+              onChange={(event) => setExpireTo(event.target.value)}
+            />
+            <Input
               className="w-80"
               placeholder="审核意见 / 作废原因"
               aria-label="审核意见或作废原因"
@@ -369,7 +394,8 @@ export default function MerchantAgreementsPage() {
 
         {data ? (
           <Card className="rounded-cards border-0 shadow-steep-sm overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[960px] text-sm">
               <thead className="bg-fog text-left text-xs text-graphite">
                 <tr>
                   <th className="px-4 py-3">协议</th>
@@ -452,6 +478,7 @@ export default function MerchantAgreementsPage() {
                 ) : null}
               </tbody>
             </table>
+            </div>
           </Card>
         ) : null}
       </PageContainer>

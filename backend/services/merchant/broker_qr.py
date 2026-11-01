@@ -14,8 +14,8 @@ from sqlalchemy.orm import Session
 from models.merchant import MerchantStore, MerchantStoreQRCode
 from models.user.user import User
 from schemas.merchant import BrokerQRCodeResolveResponse, BrokerQRCodeResponse
-from services.merchant.scope import ensure_store_visible
-from services.system.exceptions import ResourceNotFoundError, ValidationError
+from services.merchant.scope import ensure_scope_role, ensure_store_visible
+from services.system.exceptions import PermissionDeniedError, ResourceNotFoundError, ValidationError
 from services.system.wechat import WeChatAuthService
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,11 @@ class MerchantBrokerQRCodeService:
             msg = "门店不存在"
             raise ResourceNotFoundError(msg)
         ensure_store_visible(self.db, user, store)
+        # BR-M06-025：仅门店归属员工可生成（admin/operator 全量角色除外）；
+        # ensure_store_visible 会放行「曾拜访该门店」的员工，此处再按归属收紧。
+        if not ensure_scope_role(user) and str(store.owner_employee_id or "") != str(user.id):
+            msg = "仅门店归属员工可生成邀请二维码"
+            raise PermissionDeniedError(msg)
         if store.status != "normal":
             msg = "门店已停用/已合并/已搬迁，不能生成邀请二维码"
             raise ValidationError(msg)

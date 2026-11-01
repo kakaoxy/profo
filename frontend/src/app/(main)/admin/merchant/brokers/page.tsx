@@ -23,6 +23,7 @@ type BrokerList = components["schemas"]["BrokerListResponse"];
 type Broker = components["schemas"]["BrokerResponse"];
 type StoreList = components["schemas"]["MerchantStoreListResponse"];
 type PendingBinding = components["schemas"]["BrokerBindingResponse"];
+type BindingList = components["schemas"]["BrokerBindingListResponse"];
 
 const SOURCE_LABELS: Record<string, string> = {
   self_apply: "自主申请",
@@ -30,6 +31,13 @@ const SOURCE_LABELS: Record<string, string> = {
   backoffice: "后台新增",
   broker: "经纪人推荐",
   import: "批量导入",
+};
+
+const BINDING_RECORD_LABELS: Record<string, string> = {
+  pending: "待审核",
+  active: "已绑定",
+  rejected: "已拒绝",
+  unbound: "已解绑",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -44,6 +52,8 @@ export default function MerchantBrokersPage() {
   const [data, setData] = useState<BrokerList | null>(null);
   const [pending, setPending] = useState<PendingBinding[]>([]);
   const [keyword, setKeyword] = useState("");
+  const [storeFilter, setStoreFilter] = useState("all");
+  const [bindStatusFilter, setBindStatusFilter] = useState("all");
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -54,11 +64,15 @@ export default function MerchantBrokersPage() {
   const [formPhone, setFormPhone] = useState("");
   const [formStoreId, setFormStoreId] = useState("");
   const [formStatus, setFormStatus] = useState<"normal" | "disabled">("normal");
+  const [formStoreChangeReason, setFormStoreChangeReason] = useState("");
   const [formRemark, setFormRemark] = useState("");
   const [saving, setSaving] = useState(false);
   const [changeTarget, setChangeTarget] = useState<BrokerList["items"][number] | null>(null);
   const [changeStoreId, setChangeStoreId] = useState("");
   const [changeReasonText, setChangeReasonText] = useState("");
+  const [historyBroker, setHistoryBroker] = useState<BrokerList["items"][number] | null>(null);
+  const [history, setHistory] = useState<BindingList | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -66,7 +80,13 @@ export default function MerchantBrokersPage() {
     try {
       const [list, bindings, storeList] = await Promise.all([
         merchantApi<BrokerList>(
-          `/admin/merchant/brokers${queryString({ page: 1, page_size: 50, keyword: keyword.trim() || undefined })}`,
+          `/admin/merchant/brokers${queryString({
+            page: 1,
+            page_size: 50,
+            keyword: keyword.trim() || undefined,
+            store_id: storeFilter === "all" ? undefined : storeFilter,
+            bind_status: bindStatusFilter === "all" ? undefined : bindStatusFilter,
+          })}`,
         ),
         merchantApi<PendingBinding[]>("/admin/merchant/bindings/pending"),
         merchantApi<StoreList>("/admin/merchant/stores?page=1&page_size=200"),
@@ -88,6 +108,7 @@ export default function MerchantBrokersPage() {
     setFormStoreId("");
     setFormRemark("");
     setFormStatus("normal");
+    setFormStoreChangeReason("");
     setFormOpen(true);
   };
 
@@ -100,6 +121,7 @@ export default function MerchantBrokersPage() {
       setFormStoreId(broker.store_id || "");
       setFormRemark(broker.remark || "");
       setFormStatus(broker.bind_status === "disabled" ? "disabled" : "normal");
+      setFormStoreChangeReason("");
       setFormOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载经纪人失败");
@@ -125,6 +147,24 @@ export default function MerchantBrokersPage() {
             remark: formRemark.trim() || null,
           }),
         });
+        const storeChanged = formStoreId !== (editing.store_id || "");
+        if (storeChanged) {
+          if (!formStoreChangeReason.trim()) {
+            setError("变更绑定门店必须填写原因");
+            return;
+          }
+          if (formStoreId) {
+            await merchantApi(`/admin/merchant/brokers/${editing.id}/change`, {
+              method: "POST",
+              body: JSON.stringify({ store_id: formStoreId, reason: formStoreChangeReason.trim() }),
+            });
+          } else {
+            await merchantApi(
+              `/admin/merchant/brokers/${editing.id}/unbind?reason=${encodeURIComponent(formStoreChangeReason.trim())}`,
+              { method: "POST" },
+            );
+          }
+        }
         const wasDisabled = editing.bind_status === "disabled";
         if (formStatus === "disabled" && !wasDisabled) {
           await merchantApi(`/admin/merchant/brokers/${editing.id}/status`, {
@@ -167,6 +207,22 @@ export default function MerchantBrokersPage() {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const openHistory = async (item: BrokerList["items"][number]) => {
+    setHistoryBroker(item);
+    setHistory(null);
+    setHistoryLoading(true);
+    try {
+      const result = await merchantApi<BindingList>(
+        `/admin/merchant/brokers/${item.id}/bindings?page=1&page_size=50`,
+      );
+      setHistory(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载绑定历史失败");
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
 
   const changeStatus = async (id: string, target: "disabled" | "unbound") => {
     try {
@@ -255,24 +311,33 @@ export default function MerchantBrokersPage() {
                   inputMode="tel"
                 />
               </Field>
-              {!editing ? (
-                <Field label="绑定门店" hint="可不绑定（独立经纪人），后续由经纪人扫码或申请绑定">
-                  <Select
-                    value={formStoreId || "none"}
-                    onValueChange={(value) => setFormStoreId(value === "none" ? "" : value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">暂不绑定门店</SelectItem>
-                      {stores.map((store) => (
-                        <SelectItem key={store.id} value={store.id}>
-                          {store.store_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <Field
+                label="绑定门店"
+                hint={editing ? "变更门店将强制换绑/解绑并留痕" : "可不绑定（独立经纪人），后续由经纪人扫码或申请绑定"}
+              >
+                <Select
+                  value={formStoreId || "none"}
+                  onValueChange={(value) => setFormStoreId(value === "none" ? "" : value)}
+                >
+                  <SelectTrigger aria-label="绑定门店">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">暂不绑定门店</SelectItem>
+                    {stores.map((store) => (
+                      <SelectItem key={store.id} value={store.id}>
+                        {store.store_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+              {editing && formStoreId !== (editing.store_id || "") ? (
+                <Field label="变更门店原因" required>
+                  <Input
+                    value={formStoreChangeReason}
+                    onChange={(event) => setFormStoreChangeReason(event.target.value)}
+                  />
                 </Field>
               ) : null}
               <Field label="状态" hint="停用后不可登录、不可被新绑定">
@@ -318,6 +383,30 @@ export default function MerchantBrokersPage() {
               onChange={(event) => setKeyword(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && void load()}
             />
+            <Select value={storeFilter} onValueChange={setStoreFilter}>
+              <SelectTrigger className="w-44" aria-label="按所属门店筛选">
+                <SelectValue placeholder="所属门店" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部门店</SelectItem>
+                {stores.map((store) => (
+                  <SelectItem key={store.id} value={store.id}>
+                    {store.store_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={bindStatusFilter} onValueChange={setBindStatusFilter}>
+              <SelectTrigger className="w-36" aria-label="按绑定状态筛选">
+                <SelectValue placeholder="绑定状态" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部绑定状态</SelectItem>
+                <SelectItem value="unbound">未绑定</SelectItem>
+                <SelectItem value="bound">已绑定</SelectItem>
+                <SelectItem value="disabled">已停用</SelectItem>
+              </SelectContent>
+            </Select>
             <Input
               className="w-72"
               placeholder="操作原因（停用/强制解绑）"
@@ -370,6 +459,44 @@ export default function MerchantBrokersPage() {
           </Card>
         ) : null}
 
+        {historyBroker ? (
+          <Card className="rounded-cards border-0 shadow-steep-sm p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-sm font-medium">
+                绑定历史：{historyBroker.name}（{history?.total ?? 0} 条）
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setHistoryBroker(null)}>
+                关闭
+              </Button>
+            </div>
+            {historyLoading ? (
+              <p className="text-sm text-graphite">加载中…</p>
+            ) : history && history.items.length ? (
+              <div className="space-y-2">
+                {history.items.map((record) => (
+                  <div
+                    key={record.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-images bg-fog p-3 text-sm"
+                  >
+                    <span>
+                      {record.store_name} · {BINDING_RECORD_LABELS[record.status] || record.status} ·{" "}
+                      {record.reason || "无原因"}
+                    </span>
+                    <span className="text-xs text-graphite">
+                      {new Date(record.applied_at).toLocaleString("zh-CN")}
+                      {record.approved_at
+                        ? ` / 审批 ${new Date(record.approved_at).toLocaleString("zh-CN")}`
+                        : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-graphite">暂无绑定记录</p>
+            )}
+          </Card>
+        ) : null}
+
         {error ? <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-error">{error}</Card> : null}
 
         {pending.length ? (
@@ -399,7 +526,8 @@ export default function MerchantBrokersPage() {
 
         {data ? (
           <Card className="rounded-cards border-0 shadow-steep-sm overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[1100px] text-sm">
               <thead className="bg-fog text-left text-xs text-graphite">
                 <tr>
                   <th className="px-4 py-3">姓名</th>
@@ -415,7 +543,14 @@ export default function MerchantBrokersPage() {
               <tbody>
                 {data.items.map((item) => (
                   <tr key={item.id} className="border-t border-dove">
-                    <td className="px-4 py-3 font-medium">{item.name}</td>
+                    <td className="px-4 py-3 font-medium">
+                      {item.name}
+                      {item.recruit_lead_id ? (
+                        <div className="text-xs font-normal text-graphite">
+                          招募线索 {item.recruit_lead_id.slice(0, 8)}…
+                        </div>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-3">{item.phone_masked}</td>
                     <td className="px-4 py-3">{item.store_name || "—"}</td>
                     <td className="px-4 py-3">
@@ -440,6 +575,9 @@ export default function MerchantBrokersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
+                        <Button size="sm" variant="outline" onClick={() => void openHistory(item)}>
+                          绑定历史
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => void openEdit(item)}>
                           编辑
                         </Button>
@@ -483,6 +621,7 @@ export default function MerchantBrokersPage() {
                 ) : null}
               </tbody>
             </table>
+            </div>
           </Card>
         ) : null}
       </PageContainer>

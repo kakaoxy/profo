@@ -25,6 +25,7 @@ type CompanyItem = components["schemas"]["MerchantCompanyResponse"];
 type StoreResult = components["schemas"]["MerchantStoreCreateResult"];
 type StoreResponse = components["schemas"]["MerchantStoreResponse"];
 type StoreUpdateResult = components["schemas"]["MerchantStoreResponse"] | components["schemas"]["MerchantStoreRelocateResponse"];
+type DuplicateCandidate = components["schemas"]["MerchantDuplicateCandidate"];
 
 interface FormState {
   store_name: string;
@@ -39,6 +40,8 @@ interface FormState {
   contact_phone: string;
   remark: string;
   force_create_reason: string;
+  cooperation_status: string;
+  owner_employee_id: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -54,6 +57,8 @@ const EMPTY_FORM: FormState = {
   contact_phone: "",
   remark: "",
   force_create_reason: "",
+  cooperation_status: "not_cooperated",
+  owner_employee_id: "",
 };
 
 export default function MerchantStoreCreatePage() {
@@ -68,6 +73,10 @@ export default function MerchantStoreCreatePage() {
   const [changeType, setChangeType] = useState<"edit" | "correct" | "relocate">("correct");
   const [changeReason, setChangeReason] = useState("");
   const [loadingStore, setLoadingStore] = useState(false);
+  const [employees, setEmployees] = useState<components["schemas"]["UserSimpleResponse"][]>([]);
+  const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([]);
+  const [circleOptions, setCircleOptions] = useState<string[]>([]);
+  const [loadedUpdatedAt, setLoadedUpdatedAt] = useState("");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -87,6 +96,7 @@ export default function MerchantStoreCreatePage() {
             created_at: store.created_at,
             updated_at: store.updated_at,
           });
+          setLoadedUpdatedAt(store.updated_at);
           setForm({
             store_name: store.store_name,
             province: store.province,
@@ -100,12 +110,33 @@ export default function MerchantStoreCreatePage() {
             contact_phone: store.contact_phone,
             remark: store.remark || "",
             force_create_reason: "",
+            cooperation_status: store.cooperation_status,
+            owner_employee_id: store.owner_employee_id || "",
           });
         })
         .catch((err: unknown) => setError(err instanceof Error ? err.message : "加载门店失败"))
         .finally(() => setLoadingStore(false));
     }
   }, []);
+
+  useEffect(() => {
+    merchantApi<components["schemas"]["UserSimpleListResponse"]>("/users/simple?page=1&page_size=200")
+      .then((result) => setEmployees(result.items))
+      .catch(() => setEmployees([]));
+  }, []);
+
+  useEffect(() => {
+    const district = form.district.trim();
+    if (!district) {
+      setCircleOptions([]);
+      return;
+    }
+    merchantApi<components["schemas"]["MerchantBusinessCircleResponse"]>(
+      `/admin/merchant/business-circles?district=${encodeURIComponent(district)}`,
+    )
+      .then((result) => setCircleOptions(result.items))
+      .catch(() => setCircleOptions([]));
+  }, [form.district]);
 
   const searchCompany = async () => {
     setError("");
@@ -140,6 +171,32 @@ export default function MerchantStoreCreatePage() {
       setError("编辑门店必须填写变更原因");
       return;
     }
+    if (!editStoreId && duplicates.length === 0 && !form.force_create_reason.trim()) {
+      // REQ-M01B-002：命中疑似重复门店时先展示候选并允许选择已有门店，继续新建需填强制理由
+      try {
+        const checked = await merchantApi<components["schemas"]["MerchantDuplicateCheckResponse"]>(
+          "/admin/merchant/stores/check-duplicates",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              store_name: form.store_name,
+              address: form.address,
+              lng: form.lng ? Number(form.lng) : null,
+              lat: form.lat ? Number(form.lat) : null,
+              contact_phone: form.contact_phone || null,
+            }),
+          },
+        );
+        if (checked.candidates.length > 0) {
+          setDuplicates(checked.candidates);
+          setError("存在疑似重复门店，请先确认；如确需新建，请填写强制新建理由后再次保存");
+          return;
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "门店查重失败");
+        return;
+      }
+    }
     setSubmitting(true);
     setError("");
     try {
@@ -158,9 +215,11 @@ export default function MerchantStoreCreatePage() {
             lat: form.lat ? Number(form.lat) : undefined,
             contact_name: form.contact_name,
             contact_phone: form.contact_phone,
+            owner_employee_id: form.owner_employee_id || null,
             remark: form.remark || null,
             change_type: changeType,
             change_reason: changeReason.trim(),
+            expected_updated_at: loadedUpdatedAt || undefined,
           }),
         });
         const targetId = "new_store" in result ? result.new_store.id : result.id;
@@ -181,7 +240,8 @@ export default function MerchantStoreCreatePage() {
           lat: Number(form.lat),
           contact_name: form.contact_name,
           contact_phone: form.contact_phone,
-          cooperation_status: "not_cooperated",
+          cooperation_status: form.cooperation_status,
+          owner_employee_id: form.owner_employee_id || null,
           remark: form.remark || null,
           force_create_reason: form.force_create_reason || null,
         }),
@@ -260,8 +320,21 @@ export default function MerchantStoreCreatePage() {
           <Field label="门店名称" required>
             <Input value={form.store_name} onChange={update("store_name")} />
           </Field>
-          <Field label="商圈" required>
-            <Input value={form.business_circle} onChange={update("business_circle")} />
+          <Field
+            label="商圈"
+            required
+            hint={circleOptions.length ? "可参考该区县已有商圈，也可直接输入新商圈" : undefined}
+          >
+            <Input
+              list="merchant-business-circle-options"
+              value={form.business_circle}
+              onChange={update("business_circle")}
+            />
+            <datalist id="merchant-business-circle-options">
+              {circleOptions.map((circle) => (
+                <option key={circle} value={circle} />
+              ))}
+            </datalist>
           </Field>
           <Field label="省份" required>
             <Input value={form.province} onChange={update("province")} />
@@ -287,6 +360,42 @@ export default function MerchantStoreCreatePage() {
           <Field label="联系电话" required>
             <Input value={form.contact_phone} onChange={update("contact_phone")} inputMode="tel" />
           </Field>
+          <Field label="负责人" hint="选填；门店归属员工，用于数据范围与二维码生成">
+            <Select
+              value={form.owner_employee_id || "none"}
+              onValueChange={(value) =>
+                setForm((previous) => ({ ...previous, owner_employee_id: value === "none" ? "" : value }))
+              }
+            >
+              <SelectTrigger aria-label="选择门店负责人">
+                <SelectValue placeholder="暂不指定" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">暂不指定</SelectItem>
+                {employees.map((employee) => (
+                  <SelectItem key={employee.id} value={employee.id}>
+                    {employee.nickname || employee.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          {!editStoreId ? (
+            <Field label="合作状态" hint="新建门店仅可设为未合作或洽谈中">
+              <Select
+                value={form.cooperation_status}
+                onValueChange={(value) => setForm((previous) => ({ ...previous, cooperation_status: value }))}
+              >
+                <SelectTrigger aria-label="选择初始合作状态">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not_cooperated">未合作</SelectItem>
+                  <SelectItem value="negotiating">洽谈中</SelectItem>
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : null}
           {!editStoreId ? (
             <Field
               label="强制新建理由"
@@ -295,6 +404,32 @@ export default function MerchantStoreCreatePage() {
             >
               <Input value={form.force_create_reason} onChange={update("force_create_reason")} />
             </Field>
+          ) : null}
+          {!editStoreId && duplicates.length > 0 ? (
+            <div className="rounded-images bg-fog p-3 text-sm md:col-span-2">
+              <div className="mb-2 font-medium">疑似重复门店（{duplicates.length} 家）</div>
+              <div className="flex flex-col gap-2">
+                {duplicates.map((candidate) => (
+                  <div
+                    key={candidate.id}
+                    className="flex flex-wrap items-center justify-between gap-2 border-b border-dove pb-2 last:border-0 last:pb-0"
+                  >
+                    <div>
+                      <Link href={`/admin/merchant/stores/${candidate.id}`} className="text-rust hover:underline">
+                        {candidate.store_name}
+                      </Link>
+                      <div className="text-xs text-graphite">
+                        {candidate.address}
+                        {candidate.distance_m !== null ? ` · 距离 ${candidate.distance_m} 米` : ""}
+                      </div>
+                    </div>
+                    <div className="text-xs text-graphite">
+                      {candidate.cooperation_status_label} · 命中 {candidate.matched_by.length} 项
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : null}
           <Field label="备注" className="md:col-span-2">
             <Input value={form.remark} onChange={update("remark")} />

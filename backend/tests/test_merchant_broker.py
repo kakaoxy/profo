@@ -682,3 +682,109 @@ def test_phone_change_syncs_broker_phone_and_hash(
     broker = session.query(MerchantBroker).filter(MerchantBroker.user_id == str(customer_user.id)).one()
     assert broker.phone == new_phone
     assert broker.phone_hash == hash_phone(new_phone)
+
+
+def test_broker_binding_history_paginated(seeded_db: dict) -> None:
+    """REQ-M06-005：后台可分页查看经纪人绑定历史."""
+    from models import MerchantBrokerBinding
+
+    session: Session = seeded_db["session"]
+    admin_client = _client(session, seeded_db["users"]["admin"], c_side=False)
+    company = MerchantCompany(company_name="历史公司", status="normal")
+    session.add(company)
+    session.flush()
+    store = MerchantStore(
+        store_name="历史门店",
+        company_id=company.id,
+        company_name=company.company_name,
+        province="上海市",
+        city="上海市",
+        district="黄浦区",
+        business_circle="南京东路",
+        address="南京东路1号",
+        contact_name="张三",
+        status="normal",
+        review_status="approved",
+        contact_phone="13800009999",
+        source="backoffice",
+    )
+    session.add(store)
+    broker = MerchantBroker(
+        name="历史经纪人",
+        phone="13800009998",
+        phone_hash=hash_phone("13800009998"),
+        bind_status="bound",
+        store_id=store.id,
+        source="backoffice",
+    )
+    session.add(broker)
+    session.flush()
+    for index in range(3):
+        session.add(
+            MerchantBrokerBinding(
+                broker_id=broker.id,
+                store_id=store.id,
+                status="active" if index == 0 else "unbound",
+                store_name_snapshot=store.store_name,
+                bind_source="manual",
+                reason=f"记录{index}",
+            ),
+        )
+    session.commit()
+
+    resp = admin_client.get(f"{API}/admin/merchant/brokers/{broker.id}/bindings?page=1&page_size=2")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["total"] == 3
+    assert len(body["items"]) == 2
+    assert body["items"][0]["store_name"] == "历史门店"
+
+    page2 = admin_client.get(f"{API}/admin/merchant/brokers/{broker.id}/bindings?page=2&page_size=2")
+    assert page2.status_code == 200
+    assert len(page2.json()["items"]) == 1
+
+
+def test_phone_change_rematches_recruit_lead(
+    broker_client: TestClient,
+    customer_user: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-M05-004：经纪人换号后按新手机号重新匹配招募线索，不保留旧号关联."""
+    _register(broker_client, name="换号重匹配经纪人")
+    session: Session = seeded_db["session"]
+    customer_user.password = get_password_hash("Test123456")
+    session.commit()
+
+    broker = session.query(MerchantBroker).filter(MerchantBroker.user_id == str(customer_user.id)).one()
+    old_hash = hash_phone("13800009999")
+    new_phone = f"137{uuid.uuid4().int % 10**8:08d}"
+    new_hash = hash_phone(new_phone)
+    old_lead = RecruitLead(
+        phone="13800009999", phone_hash=old_hash, main_business_area="徐家汇", status=RecruitLeadStatus.NEW
+    )
+    new_lead = RecruitLead(
+        phone=new_phone, phone_hash=new_hash, main_business_area="陆家嘴", status=RecruitLeadStatus.NEW
+    )
+    session.add_all([old_lead, new_lead])
+    broker.recruit_lead_id = str(old_lead.id)
+    session.commit()
+
+    resp = broker_client.put(
+        f"{API}/public/users/phone",
+        json={"phone": new_phone, "password": "Test123456"},
+    )
+    assert resp.status_code == 200, resp.text
+    session.expire_all()
+    broker = session.query(MerchantBroker).filter(MerchantBroker.user_id == str(customer_user.id)).one()
+    assert broker.recruit_lead_id == str(new_lead.id)
+
+
+def test_qr_generation_requires_store_owner(
+    employee_client: TestClient,
+    admin_client: TestClient,
+) -> None:
+    """BR-M06-025：非门店归属员工（即使可见）不能生成邀请二维码."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"])  # 未设置 owner_employee_id
+    resp = employee_client.post(f"{API}/public/merchant/stores/{store['id']}/broker-qrcode")
+    assert resp.status_code == 403, resp.text

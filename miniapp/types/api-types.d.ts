@@ -7134,6 +7134,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/brokers/{broker_id}/bindings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 经纪人绑定历史
+         * @description 后台查看指定经纪人的绑定历史（分页）.
+         */
+        get: operations["list_broker_bindings_api_v1_admin_merchant_brokers__broker_id__bindings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/brokers/{broker_id}": {
         parameters: {
             query?: never;
@@ -7866,6 +7886,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/agreements/{agreement_id}/supplements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 新增补充协议
+         * @description 后台新增补充协议并关联原协议（REQ-M04-007）.
+         */
+        post: operations["create_supplement_api_v1_admin_merchant_agreements__agreement_id__supplements_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/agreements/expiring-events": {
         parameters: {
             query?: never;
@@ -7937,7 +7977,7 @@ export interface paths {
         put?: never;
         /**
          * 审核协议
-         * @description 通过进入待签署；驳回记录原因.
+         * @description 通过进入待签署；驳回记录原因（仅 admin/operator，BR-M04-031）.
          */
         post: operations["review_agreement_api_v1_admin_merchant_agreements__agreement_id__review_post"];
         delete?: never;
@@ -8675,6 +8715,11 @@ export interface components {
             signer_phone: string;
             /** Signed At */
             signed_at?: string | null;
+            /**
+             * Reason
+             * @description 代签原因（签署人与联系人信息不一致时必填）
+             */
+            reason?: string | null;
         };
         /**
          * AgreementSignRequest
@@ -8690,6 +8735,11 @@ export interface components {
              * @description 签名图片地址
              */
             signature_url: string;
+            /**
+             * Reason
+             * @description 代签原因（签署人与联系人信息不一致时必填）
+             */
+            reason?: string | null;
         };
         /**
          * AgreementSupplementCreate
@@ -10041,6 +10091,20 @@ export interface components {
             store_id: string;
         };
         /**
+         * BrokerBindingListResponse
+         * @description 绑定历史分页响应（后台查看）.
+         */
+        BrokerBindingListResponse: {
+            /** Items */
+            items: components["schemas"]["BrokerBindingResponse"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
          * BrokerBindingResponse
          * @description 绑定历史记录.
          */
@@ -10198,6 +10262,8 @@ export interface components {
             source: string;
             /** Inviter Employee Id */
             inviter_employee_id: string | null;
+            /** Recruit Lead Id */
+            recruit_lead_id?: string | null;
             /** Recommendation Count */
             recommendation_count: number;
             /**
@@ -10376,6 +10442,8 @@ export interface components {
             unbound_at: string | null;
             /** Remark */
             remark: string | null;
+            /** Recruit Lead Id */
+            recruit_lead_id?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -15240,6 +15308,11 @@ export interface components {
              * @description 推荐经纪人ID
              */
             broker_id?: string | null;
+            /**
+             * Client Request Id
+             * @description 客户端幂等键
+             */
+            client_request_id?: string | null;
             /** Created At */
             created_at?: string | null;
             /** New Community */
@@ -15551,6 +15624,13 @@ export interface components {
             broker_inviter_employee_id?: string | null;
             /** Broker Inviter Name */
             broker_inviter_name?: string | null;
+            /**
+             * Employee Attribution Id
+             * @description 员工归因解析结果（referrer→broker_inviter→store_owner）
+             */
+            employee_attribution_id?: string | null;
+            /** Employee Attribution Name */
+            employee_attribution_name?: string | null;
             /** Attribution Status */
             attribution_status?: string | null;
             /** Source Property Id */
@@ -15687,6 +15767,13 @@ export interface components {
             broker_inviter_employee_id?: string | null;
             /** Broker Inviter Name */
             broker_inviter_name?: string | null;
+            /**
+             * Employee Attribution Id
+             * @description 员工归因解析结果（referrer→broker_inviter→store_owner）
+             */
+            employee_attribution_id?: string | null;
+            /** Employee Attribution Name */
+            employee_attribution_name?: string | null;
             /** Attribution Status */
             attribution_status?: string | null;
             /** Last Follow Up At */
@@ -16769,6 +16856,10 @@ export interface components {
             created_by_broker_name?: string | null;
             /** Inviter Employee Name */
             inviter_employee_name?: string | null;
+            /** Merged To Store Name */
+            merged_to_store_name?: string | null;
+            /** Owner Employee Name */
+            owner_employee_name?: string | null;
             /** Brokers */
             brokers?: {
                 [key: string]: unknown;
@@ -17044,6 +17135,8 @@ export interface components {
             reason: string;
             /** Operator Id */
             operator_id: string | null;
+            /** Operator Name */
+            operator_name?: string | null;
             /**
              * Created At
              * Format: date-time
@@ -20989,6 +21082,11 @@ export interface components {
              * @description 分享归属员工ID
              */
             referrer?: string | null;
+            /**
+             * Client Request Id
+             * @description 客户端幂等键
+             */
+            client_request_id?: string | null;
             /**
              * Building Id
              * @description 字典楼栋ID（选填）
@@ -38835,6 +38933,43 @@ export interface operations {
             };
         };
     };
+    list_broker_bindings_api_v1_admin_merchant_brokers__broker_id__bindings_get: {
+        parameters: {
+            query?: {
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                /** @description 经纪人ID */
+                broker_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerBindingListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_broker_api_v1_admin_merchant_brokers__broker_id__get: {
         parameters: {
             query?: never;
@@ -40167,6 +40302,10 @@ export interface operations {
                 company_id?: string | null;
                 status?: string | null;
                 agreement_no?: string | null;
+                /** @description 到期日期起 */
+                expire_from?: string | null;
+                /** @description 到期日期止 */
+                expire_to?: string | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
@@ -40208,6 +40347,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AgreementCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_supplement_api_v1_admin_merchant_agreements__agreement_id__supplements_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 原协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementSupplementCreate"];
             };
         };
         responses: {

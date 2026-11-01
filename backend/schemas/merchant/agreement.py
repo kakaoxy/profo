@@ -81,6 +81,7 @@ class AgreementSignRequest(BaseModel):
     signer_name: str = Field(min_length=1, max_length=50)
     signer_phone: str = Field(min_length=1, max_length=20)
     signature_url: str = Field(min_length=1, max_length=1000, description="签名图片地址")
+    reason: str | None = Field(default=None, max_length=500, description="代签原因（签署人与联系人信息不一致时必填）")
 
 
 class AgreementScanUploadRequest(BaseModel):
@@ -90,6 +91,7 @@ class AgreementScanUploadRequest(BaseModel):
     signer_name: str = Field(min_length=1, max_length=50)
     signer_phone: str = Field(min_length=1, max_length=20)
     signed_at: datetime | None = None
+    reason: str | None = Field(default=None, max_length=500, description="代签原因（签署人与联系人信息不一致时必填）")
 
 
 class AgreementVoidRequest(BaseModel):

@@ -123,7 +123,8 @@ export default function MerchantNotifyRunsPage() {
         {error ? <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-error">{error}</Card> : null}
 
         <Card className="rounded-cards border-0 shadow-steep-sm gap-0 py-0">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full min-w-[960px] text-sm">
             <thead className="bg-fog text-slate">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">执行时间</th>
@@ -176,6 +177,7 @@ export default function MerchantNotifyRunsPage() {
               ) : null}
             </tbody>
           </table>
+          </div>
         </Card>
       </PageContainer>
     </div>

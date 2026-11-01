@@ -1,5 +1,6 @@
 """门店地图与员工拜访轨迹（V08）."""
 
+import logging
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -21,6 +22,8 @@ from services.merchant.broker import MerchantBrokerService
 from services.merchant.scope import store_scope_condition
 from services.merchant.serializers import cooperation_label_map
 from services.system.exceptions import ResourceNotFoundError, ValidationError
+
+logger = logging.getLogger(__name__)
 
 _MAX_TRACK_DAYS = 31
 _SHANGHAI = ZoneInfo("Asia/Shanghai")
@@ -63,8 +66,17 @@ class MerchantMapService:
             query = query.filter(MerchantStore.cooperation_status == cooperation_status)
         if review_status:
             query = query.filter(MerchantStore.review_status == review_status)
+        # REQ-M09-001：仅 GCJ-02 坐标可上图；BD-09/WGS-84 等非 GCJ-02 记录跳过并告警
+        non_gcj02_count = query.filter(MerchantStore.coordinate_system != "gcj02").count()
+        if non_gcj02_count:
+            logger.warning("non-gcj02 stores skipped on map: %d", non_gcj02_count)
+        query = query.filter(MerchantStore.coordinate_system == "gcj02")
 
-        stores = query.order_by(MerchantStore.updated_at.desc()).all()
+        # REQ-M09-005：门店列表按最近拜访时间倒序（无拜访的门店排最后）
+        stores = query.order_by(
+            MerchantStore.last_visit_at.desc().nulls_last(),
+            MerchantStore.updated_at.desc(),
+        ).all()
         labels = cooperation_label_map(self.db)
         broker_counts = MerchantBrokerService(self.db).effective_count_by_stores([str(s.id) for s in stores])
 

@@ -22,6 +22,7 @@ import type { components } from "@/lib/api-types";
 import { merchantApi } from "../../_components/merchant-api";
 
 type Detail = components["schemas"]["MerchantStoreDetailResponse"];
+type CurrentUser = components["schemas"]["UserResponse"];
 type DictItem = components["schemas"]["PublicDictItemResponse"];
 type StoreListItem = components["schemas"]["MerchantStoreListItem"];
 
@@ -43,12 +44,15 @@ const AGREEMENT_STATUS_TONES: Record<string, "neutral" | "attention" | "positive
 };
 
 const COOPERATION_DICT = "merchant_cooperation_status";
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+const PHOTO_TYPE_LABELS: Record<string, string> = { head: "门头照", interior: "内景照", other: "其他" };
 
 export default function MerchantStoreDetailPage() {
   const params = useParams<{ id: string }>();
   const storeId = params?.id ?? "";
   const [detail, setDetail] = useState<Detail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [canViewAgreements, setCanViewAgreements] = useState(false);
   const [error, setError] = useState("");
   const [statusTarget, setStatusTarget] = useState("");
   const [cooperationOptions, setCooperationOptions] = useState<DictItem[]>([]);
@@ -63,14 +67,115 @@ export default function MerchantStoreDetailPage() {
   const [confirmMerge, setConfirmMerge] = useState(false);
   const [mergePreview, setMergePreview] = useState<components["schemas"]["MerchantStoreMergePreview"] | null>(null);
   const [mergeCandidates, setMergeCandidates] = useState<StoreListItem[]>([]);
+  const [canWrite, setCanWrite] = useState(false);
+  const [photoType, setPhotoType] = useState("head");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [confirmPhotoUrl, setConfirmPhotoUrl] = useState("");
+  const [visitPage, setVisitPage] = useState(1);
+  const loadMoreVisits = async () => {
+    const nextPage = visitPage + 1;
+    try {
+      const result = await merchantApi<components["schemas"]["MerchantVisitListResponse"]>(
+        `/admin/merchant/stores/${storeId}/visits?page=${nextPage}&page_size=20`,
+      );
+      setDetail((previous) =>
+        previous
+          ? {
+              ...previous,
+              visits: {
+                ...previous.visits,
+                items: [...previous.visits.items, ...result.items],
+                page: result.page,
+                page_size: result.page_size,
+                total: result.total,
+              },
+            }
+          : previous,
+      );
+      setVisitPage(nextPage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加载更多拜访失败");
+    }
+  };
+
+  const uploadStorePhoto = async (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setError("门店照片仅支持图片格式");
+      return;
+    }
+    if (file.size > MAX_PHOTO_BYTES) {
+      setError("门店照片大小不能超过 10MB");
+      return;
+    }
+    setUploadingPhoto(true);
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/v1/files/upload", {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        credentials: "include",
+        body: form,
+      });
+      const body = (await res.json().catch(() => ({}))) as { url?: string; message?: string };
+      if (!res.ok || !body.url) {
+        setError(body.message ?? "门店照片上传失败");
+        return;
+      }
+      const photos = [...(detail?.store.photos ?? []), { file_url: body.url, photo_type: photoType }];
+      await merchantApi(`/admin/merchant/stores/${storeId}/photos`, {
+        method: "PUT",
+        body: JSON.stringify({ photos }),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "门店照片上传失败");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const removeStorePhoto = async (fileUrl: string) => {
+    if (confirmPhotoUrl !== fileUrl) {
+      setConfirmPhotoUrl(fileUrl);
+      return;
+    }
+    setConfirmPhotoUrl("");
+    try {
+      const photos = (detail?.store.photos ?? []).filter((photo) => photo.file_url !== fileUrl);
+      await merchantApi(`/admin/merchant/stores/${storeId}/photos`, {
+        method: "PUT",
+        body: JSON.stringify({ photos }),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "删除门店照片失败");
+    }
+  };
+
   const brokers = detail?.brokers ?? [];
   const agreements = detail?.agreements ?? [];
   const statusLogs = detail?.status_logs ?? [];
+  const cooperationLabel = (code: string) =>
+    cooperationOptions.find((option) => option.code === code)?.label ?? code;
 
   useEffect(() => {
     merchantApi<components["schemas"]["PublicDictListResponse"]>(`/public/dicts/${COOPERATION_DICT}`)
       .then((result) => setCooperationOptions(result.items))
       .catch(() => setCooperationOptionsError("合作状态字典加载失败，暂不能变更合作状态"));
+  }, []);
+
+  useEffect(() => {
+    merchantApi<CurrentUser>("/auth/me")
+      .then((me) => {
+        setCanViewAgreements((me.permissions ?? []).includes("merchant:agreement"));
+        setCanWrite((me.permissions ?? []).includes("merchant:write"));
+      })
+      .catch(() => {
+        setCanViewAgreements(false);
+        setCanWrite(false);
+      });
   }, []);
 
   useEffect(() => {
@@ -104,6 +209,7 @@ export default function MerchantStoreDetailPage() {
     try {
       const result = await merchantApi<Detail>(`/admin/merchant/stores/${storeId}/detail`);
       setDetail(result);
+      setVisitPage(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : "加载失败");
     } finally {
@@ -186,7 +292,7 @@ export default function MerchantStoreDetailPage() {
           description="档案 · 经纪人 · 拜访时间线 · 协议 · 线索统计"
           actions={
             <div className="flex flex-wrap gap-2">
-              {detail && detail.store.status !== "merged" ? (
+              {detail && detail.store.status !== "merged" && canWrite ? (
                 <Button variant="outline" asChild>
                   <Link href={`/admin/merchant/stores/new?mode=edit&store_id=${storeId}`}>
                     编辑门店
@@ -271,18 +377,30 @@ export default function MerchantStoreDetailPage() {
                             className="text-rust hover:underline"
                             href={`/admin/merchant/stores/${detail.store.merged_to_store_id}`}
                           >
-                            {detail.store.merged_to_store_id}
+                            {detail.merged_to_store_name || detail.store.merged_to_store_id}
                           </Link>
                         </div>
                       ) : null}
                     </div>
                   ) : null}
                 </div>
-                <div className="text-right text-sm text-graphite">
+                <div className="w-full text-left text-sm text-graphite sm:mt-0 sm:w-auto sm:text-right">
                   <div>联系人：{detail.store.contact_name}</div>
                   <div>电话：{detail.store.contact_phone}</div>
+                  <div>负责人：{detail.owner_employee_name || "—"}</div>
                   <div>最近拜访：{detail.store.last_visit_at ? new Date(detail.store.last_visit_at).toLocaleString("zh-CN") : "—"}</div>
                   <div>线索：{detail.lead_stats.total}（本月 +{detail.lead_stats.month_new}）</div>
+                  {detail.store.lng == null || detail.store.lat == null ? (
+                    <div className="text-rust">
+                      坐标缺失，地图无法标注，
+                      <Link
+                        className="underline"
+                        href={`/admin/merchant/stores/new?mode=edit&store_id=${storeId}`}
+                      >
+                        去补全
+                      </Link>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </Card>
@@ -293,7 +411,7 @@ export default function MerchantStoreDetailPage() {
                 className="rounded-cards border-0 shadow-steep-sm flex flex-wrap items-center gap-3 p-5 scroll-mt-6"
               >
                 <span className="text-sm font-medium">经纪人自建门店待审核</span>
-                <Button size="sm" onClick={() => void approve()}>
+                <Button size="sm" variant="outline" onClick={() => void approve()}>
                   转正
                 </Button>
                 <span className="text-xs text-graphite">合并请在下方操作</span>
@@ -328,7 +446,7 @@ export default function MerchantStoreDetailPage() {
                   <Button
                     variant="outline"
                     onClick={() => void changeActivation()}
-                    disabled={!activationTarget || activationTarget === detail.store.status}
+                    disabled={!canWrite || !activationTarget || activationTarget === detail.store.status}
                   >
                     提交
                   </Button>
@@ -362,7 +480,7 @@ export default function MerchantStoreDetailPage() {
                       onChange={(event) => setStatusReason(event.target.value)}
                     />
                   </Field>
-                  <Button onClick={() => void changeStatus()} disabled={!statusTarget || !statusReason.trim()}>
+                  <Button variant="outline" onClick={() => void changeStatus()} disabled={!canWrite || !statusTarget || !statusReason.trim()}>
                     提交变更
                   </Button>
                 </div>
@@ -374,7 +492,9 @@ export default function MerchantStoreDetailPage() {
                 <div className="mt-4 space-y-2 text-xs text-graphite">
                   {statusLogs.map((log) => (
                     <div key={log.id}>
-                      {log.from_status} → {log.to_status} · {new Date(log.created_at).toLocaleString("zh-CN")} · {log.reason}
+                      {cooperationLabel(log.from_status)} → {cooperationLabel(log.to_status)} ·{" "}
+                      {new Date(log.created_at).toLocaleString("zh-CN")} · {log.reason}
+                      {log.operator_name ? <span className="text-graphite"> · 操作人：{log.operator_name}</span> : null}
                     </div>
                   ))}
                   {statusLogs.length === 0 ? <div>暂无状态变更</div> : null}
@@ -417,7 +537,7 @@ export default function MerchantStoreDetailPage() {
                       <Button variant="outline" onClick={() => setConfirmMerge(false)}>
                         取消
                       </Button>
-                      <Button onClick={() => void merge()} disabled={!mergeTarget || !mergeReason.trim()}>
+                      <Button variant="outline" onClick={() => void merge()} disabled={!mergeTarget || !mergeReason.trim()}>
                         确认合并
                       </Button>
                     </>
@@ -425,7 +545,7 @@ export default function MerchantStoreDetailPage() {
                     <Button
                       variant="outline"
                       onClick={() => setConfirmMerge(true)}
-                      disabled={!mergeTarget || !mergeReason.trim()}
+                      disabled={!canWrite || !mergeTarget || !mergeReason.trim()}
                     >
                       合并到保留门店
                     </Button>
@@ -452,7 +572,7 @@ export default function MerchantStoreDetailPage() {
                         <Button variant="outline" onClick={() => setConfirmDelete(false)}>
                           取消
                         </Button>
-                        <Button onClick={() => void remove()} disabled={!deleteReason.trim()}>
+                        <Button variant="outline" onClick={() => void remove()} disabled={!deleteReason.trim()}>
                           确认删除
                         </Button>
                       </>
@@ -460,7 +580,7 @@ export default function MerchantStoreDetailPage() {
                       <Button
                         variant="outline"
                         onClick={() => setConfirmDelete(true)}
-                        disabled={!deleteReason.trim()}
+                        disabled={!canWrite || !deleteReason.trim()}
                       >
                         软删除
                       </Button>
@@ -477,10 +597,78 @@ export default function MerchantStoreDetailPage() {
                 {brokers.map((broker) => (
                   <span key={String(broker.id)} className="rounded-full bg-fog px-3 py-1">
                     {String(broker.name)} · {String(broker.phone_masked)}
+                    {broker.bind_status ? ` · ${String(broker.bind_status)}` : ""}
+                    {broker.recruit_lead_id ? ` · 推荐线索 ${String(broker.recruit_lead_id).slice(0, 8)}…` : ""}
                   </span>
                 ))}
                 {brokers.length === 0 ? <span className="text-graphite">暂无有效绑定经纪人</span> : null}
               </div>
+            </Card>
+
+            <Card className="rounded-cards border-0 shadow-steep-sm p-6">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div className="text-sm font-medium">门店照片</div>
+                {canWrite ? (
+                  <div className="flex items-center gap-2">
+                    <Select value={photoType} onValueChange={setPhotoType}>
+                      <SelectTrigger className="w-32" aria-label="选择照片类型">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="head">门头照</SelectItem>
+                        <SelectItem value="interior">内景照</SelectItem>
+                        <SelectItem value="other">其他</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <label className="cursor-pointer rounded-full border border-dove px-3 py-1.5 text-[13px] text-graphite hover:border-ink/40">
+                      {uploadingPhoto ? "上传中…" : "上传照片"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploadingPhoto}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void uploadStorePhoto(file);
+                          event.target.value = "";
+                        }}
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </div>
+              {(detail?.store.photos ?? []).length === 0 ? (
+                <div className="text-sm text-graphite">暂无门店照片</div>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {(detail?.store.photos ?? []).map((photo) => (
+                    <div key={photo.file_url} className="w-28">
+                      <a
+                        href={photo.file_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block h-28 w-28 overflow-hidden rounded-images border border-dove"
+                      >
+                        {/* 对象存储直链无固定尺寸，next/image 需远端白名单，故用原生 img */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={photo.file_url} alt={PHOTO_TYPE_LABELS[photo.photo_type] ?? "门店照片"} className="h-full w-full object-cover" />
+                      </a>
+                      <div className="mt-1 flex items-center justify-between text-xs text-graphite">
+                        <span>{PHOTO_TYPE_LABELS[photo.photo_type] ?? photo.photo_type}</span>
+                        {canWrite ? (
+                          <button
+                            type="button"
+                            className="text-rust hover:underline"
+                            onClick={() => void removeStorePhoto(photo.file_url)}
+                          >
+                            {confirmPhotoUrl === photo.file_url ? "确认删除" : "删除"}
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card>
 
             <Card className="rounded-cards border-0 shadow-steep-sm p-6">
@@ -521,9 +709,17 @@ export default function MerchantStoreDetailPage() {
                   </div>
                 ))}
                 {detail.visits.items.length === 0 ? <div className="text-sm text-graphite">暂无拜访记录</div> : null}
+                {detail.visits.total > detail.visits.items.length ? (
+                  <div className="pt-1 text-center">
+                    <Button variant="outline" size="sm" onClick={() => void loadMoreVisits()}>
+                      加载更多（已显示 {detail.visits.items.length}/{detail.visits.total}）
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </Card>
 
+            {canViewAgreements ? (
             <Card className="rounded-cards border-0 shadow-steep-sm p-6">
               <div className="mb-3 text-sm font-medium">协议（{agreements.length}）</div>
               <div className="space-y-2 text-sm">
@@ -538,6 +734,7 @@ export default function MerchantStoreDetailPage() {
                 {agreements.length === 0 ? <div className="text-graphite">暂无协议</div> : null}
               </div>
             </Card>
+            ) : null}
           </>
         ) : null}
       </PageContainer>

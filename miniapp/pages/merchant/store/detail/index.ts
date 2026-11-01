@@ -15,6 +15,7 @@ type DictItem = components["schemas"]["PublicDictItemResponse"];
 type AgreementListResponse = components["schemas"]["AgreementListResponse"];
 type Agreement = components["schemas"]["AgreementResponse"];
 type BrokerQRCode = components["schemas"]["BrokerQRCodeResponse"];
+type UserResponse = components["schemas"]["UserResponse"];
 
 const AGREEMENT_STATUS_LABELS: Record<string, string> = {
   not_initiated: "未发起",
@@ -116,7 +117,7 @@ Page({
     this.setData({ state: "loading" });
     try {
       const storeId = (this as unknown as { storeId: string }).storeId;
-      const [store, visits, logs, cooperationDict, resultDict, agreements] = await Promise.all([
+      const [store, visits, logs, cooperationDict, resultDict, agreements, me] = await Promise.all([
         request<StoreResponse>({ url: `/public/merchant/stores/${storeId}` }),
         request<VisitList>({ url: `/public/merchant/stores/${storeId}/visits`, data: { page: 1, page_size: 50 } }),
         request<StatusLog[]>({ url: `/public/merchant/stores/${storeId}/status-logs` }),
@@ -126,6 +127,7 @@ Page({
           url: "/public/merchant/agreements",
           data: { page: 1, page_size: 20, store_id: storeId },
         }).catch(() => ({ items: [], total: 0, page: 1, page_size: 20 })),
+        request<UserResponse>({ url: "/public/auth/me" }).catch(() => null),
       ]);
       const cooperationLabels: Record<string, string> = {};
       cooperationDict.items.forEach((item: DictItem) => {
@@ -162,7 +164,16 @@ Page({
         })),
         cooperationLabels,
         visitResultLabels,
-        statusOptions: cooperationDict.items.filter((item: DictItem) => item.code !== store.cooperation_status),
+        statusOptions: cooperationDict.items.filter((item: DictItem) => {
+          if (item.code === store.cooperation_status) {
+            return false;
+          }
+          // AC-V02-013：员工端仅可选「洽谈中」，其余状态由管理员操作
+          const roleCode = me?.role?.code;
+          const extraRoles = (me?.additional_roles || []).map((role) => role.code);
+          const privileged = ["admin", "operator"].some((code) => code === roleCode || extraRoles.includes(code));
+          return privileged || item.code === "negotiating";
+        }),
         agreements: agreements.items.map((item: Agreement) => ({
           id: item.id,
           title: item.agreement_no || item.id.slice(0, 8),

@@ -56,3 +56,31 @@ def test_duplicate_dictionary_address_requires_confirmation(
 
     rows = session.query(Lead).filter(Lead.room_id == room.id, Lead.is_deleted.is_(False)).all()
     assert len(rows) == 2
+
+
+def test_client_request_id_makes_submission_idempotent(
+    c_end_client: TestClient,
+    seeded_db: dict[str, Any],
+) -> None:
+    """REQ-M08-004 分支 5：同一创建人同一 client_request_id 重复提交只落一条线索."""
+    session: Session = seeded_db["session"]
+    payload = {
+        "community_name": "幂等提交小区",
+        "floor_info": "3/6层",
+        "area": 88.0,
+        "expected_price": 260.0,
+        "client_request_id": "lead-idem-key-001",
+    }
+
+    first = c_end_client.post(_PUBLIC_LEADS, json=payload)
+    assert first.status_code == 201, first.text
+    second = c_end_client.post(_PUBLIC_LEADS, json=payload)
+    assert second.status_code == 201, second.text
+    assert second.json()["id"] == first.json()["id"]
+
+    rows = session.query(Lead).filter(Lead.client_request_id == "lead-idem-key-001", Lead.is_deleted.is_(False)).all()
+    assert len(rows) == 1
+
+    other = c_end_client.post(_PUBLIC_LEADS, json={**payload, "client_request_id": "lead-idem-key-002"})
+    assert other.status_code == 201, other.text
+    assert other.json()["id"] != first.json()["id"]

@@ -11,7 +11,16 @@ from PIL import Image
 from sqlalchemy.orm import Session
 
 import db
-from models import BizDictItem, MerchantAgreement, MerchantStore, MerchantStoreStatusLog, Role, User
+from models import (
+    BizDictItem,
+    MerchantAgreement,
+    MerchantStore,
+    MerchantStoreStatusLog,
+    Notification,
+    NotificationRecipient,
+    Role,
+    User,
+)
 from settings import settings
 from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C, create_access_token, get_password_hash
 
@@ -455,3 +464,173 @@ def test_store_subject_agreement_does_not_set_company_id(
     row = session.query(MerchantAgreement).filter(MerchantAgreement.id == agreement["id"]).one()
     assert row.company_id is None
     assert row.store_id == store["id"]
+
+
+def test_agreement_list_filters_expire_range_and_sorts_by_signed_at(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-M04-006：到期时间范围筛选 + 默认按签署时间倒序（BR-M04-022）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    template = _create_template(admin_client)
+    created = [
+        _create_agreement(
+            employee_client,
+            subject_type="store",
+            store_id=store["id"],
+            company_id=None,
+            template_id=template["id"],
+        )
+        for _ in range(3)
+    ]
+
+    session: Session = seeded_db["session"]
+    rows = {
+        row.id: row for row in session.query(MerchantAgreement).filter(MerchantAgreement.store_id == store["id"]).all()
+    }
+    rows[created[0]["id"]].expire_at = datetime(2026, 3, 10, tzinfo=timezone.utc)
+    rows[created[0]["id"]].signed_at = datetime(2026, 3, 20, tzinfo=timezone.utc)
+    rows[created[1]["id"]].expire_at = datetime(2026, 3, 20, tzinfo=timezone.utc)
+    rows[created[1]["id"]].signed_at = datetime(2026, 4, 1, tzinfo=timezone.utc)
+    rows[created[2]["id"]].expire_at = datetime(2026, 5, 1, tzinfo=timezone.utc)
+    session.commit()
+
+    resp = admin_client.get(
+        f"{API}/admin/merchant/agreements",
+        params={"page": 1, "page_size": 50, "expire_from": "2026-03-01", "expire_to": "2026-03-31"},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    ids = [item["id"] for item in body["items"]]
+    assert ids == [created[1]["id"], created[0]["id"]]
+
+
+def test_admin_can_add_supplement_agreement(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+) -> None:
+    """REQ-M04-007：后台可新增补充协议并关联原协议."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    template = _create_template(admin_client)
+    parent = _create_agreement(
+        employee_client,
+        subject_type="store",
+        store_id=store["id"],
+        company_id=None,
+        template_id=template["id"],
+    )
+    resp = admin_client.post(
+        f"{API}/admin/merchant/agreements/{parent['id']}/supplements",
+        json={"remark": "延长合作期一年", "file_url": "/static/supplement.pdf"},
+    )
+    assert resp.status_code == 201, resp.text
+    child = resp.json()
+    assert child["status"] == "signed"
+    assert child["remark"] == "延长合作期一年"
+
+    detail = admin_client.get(f"{API}/admin/merchant/agreements/{parent['id']}")
+    assert detail.status_code == 200
+    assert child["id"] in detail.json()["supplement_agreement_ids"]
+
+
+def test_review_rejection_is_idempotent_and_notifies_initiator(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-M04-009：重复审核幂等；驳回后通知发起人."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    template = _create_template(admin_client)
+    agreement = _create_agreement(
+        employee_client,
+        subject_type="store",
+        store_id=store["id"],
+        company_id=None,
+        template_id=template["id"],
+    )
+    first = admin_client.post(
+        f"{API}/admin/merchant/agreements/{agreement['id']}/review",
+        json={"approve": False, "remark": "材料不齐"},
+    )
+    assert first.status_code == 200, first.text
+    assert first.json()["review_status"] == "rejected"
+
+    second = admin_client.post(
+        f"{API}/admin/merchant/agreements/{agreement['id']}/review",
+        json={"approve": True, "remark": "重复提交"},
+    )
+    assert second.status_code == 200, second.text
+    assert second.json()["review_status"] == "rejected"
+
+    session: Session = seeded_db["session"]
+    notification = (
+        session.query(Notification)
+        .filter(Notification.type == "merchant.agreement.reviewed")
+        .order_by(Notification.created_at.desc())
+        .first()
+    )
+    assert notification is not None
+    recipient = (
+        session.query(NotificationRecipient).filter(NotificationRecipient.notification_id == notification.id).first()
+    )
+    assert recipient is not None
+    assert str(recipient.user_id) == str(employee.id)
+
+
+def test_scan_upload_proxy_requires_reason(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-M04-009：运营代签必须填写代签原因，并写入审计."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    template = _create_template(admin_client)
+    agreement = _create_agreement(
+        employee_client,
+        subject_type="store",
+        store_id=store["id"],
+        company_id=None,
+        template_id=template["id"],
+        signer_name="王店长",
+        signer_phone="13700002222",
+    )
+    payload = {
+        "file_url": "/static/scan.pdf",
+        "signer_name": "李代签",
+        "signer_phone": "13900001111",
+    }
+    blocked = admin_client.post(f"{API}/admin/merchant/agreements/{agreement['id']}/scan", json=payload)
+    assert blocked.status_code == 400, blocked.text
+    assert "代签原因" in blocked.json()["message"]
+
+    allowed = admin_client.post(
+        f"{API}/admin/merchant/agreements/{agreement['id']}/scan",
+        json={**payload, "reason": "店长出差，运营代为盖章"},
+    )
+    assert allowed.status_code == 200, allowed.text
+    assert allowed.json()["status"] == "signed"
+
+    from models import OperationLog
+
+    session: Session = seeded_db["session"]
+    log = (
+        session.query(OperationLog)
+        .filter(
+            OperationLog.resource_type == "merchant_agreement",
+            OperationLog.resource_id == str(agreement["id"]),
+            OperationLog.action == "update",
+        )
+        .order_by(OperationLog.created_at.desc())
+        .first()
+    )
+    assert log is not None
+    assert log.after["sign_reason"] == "店长出差，运营代为盖章"

@@ -91,6 +91,11 @@ class MerchantVisitService:
         if req.backfill_reason:
             remark = f"{remark}；补录原因：{req.backfill_reason}" if remark else f"补录原因：{req.backfill_reason}"
 
+        location_status = req.location_status
+        if req.location_failure_type == MerchantLocationFailureType.UNAVAILABLE.value:
+            # 「定位不可用」按未定位落库；仅有网络超时才标记 degraded
+            location_status = MerchantLocationStatus.MISSING.value
+
         distance = None
         # 门店坐标缺失时无法计算距离（曾 float(None) 触发 500）
         if req.lng is not None and req.lat is not None and store.lng is not None and store.lat is not None:
@@ -113,7 +118,7 @@ class MerchantVisitService:
             location_failure_reason=req.location_failure_reason,
             location_failure_type=req.location_failure_type,
             client_request_id=req.client_request_id,
-            location_status=req.location_status,
+            location_status=location_status,
             visit_source=visit_source,
             address=req.address,
             result=req.result,

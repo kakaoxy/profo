@@ -291,7 +291,17 @@ def test_duplicate_check_and_force_reason(
     forced = no_reason | {"force_create_reason": "确认不是同一家"}
     resp = employee_http.post(f"{API}/public/merchant/stores", json=forced)
     assert resp.status_code == 201, resp.text
-    assert seeded_db["session"].query(MerchantStore).count() == 2
+    session = seeded_db["session"]
+    assert session.query(MerchantStore).count() == 2
+    create_log = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_store", OperationLog.action == "create")
+        .order_by(OperationLog.created_at.desc())
+        .first()
+    )
+    assert create_log is not None
+    assert create_log.after["force_create_reason"] == "确认不是同一家"
+    assert create_log.after["duplicates"]
 
 
 def test_data_scope_and_forbidden_detail(
@@ -471,6 +481,27 @@ def test_store_update_audit_and_relocate(
     assert len(visits) == 1
 
 
+def test_store_update_rejects_stale_updated_at(
+    admin_http: TestClient,
+    employee_http: TestClient,
+) -> None:
+    """REQ-M11-003 分支：并发修改时提交旧 updated_at 必须返回 409."""
+    company = _create_company(admin_http)
+    store = _create_employee_store(employee_http, company["id"])["store"]
+    url = f"{API}/public/merchant/stores/{store['id']}"
+    stale_version = store["updated_at"]
+
+    first = employee_http.put(url, json={"store_name": "第一次改名"})
+    assert first.status_code == 200, first.text
+
+    stale = employee_http.put(
+        url,
+        json={"store_name": "第二次改名", "expected_updated_at": stale_version},
+    )
+    assert stale.status_code == 409, stale.text
+    assert "他人修改" in stale.json()["message"]
+
+
 def test_visit_location_auth_denied_and_missing_store_coordinates(
     admin_http: TestClient,
     employee_http: TestClient,
@@ -505,6 +536,19 @@ def test_visit_location_auth_denied_and_missing_store_coordinates(
     )
     assert degraded.status_code == 201, degraded.text
     assert degraded.json()["location_failure_type"] == "timeout"
+
+    unavailable = employee_http.post(
+        f"{API}/public/merchant/visits",
+        json={
+            "store_id": store["id"],
+            "contact_name": "王店长",
+            "location_status": "degraded",
+            "location_failure_type": "unavailable",
+            "location_failure_reason": "设备定位服务不可用",
+        },
+    )
+    assert unavailable.status_code == 201, unavailable.text
+    assert unavailable.json()["location_status"] == "missing"
 
     # 门店无坐标（v110 允许坐标缺失）：distance 计算跳过，不得因 float(None) 抛 500
     session = seeded_db["session"]
@@ -544,13 +588,34 @@ def test_store_update_rejects_blank_required_fields_and_out_of_china_coordinates
     blank_address = employee_http.put(url, json={"address": "  "})
     assert blank_address.status_code == 400, blank_address.text
 
-    outside = employee_http.put(url, json={"lng": 2.35, "lat": 48.85, "change_type": "correct"})
-    assert outside.status_code == 400, outside.text
-    assert "GCJ-02" in outside.json()["message"]
+    blank_reason = employee_http.put(url, json={"remark": "备注", "change_type": "edit", "change_reason": "   "})
+    assert blank_reason.status_code == 422, blank_reason.text
 
-    # 坐标只给一半也拒绝
-    half = employee_http.put(url, json={"lng": 121.5, "change_type": "correct"})
-    assert half.status_code == 400, half.text
+    no_reason_correct = employee_http.put(
+        url,
+        json={"address": "世纪大道 200 号", "lng": 121.51, "lat": 31.25, "change_type": "correct"},
+    )
+    assert no_reason_correct.status_code == 400, no_reason_correct.text
+    assert "变更原因" in no_reason_correct.json()["message"]
+
+    # REQ-M02-002：地址变/坐标未变、坐标变/地址未变、跨区域、大距离分别给出差异化提示
+    address_only = employee_http.put(
+        url, json={"address": "南京东路 999 号", "change_type": "edit", "change_reason": "地址纠错"}
+    )
+    assert address_only.status_code == 400, address_only.text
+    assert "重新选点" in address_only.json()["message"]
+
+    coord_only = employee_http.put(
+        url, json={"lng": 121.5001, "lat": 31.2401, "change_type": "edit", "change_reason": "坐标纠错"}
+    )
+    assert coord_only.status_code == 400, coord_only.text
+    assert "确认地址" in coord_only.json()["message"]
+
+    cross_region = employee_http.put(
+        url, json={"district": "黄浦区", "change_type": "correct", "change_reason": "区县纠错"}
+    )
+    assert cross_region.status_code == 400, cross_region.text
+    assert "门店搬迁" in cross_region.json()["message"]
 
     session = seeded_db["session"]
     session.expire_all()

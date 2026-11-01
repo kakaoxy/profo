@@ -81,6 +81,7 @@
         <view class="actions">
           <view class="mini-btn mini-btn--primary" bindtap="onOpenBind">绑定已有门店</view>
           <view class="mini-btn" bindtap="onCreateStore">创建新门店</view>
+          <view class="mini-btn" bindtap="onSkipBind">暂不绑定</view>
         </view>
         <view class="hint">创建门店后进入后台审核，并自动绑定为你的门店。</view>
       </block>

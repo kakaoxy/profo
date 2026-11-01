@@ -20,6 +20,7 @@ from schemas.merchant import (
     BindingApprovalRequest,
     BrokerAdminCreate,
     BrokerAdminUpdate,
+    BrokerBindingListResponse,
     BrokerBindingResponse,
     BrokerForceChangeRequest,
     BrokerListResponse,
@@ -577,6 +578,24 @@ def create_broker(
         body,
         operator_id=str(current_user.id),
         request=request,
+    )
+
+
+@router.get("/brokers/{broker_id}/bindings", summary="经纪人绑定历史")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def list_broker_bindings(
+    request: Request,
+    db: DbSessionDep,
+    current_user: MerchantBrokerPermDep,
+    pagination: PaginationDep,
+    broker_id: Annotated[str, Path(description="经纪人ID")],
+) -> BrokerBindingListResponse:
+    """后台查看指定经纪人的绑定历史（分页）."""
+    return MerchantBrokerService(db).history_for_admin(
+        current_user,
+        broker_id,
+        page=pagination.page,
+        page_size=pagination.page_size,
     )
 
 

@@ -64,6 +64,7 @@ _CREATE_ALLOWED_COOPERATION = {
     MerchantCooperationStatus.NEGOTIATING.value,
 }
 _DISTANCE_LIMIT_M = 500
+_RELOCATE_DISTANCE_M = 1000
 # 1 度纬度约 111.32km，用于把 500m 半径换算成经纬度包围盒（仅作召回，精确距离仍用 haversine_m）
 _METERS_PER_DEGREE_LAT = 111_320.0
 # 查重召回上限与返回上限（超出即视为「未扫描完全部候选」）
@@ -271,7 +272,11 @@ class MerchantStoreService:
             resource_type="merchant_store",
             resource_id=str(store.id),
             before=None,
-            after=self._snapshot(store) | {"force_create_reason": req.force_create_reason},
+            after=self._snapshot(store)
+            | {
+                "force_create_reason": req.force_create_reason,
+                "duplicates": [{"id": item.id, "matched_by": item.matched_by} for item in duplicates],
+            },
             request=request,
         )
         if commit:
@@ -417,6 +422,11 @@ class MerchantStoreService:
             .order_by(MerchantStoreStatusLog.created_at.desc())
             .all()
         )
+        operator_ids = {row.operator_id for row in rows if row.operator_id}
+        names: dict[str, str] = {}
+        if operator_ids:
+            users = self.db.query(User).filter(User.id.in_(operator_ids)).all()
+            names = {str(user.id): user.nickname or user.username for user in users}
         return [
             MerchantStoreStatusLogResponse(
                 id=str(row.id),
@@ -424,6 +434,7 @@ class MerchantStoreService:
                 to_status=row.to_status,
                 reason=row.reason,
                 operator_id=row.operator_id,
+                operator_name=names.get(str(row.operator_id)) if row.operator_id else None,
                 created_at=row.created_at,
             )
             for row in rows
@@ -445,20 +456,50 @@ class MerchantStoreService:
             msg = "已合并门店只读，不可编辑"
             raise ValidationError(msg)
 
+        if req.expected_updated_at is not None and store.updated_at != req.expected_updated_at:
+            msg = "数据已被他人修改，请刷新后重试"
+            raise ConflictError(msg)
         self._validate_gcj02(req.lng, req.lat)
+        if req.change_type in ("correct", "relocate") and not (req.change_reason or "").strip():
+            msg = "地址纠错或门店搬迁必须填写变更原因"
+            raise ValidationError(msg)
 
         if req.change_type == "relocate":
             return self._relocate(store, req, user=user, request=request)
 
-        address_changed = (
-            (req.address is not None and req.address.strip() != store.address)
-            or (req.lng is not None and (store.lng is None or float(req.lng) != float(store.lng)))
-            or (req.lat is not None and (store.lat is None or float(req.lat) != float(store.lat)))
-            or (req.district is not None and req.district.strip() != store.district)
+        textual_fields = ("province", "city", "district", "business_circle", "address")
+        text_changed = any(
+            getattr(req, field) is not None and getattr(req, field).strip() != getattr(store, field)
+            for field in textual_fields
         )
-        if address_changed and req.change_type == "edit":
+        coords_changed = (req.lng is not None and (store.lng is None or float(req.lng) != float(store.lng))) or (
+            req.lat is not None and (store.lat is None or float(req.lat) != float(store.lat))
+        )
+        if req.change_type == "edit":
+            if text_changed and not coords_changed:
+                msg = "地址已变更但坐标未更新，请重新选点后再保存"
+                raise ValidationError(msg)
+            if coords_changed and not text_changed:
+                msg = "坐标已变更但地址未更新，请确认地址后再保存"
+                raise ValidationError(msg)
+        if (text_changed or coords_changed) and req.change_type == "edit":
             msg = "地址或坐标发生变化，请选择地址纠错或门店搬迁"
             raise ValidationError(msg)
+        region_changed = any(
+            getattr(req, field) is not None and getattr(req, field).strip() != getattr(store, field)
+            for field in ("province", "city", "district")
+        )
+        if region_changed and req.change_type != "relocate":
+            msg = "跨区域变更请选择门店搬迁"
+            raise ValidationError(msg)
+        if coords_changed and req.change_type == "edit":
+            old_lng = float(store.lng) if store.lng is not None else None
+            old_lat = float(store.lat) if store.lat is not None else None
+            if old_lng is not None and old_lat is not None:
+                distance = haversine_m(old_lng, old_lat, float(req.lng or old_lng), float(req.lat or old_lat))
+                if distance > _RELOCATE_DISTANCE_M:
+                    msg = "坐标移动超过 1 公里，请选择地址纠错或门店搬迁"
+                    raise ValidationError(msg)
 
         # 必填字段被清空必须拒绝（REQ-M01B-003 分支 2）；Pydantic 的 min_length 挡不住纯空白
         for label, value in (
@@ -810,6 +851,17 @@ class MerchantStoreService:
                 request=request,
             )
             self.db.refresh(store)
+            add_audit_log(
+                self.db,
+                user_id=str(user.id),
+                action="review_merge",
+                resource_type="merchant_store",
+                resource_id=str(store.id),
+                before=None,
+                after={"target_store_id": req.target_store_id, "review_remark": req.remark},
+                request=request,
+            )
+            self.db.commit()
             return store_response(store, cooperation_label_map(self.db))
 
         # REQ-M11-012 分支 2：必填字段缺失时拒绝转正并提示先补全
@@ -857,7 +909,7 @@ class MerchantStoreService:
         add_audit_log(
             self.db,
             user_id=str(user.id),
-            action="update",
+            action="review_approve",
             resource_type="merchant_store",
             resource_id=str(store.id),
             before=before,
@@ -915,6 +967,18 @@ class MerchantStoreService:
                     if inviter is not None:
                         inviter_employee_name = inviter.nickname or inviter.username
 
+        owner_employee_name = None
+        if store.owner_employee_id:
+            owner = self.db.query(User).filter(User.id == store.owner_employee_id).first()
+            if owner is not None:
+                owner_employee_name = owner.nickname or owner.username
+
+        merged_to_store_name = None
+        if store.merged_to_store_id:
+            merged_to = self.db.query(MerchantStore).filter(MerchantStore.id == store.merged_to_store_id).first()
+            if merged_to is not None:
+                merged_to_store_name = merged_to.store_name
+
         now = datetime.now(timezone.utc)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         total = self.db.query(Lead.id).filter(Lead.store_id == store.id, Lead.is_deleted.is_(False)).count()
@@ -931,6 +995,8 @@ class MerchantStoreService:
             store=store_response(store, cooperation_label_map(self.db)),
             created_by_broker_name=created_by_broker_name,
             inviter_employee_name=inviter_employee_name,
+            merged_to_store_name=merged_to_store_name,
+            owner_employee_name=owner_employee_name,
             brokers=[item.model_dump(mode="json") for item in brokers],
             visits=visits,
             agreements=agreements,

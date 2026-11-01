@@ -15,6 +15,7 @@ from models import (
     MerchantBroker,
     MerchantBrokerBinding,
     MerchantStore,
+    MerchantStoreStatusLog,
     MerchantVisit,
     OperationLog,
     Role,
@@ -309,6 +310,21 @@ def test_store_detail_aggregation(
     assert len(body["agreements"]) == 1
     assert body["lead_stats"]["total"] == 1
 
+    seeded_db["session"].add(
+        MerchantStoreStatusLog(
+            store_id=store["id"],
+            from_status="not_cooperated",
+            to_status="negotiating",
+            reason="首次洽谈",
+            operator_id=str(employee.id),
+        )
+    )
+    seeded_db["session"].commit()
+    logs = admin_client.get(f"{API}/admin/merchant/stores/{store['id']}/detail").json()["status_logs"]
+    assert logs
+    assert logs[0]["to_status"] == "negotiating"
+    assert logs[0]["operator_name"] == (employee.nickname or employee.username)
+
 
 def test_export_stores_csv_masked(
     admin_client: TestClient,
@@ -449,6 +465,28 @@ def test_review_broker_store_approve_and_merge(
     row = session.query(MerchantStore).filter(MerchantStore.id == second_store["id"]).one()
     assert row.status == "merged"
     assert row.review_status == "merged"
+    session.expire_all()
+    approve_log = (
+        session.query(OperationLog)
+        .filter(
+            OperationLog.resource_type == "merchant_store",
+            OperationLog.resource_id == pending_store["id"],
+            OperationLog.action == "review_approve",
+        )
+        .first()
+    )
+    assert approve_log is not None
+    merge_log = (
+        session.query(OperationLog)
+        .filter(
+            OperationLog.resource_type == "merchant_store",
+            OperationLog.resource_id == second_store["id"],
+            OperationLog.action == "review_merge",
+        )
+        .first()
+    )
+    assert merge_log is not None
+    assert merge_log.after["target_store_id"] == keep["id"]
 
 
 pytestmark = pytest.mark.usefixtures("seeded_db")

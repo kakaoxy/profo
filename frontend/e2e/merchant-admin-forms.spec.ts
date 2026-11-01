@@ -134,6 +134,54 @@ test("后台新建与编辑经纪人", async ({ page }) => {
   await expect(page.locator("tr").filter({ hasText: `${MARK}经纪人改` }).first()).toBeVisible();
 });
 
+test("后台新建门店可指定负责人与合作状态", async ({ page }) => {
+  await page.goto("/admin/merchant/stores/new");
+  await page.getByPlaceholder("输入公司名称搜索").fill(`${MARK}公司`);
+  await page.getByRole("button", { name: "搜索" }).click();
+  await page.getByRole("button", { name: new RegExp(`${MARK}公司`) }).first().click();
+
+  await page.getByLabel("门店名称").fill(`${MARK}新门店`);
+  await page.getByLabel("商圈").fill("南京东路商圈");
+  await page.getByLabel("详细地址").fill("南京东路 200 号");
+  await page.getByLabel("经度（GCJ-02）").fill("121.4805");
+  await page.getByLabel("纬度（GCJ-02）").fill("31.2380");
+  await page.getByLabel("联系人").fill("李店长");
+  await page.getByLabel("联系电话").fill("13600003333");
+  await page.getByLabel("强制新建理由").fill("E2E 新店，确认非重复门店");
+
+  await page.getByLabel("选择初始合作状态").click();
+  await page.getByRole("option", { name: "洽谈中" }).click();
+
+  await page.getByLabel("选择门店负责人").click();
+  const ownerOption = page.getByRole("option").nth(1);
+  const ownerName = (await ownerOption.textContent())?.trim() ?? "";
+  await ownerOption.click();
+
+  await page.getByRole("button", { name: "保存门店" }).click();
+  await expect(page.getByText(`${MARK}新门店`).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("洽谈中").first()).toBeVisible();
+  if (ownerName && ownerName !== "暂不指定") {
+    await expect(page.getByText(`负责人：${ownerName}`)).toBeVisible();
+  }
+});
+
+test("后台新建门店命中重复时展示候选门店", async ({ page }) => {
+  await page.goto("/admin/merchant/stores/new");
+  await page.getByPlaceholder("输入公司名称搜索").fill(`${MARK}公司`);
+  await page.getByRole("button", { name: "搜索" }).click();
+  await page.getByRole("button", { name: new RegExp(`${MARK}公司`) }).first().click();
+  await page.getByLabel("门店名称").fill(storeName);
+  await page.getByLabel("商圈").fill("南京东路商圈");
+  await page.getByLabel("详细地址").fill("南京东路 200 号");
+  await page.getByLabel("经度（GCJ-02）").fill("121.4805");
+  await page.getByLabel("纬度（GCJ-02）").fill("31.2380");
+  await page.getByLabel("联系人").fill("李店长");
+  await page.getByLabel("联系电话").fill("13600003333");
+  await page.getByRole("button", { name: "保存门店" }).click();
+  await expect(page.getByText(/疑似重复门店（\d+ 家）/)).toBeVisible();
+  await expect(page.getByText(storeName).first()).toBeVisible();
+});
+
 test("后台编辑门店并留痕原因", async ({ page }) => {
   await page.goto(`/admin/merchant/stores/${storeId}`);
   await page.getByRole("link", { name: "编辑门店" }).click();

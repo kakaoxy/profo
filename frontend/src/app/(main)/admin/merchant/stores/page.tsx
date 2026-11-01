@@ -201,10 +201,10 @@ export default function MerchantStoresPage() {
               onChange={(event) => setBusinessCircle(event.target.value)}
               onKeyDown={(event) => event.key === "Enter" && void load(1)}
             />
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="whitespace-nowrap text-[13px] text-graphite">经纪人数量</span>
               <Input
-                className="w-16"
+                className="w-20"
                 type="number"
                 min={0}
                 placeholder="下限"
@@ -215,7 +215,7 @@ export default function MerchantStoresPage() {
               />
               <span className="text-xs text-graphite">至</span>
               <Input
-                className="w-16"
+                className="w-20"
                 type="number"
                 min={0}
                 placeholder="上限"
@@ -225,7 +225,7 @@ export default function MerchantStoresPage() {
                 onKeyDown={(event) => event.key === "Enter" && void load(1)}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="whitespace-nowrap text-[13px] text-graphite">创建日期</span>
               <Input
                 className="w-36"
@@ -279,7 +279,8 @@ export default function MerchantStoresPage() {
 
         {!loading && data ? (
           <Card className="rounded-cards border-0 shadow-steep-sm gap-0 overflow-hidden py-0">
-            <table className="w-full text-sm">
+            <div className="overflow-x-auto">
+            <table className="w-full min-w-[960px] text-sm">
               <thead className="bg-fog text-left text-xs text-graphite">
                 <tr>
                   <th className="px-4 py-3">门店</th>
@@ -362,6 +363,7 @@ export default function MerchantStoresPage() {
                 ) : null}
               </tbody>
             </table>
+            </div>
           </Card>
         ) : null}
 

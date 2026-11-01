@@ -22,7 +22,7 @@ from models import (
     User,
 )
 from services.notification.events import EventType
-from services.notification.service import EmitResult, NotificationEvent, NotificationService
+from services.notification.service import EmitResult, NotificationEvent, NotificationFilter, NotificationService
 from utils.auth import AUDIENCE_ADMIN, create_access_token, get_password_hash
 from utils.crypto import hash_phone
 
@@ -602,3 +602,50 @@ def test_notify_task_records_consecutive_failure_alerts(seeded_db: dict) -> None
     assert len(alerts) == 1
     assert alerts[0].after["reason"] == "consecutive_failures"
     assert alerts[0].after["count"] >= 3
+
+
+def test_notification_list_unread_first_and_hides_expired(seeded_db: dict) -> None:
+    """REQ-M14-005：默认未读优先，已过期通知不展示也不计未读."""
+    session: Session = seeded_db["session"]
+    employee = _make_employee(session)
+    now = datetime.now(timezone.utc)
+
+    def make(title: str, created_at: datetime, *, read: bool, expires_at: datetime | None = None) -> Notification:
+        notification = Notification(
+            category="merchant",
+            type="merchant.test",
+            title=title,
+            body=None,
+            priority="normal",
+            created_at=created_at,
+            expires_at=expires_at,
+        )
+        session.add(notification)
+        session.flush()
+        session.add(
+            NotificationRecipient(
+                notification_id=notification.id,
+                user_id=employee.id,
+                read_at=now if read else None,
+            ),
+        )
+        return notification
+
+    make("已读-较新", now - timedelta(minutes=10), read=True)
+    make("未读-较早", now - timedelta(hours=2), read=False)
+    expired = make("已过期未读", now - timedelta(hours=1), read=False, expires_at=now - timedelta(minutes=1))
+    session.commit()
+
+    service = NotificationService(session)
+    items, total, unread_in_filter = service.list_for_user(
+        employee.id,
+        filter_spec=NotificationFilter(),
+        page=1,
+        page_size=10,
+    )
+    titles = [item.title for item in items]
+    assert titles == ["未读-较早", "已读-较新"], titles
+    assert total == 2
+    assert unread_in_filter == 1
+    assert str(expired.id) not in {item.id for item in items}
+    assert service.unread_count(employee.id)["by_category"]["merchant"] == 1

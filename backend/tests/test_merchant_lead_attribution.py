@@ -214,6 +214,31 @@ def test_lead_attribution_employee_filter(
     assert names == {"分享归因线索", "门店归属线索", "经纪人邀请线索"}
 
 
+def test_employee_attribution_priority_referrer_first(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """BR-M07-021：员工归因按 referrer → broker_inviter → store_owner 顺序解析."""
+    session: Session = seeded_db["session"]
+    other = session.query(User).filter(User.id != employee.id).first()
+    assert other is not None
+    lead = Lead(
+        community_name="员工归因优先级线索",
+        referrer_id=employee.id,
+        broker_inviter_employee_id=other.id,
+        store_owner_employee_id=other.id,
+    )
+    session.add(lead)
+    session.commit()
+
+    resp = admin_client.get(f"{API}/leads?keyword=员工归因优先级线索")
+    assert resp.status_code == 200, resp.text
+    item = next(row for row in resp.json()["items"] if row["id"] == lead.id)
+    assert item["employee_attribution_id"] == employee.id
+    assert item["employee_attribution_name"] == "归属员工"
+
+
 def test_attribution_change_writes_audit_log(
     admin_client: TestClient,
     employee: User,

@@ -174,7 +174,7 @@ test("已合并门店详情只读并展示合并去向", async ({ page }) => {
   await expect(page.getByText("该门店已合并，只读不可编辑")).toBeVisible();
   await expect(page.getByText(`原门店编号：OLD-${MARK}`)).toBeVisible();
   await expect(page.getByText("合并去向：")).toBeVisible();
-  await expect(page.getByRole("link", { name: seeded.merged_to_store_id })).toBeVisible();
+  await expect(page.getByRole("link", { name: seeded.normal_store_name })).toBeVisible();
   await expect(page.getByRole("link", { name: "编辑门店" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "合并到保留门店" })).toHaveCount(0);
 });

@@ -44,13 +44,28 @@ const STATUS_LEGEND: Array<{ code: string; label: string }> = [
   { code: "terminated", label: "终止" },
 ];
 
+const REVIEW_LABELS: Record<string, string> = {
+  pending: "待审核",
+  approved: "已转正",
+  rejected: "已驳回",
+};
+
 function infoWindowHtml(point: MapPoint): string {
+  const coordinateHint = point.has_coordinate
+    ? ""
+    : `<br/><a href="/admin/merchant/stores/${encodeURIComponent(point.id)}" style="color:var(--color-rust)">坐标缺失，去补全</a>`;
+  const lastVisit = point.last_visit_at
+    ? new Date(point.last_visit_at).toLocaleDateString("zh-CN")
+    : "暂无";
   return [
     `<div style="font-size:13px;line-height:1.6">`,
     `<b>${escapeHtml(point.store_name)}</b><br/>`,
     `${escapeHtml(point.company_name)}<br/>`,
+    `${escapeHtml(point.address)}<br/>`,
     `${escapeHtml(point.district)} · ${escapeHtml(point.business_circle)}<br/>`,
-    `经纪人 ${escapeHtml(point.broker_count)} · ${escapeHtml(point.cooperation_status_label)}`,
+    `经纪人 ${escapeHtml(point.broker_count)} · ${escapeHtml(point.cooperation_status_label)} · 审核 ${escapeHtml(REVIEW_LABELS[point.review_status] ?? point.review_status)}<br/>`,
+    `最近拜访 ${escapeHtml(lastVisit)}`,
+    coordinateHint,
     `</div>`,
   ].join("");
 }

@@ -27,6 +27,7 @@ from schemas.merchant import (
     BindingApprovalRequest,
     BrokerAdminCreate,
     BrokerAdminUpdate,
+    BrokerBindingListResponse,
     BrokerBindingResponse,
     BrokerBindRequest,
     BrokerChangeRequest,
@@ -53,7 +54,7 @@ from schemas.merchant import (
 )
 from services.merchant.audit import add_audit_log
 from services.merchant.broker_qr import MerchantBrokerQRCodeService
-from services.merchant.scope import visible_store_ids
+from services.merchant.scope import ensure_store_visible, is_full_scope, visible_store_ids
 from services.merchant.serializers import (
     broker_binding_response,
     broker_list_item,
@@ -246,6 +247,9 @@ class MerchantBrokerService:
         before = self._snapshot(broker)
         broker.phone = user.phone
         broker.phone_hash = hash_phone(user.phone)
+        # 换号后按新手机号重新匹配招募线索（旧号关联可能已失效，不保留陈旧关系）
+        broker.recruit_lead_id = None
+        self._match_recruit_lead(broker)
         add_audit_log(
             self.db,
             user_id=str(user.id),
@@ -475,7 +479,7 @@ class MerchantBrokerService:
             self._activate_binding(
                 broker,
                 store,
-                bind_source=MerchantBindSource.QRCODE.value,
+                bind_source=MerchantBindSource.MANUAL.value,
                 inviter_employee_id=broker.inviter_employee_id,
                 approved_by=None,
             )
@@ -494,6 +498,41 @@ class MerchantBrokerService:
             .all()
         )
         return [broker_binding_response(row) for row in rows]
+
+    def history_for_admin(
+        self,
+        user: User,
+        broker_id: str,
+        *,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> BrokerBindingListResponse:
+        """后台查看指定经纪人的绑定历史（分页，按申请时间倒序）."""
+        broker = self.db.query(MerchantBroker).filter(MerchantBroker.id == broker_id).first()
+        if broker is None:
+            msg = "经纪人不存在"
+            raise ResourceNotFoundError(msg)
+        if broker.store_id:
+            store = self.db.query(MerchantStore).filter(MerchantStore.id == broker.store_id).first()
+            if store is not None:
+                ensure_store_visible(self.db, user, store)
+        elif not is_full_scope(user):
+            msg = "无权查看该经纪人"
+            raise PermissionDeniedError(msg)
+        query = self.db.query(MerchantBrokerBinding).filter(MerchantBrokerBinding.broker_id == broker.id)
+        total = query.count()
+        rows = (
+            query.order_by(MerchantBrokerBinding.applied_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+        return BrokerBindingListResponse(
+            items=[broker_binding_response(row) for row in rows],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
 
     def search_active_companies(
         self,
@@ -974,8 +1013,6 @@ class MerchantBrokerService:
         if store is None or store.is_deleted:
             msg = "门店不存在"
             raise ResourceNotFoundError(msg)
-        from services.merchant.scope import ensure_store_visible
-
         ensure_store_visible(self.db, user, store)
         return [self._response(row) for row in self.effective_brokers_for_store(store_id)]
 

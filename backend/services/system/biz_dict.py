@@ -200,7 +200,7 @@ def _load_items(db: Session, dict_code: str) -> list[BizDictItem]:
     return (
         db.query(BizDictItem)
         .filter(BizDictItem.dict_code == dict_code)
-        .order_by(BizDictItem.sort_order.asc(), BizDictItem.code.asc())
+        .order_by(BizDictItem.sort_order.asc(), BizDictItem.created_at.asc(), BizDictItem.code.asc())
         .all()
     )
 
@@ -268,7 +268,7 @@ def get_public_items(db: Session, dict_code: str) -> PublicDictListResponse:
     rows = (
         db.query(BizDictItem)
         .filter(BizDictItem.dict_code == dict_code, BizDictItem.enabled.is_(True))
-        .order_by(BizDictItem.sort_order.asc(), BizDictItem.code.asc())
+        .order_by(BizDictItem.sort_order.asc(), BizDictItem.created_at.asc(), BizDictItem.code.asc())
         .all()
     )
     response = PublicDictListResponse(
@@ -485,6 +485,9 @@ def update_item(
         item.sort_order = req.sort_order
     if req.enabled is not None:
         item.enabled = req.enabled
+    if dict_code in MERCHANT_DICT_CODES and (req.business_form is not None or req.category is not None):
+        msg = "商户字典不支持编辑文书分类字段"
+        raise ValidationError(msg)
     if req.business_form is not None:
         item.business_form = req.business_form
     if req.category is not None:
@@ -623,7 +626,7 @@ def get_document_templates(db: Session, business_form: BusinessForm | None) -> l
             BizDictItem.enabled.is_(True),
             BizDictItem.business_form == business_form.value,
         )
-        .order_by(BizDictItem.sort_order.asc(), BizDictItem.code.asc())
+        .order_by(BizDictItem.sort_order.asc(), BizDictItem.created_at.asc(), BizDictItem.code.asc())
         .all()
     )
     if not rows:

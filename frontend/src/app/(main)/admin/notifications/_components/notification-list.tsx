@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useSWR from "swr";
 import { BellOff, CheckCheck, Sliders } from "lucide-react";
@@ -11,6 +11,8 @@ import type {
 } from "@/components/notifications/shared";
 import { CATEGORY_LABELS, DISPLAY_CATEGORIES } from "@/components/notifications/shared";
 import { NotificationItem } from "@/components/notifications/notification-item";
+import { hasPathPermission } from "@/lib/auth/permissions";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 20;
 
@@ -34,6 +36,23 @@ export function NotificationList({ initialList, initialUnread }: NotificationLis
   const [days, setDays] = useState<number>(0);
   const [page, setPage] = useState(1);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    // REQ-M14-005 BR-M14-019：跳转前校验目标权限，先取当前用户有效权限集
+    let cancelled = false;
+    fetch("/api/v1/auth/me", { credentials: "include", headers: { "X-Requested-With": "XMLHttpRequest" } })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((me: { permissions?: string[] } | null) => {
+        if (!cancelled) setPermissions(me?.permissions ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setPermissions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const query = {
     page,
@@ -107,10 +126,14 @@ export function NotificationList({ initialList, initialUnread }: NotificationLis
       }
       // 按 action_type 跳转（route 类型才有地址）
       if (item.action_type === "route" && item.action_url) {
+        if (!hasPathPermission(item.action_url, permissions)) {
+          toast.error("无权访问该通知对应的页面，请联系管理员");
+          return;
+        }
         router.push(item.action_url);
       }
     },
-    [mutate, mutateUnread, router],
+    [mutate, mutateUnread, permissions, router],
   );
 
   const readAll = useCallback(async () => {

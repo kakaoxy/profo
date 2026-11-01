@@ -172,6 +172,7 @@ def broker_response(broker: MerchantBroker, *, store_name: str | None = None) ->
         bound_at=broker.bound_at,
         unbound_at=broker.unbound_at,
         remark=broker.remark,
+        recruit_lead_id=str(broker.recruit_lead_id) if broker.recruit_lead_id else None,
         created_at=broker.created_at,
         updated_at=broker.updated_at,
     )
@@ -235,6 +236,7 @@ def broker_list_item(
         bind_status=broker.bind_status,
         source=broker.source,
         inviter_employee_id=str(broker.inviter_employee_id) if broker.inviter_employee_id else None,
+        recruit_lead_id=str(broker.recruit_lead_id) if broker.recruit_lead_id else None,
         recommendation_count=recommendation_count,
         updated_at=broker.updated_at,
     )

@@ -176,6 +176,7 @@ def test_map_points_stats_and_missing_coordinate(
         status="normal",
         review_status="approved",
         is_deleted=False,
+        last_visit_at=datetime.now(timezone.utc),
     )
     session.add(missing)
     session.commit()
@@ -191,6 +192,22 @@ def test_map_points_stats_and_missing_coordinate(
     assert missing_point["lng"] is None
     assert body["stats"]["store_count"] == 2
     assert body["stats"]["broker_count"] == 1
+    # REQ-M09-005：最近拜访时间倒序，无拜访记录的门店排在最后
+    assert body["points"][0]["id"] == missing.id
+
+
+def test_map_skips_non_gcj02_store(admin_client: TestClient, employee: User, seeded_db: dict) -> None:
+    """REQ-M09-001：非 GCJ-02 坐标的门店不打点."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    session: Session = seeded_db["session"]
+    session.query(MerchantStore).filter(MerchantStore.id == store["id"]).update({"coordinate_system": "bd09"})
+    session.commit()
+
+    resp = admin_client.get(f"{API}/admin/merchant/map/stores")
+    assert resp.status_code == 200, resp.text
+    ids = [point["id"] for point in resp.json()["points"]]
+    assert store["id"] not in ids
 
 
 def test_employee_track_ordered_and_audited(

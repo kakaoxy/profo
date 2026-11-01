@@ -315,3 +315,27 @@ def add_merchant_visit_client_request_id(engine: Engine) -> None:
                     "ON merchant_visits (client_request_id)",
                 ),
             )
+
+
+# fmt: off
+def add_lead_client_request_id(engine: Engine) -> None:
+    """v113：leads 补 client_request_id 列与索引（线索重复提交幂等，幂等）.
+
+    同一创建人重复提交同一 client_request_id 时复用已创建的线索，
+    避免网络重试/重复点击产生重复线索（REQ-M08-004 分支 5）。
+    """
+    if not _column_exists(engine, "leads", "client_request_id"):
+        logger.info("迁移 v113：为 leads 补 client_request_id 列")
+        with engine.begin() as conn:
+            conn.execute(
+                text("ALTER TABLE leads ADD COLUMN client_request_id VARCHAR(64)"),
+            )
+    if not _index_exists(engine, "ix_leads_client_request_id"):
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_leads_client_request_id "
+                    "ON leads (client_request_id)",
+                ),
+            )
+# fmt: on

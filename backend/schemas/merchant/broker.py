@@ -80,6 +80,15 @@ class BrokerBindingResponse(BaseModel):
     inviter_employee_id: str | None
 
 
+class BrokerBindingListResponse(BaseModel):
+    """绑定历史分页响应（后台查看）."""
+
+    items: list[BrokerBindingResponse]
+    total: int
+    page: int
+    page_size: int
+
+
 class BrokerResponse(BaseModel):
     """经纪人档案响应."""
 
@@ -96,6 +105,7 @@ class BrokerResponse(BaseModel):
     bound_at: datetime | None
     unbound_at: datetime | None
     remark: str | None
+    recruit_lead_id: str | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -226,6 +236,7 @@ class BrokerListItem(BaseModel):
     bind_status: str
     source: str
     inviter_employee_id: str | None
+    recruit_lead_id: str | None = None
     recommendation_count: int
     updated_at: datetime
 

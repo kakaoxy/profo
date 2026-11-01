@@ -119,7 +119,7 @@ export type PermissionCode = (typeof PERMISSION_CODES)[keyof typeof PERMISSION_C
  *
  * 未在此列表中的路径对所有后台角色（admin/operator/user）开放。
  */
-export const PATH_PERMISSION_MAP: ReadonlyArray<{
+const PATH_PERMISSION_ENTRIES: Array<{
   prefix: string;
   permission: string;
   exact?: boolean;
@@ -181,6 +181,16 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
   { prefix: "/admin/users", permission: PERMISSION_CODES.USER_READ },
 ];
 
+/**
+ * 运行时按 prefix 长度降序排序，保证更长更具体的路径先匹配（REQ-M12-002 / V01-08）。
+ * 手工维护顺序容易漏改，排序后新增条目无需关心插入位置。
+ */
+export const PATH_PERMISSION_MAP: ReadonlyArray<{
+  prefix: string;
+  permission: string;
+  exact?: boolean;
+}> = [...PATH_PERMISSION_ENTRIES].sort((a, b) => b.prefix.length - a.prefix.length);
+
 // ─── 辅助函数 ──────────────────────────────────────────────────────────────────
 
 /**
@@ -188,7 +198,7 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
  * 非受限路径返回 true（对所有后台角色开放）。
  *
  * 匹配规则：按 PATH_PERMISSION_MAP 顺序，命中第一个 prefix 即返回对应权限校验结果。
- * 由于 PATH_PERMISSION_MAP 已按 prefix 长度降序排列，更长更具体的路径优先匹配。
+ * PATH_PERMISSION_MAP 在模块加载时按 prefix 长度降序排序，更长更具体的路径优先匹配。
  *
  * `exact: true` 的项仅精确匹配 prefix（`pathname === prefix`），不匹配子路径——
  * 用于"列表页需权限、详情页放行"的场景。

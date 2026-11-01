@@ -240,6 +240,10 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
               {/* 员工归因（V06 / BR-M07-021）：门店归属员工 / 经纪人邀请员工 */}
               <td className="hidden px-2.5 py-2.5 align-middle xl:table-cell">
                 <div className="space-y-0.5 text-[12px] leading-tight">
+                  <div className="truncate text-ink">
+                    <span className="text-graphite">员 </span>
+                    {lead.employeeAttributionName || "无员工归因"}
+                  </div>
                   <div className="truncate text-ash">
                     <span className="text-graphite">门 </span>
                     {lead.storeOwnerName || "—"}

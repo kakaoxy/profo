@@ -1,8 +1,10 @@
 """电子合作协议服务（V05）：模板、发起、审核、签署、归档、作废与到期事件."""
 
-from datetime import datetime, timedelta, timezone
+import logging
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import Request
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from models.merchant import (
@@ -30,6 +32,8 @@ from services.merchant.agreement_pdf import generate_agreement_pdf
 from services.merchant.audit import add_audit_log
 from services.merchant.scope import ensure_scope_role, ensure_store_visible, store_scope_condition
 from services.merchant.store import MerchantStoreService
+from services.notification import Audience, EventType
+from services.notification.service import NotificationEvent, NotificationService
 from services.system.exceptions import (
     ConflictError,
     PermissionDeniedError,
@@ -37,6 +41,8 @@ from services.system.exceptions import (
     ValidationError,
 )
 from utils.formatters import mask_phone
+
+logger = logging.getLogger(__name__)
 
 STATUS_NOT_INITIATED = "not_initiated"
 STATUS_PENDING_SIGN = "pending_sign"
@@ -231,9 +237,9 @@ class MerchantAgreementService:
     ) -> AgreementResponse:
         """运营审核：通过进入待签署；驳回退回发起人."""
         agreement = self._get_agreement(agreement_id)
+        # REQ-M04-009 分支：重复审核幂等返回当前结果，而非报错
         if agreement.review_status != REVIEW_PENDING:
-            msg = "该协议已审核，不能重复审核"
-            raise ConflictError(msg)
+            return self._response(agreement)
         if agreement.status in {STATUS_VOIDED, STATUS_SIGNED, STATUS_EXPIRED}:
             msg = "当前协议状态不可审核"
             raise ValidationError(msg)
@@ -260,6 +266,28 @@ class MerchantAgreementService:
         )
         self.db.commit()
         self.db.refresh(agreement)
+        # 驳回后通知发起人（站内信，best-effort：通知失败不影响审核结果）
+        if not req.approve and agreement.created_by_id:
+            try:
+                NotificationService(self.db).emit(
+                    NotificationEvent(
+                        type=EventType.MERCHANT_AGREEMENT_REVIEWED,
+                        audience=Audience(user_ids=(str(agreement.created_by_id),)),
+                        fields={
+                            "agreement_id": str(agreement.id),
+                            "subject_name": agreement.agreement_no or "合作协议",
+                            "review_status": agreement.review_status,
+                            "review_label": "审核驳回",
+                            "remark": req.remark or "无",
+                        },
+                        dedupe_fields={"agreement_id": str(agreement.id), "review_status": agreement.review_status},
+                        source_module="merchant",
+                        source_id=str(agreement.id),
+                        created_by=operator_id,
+                    )
+                )
+            except Exception:  # 通知为 best-effort，不阻断审核事务
+                logger.exception("协议驳回通知发送失败 agreement_id=%s", agreement.id)
         return self._response(agreement)
 
     # -------------------- 签署/扫描件/作废 --------------------
@@ -281,6 +309,8 @@ class MerchantAgreementService:
             expected_name=agreement.signer_name,
             expected_phone=agreement.signer_phone,
             privileged=privileged,
+            reason=req.reason,
+            require_proxy_reason=True,
         )
         template = self._get_template(agreement.template_id or "")
         store, company = self._subject_entities(agreement)
@@ -336,6 +366,8 @@ class MerchantAgreementService:
             expected_name=agreement.signer_name,
             expected_phone=agreement.signer_phone,
             privileged=privileged,
+            reason=req.reason,
+            require_proxy_reason=True,
         )
         before = self._snapshot(agreement)
         agreement.file_url = req.file_url
@@ -350,7 +382,7 @@ class MerchantAgreementService:
             resource_type="merchant_agreement",
             resource_id=str(agreement.id),
             before=before,
-            after=self._snapshot(agreement),
+            after=self._snapshot(agreement) | ({"sign_reason": req.reason} if req.reason else {}),
             request=request,
         )
         self.db.commit()
@@ -447,6 +479,8 @@ class MerchantAgreementService:
         company_id: str | None = None,
         status: str | None = None,
         agreement_no: str | None = None,
+        expire_from: date | None = None,
+        expire_to: date | None = None,
     ) -> AgreementListResponse:
         """协议分页列表（按门店数据范围过滤，公司主体仅 privileged 可见）."""
         privileged = ensure_scope_role(user)
@@ -468,9 +502,22 @@ class MerchantAgreementService:
             query = query.filter(MerchantAgreement.status == status)
         if agreement_no:
             query = query.filter(MerchantAgreement.agreement_no.ilike(f"%{agreement_no}%"))
+        if expire_from is not None:
+            query = query.filter(func.date(MerchantAgreement.expire_at) >= expire_from)
+        if expire_to is not None:
+            query = query.filter(func.date(MerchantAgreement.expire_at) <= expire_to)
 
         total = query.count()
-        rows = query.order_by(MerchantAgreement.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        # BR-M04-022：默认按签署时间倒序（未签署的按创建时间兜底）
+        rows = (
+            query.order_by(
+                MerchantAgreement.signed_at.desc().nulls_last(),
+                MerchantAgreement.created_at.desc(),
+            )
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
         return AgreementListResponse(
             items=[self._response(row) for row in rows],
             total=total,
@@ -623,14 +670,21 @@ class MerchantAgreementService:
         expected_name: str | None,
         expected_phone: str | None,
         privileged: bool,
+        reason: str | None = None,
+        require_proxy_reason: bool = False,
     ) -> None:
-        """签署人必须与主体联系人一致；运营可授权代签."""
+        """签署人必须与主体联系人一致；运营代签须填写代签原因."""
         if not expected_name or not expected_phone:
             return
         name_ok = signer_name.strip() == expected_name.strip()
         phone_ok = signer_phone.replace(" ", "").replace("-", "") == expected_phone.replace(" ", "").replace("-", "")
-        if not (name_ok and phone_ok) and not privileged:
+        if name_ok and phone_ok:
+            return
+        if not privileged:
             msg = "签署人必须为门店/公司联系人；如需代签请联系运营"
+            raise ValidationError(msg)
+        if require_proxy_reason and not (reason or "").strip():
+            msg = "代签必须填写代签原因"
             raise ValidationError(msg)
 
     def _link_store_cooperation(

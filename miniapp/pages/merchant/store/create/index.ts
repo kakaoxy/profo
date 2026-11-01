@@ -467,6 +467,11 @@ Page({
       }
     }
 
+    if (mode !== "create" && changeType !== "edit" && !changeReason.trim()) {
+      wx.showToast({ title: "请填写变更原因", icon: "none" });
+      return;
+    }
+
     const photos = form.photos.map(({ displayUrl: _displayUrl, ...photo }) => photo);
     this.setData({ submitting: true });
     try {

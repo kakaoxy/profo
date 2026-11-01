@@ -116,6 +116,8 @@ export interface Lead {
   storeOwnerName?: string;
   brokerInviterEmployeeId?: string;
   brokerInviterName?: string;
+  employeeAttributionId?: string;
+  employeeAttributionName?: string;
   /** 归属完整性：complete/missing_store/missing_broker/missing_store_broker/missing_referrer/none */
   attributionStatus?: string;
   lastFollowUpAt?: string;

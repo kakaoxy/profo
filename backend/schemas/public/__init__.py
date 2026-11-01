@@ -378,6 +378,7 @@ class PublicLeadCreate(BaseModel):
     expected_price: float | None = Field(None, gt=0, description="业主心理预期价(万)，选填")
     images: list[str] = Field(default_factory=list, max_length=6, description="户型图URL列表")
     referrer: str | None = Field(None, max_length=36, description="分享归属员工ID")
+    client_request_id: str | None = Field(None, max_length=64, description="客户端幂等键")
 
     # ===== 楼盘字典四级地址（与 admin 新增线索同口径：小区必填、楼栋/户室选填）=====
     building_id: int | None = Field(None, description="字典楼栋ID（选填）")

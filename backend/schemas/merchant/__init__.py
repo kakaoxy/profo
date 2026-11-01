@@ -6,7 +6,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 StorePhotoType = Literal["head", "interior", "other"]
 StoreChangeType = Literal["edit", "correct", "relocate"]
@@ -117,6 +117,18 @@ class MerchantStoreUpdate(BaseModel):
     remark: str | None = Field(default=None, max_length=500)
     change_type: StoreChangeType = Field(default="edit", description="变更类型：edit/correct/relocate")
     change_reason: str | None = Field(default=None, max_length=500, description="变更/搬迁原因")
+    expected_updated_at: datetime | None = Field(default=None, description="乐观锁：加载时的 updated_at")
+
+    @field_validator("change_reason")
+    @classmethod
+    def _strip_change_reason(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            msg = "变更原因不能为空"
+            raise ValueError(msg)
+        return stripped
 
 
 class MerchantStoreResponse(BaseModel):
@@ -270,6 +282,15 @@ class MerchantStoreStatusChangeRequest(BaseModel):
     target_status: Literal["not_cooperated", "negotiating", "cooperated", "paused", "terminated"]
     reason: str = Field(min_length=1, max_length=500, description="变更原因")
 
+    @field_validator("reason")
+    @classmethod
+    def _strip_reason(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            msg = "变更原因不能为空"
+            raise ValueError(msg)
+        return stripped
+
 
 class MerchantStoreActivationRequest(BaseModel):
     """门店停用/启用请求（REQ-M11-003：状态 正常 ↔ 停用）."""
@@ -286,6 +307,7 @@ class MerchantStoreStatusLogResponse(BaseModel):
     to_status: str
     reason: str
     operator_id: str | None
+    operator_name: str | None = None
     created_at: datetime
 
 
@@ -393,6 +415,8 @@ class MerchantStoreDetailResponse(BaseModel):
     store: MerchantStoreResponse
     created_by_broker_name: str | None = None
     inviter_employee_name: str | None = None
+    merged_to_store_name: str | None = None
+    owner_employee_name: str | None = None
     brokers: list[dict] = Field(default_factory=list)
     visits: MerchantVisitListResponse
     agreements: list[dict] = Field(default_factory=list)
@@ -423,6 +447,7 @@ from .broker import (  # noqa: E402
     BindingApprovalRequest,
     BrokerAdminCreate,
     BrokerAdminUpdate,
+    BrokerBindingListResponse,
     BrokerBindingResponse,
     BrokerBindRequest,
     BrokerChangeRequest,
@@ -479,6 +504,7 @@ __all__ = [
     "BrokerAdminCreate",
     "BrokerAdminUpdate",
     "BrokerBindRequest",
+    "BrokerBindingListResponse",
     "BrokerBindingResponse",
     "BrokerChangeRequest",
     "BrokerCompanyOption",

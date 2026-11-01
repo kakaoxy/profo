@@ -51,6 +51,11 @@ const MAX_AREA = 100000;
 /** 预期价合理上限（万），防恶意超大数值. */
 const MAX_EXPECTED_PRICE = 10000000;
 
+/** 线索提交幂等键：同一页面会话内网络重试/重复点击复用同一键（REQ-M08-004 分支 5）. */
+function newLeadRequestId(): string {
+  return `lead-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 /** wx.uploadFile 单次上传结果. */
 interface UploadResult {
   statusCode: number;
@@ -171,6 +176,8 @@ interface PageCustom {
   onShareTimeline(): WechatMiniprogram.Page.ICustomTimelineContent;
   /** 「授权价提醒」订阅模板 ID（后端未配置/取数失败为 null，提交时跳过授权弹窗）. */
   subscribeTemplateId: string | null;
+  /** 线索提交幂等键（进入页面生成，重复提交复用）. */
+  clientRequestId: string;
   /** 表单校验通过后执行实际提交（订阅授权弹窗结束后由回调进入）. */
   performSubmit(body: PublicLeadCreate): void;
   /** 字典选择器回传的新增待审载荷（提交线索时一并透传，由后端同事务写审核池）. */
@@ -229,6 +236,7 @@ Page<PageData, PageCustom>({
   },
 
   onLoad(options: Record<string, string | undefined>) {
+    this.clientRequestId = newLeadRequestId();
     // 预取「授权价提醒」订阅模板 ID（静默失败置 null，提交时跳过授权弹窗）
     fetchValuationSubscribeTemplate().then((templateId) => {
       this.subscribeTemplateId = templateId;
@@ -370,6 +378,7 @@ Page<PageData, PageCustom>({
   leadCountTimer: null,
 
   subscribeTemplateId: null,
+  clientRequestId: "",
 
   brokerStoreConfirmed: false,
 
@@ -806,6 +815,8 @@ Page<PageData, PageCustom>({
       referrer: this.data.referrer || undefined,
       // 重复线索二次确认（409 后由用户确认置 true 重提）
       confirm_duplicate: false,
+      // 幂等键：同一页面会话重复提交复用，避免网络重试产生重复线索
+      client_request_id: this.clientRequestId || undefined,
     };
 
     // 订阅授权（授权价提醒）：必须在 tap 手势回调内同步发起弹窗，

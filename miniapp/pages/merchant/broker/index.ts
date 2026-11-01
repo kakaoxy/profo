@@ -344,6 +344,11 @@ Page({
     wx.navigateTo({ url: "/pages/merchant/broker/store-create/index" });
   },
 
+  onSkipBind() {
+    // REQ-M05-006 三选一：暂不绑定即保持独立经纪人状态
+    wx.showToast({ title: "已作为独立经纪人使用", icon: "none" });
+  },
+
   onOpenBind() {
     this.setData({
       storePanelOpen: true,

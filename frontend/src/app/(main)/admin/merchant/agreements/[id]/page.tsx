@@ -41,9 +41,16 @@ export default function MerchantAgreementDetailPage() {
   const [scanFileName, setScanFileName] = useState("");
   const [scanSignerName, setScanSignerName] = useState("");
   const [scanSignerPhone, setScanSignerPhone] = useState("");
+  const [scanReason, setScanReason] = useState("");
   const [scanSignedDate, setScanSignedDate] = useState("");
   const [uploading, setUploading] = useState(false);
   const [savingScan, setSavingScan] = useState(false);
+  const [supplementOpen, setSupplementOpen] = useState(false);
+  const [supplementRemark, setSupplementRemark] = useState("");
+  const [supplementFileUrl, setSupplementFileUrl] = useState("");
+  const [supplementFileName, setSupplementFileName] = useState("");
+  const [uploadingSupplement, setUploadingSupplement] = useState(false);
+  const [savingSupplement, setSavingSupplement] = useState(false);
 
   const load = async () => {
     if (!agreementId) return;
@@ -73,7 +80,86 @@ export default function MerchantAgreementDetailPage() {
     setScanOpen(true);
   };
 
+  const MAX_SCAN_FILE_BYTES = 10 * 1024 * 1024;
+
+  const openSupplement = () => {
+    setSupplementRemark("");
+    setSupplementFileUrl("");
+    setSupplementFileName("");
+    setSupplementOpen(true);
+  };
+
+  const uploadSupplementFile = async (file: File) => {
+    const extOk = /\.(pdf|jpe?g|png)$/i.test(file.name);
+    if (!extOk) {
+      setError("补充协议仅支持 PDF、JPG、PNG 格式");
+      return;
+    }
+    if (file.size > MAX_SCAN_FILE_BYTES) {
+      setError("补充协议文件大小不能超过 10MB");
+      return;
+    }
+    setUploadingSupplement(true);
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/v1/files/upload", {
+        method: "POST",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+        credentials: "include",
+        body: form,
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(body.message ?? "文件上传失败");
+        return;
+      }
+      setSupplementFileUrl(body.url);
+      setSupplementFileName(file.name);
+    } catch {
+      setError("文件上传失败，请重试");
+    } finally {
+      setUploadingSupplement(false);
+    }
+  };
+
+  const submitSupplement = async () => {
+    if (!supplementRemark.trim()) {
+      setError("请填写补充说明");
+      return;
+    }
+    setSavingSupplement(true);
+    setError("");
+    try {
+      await merchantApi(`/admin/merchant/agreements/${agreementId}/supplements`, {
+        method: "POST",
+        body: JSON.stringify({
+          remark: supplementRemark.trim(),
+          file_url: supplementFileUrl || null,
+        }),
+      });
+      setSupplementOpen(false);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "新增补充协议失败");
+    } finally {
+      setSavingSupplement(false);
+    }
+  };
+
   const uploadScanFile = async (file: File) => {
+    // 扫描件仅允许 PDF/JPG/PNG，且不超过 10MB（REQ-M04-004 分支 1）
+    const extOk = /\.(pdf|jpe?g|png)$/i.test(file.name);
+    const mimeOk = ["application/pdf", "image/jpeg", "image/png"].includes(file.type);
+    if (!extOk && !mimeOk) {
+      setError("扫描件仅支持 PDF、JPG、PNG 格式");
+      return;
+    }
+    if (file.size > MAX_SCAN_FILE_BYTES) {
+      setError("扫描件大小不能超过 10MB");
+      return;
+    }
     setUploading(true);
     setError("");
     try {
@@ -114,6 +200,7 @@ export default function MerchantAgreementDetailPage() {
           file_url: scanFileUrl,
           signer_name: scanSignerName.trim(),
           signer_phone: scanSignerPhone.trim(),
+          reason: scanReason.trim() || null,
           signed_at: scanSignedDate ? new Date(`${scanSignedDate}T12:00:00+08:00`).toISOString() : null,
         }),
       });
@@ -211,6 +298,18 @@ export default function MerchantAgreementDetailPage() {
               </div>
             </Card>
 
+            <Card className="rounded-cards border-0 shadow-steep-sm p-5">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-ink">补充协议与附件</p>
+                  <p className="mt-1 text-[13px] text-graphite">补充协议独立归档并关联原协议；支持 PDF/JPG/PNG。</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={openSupplement}>
+                  新增补充协议
+                </Button>
+              </div>
+            </Card>
+
             {agreement.attachment_urls.length || agreement.supplement_agreement_ids.length ? (
               <Card className="rounded-cards border-0 shadow-steep-sm p-5">
                 {agreement.attachment_urls.length ? (
@@ -283,6 +382,9 @@ export default function MerchantAgreementDetailPage() {
                 inputMode="tel"
               />
             </Field>
+            <Field label="代签原因" hint="签署人与门店/公司联系人信息不一致时必填">
+              <Input value={scanReason} onChange={(event) => setScanReason(event.target.value)} />
+            </Field>
             <Field label="签署日期">
               <Input
                 type="date"
@@ -295,6 +397,39 @@ export default function MerchantAgreementDetailPage() {
                 {savingScan ? "提交中…" : "提交归档"}
               </Button>
               <Button variant="outline" onClick={() => setScanOpen(false)}>
+                取消
+              </Button>
+            </div>
+          </Card>
+        ) : null}
+
+        {supplementOpen ? (
+          <Card className="rounded-cards border-0 shadow-steep-sm fixed inset-0 z-50 m-auto flex h-fit max-h-[85vh] w-[min(560px,92vw)] flex-col gap-3 overflow-y-auto p-5">
+            <div className="text-sm font-medium">新增补充协议</div>
+            <Field label="补充说明" required>
+              <Input
+                value={supplementRemark}
+                onChange={(event) => setSupplementRemark(event.target.value)}
+                placeholder="例如：延长租期至 2027-12-31"
+              />
+            </Field>
+            <Field label="补充协议文件" hint="PDF/JPG/PNG，不超过 10MB，可留空">
+              <Input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                disabled={uploadingSupplement}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadSupplementFile(file);
+                }}
+              />
+            </Field>
+            {supplementFileName ? <p className="text-xs text-graphite">已上传：{supplementFileName}</p> : null}
+            <div className="flex gap-2">
+              <Button onClick={() => void submitSupplement()} disabled={savingSupplement || uploadingSupplement}>
+                {savingSupplement ? "提交中…" : "保存补充协议"}
+              </Button>
+              <Button variant="outline" onClick={() => setSupplementOpen(false)}>
                 取消
               </Button>
             </div>
