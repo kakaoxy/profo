@@ -248,6 +248,8 @@
 }
 
 .footer {
+  display: flex;
+  justify-content: center;
   position: fixed;
   left: 0;
   right: 0;
@@ -256,6 +258,7 @@
   background: linear-gradient(180deg, rgba(247, 247, 248, 0), var(--fog) 30%);
 }
 .footer__btn {
+  flex: 1;
   width: 100%;
 }
 

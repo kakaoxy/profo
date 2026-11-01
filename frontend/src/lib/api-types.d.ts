@@ -7436,6 +7436,8 @@ export interface paths {
         /**
          * 门店搜索
          * @description 员工可搜索本人拓展/本人拜访的门店（D9/Q48）.
+         *
+         *     REQ-IT4-02：传 origin_lng/origin_lat 时按距离由近到远排序，列表项回填 distance_m。
          */
         get: operations["search_stores_api_v1_public_merchant_stores_get"];
         put?: never;
@@ -7508,6 +7510,26 @@ export interface paths {
          * @description 员工仅可改为洽谈中；运营可改全部（Q19）.
          */
         post: operations["change_store_status_api_v1_public_merchant_stores__store_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/stores/{store_id}/status-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 合作状态可选项
+         * @description 当前用户此刻可改成哪些合作状态（REQ-IT4-05）.
+         */
+        get: operations["get_store_status_options_api_v1_public_merchant_stores__store_id__status_options_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -17074,6 +17096,11 @@ export interface components {
             /** Status */
             status: string;
             /**
+             * Distance M
+             * @description 与查询原点（origin_lng/origin_lat）的直线距离（米）；无原点或门店无坐标时为空
+             */
+            distance_m?: number | null;
+            /**
              * Created At
              * Format: date-time
              */
@@ -17296,6 +17323,35 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * MerchantStoreStatusOption
+         * @description 合作状态可选项（已按当前用户权限裁剪）.
+         */
+        MerchantStoreStatusOption: {
+            /** Code */
+            code: string;
+            /** Label */
+            label: string;
+        };
+        /**
+         * MerchantStoreStatusOptionsResponse
+         * @description 门店合作状态可选值响应（REQ-IT4-05）.
+         *
+         *     由后端统一给出「当前用户此刻能改成什么」，小程序不再自行推导 RBAC 与协议前置条件。
+         */
+        MerchantStoreStatusOptionsResponse: {
+            /** Current Status */
+            current_status: string;
+            /** Current Status Label */
+            current_status_label: string;
+            /** Items */
+            items: components["schemas"]["MerchantStoreStatusOption"][];
+            /**
+             * Reason
+             * @description 无可选项时的原因说明
+             */
+            reason?: string | null;
         };
         /**
          * MerchantStoreUpdate
@@ -39777,6 +39833,10 @@ export interface operations {
                 review_status?: string | null;
                 owner_employee_id?: string | null;
                 status?: string | null;
+                /** @description 定位经度（GCJ-02），传了即按距离升序 */
+                origin_lng?: number | null;
+                /** @description 定位纬度（GCJ-02） */
+                origin_lat?: number | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
@@ -39965,6 +40025,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MerchantStoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_store_status_options_api_v1_public_merchant_stores__store_id__status_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreStatusOptionsResponse"];
                 };
             };
             /** @description Validation Error */

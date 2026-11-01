@@ -102,8 +102,9 @@ def store_list_item(
     *,
     owner_employee_name: str | None = None,
     broker_count: int = 0,
+    distance_m: float | None = None,
 ) -> MerchantStoreListItem:
-    """门店列表项（手机号脱敏）."""
+    """门店列表项（手机号脱敏，可带与查询原点的距离）."""
     return MerchantStoreListItem(
         id=str(store.id),
         company_name=store.company_name,
@@ -124,6 +125,7 @@ def store_list_item(
         last_visit_at=store.last_visit_at,
         broker_count=broker_count,
         status=store.status,
+        distance_m=distance_m,
         created_at=store.created_at,
         updated_at=store.updated_at,
     )

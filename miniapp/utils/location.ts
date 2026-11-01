@@ -137,6 +137,46 @@ async function handleChooseFail(errMsg: string, raw: unknown): Promise<void> {
 }
 
 /**
+ * 定位结果（GCJ-02），用于门店列表按距离排序（REQ-IT4-02）.
+ */
+export interface CurrentLocation {
+  latitude: number;
+  longitude: number;
+}
+
+/**
+ * 获取当前定位（GCJ-02）.
+ *
+ * 定位不是门店列表的硬依赖：未同意隐私、拒绝授权、工具不支持等情况下直接返回 null，
+ * 由调用方回退默认排序，不做打断式弹窗。
+ */
+export function getCurrentLocation(): Promise<CurrentLocation | null> {
+  return new Promise<CurrentLocation | null>((resolve) => {
+    void needPrivacyAuthorization().then((need) => {
+      if (need) {
+        resolve(null);
+        return;
+      }
+      void isLocationScopeDenied().then((denied) => {
+        if (denied) {
+          resolve(null);
+          return;
+        }
+        wx.getLocation({
+          type: "gcj02",
+          success: (res) => resolve({ latitude: res.latitude, longitude: res.longitude }),
+          fail: (err) => {
+            console.warn("[getLocation] 失败", (err as { errMsg?: string }).errMsg || err);
+            resolve(null);
+          },
+          complete: () => undefined,
+        });
+      });
+    });
+  });
+}
+
+/**
  * 选择地图位置：预检隐私与位置授权，失败时给出可操作引导.
  * @returns 选中位置；用户取消或失败（已提示）时返回 null
  */

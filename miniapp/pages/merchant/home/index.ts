@@ -3,8 +3,10 @@
  *
  * 数据 GET /public/merchant/stores（C 端员工令牌 + merchant:read），
  * 后端按数据范围过滤（员工仅本人拓展/本人拜访门店）。
+ * REQ-IT4-02：首次进入与「刷新」会重新定位，并把定位传给后端按距离由近到远排序。
  */
 import type { components } from "../../../types/api-types";
+import { getCurrentLocation } from "../../../utils/location";
 import { request } from "../../../utils/request";
 import { getCAccessToken } from "../../../utils/token";
 
@@ -12,6 +14,9 @@ type StoreListResponse = components["schemas"]["MerchantStoreListResponse"];
 type StoreItem = components["schemas"]["MerchantStoreListItem"];
 
 type PageState = "loading" | "error" | "needLogin" | "empty" | "items";
+
+/** 列表排序原点（GCJ-02）；定位失败时为 null，后端回退默认排序. */
+let origin: { lng: number; lat: number } | null = null;
 
 interface DisplayStore {
   id: string;
@@ -23,6 +28,17 @@ interface DisplayStore {
   cooperation_status_label: string;
   review_status: string;
   lastVisitText: string;
+  distanceText: string;
+}
+
+function formatDistance(meters: number | null | undefined): string {
+  if (meters === null || meters === undefined) {
+    return "";
+  }
+  if (meters < 1000) {
+    return `${Math.round(meters)}m`;
+  }
+  return `${(meters / 1000).toFixed(1)}km`;
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -48,6 +64,7 @@ function toDisplay(item: StoreItem): DisplayStore {
     cooperation_status_label: item.cooperation_status_label,
     review_status: item.review_status,
     lastVisitText: formatDate(item.last_visit_at),
+    distanceText: formatDistance(item.distance_m),
   };
 }
 
@@ -91,11 +108,23 @@ Page({
   },
 
   onShow() {
-    this.loadStores();
+    void this.refreshLocationAndLoad();
   },
 
   onPullDownRefresh() {
-    this.loadStores().finally(() => wx.stopPullDownRefresh());
+    void this.refreshLocationAndLoad().finally(() => wx.stopPullDownRefresh());
+  },
+
+  /** 重新定位后加载列表（首次进入 / 下拉刷新 / 点「刷新」）. */
+  async refreshLocationAndLoad(): Promise<void> {
+    if (!getCAccessToken()) {
+      // 未登录不请求定位：避免在登录前弹权限询问
+      this.setData({ state: "needLogin" });
+      return;
+    }
+    const located = await getCurrentLocation();
+    origin = located ? { lng: located.longitude, lat: located.latitude } : null;
+    await this.loadStores();
   },
 
   async loadStores(): Promise<void> {
@@ -107,7 +136,13 @@ Page({
     try {
       const data = await request<StoreListResponse>({
         url: "/public/merchant/stores",
-        data: { page: 1, page_size: 50, keyword: this.data.keyword.trim() },
+        data: {
+          page: 1,
+          page_size: 50,
+          keyword: this.data.keyword.trim(),
+          origin_lng: origin?.lng,
+          origin_lat: origin?.lat,
+        },
       });
       const stores = (data.items || []).map(toDisplay);
       this.setData({
@@ -126,11 +161,16 @@ Page({
   },
 
   onSearch() {
-    this.loadStores();
+    void this.loadStores();
+  },
+
+  /** 「刷新」：重新定位（REQ-IT4-02）. */
+  onRefresh() {
+    void this.refreshLocationAndLoad();
   },
 
   onRetry() {
-    this.loadStores();
+    void this.refreshLocationAndLoad();
   },
 
   onGoLogin() {

@@ -189,6 +189,10 @@ class MerchantStoreListItem(BaseModel):
     last_visit_at: datetime | None
     broker_count: int = 0
     status: str
+    distance_m: float | None = Field(
+        default=None,
+        description="与查询原点（origin_lng/origin_lat）的直线距离（米）；无原点或门店无坐标时为空",
+    )
     created_at: datetime
     updated_at: datetime
 
@@ -311,6 +315,25 @@ class MerchantStoreStatusLogResponse(BaseModel):
     operator_id: str | None
     operator_name: str | None = None
     created_at: datetime
+
+
+class MerchantStoreStatusOption(BaseModel):
+    """合作状态可选项（已按当前用户权限裁剪）."""
+
+    code: str
+    label: str
+
+
+class MerchantStoreStatusOptionsResponse(BaseModel):
+    """门店合作状态可选值响应（REQ-IT4-05）.
+
+    由后端统一给出「当前用户此刻能改成什么」，小程序不再自行推导 RBAC 与协议前置条件。
+    """
+
+    current_status: str
+    current_status_label: str
+    items: list[MerchantStoreStatusOption]
+    reason: str | None = Field(default=None, description="无可选项时的原因说明")
 
 
 class MerchantBusinessCircleResponse(BaseModel):

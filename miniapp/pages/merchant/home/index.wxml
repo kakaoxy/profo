@@ -41,7 +41,7 @@
   <block wx:elif="{{state === 'items'}}">
     <view class="list-head">
       <text class="list-count">共 {{total}} 家</text>
-      <text class="list-refresh" bindtap="onSearch">刷新</text>
+      <text class="list-refresh" bindtap="onRefresh">刷新</text>
     </view>
     <view
       class="store-card"
@@ -60,7 +60,10 @@
       <view class="store-card__address">{{item.district}} · {{item.business_circle}} · {{item.address}}</view>
       <view class="store-card__meta">
         <text>最近拜访：{{item.lastVisitText}}</text>
-        <text class="store-card__arrow">›</text>
+        <view class="store-card__tail">
+          <text class="store-card__distance" wx:if="{{item.distanceText}}">{{item.distanceText}}</text>
+          <text class="store-card__arrow">›</text>
+        </view>
       </view>
     </view>
   </block>

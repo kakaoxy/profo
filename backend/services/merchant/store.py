@@ -7,6 +7,7 @@ from datetime import date, datetime, timezone
 from fastapi import Request
 from sqlalchemy import and_, func, inspect, or_, text
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.elements import ColumnElement
 
 from constants.merchant import (
     MerchantBindStatus,
@@ -44,6 +45,8 @@ from schemas.merchant import (
     MerchantStoreReviewRequest,
     MerchantStoreStatusChangeRequest,
     MerchantStoreStatusLogResponse,
+    MerchantStoreStatusOption,
+    MerchantStoreStatusOptionsResponse,
     MerchantStoreUpdate,
     StorePhotoItem,
 )
@@ -89,6 +92,22 @@ def haversine_m(lng1: float, lat1: float, lng2: float, lat2: float) -> int:
     d_lambda = math.radians(lng2 - lng1)
     a = math.sin(d_phi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(d_lambda / 2) ** 2
     return round(radius * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a)))
+
+
+def distance_m_expr(origin_lng: float, origin_lat: float) -> ColumnElement[float]:
+    """构造 SQL 侧 Haversine 距离表达式（米），用于 ORDER BY（REQ-IT4-02）.
+
+    距离排序必须在数据库完成：只在 Python 里排当前页会让翻页顺序错乱。
+    门店坐标为空（存量门店可能没取点）时表达式结果为 NULL，由调用方 `.nullslast()` 排到末尾。
+    """
+    radius = 6371000.0
+    lat_rad = func.radians(MerchantStore.lat)
+    d_lat = lat_rad - math.radians(origin_lat)
+    d_lng = func.radians(MerchantStore.lng) - math.radians(origin_lng)
+    cos_lat = math.cos(math.radians(origin_lat))
+    a = func.power(func.sin(d_lat / 2), 2) + cos_lat * func.cos(lat_rad) * func.power(func.sin(d_lng / 2), 2)
+    # least(...,1) 兜住浮点误差导致的 asin 域外值
+    return 2 * radius * func.asin(func.sqrt(func.least(a, 1.0)))
 
 
 def _photo_json(photos: Sequence[StorePhotoItem]) -> list[dict]:
@@ -309,8 +328,14 @@ class MerchantStoreService:
         broker_count_max: int | None = None,
         created_from: date | None = None,
         created_to: date | None = None,
+        origin_lng: float | None = None,
+        origin_lat: float | None = None,
     ) -> MerchantStoreListResponse:
-        """门店分页搜索（按数据范围过滤，默认排除已合并/已搬迁/已删除）."""
+        """门店分页搜索（按数据范围过滤，默认排除已合并/已搬迁/已删除）.
+
+        传入 ``origin_lng`` + ``origin_lat`` 时按与原点距离升序排序（REQ-IT4-02），
+        并在列表项回填 ``distance_m``；未传时维持 ``updated_at`` 倒序。
+        """
         ensure_scope_role(user)
         labels = cooperation_label_map(self.db)
         owner_name = func.coalesce(User.nickname, User.username)
@@ -380,7 +405,12 @@ class MerchantStoreService:
                 query = query.filter(func.coalesce(broker_counts.c.cnt, 0) <= broker_count_max)
 
         total = query.count()
-        rows = query.order_by(MerchantStore.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        origin = (origin_lng, origin_lat) if origin_lng is not None and origin_lat is not None else None
+        if origin is not None:
+            order_by = (distance_m_expr(origin[0], origin[1]).asc().nullslast(), MerchantStore.updated_at.desc())
+        else:
+            order_by = (MerchantStore.updated_at.desc(),)
+        rows = query.order_by(*order_by).offset((page - 1) * page_size).limit(page_size).all()
         store_ids = [store.id for store, _ in rows]
         broker_counts: dict[str, int] = {}
         if store_ids:
@@ -400,6 +430,11 @@ class MerchantStoreService:
                     labels,
                     owner_employee_name=name,
                     broker_count=broker_counts.get(store.id, 0),
+                    distance_m=(
+                        haversine_m(origin[0], origin[1], float(store.lng), float(store.lat))
+                        if origin is not None and store.lng is not None and store.lat is not None
+                        else None
+                    ),
                 )
                 for store, name in rows
             ],
@@ -1060,6 +1095,49 @@ class MerchantStoreService:
         self.db.commit()
         self.db.refresh(store)
         return store_response(store, cooperation_label_map(self.db))
+
+    def cooperation_status_options(self, user: User, store_id: str) -> MerchantStoreStatusOptionsResponse:
+        """合作状态可选值（REQ-IT4-05）.
+
+        与 ``change_cooperation_status`` 共用同一套规则裁剪，小程序只渲染不再自行推导权限：
+        已合并/已搬迁不可变更；无全量权限的员工只能改为「洽谈中」；「已合作」需已有已签协议。
+        """
+        store = self._get_store(store_id)
+        ensure_store_visible(self.db, user, store)
+        labels = cooperation_label_map(self.db)
+        items: list[MerchantStoreStatusOption] = []
+        reason: str | None = None
+        if store.status in {MerchantStoreStatus.MERGED.value, MerchantStoreStatus.RELOCATED.value}:
+            reason = "当前门店状态不允许变更合作状态"
+        else:
+            privileged = ensure_scope_role(user)
+            signed = self._has_signed_agreement(store.id)
+            for code, label in self._active_cooperation_items():
+                if code == store.cooperation_status:
+                    continue
+                if not privileged and code != MerchantCooperationStatus.NEGOTIATING.value:
+                    continue
+                if code == MerchantCooperationStatus.COOPERATED.value and not signed:
+                    continue
+                items.append(MerchantStoreStatusOption(code=code, label=label))
+            if not items:
+                reason = "员工仅可改为洽谈中，当前已是可选的最终状态" if not privileged else "暂无可变更的合作状态"
+        return MerchantStoreStatusOptionsResponse(
+            current_status=store.cooperation_status,
+            current_status_label=labels.get(store.cooperation_status, store.cooperation_status),
+            items=items,
+            reason=reason,
+        )
+
+    def _active_cooperation_items(self) -> list[tuple[str, str]]:
+        """启用中的合作状态字典项（按排序值升序）."""
+        rows = (
+            self.db.query(BizDictItem.code, BizDictItem.label)
+            .filter(BizDictItem.dict_code == COOPERATION_DICT, BizDictItem.enabled.is_(True))
+            .order_by(BizDictItem.sort_order.asc(), BizDictItem.code.asc())
+            .all()
+        )
+        return [(str(code), str(label)) for code, label in rows]
 
     def merge_preview(self, user: User, merged_store_id: str, keep_store_id: str) -> dict[str, int]:
         """待迁移数据量预览（REQ-M11-005 主流程 3），校验规则与合并一致."""

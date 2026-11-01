@@ -77,7 +77,11 @@
   line-height: 1.6;
   color: var(--graphite);
 }
+/* REQ-IT4-06：`.btn-primary` 是 inline-flex，无 width 时按钮按内容收缩并贴在容器左侧；
+   表单主操作按钮统一铺满父容器，让文字在整行内居中。 */
 .submit-btn {
+  display: flex;
+  width: 100%;
   margin-top: 28rpx;
 }
 .state {

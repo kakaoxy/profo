@@ -42,6 +42,7 @@ from schemas.merchant import (
     MerchantStoreResponse,
     MerchantStoreStatusChangeRequest,
     MerchantStoreStatusLogResponse,
+    MerchantStoreStatusOptionsResponse,
     MerchantStoreUpdate,
     MerchantVisitCreate,
     MerchantVisitListResponse,
@@ -104,8 +105,16 @@ def search_stores(
     review_status: str | None = None,
     owner_employee_id: str | None = None,
     status: str | None = None,
+    origin_lng: Annotated[
+        float | None,
+        Query(ge=-180, le=180, description="定位经度（GCJ-02），传了即按距离升序"),
+    ] = None,
+    origin_lat: Annotated[float | None, Query(ge=-90, le=90, description="定位纬度（GCJ-02）")] = None,
 ) -> MerchantStoreListResponse:
-    """员工可搜索本人拓展/本人拜访的门店（D9/Q48）."""
+    """员工可搜索本人拓展/本人拜访的门店（D9/Q48）.
+
+    REQ-IT4-02：传 origin_lng/origin_lat 时按距离由近到远排序，列表项回填 distance_m。
+    """
     return MerchantStoreService(db).search(
         current_user,
         page=pagination.page,
@@ -119,6 +128,8 @@ def search_stores(
         review_status=review_status,
         owner_employee_id=owner_employee_id,
         status=status,
+        origin_lng=origin_lng,
+        origin_lat=origin_lat,
     )
 
 
@@ -195,6 +206,18 @@ def change_store_status(
 ) -> MerchantStoreResponse:
     """员工仅可改为洽谈中；运营可改全部（Q19）."""
     return MerchantStoreService(db).change_cooperation_status(current_user, store_id, body, request=request)
+
+
+@router.get("/stores/{store_id}/status-options", summary="合作状态可选项")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def get_store_status_options(
+    request: Request,
+    store_id: Annotated[str, Path(description="门店ID")],
+    db: DbSessionDep,
+    current_user: MerchantCReadDep,
+) -> MerchantStoreStatusOptionsResponse:
+    """当前用户此刻可改成哪些合作状态（REQ-IT4-05）."""
+    return MerchantStoreService(db).cooperation_status_options(current_user, store_id)
 
 
 @router.get("/stores/{store_id}/status-logs", summary="合作状态时间线")

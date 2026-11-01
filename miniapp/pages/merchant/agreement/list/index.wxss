@@ -107,6 +107,8 @@
 }
 
 .footer {
+  display: flex;
+  justify-content: center;
   position: fixed;
   left: 0;
   right: 0;
@@ -115,5 +117,6 @@
   background: rgba(247, 247, 248, 0.94);
 }
 .footer__btn {
+  flex: 1;
   width: 100%;
 }

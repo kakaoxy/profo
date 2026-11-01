@@ -100,8 +100,20 @@
 .store-card__arrow {
   color: var(--dove);
 }
+/* REQ-IT4-02：距离与箭头成组靠右，避免 distance 缺失时布局跳动 */
+.store-card__tail {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.store-card__distance {
+  color: var(--ink);
+  font-weight: 500;
+}
 
 .footer {
+  display: flex;
+  justify-content: center;
   position: fixed;
   left: 0;
   right: 0;
@@ -110,6 +122,7 @@
   background: linear-gradient(180deg, rgba(247, 247, 248, 0), var(--fog) 30%);
 }
 .footer__btn {
+  flex: 1;
   width: 100%;
 }
 

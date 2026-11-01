@@ -141,6 +141,7 @@
           bindtap="onSelectStatus"
         >{{item.label}}</view>
       </view>
+      <view class="hint" wx:if="{{statusHint}}">{{statusHint}}</view>
       <input class="input" placeholder="变更原因（必填）" value="{{statusReason}}" bindinput="onStatusReason" />
       <view class="modal-actions">
         <view class="mini-btn" bindtap="onCloseStatus">取消</view>

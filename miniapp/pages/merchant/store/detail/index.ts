@@ -10,12 +10,12 @@ import { resolveAssetUrl } from "../../../../utils/url";
 type StoreResponse = components["schemas"]["MerchantStoreResponse"];
 type VisitList = components["schemas"]["MerchantVisitListResponse"];
 type StatusLog = components["schemas"]["MerchantStoreStatusLogResponse"];
+type StatusOptions = components["schemas"]["MerchantStoreStatusOptionsResponse"];
 type DictResponse = components["schemas"]["PublicDictListResponse"];
 type DictItem = components["schemas"]["PublicDictItemResponse"];
 type AgreementListResponse = components["schemas"]["AgreementListResponse"];
 type Agreement = components["schemas"]["AgreementResponse"];
 type BrokerQRCode = components["schemas"]["BrokerQRCodeResponse"];
-type UserResponse = components["schemas"]["UserResponse"];
 
 const AGREEMENT_STATUS_LABELS: Record<string, string> = {
   not_initiated: "未发起",
@@ -88,6 +88,7 @@ Page({
     visits: [] as DisplayVisit[],
     statusLogs: [] as DisplayStatusLog[],
     statusOptions: [] as Option[],
+    statusHint: "",
     statusOpen: false,
     statusTarget: "",
     statusReason: "",
@@ -106,18 +107,35 @@ Page({
       return;
     }
     (this as unknown as { storeId: string }).storeId = storeId;
-    this.loadAll();
+    (this as unknown as { loadedOnce: boolean }).loadedOnce = false;
+  },
+
+  /**
+   * REQ-IT4-04：每次页面重新可见（如从拜访登记页返回）都刷新档案与时间线，
+   * 首次进入由 onLoad 之后紧跟的 onShow 完成加载；后续改为静默刷新，避免整页闪「加载中」。
+   */
+  onShow() {
+    const self = this as unknown as { storeId?: string; loadedOnce?: boolean };
+    if (!self.storeId) {
+      return;
+    }
+    void this.loadAll({ silent: Boolean(self.loadedOnce) });
+    self.loadedOnce = true;
   },
 
   onPullDownRefresh() {
-    this.loadAll().finally(() => wx.stopPullDownRefresh());
+    void this.loadAll({ silent: this.data.state === "ok" }).finally(() => wx.stopPullDownRefresh());
   },
 
-  async loadAll(): Promise<void> {
-    this.setData({ state: "loading" });
+  /** @param options.silent 静默刷新：不清空已有内容，失败只提示不整页报错 */
+  async loadAll(options: { silent?: boolean } = {}): Promise<void> {
+    const silent = options.silent === true;
+    if (!silent) {
+      this.setData({ state: "loading" });
+    }
     try {
       const storeId = (this as unknown as { storeId: string }).storeId;
-      const [store, visits, logs, cooperationDict, resultDict, agreements, me] = await Promise.all([
+      const [store, visits, logs, cooperationDict, resultDict, agreements, statusOptions] = await Promise.all([
         request<StoreResponse>({ url: `/public/merchant/stores/${storeId}` }),
         request<VisitList>({ url: `/public/merchant/stores/${storeId}/visits`, data: { page: 1, page_size: 50 } }),
         request<StatusLog[]>({ url: `/public/merchant/stores/${storeId}/status-logs` }),
@@ -127,7 +145,8 @@ Page({
           url: "/public/merchant/agreements",
           data: { page: 1, page_size: 20, store_id: storeId },
         }).catch(() => ({ items: [], total: 0, page: 1, page_size: 20 })),
-        request<UserResponse>({ url: "/public/auth/me" }).catch(() => null),
+        // REQ-IT4-05：可选目标状态由后端按角色/协议/当前状态裁决，前端不再复制权限规则
+        request<StatusOptions>({ url: `/public/merchant/stores/${storeId}/status-options` }).catch(() => null),
       ]);
       const cooperationLabels: Record<string, string> = {};
       cooperationDict.items.forEach((item: DictItem) => {
@@ -164,16 +183,8 @@ Page({
         })),
         cooperationLabels,
         visitResultLabels,
-        statusOptions: cooperationDict.items.filter((item: DictItem) => {
-          if (item.code === store.cooperation_status) {
-            return false;
-          }
-          // AC-V02-013：员工端仅可选「洽谈中」，其余状态由管理员操作
-          const roleCode = me?.role?.code;
-          const extraRoles = (me?.additional_roles || []).map((role) => role.code);
-          const privileged = ["admin", "operator"].some((code) => code === roleCode || extraRoles.includes(code));
-          return privileged || item.code === "negotiating";
-        }),
+        statusOptions: (statusOptions?.items || []).map((item) => ({ code: item.code, label: item.label })),
+        statusHint: statusOptions?.reason || (statusOptions?.items?.length ? "" : "暂无可变更的合作状态"),
         agreements: agreements.items.map((item: Agreement) => ({
           id: item.id,
           title: item.agreement_no || item.id.slice(0, 8),
@@ -182,12 +193,17 @@ Page({
         })),
       });
     } catch (err) {
+      if (silent && this.data.state === "ok") {
+        // 静默刷新失败：保留已有内容，只轻提示（避免用户从拜访页返回时整页报错）
+        wx.showToast({ title: errMessage(err), icon: "none" });
+        return;
+      }
       this.setData({ state: "error", errorText: errMessage(err) });
     }
   },
 
   onRetry() {
-    this.loadAll();
+    void this.loadAll();
   },
 
   onVisit() {
@@ -256,9 +272,13 @@ Page({
 
   onChangeStatus() {
     const options = this.data.statusOptions;
+    if (!options.length) {
+      wx.showToast({ title: this.data.statusHint || "暂无可变更的合作状态", icon: "none" });
+      return;
+    }
     this.setData({
       statusOpen: true,
-      statusTarget: options.length ? options[0].code : "",
+      statusTarget: options[0].code,
       statusReason: "",
     });
   },
@@ -293,7 +313,7 @@ Page({
       });
       this.setData({ statusOpen: false });
       wx.showToast({ title: "已变更", icon: "success" });
-      this.loadAll();
+      void this.loadAll({ silent: true });
     } catch (err) {
       wx.showToast({ title: errMessage(err), icon: "none" });
     }
@@ -313,7 +333,7 @@ Page({
         data: { photos },
       });
       wx.showToast({ title: "已补录", icon: "success" });
-      this.loadAll();
+      void this.loadAll({ silent: true });
     } catch (err) {
       wx.showToast({ title: errMessage(err), icon: "none" });
     }

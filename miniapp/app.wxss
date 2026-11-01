@@ -37,10 +37,12 @@ page {
 .chip-fog { background: var(--fog); color: var(--graphite); }
 
 /* 按钮 */
+/* REQ-IT4-01：按钮类补 box-sizing，避免 width:100% 时被左右 padding 撑出容器（表现为右侧被裁/文字偏左） */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   height: 96rpx;
   padding: 0 56rpx;
   background: var(--ink);
@@ -57,6 +59,7 @@ page {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   height: 96rpx;
   padding: 0 48rpx;
   background: transparent;
