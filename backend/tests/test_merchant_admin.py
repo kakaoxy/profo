@@ -623,6 +623,58 @@ def test_merge_preview_returns_migration_counts(
     assert "不能相同" in same.json()["message"]
 
 
+def test_operator_can_review_broker_store(
+    admin_client: TestClient,
+    employee: User,
+    customer_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """REQ-M11-012 / R-V07-13：operator 可审核自建门店；user 角色仍被拒."""
+    company = _create_company(admin_client)
+    customer_client.post(f"{API}/public/merchant/brokers/register", json={"name": "审核建店经纪人"})
+    payload = {
+        "company_id": company["id"],
+        "store_name": f"待审核自建店-{uuid.uuid4().hex[:5]}",
+        "province": "上海市",
+        "city": "上海市",
+        "district": "浦东新区",
+        "business_circle": "陆家嘴商圈",
+        "address": "浦东南路 600 号",
+        "lng": 121.53,
+        "lat": 31.26,
+        "contact_name": "李店长",
+        "contact_phone": "13600005555",
+        "cooperation_status": "not_cooperated",
+        "force_create_reason": "测试数据",
+    }
+    created = customer_client.post(f"{API}/public/merchant/brokers/me/store", json=payload)
+    assert created.status_code == 201, created.text
+    store_id = created.json()["store"]["id"]
+
+    session: Session = seeded_db["session"]
+    user_client = _client(session, employee, c_side=False)
+    denied = user_client.post(f"{API}/admin/merchant/stores/{store_id}/review", json={"action": "approve"})
+    assert denied.status_code == 403, denied.text
+    assert "admin/operator" in denied.json()["message"]
+
+    operator_role = session.query(Role).filter(Role.code == "operator").one()
+    operator = User(
+        id=str(uuid.uuid4()),
+        username=f"review-operator-{uuid.uuid4().hex[:8]}",
+        password=get_password_hash(f"pw-{uuid.uuid4().hex}"),
+        nickname="运营审核",
+        role_id=operator_role.id,
+        status="active",
+    )
+    session.add(operator)
+    session.commit()
+    operator_client = _client(session, operator, c_side=False)
+
+    approved = operator_client.post(f"{API}/admin/merchant/stores/{store_id}/review", json={"action": "approve"})
+    assert approved.status_code == 200, approved.text
+    assert approved.json()["review_status"] == "approved"
+
+
 def test_merge_and_agreement_review_require_internal_role(
     admin_client: TestClient,
     employee_client: TestClient,

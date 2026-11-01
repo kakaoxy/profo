@@ -262,7 +262,7 @@ export default function MerchantStoreCreatePage() {
           description={
             editStoreId
               ? "修改门店档案；地址/坐标变化请选择地址纠错或门店搬迁并填写原因"
-              : "运营补录门店：填写完整档案后保存，用于后台补录 / 导入"
+              : "运营补录门店：填写完整档案后保存（本期不支持批量导入）"
           }
         />
 

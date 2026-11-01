@@ -12,6 +12,7 @@ from dependencies.auth import (
     MerchantBrokerPermDep,
     MerchantMergePermDep,
     MerchantReadPermDep,
+    MerchantStoreReviewPermDep,
     MerchantVisitPermDep,
     MerchantWritePermDep,
 )
@@ -418,14 +419,9 @@ def review_broker_store(
     store_id: Annotated[str, Path(description="门店ID")],
     body: MerchantStoreReviewRequest,
     db: DbSessionDep,
-    current_user: MerchantWritePermDep,
+    current_user: MerchantStoreReviewPermDep,
 ) -> MerchantStoreResponse:
-    """转正或合并待审核门店（仅 admin）."""
-    if (current_user.role.code if current_user.role else None) != "admin":
-        msg = "仅管理员可审核经纪人自建门店"
-        from services.system.exceptions import PermissionDeniedError
-
-        raise PermissionDeniedError(msg)
+    """转正或合并待审核门店（仅 admin/operator）."""
     return MerchantStoreService(db).review_broker_store(current_user, store_id, body, request=request)
 
 
