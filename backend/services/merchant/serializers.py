@@ -95,6 +95,7 @@ def store_list_item(
     labels: dict[str, str],
     *,
     owner_employee_name: str | None = None,
+    broker_count: int = 0,
 ) -> MerchantStoreListItem:
     """门店列表项（手机号脱敏）."""
     return MerchantStoreListItem(
@@ -115,6 +116,7 @@ def store_list_item(
         owner_employee_id=store.owner_employee_id,
         owner_employee_name=owner_employee_name,
         last_visit_at=store.last_visit_at,
+        broker_count=broker_count,
         status=store.status,
         created_at=store.created_at,
         updated_at=store.updated_at,
@@ -143,6 +145,7 @@ def visit_response(
         distance_m=visit.distance_m,
         distance_abnormal_reason=visit.distance_abnormal_reason,
         location_failure_reason=visit.location_failure_reason,
+        location_failure_type=visit.location_failure_type,
         location_status=visit.location_status,
         visit_source=visit.visit_source,
         address=visit.address,

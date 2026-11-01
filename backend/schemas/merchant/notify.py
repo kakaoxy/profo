@@ -24,6 +24,10 @@ class MerchantNotifyRunResponse(BaseModel):
     finished_at: datetime
     duration_ms: int
     locked: bool = Field(default=False, description="是否因并发锁未执行")
+    status: str = Field(default="success", description="执行状态：success/failed")
+    timed_out: bool = Field(default=False, description="是否超过任务超时阈值（REQ-M14-006）")
+    error: str | None = Field(default=None, description="失败原因（status=failed 时）")
+    expired_agreements: int = Field(default=0, description="本次置为已过期的协议条数")
     agreements: MerchantNotifyTypeStats
     visits: MerchantNotifyTypeStats
 

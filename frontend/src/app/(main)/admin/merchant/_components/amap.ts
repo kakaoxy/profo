@@ -1,5 +1,25 @@
 /** 高德 JS API 最小类型（避免引入额外类型包）。 */
 
+/**
+ * 读取 DESIGN 令牌的运行时色值。
+ * Marker/Polyline 的 content 走 DOM（可用 `var(--color-*)`），但 canvas 描边等只能吃实际色值。
+ */
+export function tokenColor(name: string, fallback = "#17191c"): string {
+  if (typeof window === "undefined") return fallback;
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return value || fallback;
+}
+
+/** 地图标记与信息窗体走 innerHTML，门店名等字段来自用户输入，必须转义（存储型 XSS）。 */
+export function escapeHtml(value: string | number | null | undefined): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export interface AMapMap {
   setCenter(lngLat: [number, number], immediately?: boolean): void;
   add(item: unknown): void;

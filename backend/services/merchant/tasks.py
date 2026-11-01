@@ -42,6 +42,9 @@ LOCK_TTL_SECONDS = 600
 TASK_RESOURCE_TYPE = "merchant_notify_task"
 TASK_ACTION = "notify_scan"
 _LIST_LIMIT_MAX = 100
+TASK_TIMEOUT_MS = 300_000
+CONSECUTIVE_FAILURE_ALERT = 3
+TASK_ALERT_ACTION = "notify_alert"
 _SHANGHAI = ZoneInfo("Asia/Shanghai")
 _RELEASE_LOCK_LUA = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end"
 
@@ -84,27 +87,118 @@ def run_daily(
         )
 
     try:
-        events = MerchantAgreementService(db).scan_expiring(
+        agreement_service = MerchantAgreementService(db)
+        # REQ-M04-005：先把到期已签协议置为已过期（此前无调度调用，状态永不流转）
+        expired = agreement_service.expire_due(now=started_at)
+        if expired:
+            add_audit_log(
+                db,
+                user_id=operator_id,
+                action="expire_batch",
+                resource_type="merchant_agreement",
+                resource_id="batch",
+                before=None,
+                after={"count": expired, "run_date": run_date_of(started_at)},
+                request=request,
+            )
+            db.commit()
+        events = agreement_service.scan_expiring(
             days=AGREEMENT_WINDOW_DAYS,
             now=started_at,
         )
         agreements = notify_agreement_expiring(db, events, now=started_at)
         visits = notify_visit_overdue(db, now=started_at)
         finished_at = datetime.now(timezone.utc)
+        duration_ms = max(0, int((finished_at - started_at).total_seconds() * 1000))
         result = MerchantNotifyRunResponse(
             run_date=run_date_of(started_at),
             started_at=started_at,
             finished_at=finished_at,
-            duration_ms=max(0, int((finished_at - started_at).total_seconds() * 1000)),
+            duration_ms=duration_ms,
             locked=False,
+            status="success",
+            timed_out=duration_ms > TASK_TIMEOUT_MS,
+            expired_agreements=expired,
             agreements=agreements,
             visits=visits,
         )
         _record_run(db, result, operator_id=operator_id, request=request)
+        if result.timed_out:
+            _alert(db, run_date=result.run_date, reason="timeout", detail={"duration_ms": duration_ms})
         return result
     finally:
         if token is not None:
             _release_lock(token)
+
+
+def record_failure(db: Session, error: Exception, *, operator_id: str | None = None) -> None:
+    """记录一次任务失败并在连续失败达到阈值时告警（REQ-M14-006）.
+
+    由调度线程的异常分支调用；失败本身不中断线程。
+
+    Args:
+        db: 数据库会话
+        error: 捕获到的异常
+        operator_id: 手动补跑的操作人（定时任务为空）
+
+    """
+    now = datetime.now(timezone.utc)
+    message = f"{type(error).__name__}: {error}"[:500]
+    result = MerchantNotifyRunResponse(
+        run_date=run_date_of(now),
+        started_at=now,
+        finished_at=now,
+        duration_ms=0,
+        locked=False,
+        status="failed",
+        error=message,
+        agreements=MerchantNotifyTypeStats(),
+        visits=MerchantNotifyTypeStats(),
+    )
+    _record_run(db, result, operator_id=operator_id, request=None)
+    recent = (
+        db.query(OperationLog)
+        .filter(
+            OperationLog.resource_type == TASK_RESOURCE_TYPE,
+            OperationLog.action == TASK_ACTION,
+        )
+        .order_by(OperationLog.created_at.desc())
+        .limit(CONSECUTIVE_FAILURE_ALERT)
+        .all()
+    )
+    failures = 0
+    for row in recent:
+        stats = _parse_stats(row.after)
+        if stats is None or stats.status != "failed":
+            break
+        failures += 1
+    if failures >= CONSECUTIVE_FAILURE_ALERT:
+        _alert(
+            db,
+            run_date=result.run_date,
+            reason="consecutive_failures",
+            detail={"count": failures, "error": message},
+        )
+
+
+def _alert(db: Session, *, run_date: str, reason: str, detail: dict[str, object]) -> None:
+    """写入任务告警审计并记录错误日志（无外部告警通道时以审计 + 日志兜底）."""
+    logger.error("商户通知任务告警：%s %s", reason, detail)
+    try:
+        add_audit_log(
+            db,
+            user_id=None,
+            action=TASK_ALERT_ACTION,
+            resource_type=TASK_RESOURCE_TYPE,
+            resource_id=run_date,
+            before=None,
+            after={"reason": reason, **detail},
+            request=None,
+        )
+        db.commit()
+    except Exception:
+        db.rollback()
+        logger.exception("商户通知任务告警写入失败")
 
 
 def list_runs(

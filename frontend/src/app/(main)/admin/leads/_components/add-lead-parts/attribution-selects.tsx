@@ -114,6 +114,10 @@ export function AttributionSelects({
     return list;
   }, [brokers, brokerId, storeId, fallbackBrokerName]);
 
+  // 已停用/已合并门店不在可选列表中，但回填的历史归属仍会带上该 storeId：
+  // 后端会拒绝这类归属，这里提前提示，避免用户误以为「提交后进入待审核」。
+  const storeUnavailable = Boolean(storeId) && !stores.some((store) => store.id === storeId);
+
   if (storeChoices.length === 0) {
     return null;
   }
@@ -136,6 +140,11 @@ export function AttributionSelects({
               </option>
             ))}
           </select>
+          {storeUnavailable ? (
+            <p className="ml-1 text-[11px] text-rust">
+              当前门店已停用或已合并，不能保存归属，请更换门店。
+            </p>
+          ) : null}
         </div>
 
         <div className="space-y-1.5">

@@ -51,12 +51,43 @@ function toDisplay(item: StoreItem): DisplayStore {
   };
 }
 
+/** 从 scene 提取邀请短码（裸短码或 "code=xxx" 键值对，兼容带路径前缀形态）. */
+function parseSceneCode(scene: string): string {
+  if (!scene) {
+    return "";
+  }
+  const query = scene.includes("?") ? scene.slice(scene.indexOf("?") + 1) : scene;
+  const pair = query.split("&").find((item) => item.startsWith("code="));
+  if (pair) {
+    return pair.slice("code=".length);
+  }
+  // 裸短码：无 "=" 且不含路径分隔符
+  return scene.includes("=") || scene.includes("/") ? "" : scene;
+}
+
 Page({
   data: {
     state: "loading" as PageState,
     keyword: "",
     stores: [] as DisplayStore[],
     total: 0,
+  },
+
+  /**
+   * 扫码进入：门店邀请二维码的落地页就是本页（见后端 QR_PAGE）。
+   *
+   * 小程序码把短码放在 scene（URL 编码，兼容 "code=xxx" 键值对形态），
+   * 解析到后直接转到经纪人中心完成认证 + 自动绑定（REQ-M06-006）。
+   */
+  onLoad(options: Record<string, string | undefined>) {
+    const rawScene = options.scene ? decodeURIComponent(options.scene) : "";
+    const code = options.code || parseSceneCode(rawScene);
+    if (!code) {
+      return;
+    }
+    // referrer（员工分享）随二维码一起透传，注册时用于归属（AC-024）
+    const referrer = options.referrer ? `&referrer=${encodeURIComponent(options.referrer)}` : "";
+    wx.redirectTo({ url: `/pages/merchant/broker/index?code=${encodeURIComponent(code)}${referrer}` });
   },
 
   onShow() {

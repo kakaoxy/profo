@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/app/(main)/admin/merchant/_components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,24 +17,48 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
-import type { AMapInfoWindow, AMapMap, AMapMarker } from "../_components/amap";
+import { escapeHtml, type AMapInfoWindow, type AMapMap, type AMapMarker } from "../_components/amap";
 import { merchantApi, queryString } from "../_components/merchant-api";
 
 type MapResponse = components["schemas"]["MerchantMapResponse"];
 type MapPoint = components["schemas"]["MerchantMapPoint"];
 type AmapConfig = components["schemas"]["AmapConfigResponse"];
 
+/**
+ * 合作状态标记色：一律取 DESIGN 令牌（globals.css 的 @theme inline 会输出同名 CSS 变量），
+ * 禁止硬编码 hex——DESIGN「Don't」不允许引入饱和蓝/绿/红做 UI chrome。
+ */
 const STATUS_COLORS: Record<string, string> = {
-  not_cooperated: "#8b8c8d",
-  negotiating: "#c98a4b",
-  cooperated: "#2f7d5c",
-  paused: "#5d6b8a",
-  terminated: "#a3473a",
+  not_cooperated: "var(--color-slate)",
+  negotiating: "var(--color-apricot-edge)",
+  cooperated: "var(--color-rust)",
+  paused: "var(--color-dove)",
+  terminated: "var(--color-ink)",
 };
+
+const STATUS_LEGEND: Array<{ code: string; label: string }> = [
+  { code: "not_cooperated", label: "未合作" },
+  { code: "negotiating", label: "洽谈中" },
+  { code: "cooperated", label: "已合作" },
+  { code: "paused", label: "暂停" },
+  { code: "terminated", label: "终止" },
+];
+
+function infoWindowHtml(point: MapPoint): string {
+  return [
+    `<div style="font-size:13px;line-height:1.6">`,
+    `<b>${escapeHtml(point.store_name)}</b><br/>`,
+    `${escapeHtml(point.company_name)}<br/>`,
+    `${escapeHtml(point.district)} · ${escapeHtml(point.business_circle)}<br/>`,
+    `经纪人 ${escapeHtml(point.broker_count)} · ${escapeHtml(point.cooperation_status_label)}`,
+    `</div>`,
+  ].join("");
+}
 
 export default function MerchantMapPage() {
   const [data, setData] = useState<MapResponse | null>(null);
   const [district, setDistrict] = useState("");
+  const [businessCircle, setBusinessCircle] = useState("");
   const [cooperation, setCooperation] = useState("all");
   const [review, setReview] = useState("all");
   const [selectedId, setSelectedId] = useState("");
@@ -53,6 +77,7 @@ export default function MerchantMapPage() {
       const result = await merchantApi<MapResponse>(
         `/admin/merchant/map/stores${queryString({
           district: district.trim() || undefined,
+          business_circle: businessCircle.trim() || undefined,
           cooperation_status: cooperation === "all" ? undefined : cooperation,
           review_status: review === "all" ? undefined : review,
         })}`,
@@ -106,7 +131,7 @@ export default function MerchantMapPage() {
             const lat = points.reduce((sum, point) => sum + (point.lat || 0), 0) / points.length;
             const marker = new window.AMap!.Marker({
               position: [lng, lat],
-              content: `<div style="background:#17191c;color:#fff;border-radius:999px;padding:4px 10px;font-size:12px">${key} ${points.length}</div>`,
+              content: `<div style="background:var(--color-ink);color:var(--color-pure-white);border-radius:999px;padding:4px 10px;font-size:12px">${escapeHtml(key)} ${points.length}</div>`,
             });
             marker.on("click", () => {
               mapRef.current?.setCenter([lng, lat]);
@@ -119,13 +144,11 @@ export default function MerchantMapPage() {
             .forEach((point) => {
               const marker = new window.AMap!.Marker({
                 position: [point.lng || 0, point.lat || 0],
-                content: `<div style="width:12px;height:12px;border-radius:50%;background:${STATUS_COLORS[point.cooperation_status] || "#17191c"};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>`,
+                content: `<div style="width:12px;height:12px;border-radius:50%;background:${STATUS_COLORS[point.cooperation_status] || "var(--color-ink)"};border:2px solid var(--color-pure-white);box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>`,
               });
               marker.on("click", () => {
                 setSelectedId(point.id);
-                infoRef.current?.setContent(
-                  `<div style="font-size:13px;line-height:1.6"><b>${point.store_name}</b><br/>${point.company_name}<br/>${point.district} · ${point.business_circle}<br/>经纪人 ${point.broker_count} · ${point.cooperation_status_label}</div>`,
-                );
+                infoRef.current?.setContent(infoWindowHtml(point));
                 if (mapRef.current) {
                   infoRef.current?.open(mapRef.current, [point.lng || 0, point.lat || 0]);
                 }
@@ -164,13 +187,18 @@ export default function MerchantMapPage() {
     };
   }, [data, amapKey]);
 
+  useEffect(() => {
+    // 地图 marker 点击会更新 selectedId，这里把对应列表项滚进可视区（M09-003）
+    if (!selectedId) return;
+    const item = document.querySelector(`[data-point-id="${selectedId}"]`);
+    item?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedId]);
+
   const focusPoint = (point: MapPoint) => {
     setSelectedId(point.id);
     if (point.has_coordinate && mapRef.current) {
       mapRef.current.setCenter([point.lng || 0, point.lat || 0], true);
-      infoRef.current?.setContent(
-        `<div style="font-size:13px;line-height:1.6"><b>${point.store_name}</b><br/>${point.company_name}<br/>${point.district} · ${point.business_circle}<br/>经纪人 ${point.broker_count}</div>`,
-      );
+      infoRef.current?.setContent(infoWindowHtml(point));
       infoRef.current?.open(mapRef.current, [point.lng || 0, point.lat || 0]);
     }
   };
@@ -181,7 +209,7 @@ export default function MerchantMapPage() {
         <PageHeader title="门店地图" description="区域门店分布、合作状态与经纪人数量" />
 
         {amapKey === "" ? (
-          <Card className="p-4 text-sm text-graphite">
+          <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-graphite">
             未配置高德地图 Key，地图区域不可用；门店列表与统计仍可正常使用。
             请前往
             <Link className="mx-1 text-rust hover:underline" href="/admin/settings/amap">
@@ -190,70 +218,115 @@ export default function MerchantMapPage() {
             配置后刷新本页。
           </Card>
         ) : null}
-        {mapError ? <Card className="p-4 text-sm text-error">{mapError}</Card> : null}
+        {mapError ? <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-error">{mapError}</Card> : null}
 
-        <Card className="flex flex-wrap gap-3 p-4">
-          <Input className="w-44" placeholder="区县" value={district} onChange={(event) => setDistrict(event.target.value)} />
-          <Select value={cooperation} onValueChange={setCooperation}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部合作状态</SelectItem>
-              <SelectItem value="not_cooperated">未合作</SelectItem>
-              <SelectItem value="negotiating">洽谈中</SelectItem>
-              <SelectItem value="cooperated">已合作</SelectItem>
-              <SelectItem value="paused">暂停</SelectItem>
-              <SelectItem value="terminated">终止</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={review} onValueChange={setReview}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部审核</SelectItem>
-              <SelectItem value="pending">待审核</SelectItem>
-              <SelectItem value="approved">已转正</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={() => void load()} disabled={loading}>
-            刷新
-          </Button>
+        <Card className="rounded-cards border-0 shadow-steep-sm gap-3 p-5">
+          {/* Card 自带 flex-col：筛选控件必须放在内层横向容器，直接挂 flex-wrap 会纵向堆叠 */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              className="w-44"
+              placeholder="区县"
+              aria-label="按区县筛选"
+              value={district}
+              onChange={(event) => setDistrict(event.target.value)}
+            />
+            <Input
+              className="w-44"
+              placeholder="商圈"
+              aria-label="按商圈筛选"
+              value={businessCircle}
+              onChange={(event) => setBusinessCircle(event.target.value)}
+            />
+            <Select value={cooperation} onValueChange={setCooperation}>
+              <SelectTrigger className="w-36" aria-label="按合作状态筛选">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部合作状态</SelectItem>
+                <SelectItem value="not_cooperated">未合作</SelectItem>
+                <SelectItem value="negotiating">洽谈中</SelectItem>
+                <SelectItem value="cooperated">已合作</SelectItem>
+                <SelectItem value="paused">暂停</SelectItem>
+                <SelectItem value="terminated">终止</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={review} onValueChange={setReview}>
+              <SelectTrigger className="w-36" aria-label="按审核状态筛选">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部审核</SelectItem>
+                <SelectItem value="pending">待审核</SelectItem>
+                <SelectItem value="approved">已转正</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" onClick={() => void load()} disabled={loading}>
+              刷新
+            </Button>
+          </div>
+          {/* 颜色本身无法自解释，必须配图例（V08 GAP：REQ-M09-002） */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-dove pt-3 text-[13px] text-graphite">
+            <span className="text-ink">图例</span>
+            {STATUS_LEGEND.map((item) => (
+              <span key={item.code} className="flex items-center gap-1.5">
+                <span
+                  aria-hidden
+                  className="size-3 rounded-full"
+                  style={{ backgroundColor: STATUS_COLORS[item.code] }}
+                />
+                {item.label}
+              </span>
+            ))}
+            <span className="flex items-center gap-1.5">
+              <span aria-hidden className="size-3 rounded-full border border-dashed border-dove" />
+              坐标缺失
+            </span>
+          </div>
         </Card>
 
         {data ? (
           <div className="grid gap-4 sm:grid-cols-3">
-            <Card className="p-4">
+            <Card className="rounded-cards border-0 shadow-steep-sm p-5">
               <div className="text-xs text-graphite">门店总数</div>
-              <div className="text-2xl font-semibold">{data.stats.store_count}</div>
+              <div className="mt-1 text-[22px] leading-tight font-[480]">{data.stats.store_count}</div>
             </Card>
-            <Card className="p-4">
+            <Card className="rounded-cards border-0 shadow-steep-sm p-5">
               <div className="text-xs text-graphite">合作中门店</div>
-              <div className="text-2xl font-semibold">{data.stats.cooperated_count}</div>
+              <div className="mt-1 text-[22px] leading-tight font-[480]">
+                {data.stats.cooperated_count}
+              </div>
             </Card>
-            <Card className="p-4">
+            <Card className="rounded-cards border-0 shadow-steep-sm p-5">
               <div className="text-xs text-graphite">经纪人总数</div>
-              <div className="text-2xl font-semibold">{data.stats.broker_count}</div>
+              <div className="mt-1 text-[22px] leading-tight font-[480]">{data.stats.broker_count}</div>
             </Card>
           </div>
         ) : null}
 
         <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
-          <Card className="max-h-[560px] overflow-auto p-3">
+          <Card className="rounded-cards border-0 shadow-steep-sm max-h-[560px] overflow-auto p-3">
             {loading ? <div className="p-4 text-sm text-muted-foreground">加载中...</div> : null}
             {data?.points.map((point) => (
               <button
                 key={point.id}
                 type="button"
-                className={`mb-2 w-full rounded-lg p-3 text-left text-sm hover:bg-mist ${selectedId === point.id ? "bg-mist" : ""}`}
+                data-point-id={point.id}
+                className={`mb-2 w-full rounded-images p-3 text-left text-sm hover:bg-fog ${selectedId === point.id ? "bg-fog" : ""}`}
                 onClick={() => focusPoint(point)}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">{point.store_name}</span>
-                  <Badge variant={point.has_coordinate ? "secondary" : "destructive"}>
-                    {point.has_coordinate ? point.cooperation_status_label : "坐标缺失"}
-                  </Badge>
+                  <span className="flex shrink-0 items-center gap-1">
+                    {/* 经纪人自建门店待审核，地图上必须可辨识（REQ-M09-002） */}
+                    {point.review_status === "pending" ? <StatusBadge tone="attention">待审核</StatusBadge> : null}
+                    {point.has_coordinate ? (
+                      <StatusBadge tone={point.cooperation_status === "cooperated" ? "positive" : "neutral"}>
+                        {point.cooperation_status_label}
+                      </StatusBadge>
+                    ) : (
+                      <StatusBadge tone="attention">坐标缺失</StatusBadge>
+                    )}
+                  </span>
                 </div>
                 <div className="mt-1 text-xs text-graphite">
                   {point.district} · {point.business_circle} · 经纪人 {point.broker_count}
@@ -262,13 +335,19 @@ export default function MerchantMapPage() {
             ))}
             {data && data.points.length === 0 ? <div className="p-4 text-sm text-graphite">没有符合条件的门店</div> : null}
           </Card>
-          <Card className="relative min-h-[420px] overflow-hidden p-0">
+          <Card className="rounded-cards border-0 shadow-steep-sm relative min-h-[420px] overflow-hidden p-0">
             {amapKey ? <div ref={mapContainer} className="h-[520px] w-full" /> : null}
             {amapKey === "" ? (
               <div className="flex h-[420px] items-center justify-center text-sm text-graphite">地图未配置</div>
             ) : null}
             {amapKey === null ? (
               <div className="flex h-[420px] items-center justify-center text-sm text-graphite">地图配置加载中…</div>
+            ) : null}
+            {amapKey && mapError ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-fog text-sm text-graphite">
+                <span>地图暂时无法显示</span>
+                <span className="text-xs">左侧门店列表与上方统计不受影响</span>
+              </div>
             ) : null}
           </Card>
         </div>

@@ -8,6 +8,7 @@ import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Field } from "@/app/(main)/admin/merchant/_components/field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -205,13 +206,13 @@ export default function MerchantStoreCreatePage() {
           }
         />
 
-        {error ? <Card className="p-4 text-sm text-error">{error}</Card> : null}
-        {loadingStore ? <Card className="p-6 text-sm text-muted-foreground">加载门店中...</Card> : null}
+        {error ? <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-error">{error}</Card> : null}
+        {loadingStore ? <Card className="rounded-cards border-0 shadow-steep-sm p-6 text-sm text-muted-foreground">加载门店中...</Card> : null}
 
-        <Card className="p-6">
+        <Card className="rounded-cards border-0 shadow-steep-sm p-6">
           <div className="mb-4 text-sm font-medium">所属公司</div>
           {company ? (
-            <div className="flex items-center justify-between rounded-lg bg-mist p-3">
+            <div className="flex items-center justify-between rounded-images bg-fog p-3">
               <div>
                 <div className="font-medium">{company.company_name}</div>
                 <div className="text-xs text-graphite">{company.status === "disabled" ? "已停用" : "正常"}</div>
@@ -234,12 +235,12 @@ export default function MerchantStoreCreatePage() {
                 </Button>
               </div>
               {companies.length ? (
-                <div className="mt-3 divide-y rounded-lg border">
+                <div className="mt-3 divide-y rounded-images border">
                   {companies.map((item) => (
                     <button
                       key={item.id}
                       type="button"
-                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-mist"
+                      className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-fog"
                       onClick={() => {
                         setCompany(item);
                         setCompanies([]);
@@ -255,42 +256,66 @@ export default function MerchantStoreCreatePage() {
           )}
         </Card>
 
-        <Card className="grid gap-4 p-6 md:grid-cols-2">
-          <Input placeholder="门店名称 *" value={form.store_name} onChange={update("store_name")} />
-          <Input placeholder="商圈 *" value={form.business_circle} onChange={update("business_circle")} />
-          <Input placeholder="省 *" value={form.province} onChange={update("province")} />
-          <Input placeholder="市 *" value={form.city} onChange={update("city")} />
-          <Input placeholder="区县 *" value={form.district} onChange={update("district")} />
-          <Input placeholder="详细地址 *" value={form.address} onChange={update("address")} />
-          <Input placeholder="经度 GCJ-02 *" value={form.lng} onChange={update("lng")} />
-          <Input placeholder="纬度 GCJ-02 *" value={form.lat} onChange={update("lat")} />
-          <Input placeholder="联系人 *" value={form.contact_name} onChange={update("contact_name")} />
-          <Input placeholder="联系电话 *" value={form.contact_phone} onChange={update("contact_phone")} />
+        <Card className="rounded-cards border-0 shadow-steep-sm grid gap-4 p-6 md:grid-cols-2">
+          <Field label="门店名称" required>
+            <Input value={form.store_name} onChange={update("store_name")} />
+          </Field>
+          <Field label="商圈" required>
+            <Input value={form.business_circle} onChange={update("business_circle")} />
+          </Field>
+          <Field label="省份" required>
+            <Input value={form.province} onChange={update("province")} />
+          </Field>
+          <Field label="城市" required>
+            <Input value={form.city} onChange={update("city")} />
+          </Field>
+          <Field label="区县" required>
+            <Input value={form.district} onChange={update("district")} />
+          </Field>
+          <Field label="详细地址" required>
+            <Input value={form.address} onChange={update("address")} />
+          </Field>
+          <Field label="经度（GCJ-02）" required hint="取高德坐标拾取器的 GCJ-02 经度，非 WGS-84">
+            <Input value={form.lng} onChange={update("lng")} inputMode="decimal" />
+          </Field>
+          <Field label="纬度（GCJ-02）" required hint="取高德坐标拾取器的 GCJ-02 纬度，非 WGS-84">
+            <Input value={form.lat} onChange={update("lat")} inputMode="decimal" />
+          </Field>
+          <Field label="联系人" required>
+            <Input value={form.contact_name} onChange={update("contact_name")} />
+          </Field>
+          <Field label="联系电话" required>
+            <Input value={form.contact_phone} onChange={update("contact_phone")} inputMode="tel" />
+          </Field>
           {!editStoreId ? (
-            <Input
-              placeholder="查重命中时的强制新建理由"
-              value={form.force_create_reason}
-              onChange={update("force_create_reason")}
-            />
+            <Field
+              label="强制新建理由"
+              hint="查重命中疑似重复门店时必填，用于放行新建"
+              className="md:col-span-2"
+            >
+              <Input value={form.force_create_reason} onChange={update("force_create_reason")} />
+            </Field>
           ) : null}
-          <Input placeholder="备注" value={form.remark} onChange={update("remark")} />
+          <Field label="备注" className="md:col-span-2">
+            <Input value={form.remark} onChange={update("remark")} />
+          </Field>
           {editStoreId ? (
             <>
-              <Select value={changeType} onValueChange={(value) => setChangeType(value as "edit" | "correct" | "relocate")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="变更类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="edit">一般信息编辑</SelectItem>
-                  <SelectItem value="correct">地址纠错</SelectItem>
-                  <SelectItem value="relocate">门店搬迁（生成新门店）</SelectItem>
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="变更原因 *"
-                value={changeReason}
-                onChange={(event) => setChangeReason(event.target.value)}
-              />
+              <Field label="变更类型" required>
+                <Select value={changeType} onValueChange={(value) => setChangeType(value as "edit" | "correct" | "relocate")}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="请选择变更类型" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="edit">一般信息编辑</SelectItem>
+                    <SelectItem value="correct">地址纠错</SelectItem>
+                    <SelectItem value="relocate">门店搬迁（生成新门店）</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
+              <Field label="变更原因" required>
+                <Input value={changeReason} onChange={(event) => setChangeReason(event.target.value)} />
+              </Field>
             </>
           ) : null}
         </Card>

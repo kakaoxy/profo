@@ -44,6 +44,11 @@ class MerchantVisit(Base):
         nullable=True,
         comment="无法定位的原因（弱网/超时）",
     )
+    location_failure_type: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+        comment="定位失败类型：auth_denied/timeout/unavailable（AC-V03-007）",
+    )
     location_status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,

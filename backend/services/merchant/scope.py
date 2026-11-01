@@ -66,6 +66,19 @@ def store_scope_condition(db: Session, user: User) -> ColumnElement[bool] | None
     return or_(MerchantStore.owner_employee_id == user.id, visit_exists)
 
 
+def visible_store_ids(db: Session, user: User) -> ColumnElement[str] | None:
+    """可见门店 id 子查询（用于把数据范围传递到门店下属数据，REQ-M12-003）.
+
+    Returns:
+        ``Select`` 子查询；``None`` 表示全量范围（admin/operator）。
+
+    """
+    condition = store_scope_condition(db, user)
+    if condition is None:
+        return None
+    return db.query(MerchantStore.id).filter(condition).scalar_subquery()
+
+
 def ensure_store_visible(db: Session, user: User, store: MerchantStore) -> None:
     """按 ID 访问门店时的越权校验（BR-M12-019：403，不泄露是否存在）."""
     if ensure_scope_role(user):

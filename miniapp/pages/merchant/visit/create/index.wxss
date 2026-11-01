@@ -85,6 +85,12 @@
   background: var(--mint);
   color: #1f6b52;
 }
+.location-box--denied,
+.location-box__denied {
+  background: var(--apricot-wash);
+  color: var(--rust);
+}
+
 .row-actions {
   display: flex;
   gap: 16rpx;

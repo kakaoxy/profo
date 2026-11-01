@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
-import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/app/(main)/admin/merchant/_components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
-import type { AMapInfoWindow, AMapMap, AMapMarker } from "../_components/amap";
+import { escapeHtml, tokenColor, type AMapInfoWindow, type AMapMap, type AMapMarker } from "../_components/amap";
 import { merchantApi, queryString } from "../_components/merchant-api";
 
 type TrackResponse = components["schemas"]["MerchantTrackResponse"];
@@ -25,8 +25,12 @@ type TrackItem = components["schemas"]["MerchantTrackItem"];
 type UserSimple = components["schemas"]["UserSimpleResponse"];
 type AmapConfig = components["schemas"]["AmapConfigResponse"];
 
+/** 本地日期（不能用 toISOString：UTC 日界会让上海 00:00–08:00 取到前一天）。 */
 function today(): string {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
 }
 
 export default function MerchantTracksPage() {
@@ -37,6 +41,8 @@ export default function MerchantTracksPage() {
   const [data, setData] = useState<TrackResponse | null>(null);
   const [selectedId, setSelectedId] = useState("");
   const [error, setError] = useState("");
+  // 地图加载失败单独标记：错误横幅提示，地图区用占位层避免白屏
+  const [mapError, setMapError] = useState(false);
   const [loading, setLoading] = useState(false);
   // 高德 Key 由后台「系统设置 → 高德地图」配置，按需读取（null=加载中）
   const [amapKey, setAmapKey] = useState<string | null>(null);
@@ -100,17 +106,27 @@ export default function MerchantTracksPage() {
       infoRef.current = new window.AMap.InfoWindow({ offset: [0, -16] });
       markersRef.current.clear();
       const path: [number, number][] = [];
-      data.items.forEach((item) => {
-        if (!item.has_coordinate) return;
+      const points = data.items.filter((item) => item.has_coordinate);
+      points.forEach((item, index) => {
         path.push([item.lng || 0, item.lat || 0]);
+        // REQ-M10-002：起点用 Rust、终点用 Apricot Wash 标记，其余按序号
+        const isFirst = index === 0;
+        const isLast = index === points.length - 1 && points.length > 1;
+        const background = isFirst
+          ? "var(--color-rust)"
+          : isLast
+            ? "var(--color-apricot-edge)"
+            : "var(--color-ink)";
+        const color = isLast ? "var(--color-ink)" : "var(--color-pure-white)";
+        const label = isFirst ? "起" : isLast ? "终" : String(index + 1);
         const marker = new window.AMap!.Marker({
           position: [item.lng || 0, item.lat || 0],
-          content: `<div style="background:#17191c;color:#fff;border-radius:999px;padding:3px 8px;font-size:12px">${path.length}</div>`,
+          content: `<div style="background:${background};color:${color};border-radius:999px;padding:3px 8px;font-size:12px">${label}</div>`,
         });
         marker.on("click", () => {
           setSelectedId(item.visit_id);
           infoRef.current?.setContent(
-            `<div style="font-size:13px;line-height:1.6"><b>${item.store_name}</b><br/>${new Date(item.visited_at).toLocaleString("zh-CN")}<br/>联系人：${item.contact_name}</div>`,
+            `<div style="font-size:13px;line-height:1.6"><b>${escapeHtml(item.store_name)}</b><br/>${escapeHtml(new Date(item.visited_at).toLocaleString("zh-CN"))}<br/>联系人：${escapeHtml(item.contact_name)}</div>`,
           );
           infoRef.current?.open(map, [item.lng || 0, item.lat || 0]);
         });
@@ -121,7 +137,7 @@ export default function MerchantTracksPage() {
         map.add(
           new window.AMap!.Polyline({
             path,
-            strokeColor: "#5d2a1a",
+            strokeColor: tokenColor("--color-rust", "#5d2a1a"),
             strokeWeight: 4,
             strokeOpacity: 0.8,
           }),
@@ -140,11 +156,15 @@ export default function MerchantTracksPage() {
       script.onload = () => {
         if (!window.AMap) {
           setError("高德地图加载失败（Key 无效或平台不是 Web 端 JS API），时间线仍可使用");
+          setMapError(true);
           return;
         }
         render();
       };
-      script.onerror = () => setError("高德地图加载失败，时间线仍可使用");
+      script.onerror = () => {
+        setError("高德地图加载失败，时间线仍可使用");
+        setMapError(true);
+      };
       document.body.appendChild(script);
     }
     const markers = markersRef.current;
@@ -170,7 +190,7 @@ export default function MerchantTracksPage() {
         <PageHeader title="拜访轨迹" description="按员工与日期查看到店打卡点顺序连线；不采集连续 GPS" />
 
         {amapKey === "" ? (
-          <Card className="p-4 text-sm text-graphite">
+          <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-graphite">
             未配置高德地图 Key，地图轨迹不可用；时间线与统计仍可正常使用。请前往
             <Link className="mx-1 text-rust hover:underline" href="/admin/settings/amap">
               系统设置 · 高德地图
@@ -178,40 +198,57 @@ export default function MerchantTracksPage() {
             配置后刷新本页。
           </Card>
         ) : null}
-        {error ? <Card className="p-4 text-sm text-error">{error}</Card> : null}
+        {error ? <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-error">{error}</Card> : null}
 
-        <Card className="flex flex-wrap items-end gap-3 p-4">
-          <Select value={employeeId} onValueChange={setEmployeeId}>
-            <SelectTrigger className="w-56">
-              <SelectValue placeholder="选择员工" />
-            </SelectTrigger>
-            <SelectContent>
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.nickname || user.username}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input type="date" value={startDate} onChange={(event) => setStartDate(event.target.value)} />
-          <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
-          <Button onClick={() => void load()} disabled={loading}>
-            {loading ? "查询中..." : "查询轨迹"}
-          </Button>
+        <Card className="rounded-cards border-0 shadow-steep-sm p-5">
+          {/* Card 自带 flex-col：筛选控件必须放在内层横向容器，直接挂 flex-wrap 会纵向堆叠 */}
+          <div className="flex flex-wrap items-end gap-3">
+            <Select value={employeeId} onValueChange={setEmployeeId}>
+              <SelectTrigger className="w-56" aria-label="选择员工">
+                <SelectValue placeholder="选择员工" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.nickname || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <label className="flex items-center gap-2 whitespace-nowrap text-[13px] text-graphite">
+              开始日期
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(event) => setStartDate(event.target.value)}
+              />
+            </label>
+            <label className="flex items-center gap-2 whitespace-nowrap text-[13px] text-graphite">
+              结束日期
+              <Input type="date" value={endDate} onChange={(event) => setEndDate(event.target.value)} />
+            </label>
+            <Button onClick={() => void load()} disabled={loading}>
+              {loading ? "查询中..." : "查询轨迹"}
+            </Button>
+          </div>
           {data ? (
-            <span className="text-sm text-graphite">
+            <div className="mt-3 text-sm text-graphite">
               拜访 {data.stats.visit_count} 次 · 到访 {data.stats.store_count} 家
-            </span>
+            </div>
           ) : null}
+          {/* REQ-M10-005：轨迹仅用于工作复盘，按最小必要展示；查看行为已写审计日志 */}
+          <p className="mt-3 text-[13px] text-graphite">
+            定位数据仅用于员工工作轨迹复盘，按最小必要展示；每次查看都会记录操作日志。
+          </p>
         </Card>
 
         <div className="grid gap-4 lg:grid-cols-[420px_1fr]">
-          <Card className="max-h-[560px] overflow-auto p-3">
+          <Card className="rounded-cards border-0 shadow-steep-sm max-h-[560px] overflow-auto p-3">
             {data?.items.map((item, index) => (
               <button
                 key={item.visit_id}
                 type="button"
-                className={`mb-2 w-full rounded-lg p-3 text-left text-sm hover:bg-mist ${selectedId === item.visit_id ? "bg-mist" : ""}`}
+                className={`mb-2 w-full rounded-images p-3 text-left text-sm hover:bg-fog ${selectedId === item.visit_id ? "bg-fog" : ""}`}
                 onClick={() => focus(item)}
               >
                 <div className="flex items-center justify-between">
@@ -224,20 +261,26 @@ export default function MerchantTracksPage() {
                   联系人：{item.contact_name}
                   {item.result ? ` · 结果：${item.result}` : ""}
                 </div>
-                {!item.has_coordinate ? <Badge variant="destructive">无坐标</Badge> : null}
+                {!item.has_coordinate ? <StatusBadge tone="attention">无坐标</StatusBadge> : null}
               </button>
             ))}
             {data && data.items.length === 0 ? (
               <div className="p-4 text-sm text-graphite">该员工在所选日期内没有拜访记录</div>
             ) : null}
           </Card>
-          <Card className="min-h-[420px] overflow-hidden p-0">
+          <Card className="rounded-cards border-0 shadow-steep-sm relative min-h-[420px] overflow-hidden p-0">
             {amapKey ? <div ref={containerRef} className="h-[520px] w-full" /> : null}
             {amapKey === "" ? (
               <div className="flex h-[420px] items-center justify-center text-sm text-graphite">地图未配置</div>
             ) : null}
             {amapKey === null ? (
               <div className="flex h-[420px] items-center justify-center text-sm text-graphite">地图配置加载中…</div>
+            ) : null}
+            {amapKey && mapError ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-fog text-sm text-graphite">
+                <span>地图暂时无法显示</span>
+                <span className="text-xs">左侧打卡点列表与上方统计不受影响</span>
+              </div>
             ) : null}
           </Card>
         </div>

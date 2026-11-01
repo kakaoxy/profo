@@ -53,6 +53,7 @@ from schemas.merchant import (
 )
 from services.merchant.audit import add_audit_log
 from services.merchant.broker_qr import MerchantBrokerQRCodeService
+from services.merchant.scope import visible_store_ids
 from services.merchant.serializers import (
     broker_binding_response,
     broker_list_item,
@@ -207,6 +208,55 @@ class MerchantBrokerService:
             auto_bound=auto_bound,
             qr_invalid_reason=qr_reason,
         )
+
+    def ensure_phone_changeable(self, user: User, phone: str) -> None:
+        """手机号变更前置校验：目标哈希不得被其他经纪人占用（BR-M05-002）.
+
+        由用户手机号变更路由在**更新 users 之前**调用，避免出现「用户已换号、
+        经纪人档案仍旧哈希」的跨表不一致。
+
+        Raises:
+            ConflictError: 该手机号已属于其他经纪人档案
+
+        """
+        broker = self.get_my_broker(user)
+        if broker is None:
+            return
+        new_hash = hash_phone(phone)
+        conflict = (
+            self.db.query(MerchantBroker.id)
+            .filter(MerchantBroker.phone_hash == new_hash, MerchantBroker.id != broker.id)
+            .first()
+        )
+        if conflict is not None:
+            msg = "该手机号已绑定其他经纪人档案，无法变更"
+            raise ConflictError(msg)
+
+    def sync_phone_from_user(self, user: User, *, request: Request | None = None) -> None:
+        """用户手机号变更后同步经纪人档案的手机号与哈希（AC-V04-015）.
+
+        仅当该用户存在经纪人档案且号码确实变化时写入；无档案时静默返回。
+
+        """
+        broker = self.get_my_broker(user)
+        if broker is None or not user.phone:
+            return
+        if broker.phone == user.phone and broker.phone_hash == hash_phone(user.phone):
+            return
+        before = self._snapshot(broker)
+        broker.phone = user.phone
+        broker.phone_hash = hash_phone(user.phone)
+        add_audit_log(
+            self.db,
+            user_id=str(user.id),
+            action="update",
+            resource_type="merchant_broker",
+            resource_id=str(broker.id),
+            before=before,
+            after=self._snapshot(broker),
+            request=request,
+        )
+        self.db.commit()
 
     def update_me(
         self,
@@ -578,12 +628,26 @@ class MerchantBrokerService:
         if broker is None:
             msg = "经纪人不存在"
             raise ResourceNotFoundError(msg)
+        if broker.bind_status == MerchantBindStatus.DISABLED.value:
+            # 停用的经纪人不得通过存量申请被重新绑定
+            msg = "经纪人档案已停用，不能审批绑定申请"
+            raise ValidationError(msg)
 
         binding.approved_at = _now()
         binding.approved_by = operator_id
         if not req.approve:
             binding.status = MerchantBindingRecordStatus.REJECTED.value
             binding.reason = f"{binding.reason or ''}；审核拒绝：{req.remark or ''}".strip("；")
+            add_audit_log(
+                self.db,
+                user_id=operator_id,
+                action="reject",
+                resource_type="merchant_broker_binding",
+                resource_id=str(binding.id),
+                before=None,
+                after={"broker_id": str(broker.id), "store_id": str(binding.store_id), "remark": req.remark},
+                request=request,
+            )
             self.db.commit()
             self.db.refresh(binding)
             return broker_binding_response(binding)
@@ -623,6 +687,7 @@ class MerchantBrokerService:
         keyword: str | None = None,
         bind_status: str | None = None,
         limit: int = 200,
+        user: User | None = None,
     ) -> BrokerOptionListResponse:
         """线索录入下拉选项（不暴露手机号/备注等敏感字段）.
 
@@ -630,6 +695,10 @@ class MerchantBrokerService:
         未选门店时可用姓名/手机号关键字搜索，选中后由前端按其 store_id 回填门店.
         """
         query = self.db.query(MerchantBroker)
+        if user is not None:
+            scope = visible_store_ids(self.db, user)
+            if scope is not None:
+                query = query.filter(MerchantBroker.store_id.in_(scope))
         keyword = (keyword or "").strip()
         if keyword:
             conditions = [MerchantBroker.name.ilike(f"%{keyword}%")]
@@ -661,9 +730,14 @@ class MerchantBrokerService:
         keyword: str | None = None,
         store_id: str | None = None,
         bind_status: str | None = None,
+        user: User | None = None,
     ) -> BrokerListResponse:
-        """后台经纪人列表（姓名/手机号哈希/门店/状态筛选）."""
+        """后台经纪人列表（姓名/手机号哈希/门店/状态筛选；按数据范围收敛）."""
         query = self.db.query(MerchantBroker)
+        if user is not None:
+            scope = visible_store_ids(self.db, user)
+            if scope is not None:
+                query = query.filter(MerchantBroker.store_id.in_(scope))
         keyword = (keyword or "").strip()
         if keyword:
             conditions = [MerchantBroker.name.ilike(f"%{keyword}%")]

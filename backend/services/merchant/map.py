@@ -1,6 +1,7 @@
 """门店地图与员工拜访轨迹（V08）."""
 
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from fastapi import Request
 from sqlalchemy.orm import Session
@@ -22,6 +23,7 @@ from services.merchant.serializers import cooperation_label_map
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 
 _MAX_TRACK_DAYS = 31
+_SHANGHAI = ZoneInfo("Asia/Shanghai")
 
 
 class MerchantMapService:
@@ -117,9 +119,10 @@ class MerchantMapService:
             msg = "员工不存在"
             raise ResourceNotFoundError(msg)
 
-        today = datetime.now(timezone.utc).date()
-        start = datetime.combine(start_date or today, time.min, tzinfo=timezone.utc)
-        end = datetime.combine(end_date or today, time.min, tzinfo=timezone.utc) + timedelta(days=1)
+        # 业务日界按 Asia/Shanghai 计算：否则上海 00:00–08:00 的打卡会落到前一天（UTC 日界）
+        today = datetime.now(_SHANGHAI).date()
+        start = datetime.combine(start_date or today, time.min, tzinfo=_SHANGHAI)
+        end = datetime.combine(end_date or today, time.min, tzinfo=_SHANGHAI) + timedelta(days=1)
         if (end - start).days > _MAX_TRACK_DAYS:
             msg = f"轨迹日期范围不能超过 {_MAX_TRACK_DAYS} 天"
             raise ValidationError(msg)

@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
-import { Badge } from "@/components/ui/badge";
+import { Field } from "@/app/(main)/admin/merchant/_components/field";
+import { StatusBadge } from "@/app/(main)/admin/merchant/_components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,14 @@ type BrokerList = components["schemas"]["BrokerListResponse"];
 type Broker = components["schemas"]["BrokerResponse"];
 type StoreList = components["schemas"]["MerchantStoreListResponse"];
 type PendingBinding = components["schemas"]["BrokerBindingResponse"];
+
+const SOURCE_LABELS: Record<string, string> = {
+  self_apply: "自主申请",
+  employee: "员工推荐",
+  backoffice: "后台新增",
+  broker: "经纪人推荐",
+  import: "批量导入",
+};
 
 const STATUS_LABELS: Record<string, string> = {
   unbound: "未绑定",
@@ -208,35 +217,49 @@ export default function MerchantBrokersPage() {
         />
 
         {formOpen ? (
-          <Card className="flex flex-col gap-3 p-4">
+          <Card className="rounded-cards border-0 shadow-steep-sm flex flex-col gap-3 p-5">
             <div className="text-sm font-medium">{editing ? `编辑经纪人：${editing.name}` : "新建经纪人"}</div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <Input placeholder="姓名" value={formName} onChange={(event) => setFormName(event.target.value)} />
-              <Input
-                placeholder={editing ? "新手机号（留空不修改）" : "手机号"}
-                value={formPhone}
-                onChange={(event) => setFormPhone(event.target.value)}
-              />
+              <Field label="姓名" required>
+                <Input value={formName} onChange={(event) => setFormName(event.target.value)} />
+              </Field>
+              <Field
+                label="手机号"
+                required={!editing}
+                hint={editing ? "留空表示不修改" : undefined}
+              >
+                <Input
+                  value={formPhone}
+                  onChange={(event) => setFormPhone(event.target.value)}
+                  inputMode="tel"
+                />
+              </Field>
               {!editing ? (
-                <Select value={formStoreId || "none"} onValueChange={(value) => setFormStoreId(value === "none" ? "" : value)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="绑定门店（可选）" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">暂不绑定门店</SelectItem>
-                    {stores.map((store) => (
-                      <SelectItem key={store.id} value={store.id}>
-                        {store.store_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Field label="绑定门店" hint="可不绑定（独立经纪人），后续由经纪人扫码或申请绑定">
+                  <Select
+                    value={formStoreId || "none"}
+                    onValueChange={(value) => setFormStoreId(value === "none" ? "" : value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">暂不绑定门店</SelectItem>
+                      {stores.map((store) => (
+                        <SelectItem key={store.id} value={store.id}>
+                          {store.store_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
               ) : null}
-              <Input
-                placeholder="备注"
-                value={formRemark}
-                onChange={(event) => setFormRemark(event.target.value)}
-              />
+              <Field label="备注">
+                <Input
+                  value={formRemark}
+                  onChange={(event) => setFormRemark(event.target.value)}
+                />
+              </Field>
             </div>
             <div className="flex gap-2">
               <Button onClick={() => void saveBroker()} disabled={saving}>
@@ -249,36 +272,40 @@ export default function MerchantBrokersPage() {
           </Card>
         ) : null}
 
-        <Card className="flex flex-wrap gap-3 p-4">
-          <Input
-            className="w-72"
-            placeholder="姓名 / 手机号"
-            value={keyword}
-            onChange={(event) => setKeyword(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && void load()}
-          />
-          <Input
-            className="w-72"
-            placeholder="操作原因（停用/强制解绑）"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
-          <Button variant="outline" onClick={() => void load()} disabled={loading}>
-            查询
-          </Button>
-          <Button variant="outline" asChild>
-            <a
-              href={`/api/v1/admin/merchant/brokers/export${queryString({
-                keyword: keyword.trim() || undefined,
-              })}`}
-            >
-              导出 CSV
-            </a>
-          </Button>
+        <Card className="rounded-cards border-0 shadow-steep-sm p-5">
+          {/* Card 自带 flex-col：筛选控件必须放在内层横向容器，直接挂 flex-wrap 会纵向堆叠 */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Input
+              className="w-72"
+              placeholder="姓名 / 手机号"
+              aria-label="搜索经纪人"
+              value={keyword}
+              onChange={(event) => setKeyword(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && void load()}
+            />
+            <Input
+              className="w-72"
+              placeholder="操作原因（停用/强制解绑）"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+            <Button variant="outline" onClick={() => void load()} disabled={loading}>
+              查询
+            </Button>
+            <Button variant="outline" asChild>
+              <a
+                href={`/api/v1/admin/merchant/brokers/export${queryString({
+                  keyword: keyword.trim() || undefined,
+                })}`}
+              >
+                导出 CSV
+              </a>
+            </Button>
+          </div>
         </Card>
 
         {changeTarget ? (
-          <Card className="flex flex-col gap-3 p-4">
+          <Card className="rounded-cards border-0 shadow-steep-sm flex flex-col gap-3 p-5">
             <div className="text-sm font-medium">强制换绑：{changeTarget.name}</div>
             <Select value={changeStoreId} onValueChange={setChangeStoreId}>
               <SelectTrigger>
@@ -308,14 +335,14 @@ export default function MerchantBrokersPage() {
           </Card>
         ) : null}
 
-        {error ? <Card className="p-4 text-sm text-error">{error}</Card> : null}
+        {error ? <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-error">{error}</Card> : null}
 
         {pending.length ? (
-          <Card className="p-4">
+          <Card className="rounded-cards border-0 shadow-steep-sm p-5">
             <div className="mb-3 text-sm font-medium">待审核绑定申请（{pending.length}）</div>
             <div className="space-y-2">
               {pending.map((item) => (
-                <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-mist p-3 text-sm">
+                <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-images bg-fog p-3 text-sm">
                   <span>
                     {item.broker_name || "经纪人"} · {item.store_name} · {item.reason || "换绑/解绑"}
                   </span>
@@ -333,12 +360,12 @@ export default function MerchantBrokersPage() {
           </Card>
         ) : null}
 
-        {loading ? <Card className="p-6 text-sm text-muted-foreground">加载中...</Card> : null}
+        {loading ? <Card className="rounded-cards border-0 shadow-steep-sm p-6 text-sm text-muted-foreground">加载中...</Card> : null}
 
         {data ? (
-          <Card className="overflow-hidden">
+          <Card className="rounded-cards border-0 shadow-steep-sm overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-mist text-left text-xs text-graphite">
+              <thead className="bg-fog text-left text-xs text-graphite">
                 <tr>
                   <th className="px-4 py-3">姓名</th>
                   <th className="px-4 py-3">手机号</th>
@@ -346,22 +373,36 @@ export default function MerchantBrokersPage() {
                   <th className="px-4 py-3">绑定状态</th>
                   <th className="px-4 py-3">来源</th>
                   <th className="px-4 py-3">推荐线索</th>
+                  <th className="px-4 py-3">更新时间</th>
                   <th className="px-4 py-3">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {data.items.map((item) => (
-                  <tr key={item.id} className="border-t border-mist">
+                  <tr key={item.id} className="border-t border-dove">
                     <td className="px-4 py-3 font-medium">{item.name}</td>
                     <td className="px-4 py-3">{item.phone_masked}</td>
                     <td className="px-4 py-3">{item.store_name || "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge variant={item.bind_status === "disabled" ? "destructive" : "secondary"}>
+                      <StatusBadge
+                        tone={
+                          item.bind_status === "bound"
+                            ? "positive"
+                            : item.bind_status === "pending"
+                              ? "attention"
+                              : "neutral"
+                        }
+                      >
                         {STATUS_LABELS[item.bind_status] || item.bind_status}
-                      </Badge>
+                      </StatusBadge>
                     </td>
-                    <td className="px-4 py-3 text-xs text-graphite">{item.source}</td>
+                    <td className="px-4 py-3 text-xs text-graphite">
+                      {SOURCE_LABELS[item.source] || item.source}
+                    </td>
                     <td className="px-4 py-3">{item.recommendation_count}</td>
+                    <td className="px-4 py-3 text-xs text-graphite">
+                      {item.updated_at ? new Date(item.updated_at).toLocaleString("zh-CN") : "—"}
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         <Button size="sm" variant="outline" onClick={() => void openEdit(item)}>
@@ -400,7 +441,7 @@ export default function MerchantBrokersPage() {
                 ))}
                 {data.items.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-10 text-center text-sm text-graphite" colSpan={7}>
+                    <td className="px-4 py-10 text-center text-sm text-graphite" colSpan={8}>
                       暂无经纪人
                     </td>
                   </tr>

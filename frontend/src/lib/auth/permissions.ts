@@ -126,6 +126,7 @@ export const PATH_PERMISSION_MAP: ReadonlyArray<{
 }> = [
   // 商户管理：具体子路由必须排在更宽泛的 /admin/merchant 之前（前缀长度降序）
   { prefix: "/admin/merchant/agreement-templates", permission: PERMISSION_CODES.MERCHANT_AGREEMENT },
+  { prefix: "/admin/merchant/notify-runs", permission: PERMISSION_CODES.MERCHANT_READ },
   { prefix: "/admin/merchant/agreements", permission: PERMISSION_CODES.MERCHANT_AGREEMENT },
   { prefix: "/admin/merchant/brokers", permission: PERMISSION_CODES.MERCHANT_BROKER },
   { prefix: "/admin/merchant/stores", permission: PERMISSION_CODES.MERCHANT_READ },

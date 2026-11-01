@@ -4,7 +4,11 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path, Query, Request, status
 
-from dependencies.auth import DbSessionDep, MerchantAgreementPermDep
+from dependencies.auth import (
+    DbSessionDep,
+    MerchantAgreementPermDep,
+    MerchantAgreementReviewPermDep,
+)
 from dependencies.common import PaginationDep
 from schemas.merchant import (
     AgreementCreateRequest,
@@ -149,9 +153,9 @@ def review_agreement(
     agreement_id: Annotated[str, Path(description="协议ID")],
     body: AgreementReviewRequest,
     db: DbSessionDep,
-    current_user: MerchantAgreementPermDep,
+    current_user: MerchantAgreementReviewPermDep,
 ) -> AgreementResponse:
-    """通过进入待签署；驳回记录原因."""
+    """通过进入待签署；驳回记录原因（仅 admin/operator，BR-M04-031）."""
     return MerchantAgreementService(db).review(
         agreement_id,
         body,

@@ -429,3 +429,29 @@ def test_expiring_events_and_expire_scan(
     assert scan.json()["updated"] == 1
     session.refresh(row)
     assert row.status == "expired"
+
+
+def test_store_subject_agreement_does_not_set_company_id(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """BR-M04-005：签约主体二选一，门店主体协议不得同时写 company_id."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    template = _create_template(admin_client)
+    agreement = _create_agreement(
+        employee_client,
+        subject_type="store",
+        store_id=store["id"],
+        company_id=None,
+        template_id=template["id"],
+    )
+    assert agreement["store_id"] == store["id"]
+    assert agreement["company_id"] is None
+
+    session: Session = seeded_db["session"]
+    row = session.query(MerchantAgreement).filter(MerchantAgreement.id == agreement["id"]).one()
+    assert row.company_id is None
+    assert row.store_id == store["id"]

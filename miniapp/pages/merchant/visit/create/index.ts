@@ -63,7 +63,11 @@ Page({
     locationOk: false,
     locationFailure: false,
     locationFailureReason: "",
+    // AC-V03-007：拒绝授权不允许降级提交；仅弱网/超时可降级并标注类型
+    locationDenied: false,
+    locationFailureType: "" as "" | "timeout" | "unavailable",
     backfillDate: "",
+    backfillTime: "12:00",
     today: todayStr(),
     submitting: false,
     storeId: "",
@@ -127,6 +131,22 @@ Page({
   },
 
   onGetLocation() {
+    // REQ-M10-005：员工首次使用定位前必须告知用途（最小必要，仅打卡时点采集）
+    if (!wx.getStorageSync("merchant_location_notice_ack")) {
+      wx.showModal({
+        title: "定位用途说明",
+        content:
+          "拜访定位仅用于工作轨迹复盘，只在打卡时采集一次当前位置，不采集连续轨迹。拒绝授权将无法提交拜访。",
+        confirmText: "我知道了",
+        cancelText: "暂不使用",
+        success: (res) => {
+          if (!res.confirm) return;
+          wx.setStorageSync("merchant_location_notice_ack", "1");
+          this.onGetLocation();
+        },
+      });
+      return;
+    }
     wx.getLocation({
       type: "gcj02",
       success: (res) => {
@@ -138,14 +158,50 @@ Page({
           locationFailureReason: "",
         });
       },
-      fail: () => {
-        wx.showToast({ title: "定位失败，请检查授权或选择定位失败原因", icon: "none" });
+      fail: (res: WechatMiniprogram.GeneralCallbackResult) => {
+        const msg = (res.errMsg || "").toLowerCase();
+        const denied =
+          msg.includes("auth deny") ||
+          msg.includes("auth denied") ||
+          msg.includes("authorize") ||
+          msg.includes("permission");
+        if (denied) {
+          // 授权被拒绝：锁定降级通道，引导用户去设置页开启
+          this.setData({ locationDenied: true, locationFailure: false, locationFailureType: "" });
+          wx.showModal({
+            title: "定位权限被拒绝",
+            content: "拜访打卡必须授权定位，请在设置中开启位置权限后重试。",
+            confirmText: "去设置",
+            success: (result) => {
+              if (result.confirm) {
+                wx.openSetting({});
+              }
+            },
+          });
+          return;
+        }
+        // 弱网/超时：允许降级，记录失败类型
+        this.setData({
+          locationDenied: false,
+          locationFailureType: msg.includes("timeout") ? "timeout" : "unavailable",
+        });
+        wx.showToast({ title: "定位失败，可选择定位失败并填写原因", icon: "none" });
       },
     });
   },
 
   onLocationFallback() {
-    this.setData({ locationFailure: true, locationOk: false, lng: null, lat: null });
+    if (this.data.locationDenied) {
+      wx.showToast({ title: "定位授权被拒绝，请授权后重试", icon: "none" });
+      return;
+    }
+    this.setData({
+      locationFailure: true,
+      locationOk: false,
+      lng: null,
+      lat: null,
+      locationFailureType: this.data.locationFailureType || "unavailable",
+    });
   },
 
   onLocationFailureReason(e: WechatMiniprogram.Input) {
@@ -168,9 +224,12 @@ Page({
   },
 
   validate(): string | null {
-    const { form, lng, lat, locationFailure, locationFailureReason } = this.data;
+    const { form, lng, lat, locationFailure, locationFailureReason, locationDenied } = this.data;
     if (!form.contact_name.trim()) {
       return "请填写联系人";
+    }
+    if (locationDenied) {
+      return "定位授权被拒绝，请授权定位后重试";
     }
     if (!lng || !lat) {
       if (!locationFailure || !locationFailureReason.trim()) {
@@ -184,7 +243,7 @@ Page({
       if (!form.backfill_reason.trim()) {
         return "请填写补录原因";
       }
-      const selected = new Date(`${this.data.backfillDate}T12:00:00+08:00`);
+      const selected = new Date(`${this.data.backfillDate}T${this.data.backfillTime}:00+08:00`);
       const diff = Date.now() - selected.getTime();
       if (diff > 7 * 24 * 3600 * 1000 || diff < 0) {
         return "仅允许补录 7 天内的拜访";
@@ -202,7 +261,19 @@ Page({
       wx.showToast({ title: error, icon: "none" });
       return;
     }
-    const { form, photos, lng, lat, locationFailure, locationFailureReason, backfillDate, storeId, store } = this.data;
+    const {
+      form,
+      photos,
+      lng,
+      lat,
+      locationFailure,
+      locationFailureReason,
+      locationFailureType,
+      backfillDate,
+      backfillTime,
+      storeId,
+      store,
+    } = this.data;
     const payload: components["schemas"]["MerchantVisitCreate"] = {
       store_id: storeId,
       contact_name: form.contact_name.trim(),
@@ -217,10 +288,11 @@ Page({
       distance_abnormal_reason: form.distance_abnormal_reason || null,
       location_status: locationFailure ? "degraded" : "normal",
       location_failure_reason: locationFailure ? locationFailureReason.trim() : null,
+      location_failure_type: locationFailure ? locationFailureType || "unavailable" : null,
       photos: photos.map(({ displayUrl: _displayUrl, ...photo }) => photo),
     };
     if (form.is_backfill) {
-      payload.visited_at = `${backfillDate}T12:00:00+08:00`;
+      payload.visited_at = `${backfillDate}T${backfillTime}:00+08:00`;
     }
     this.setData({ submitting: true });
     try {

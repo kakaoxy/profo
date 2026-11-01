@@ -6906,6 +6906,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/stores/{store_id}/merge-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 门店合并待迁移数据量预览
+         * @description 合并前展示待迁移的拜访/绑定/经纪人/线索/协议数量（REQ-M11-005）.
+         */
+        get: operations["merge_store_preview_api_v1_admin_merchant_stores__store_id__merge_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/stores/merge": {
         parameters: {
             query?: never;
@@ -6917,7 +6937,7 @@ export interface paths {
         put?: never;
         /**
          * 门店合并
-         * @description 迁移拜访/绑定/线索/协议并标记原门店已合并.
+         * @description 迁移拜访/绑定/线索/协议并标记原门店已合并（仅 admin/operator，BR-M12-003）.
          */
         post: operations["merge_stores_api_v1_admin_merchant_stores_merge_post"];
         delete?: never;
@@ -6984,6 +7004,26 @@ export interface paths {
          * @description 变更合作状态（已合作需已签协议）.
          */
         post: operations["change_store_status_api_v1_admin_merchant_stores__store_id__status_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/stores/{store_id}/activation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 门店停用/启用
+         * @description 状态流转：正常 ↔ 停用（REQ-M11-003）；停用后禁止新建拜访/绑定.
+         */
+        post: operations["change_store_activation_api_v1_admin_merchant_stores__store_id__activation_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7897,7 +7937,7 @@ export interface paths {
         put?: never;
         /**
          * 审核协议
-         * @description 通过进入待签署；驳回记录原因.
+         * @description 通过进入待签署；驳回记录原因（仅 admin/operator，BR-M04-031）.
          */
         post: operations["review_agreement_api_v1_admin_merchant_agreements__agreement_id__review_post"];
         delete?: never;
@@ -16525,6 +16565,29 @@ export interface components {
              * @default false
              */
             locked: boolean;
+            /**
+             * Status
+             * @description 执行状态：success/failed
+             * @default success
+             */
+            status: string;
+            /**
+             * Timed Out
+             * @description 是否超过任务超时阈值（REQ-M14-006）
+             * @default false
+             */
+            timed_out: boolean;
+            /**
+             * Error
+             * @description 失败原因（status=failed 时）
+             */
+            error?: string | null;
+            /**
+             * Expired Agreements
+             * @description 本次置为已过期的协议条数
+             * @default 0
+             */
+            expired_agreements: number;
             agreements: components["schemas"]["MerchantNotifyTypeStats"];
             visits: components["schemas"]["MerchantNotifyTypeStats"];
         };
@@ -16568,6 +16631,22 @@ export interface components {
              * @description 失败明细（脱敏，最多 20 条）
              */
             errors?: string[];
+        };
+        /**
+         * MerchantStoreActivationRequest
+         * @description 门店停用/启用请求（REQ-M11-003：状态 正常 ↔ 停用）.
+         */
+        MerchantStoreActivationRequest: {
+            /**
+             * Target Status
+             * @enum {string}
+             */
+            target_status: "normal" | "disabled";
+            /**
+             * Reason
+             * @description 停用/启用原因
+             */
+            reason?: string | null;
         };
         /**
          * MerchantStoreCreate
@@ -16686,6 +16765,10 @@ export interface components {
          */
         MerchantStoreDetailResponse: {
             store: components["schemas"]["MerchantStoreResponse"];
+            /** Created By Broker Name */
+            created_by_broker_name?: string | null;
+            /** Inviter Employee Name */
+            inviter_employee_name?: string | null;
             /** Brokers */
             brokers?: {
                 [key: string]: unknown;
@@ -16738,6 +16821,11 @@ export interface components {
             owner_employee_name: string | null;
             /** Last Visit At */
             last_visit_at: string | null;
+            /**
+             * Broker Count
+             * @default 0
+             */
+            broker_count: number;
             /** Status */
             status: string;
             /**
@@ -16764,6 +16852,37 @@ export interface components {
             page: number;
             /** Page Size */
             page_size: number;
+        };
+        /**
+         * MerchantStoreMergePreview
+         * @description 待迁移数据量预览（REQ-M11-005 主流程 3）.
+         */
+        MerchantStoreMergePreview: {
+            /**
+             * Visits
+             * @default 0
+             */
+            visits: number;
+            /**
+             * Leads
+             * @default 0
+             */
+            leads: number;
+            /**
+             * Agreements
+             * @default 0
+             */
+            agreements: number;
+            /**
+             * Bindings
+             * @default 0
+             */
+            bindings: number;
+            /**
+             * Brokers
+             * @default 0
+             */
+            brokers: number;
         };
         /**
          * MerchantStoreMergeRequest
@@ -17114,6 +17233,11 @@ export interface components {
              */
             location_failure_reason?: string | null;
             /**
+             * Location Failure Type
+             * @description 定位失败类型：auth_denied 不允许提交；timeout/unavailable 允许降级（AC-V03-007）
+             */
+            location_failure_type?: ("auth_denied" | "timeout" | "unavailable") | null;
+            /**
              * Location Status
              * @description 定位状态：normal/degraded/missing
              * @default normal
@@ -17171,6 +17295,8 @@ export interface components {
             distance_abnormal_reason: string | null;
             /** Location Failure Reason */
             location_failure_reason: string | null;
+            /** Location Failure Type */
+            location_failure_type: string | null;
             /** Location Status */
             location_status: string;
             /** Visit Source */
@@ -37987,6 +38113,8 @@ export interface operations {
                 owner_employee_id?: string | null;
                 /** @description 门店状态筛选 */
                 status?: string | null;
+                /** @description 门店来源筛选 */
+                source?: string | null;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
@@ -38097,6 +38225,8 @@ export interface operations {
                 review_status?: string | null;
                 owner_employee_id?: string | null;
                 status?: string | null;
+                /** @description 门店来源筛选 */
+                source?: string | null;
             };
             header?: never;
             path?: never;
@@ -38215,6 +38345,40 @@ export interface operations {
                     "application/json": {
                         [key: string]: boolean;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merge_store_preview_api_v1_admin_merchant_stores__store_id__merge_preview_get: {
+        parameters: {
+            query: {
+                /** @description 保留门店ID */
+                keep_store_id: string;
+            };
+            header?: never;
+            path: {
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreMergePreview"];
                 };
             };
             /** @description Validation Error */
@@ -38380,6 +38544,42 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["MerchantStoreStatusChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantStoreResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_store_activation_api_v1_admin_merchant_stores__store_id__activation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantStoreActivationRequest"];
             };
         };
         responses: {

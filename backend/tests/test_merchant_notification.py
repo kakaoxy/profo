@@ -16,6 +16,7 @@ from models import (
     MerchantStore,
     MerchantVisit,
     Notification,
+    NotificationDeliveryLog,
     NotificationRecipient,
     Role,
     User,
@@ -520,3 +521,84 @@ def test_notify_task_requires_operator_role(seeded_db: dict) -> None:
     assert resp.status_code == 403, resp.text
     runs = client.get(f"{API}/admin/merchant/notify/runs")
     assert runs.status_code == 403, runs.text
+
+
+def test_daily_task_expires_due_agreements(seeded_db: dict) -> None:
+    """REQ-M04-005：每日任务把已到期的已签署协议置为已过期，并写审计."""
+    session: Session = seeded_db["session"]
+    employee = _make_employee(session)
+    admin_client = _client(session, seeded_db["users"]["admin"])
+
+    company = _make_company(session, "过期扫描公司")
+    store = _make_store(session, company, name="过期扫描门店", owner_employee_id=employee.id)
+    due = _make_agreement(
+        session,
+        store=store,
+        expire_at=datetime.now(timezone.utc) - timedelta(days=2),
+    )
+    session.commit()
+
+    result = _run(admin_client)
+    assert result["expired_agreements"] == 1, result
+
+    session.expire_all()
+    assert session.query(MerchantAgreement).filter(MerchantAgreement.id == due.id).one().status == "expired"
+
+    from models import OperationLog
+
+    log = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_agreement", OperationLog.action == "expire_batch")
+        .order_by(OperationLog.created_at.desc())
+        .first()
+    )
+    assert log is not None
+    assert log.after["count"] >= 1
+
+
+def test_in_app_notification_records_delivery_log(seeded_db: dict) -> None:
+    """站内信投递必须落 notification_delivery_logs（channel=in_app），供审计追溯."""
+    session: Session = seeded_db["session"]
+    employee = _make_employee(session)
+    admin_client = _client(session, seeded_db["users"]["admin"])
+
+    company = _make_company(session, "站内信审计公司")
+    store = _make_store(session, company, name="站内信审计门店", owner_employee_id=employee.id)
+    _make_agreement(session, store=store, expire_at=datetime.now(timezone.utc) + timedelta(days=5))
+    session.commit()
+
+    result = _run(admin_client)
+    assert result["agreements"]["created"] == 1, result
+
+    notification = _notifications(session, AGREEMENT_TYPE)[0]
+    logs = (
+        session.query(NotificationDeliveryLog).filter(NotificationDeliveryLog.notification_id == notification.id).all()
+    )
+    assert any(log.channel == "in_app" and log.status == "success" for log in logs), [
+        (log.channel, log.status) for log in logs
+    ]
+    in_app = [log for log in logs if log.channel == "in_app"]
+    assert {log.user_id for log in in_app} == {employee.id}
+
+
+def test_notify_task_records_consecutive_failure_alerts(seeded_db: dict) -> None:
+    """REQ-M14-006：连续 3 次任务失败后写告警审计（无外部告警通道时以审计+日志兜底）."""
+    from models import OperationLog
+    from services.merchant.tasks import record_failure
+
+    session: Session = seeded_db["session"]
+    for index in range(3):
+        record_failure(session, RuntimeError(f"模拟失败 {index}"))
+
+    session.expire_all()
+    alerts = (
+        session.query(OperationLog)
+        .filter(
+            OperationLog.resource_type == "merchant_notify_task",
+            OperationLog.action == "notify_alert",
+        )
+        .all()
+    )
+    assert len(alerts) == 1
+    assert alerts[0].after["reason"] == "consecutive_failures"
+    assert alerts[0].after["count"] >= 3

@@ -98,6 +98,8 @@ Page({
     qrCode: "",
     qrStoreName: "",
     qrReason: "",
+    // 分享归属（AC-024）
+    referrer: "",
     // 档案
     broker: null as Broker | null,
     bindStatusText: "",
@@ -125,7 +127,7 @@ Page({
 
   onLoad(options: Record<string, string | undefined>) {
     (this as unknown as { qrCode: string }).qrCode = options.code || "";
-    this.setData({ qrCode: options.code || "" });
+    this.setData({ qrCode: options.code || "", referrer: options.referrer || "" });
     this.load();
   },
 
@@ -276,7 +278,11 @@ Page({
       const result = await request<BrokerRegisterResult>({
         url: "/public/merchant/brokers/register",
         method: "POST",
-        data: { name, qrcode_code: this.data.qrCode || undefined },
+        data: {
+          name,
+          qrcode_code: this.data.qrCode || undefined,
+          referrer: this.data.referrer || undefined,
+        },
       });
       wx.showToast({
         title: result.auto_bound ? "认证成功，已绑定门店" : "认证成功",

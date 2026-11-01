@@ -9,6 +9,7 @@ from sqlalchemy import func, inspect, or_, text
 from sqlalchemy.orm import Session
 
 from constants.merchant import (
+    MerchantBindStatus,
     MerchantCooperationStatus,
     MerchantStoreReviewStatus,
     MerchantStoreSource,
@@ -32,6 +33,7 @@ from schemas.merchant import (
     MerchantDuplicateCheckRequest,
     MerchantDuplicateCheckResponse,
     MerchantLeadStats,
+    MerchantStoreActivationRequest,
     MerchantStoreCreate,
     MerchantStoreDeleteRequest,
     MerchantStoreDetailResponse,
@@ -62,6 +64,14 @@ _CREATE_ALLOWED_COOPERATION = {
     MerchantCooperationStatus.NEGOTIATING.value,
 }
 _DISTANCE_LIMIT_M = 500
+# 查重召回上限与返回上限（超出即视为「未扫描完全部候选」）
+_DUPLICATE_SCAN_LIMIT = 100
+_DUPLICATE_RETURN_LIMIT = 20
+# 中国大陆 GCJ-02 经纬度包络（M09-001：坐标统一 GCJ-02，越界即视为取点错误）
+_GCJ02_LNG_MIN = 73.0
+_GCJ02_LNG_MAX = 135.5
+_GCJ02_LAT_MIN = 3.0
+_GCJ02_LAT_MAX = 54.0
 
 
 def haversine_m(lng1: float, lat1: float, lng2: float, lat2: float) -> int:
@@ -106,7 +116,7 @@ class MerchantStoreService:
                 or_(*conditions),
             )
             .order_by(MerchantStore.updated_at.desc())
-            .limit(100)
+            .limit(_DUPLICATE_SCAN_LIMIT)
             .all()
         )
 
@@ -120,7 +130,8 @@ class MerchantStoreService:
             if phone_hash and store.contact_phone_hash == phone_hash:
                 matched_by.append("phone")
             distance = None
-            if req.lng is not None and req.lat is not None:
+            # 存量门店坐标可空（迁移 v110），缺坐标时跳过距离维度，不能让 float(None) 抛 500
+            if req.lng is not None and req.lat is not None and store.lng is not None and store.lat is not None:
                 distance = haversine_m(float(req.lng), float(req.lat), float(store.lng), float(store.lat))
                 if distance <= _DISTANCE_LIMIT_M:
                     matched_by.append("distance")
@@ -141,7 +152,9 @@ class MerchantStoreService:
             )
 
         candidates.sort(key=lambda c: (-len(c.matched_by), c.distance_m if c.distance_m is not None else 999999))
-        return MerchantDuplicateCheckResponse(candidates=candidates[:20], completed=True)
+        # completed 表示「已扫描完全部候选」：召回被 limit 截断或候选被截到 20 条时为 False
+        completed = len(rows) < _DUPLICATE_SCAN_LIMIT and len(candidates) <= _DUPLICATE_RETURN_LIMIT
+        return MerchantDuplicateCheckResponse(candidates=candidates[:_DUPLICATE_RETURN_LIMIT], completed=completed)
 
     # -------------------- 创建 --------------------
     def create(
@@ -155,6 +168,7 @@ class MerchantStoreService:
         request: Request | None = None,
     ) -> tuple[MerchantStore, list[MerchantDuplicateCandidate], MerchantVisit | None]:
         """创建门店（员工/后台/经纪人共用；员工现场建档必须携带首访）."""
+        self._validate_gcj02(req.lng, req.lat)
         company = self._active_company(req.company_id)
         self._validate_dict_code(COOPERATION_DICT, req.cooperation_status)
         if req.cooperation_status not in _CREATE_ALLOWED_COOPERATION:
@@ -262,6 +276,9 @@ class MerchantStoreService:
         review_status: str | None = None,
         owner_employee_id: str | None = None,
         status: str | None = None,
+        source: str | None = None,
+        broker_count_min: int | None = None,
+        broker_count_max: int | None = None,
     ) -> MerchantStoreListResponse:
         """门店分页搜索（按数据范围过滤，默认排除已合并/已搬迁/已删除）."""
         ensure_scope_role(user)
@@ -310,11 +327,48 @@ class MerchantStoreService:
             query = query.filter(MerchantStore.review_status == review_status)
         if owner_employee_id:
             query = query.filter(MerchantStore.owner_employee_id == owner_employee_id)
+        if source:
+            query = query.filter(MerchantStore.source == source)
+        if broker_count_min is not None or broker_count_max is not None:
+            broker_counts = (
+                self.db.query(
+                    MerchantBroker.store_id.label("store_id"),
+                    func.count(MerchantBroker.id).label("cnt"),
+                )
+                .filter(MerchantBroker.bind_status == MerchantBindStatus.BOUND.value)
+                .group_by(MerchantBroker.store_id)
+                .subquery()
+            )
+            query = query.outerjoin(broker_counts, broker_counts.c.store_id == MerchantStore.id)
+            if broker_count_min is not None:
+                query = query.filter(func.coalesce(broker_counts.c.cnt, 0) >= broker_count_min)
+            if broker_count_max is not None:
+                query = query.filter(func.coalesce(broker_counts.c.cnt, 0) <= broker_count_max)
 
         total = query.count()
         rows = query.order_by(MerchantStore.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        store_ids = [store.id for store, _ in rows]
+        broker_counts: dict[str, int] = {}
+        if store_ids:
+            broker_counts = dict(
+                self.db.query(MerchantBroker.store_id, func.count(MerchantBroker.id))
+                .filter(
+                    MerchantBroker.store_id.in_(store_ids),
+                    MerchantBroker.bind_status == MerchantBindStatus.BOUND.value,
+                )
+                .group_by(MerchantBroker.store_id)
+                .all(),
+            )
         return MerchantStoreListResponse(
-            items=[store_list_item(store, labels, owner_employee_name=name) for store, name in rows],
+            items=[
+                store_list_item(
+                    store,
+                    labels,
+                    owner_employee_name=name,
+                    broker_count=broker_counts.get(store.id, 0),
+                )
+                for store, name in rows
+            ],
             total=total,
             page=page,
             page_size=page_size,
@@ -364,6 +418,8 @@ class MerchantStoreService:
             msg = "已合并门店只读，不可编辑"
             raise ValidationError(msg)
 
+        self._validate_gcj02(req.lng, req.lat)
+
         if req.change_type == "relocate":
             return self._relocate(store, req, user=user, request=request)
 
@@ -377,6 +433,21 @@ class MerchantStoreService:
             msg = "地址或坐标发生变化，请选择地址纠错或门店搬迁"
             raise ValidationError(msg)
 
+        # 必填字段被清空必须拒绝（REQ-M01B-003 分支 2）；Pydantic 的 min_length 挡不住纯空白
+        for label, value in (
+            ("门店名称", req.store_name),
+            ("省份", req.province),
+            ("城市", req.city),
+            ("区县", req.district),
+            ("商圈", req.business_circle),
+            ("详细地址", req.address),
+            ("联系人", req.contact_name),
+            ("联系电话", req.contact_phone),
+        ):
+            if value is not None and not value.strip():
+                msg = f"{label}不能为空"
+                raise ValidationError(msg)
+
         before = self._snapshot(store)
         updated = False
 
@@ -385,22 +456,22 @@ class MerchantStoreService:
             store.company_id = company.id
             store.company_name = company.company_name
             updated = True
-        if req.store_name is not None:
+        if req.store_name is not None and req.store_name.strip() != store.store_name:
             store.store_name = req.store_name.strip()
             updated = True
-        if req.province is not None:
+        if req.province is not None and req.province.strip() != store.province:
             store.province = req.province.strip()
             updated = True
-        if req.city is not None:
+        if req.city is not None and req.city.strip() != store.city:
             store.city = req.city.strip()
             updated = True
-        if req.district is not None:
+        if req.district is not None and req.district.strip() != store.district:
             store.district = req.district.strip()
             updated = True
-        if req.business_circle is not None:
+        if req.business_circle is not None and req.business_circle.strip() != store.business_circle:
             store.business_circle = req.business_circle.strip()
             updated = True
-        if req.address is not None:
+        if req.address is not None and req.address.strip() != store.address:
             store.address = req.address.strip()
             updated = True
         if req.lng is not None:
@@ -409,7 +480,7 @@ class MerchantStoreService:
         if req.lat is not None:
             store.lat = req.lat
             updated = True
-        if req.contact_name is not None:
+        if req.contact_name is not None and req.contact_name.strip() != store.contact_name:
             store.contact_name = req.contact_name.strip()
             updated = True
         if req.contact_phone is not None:
@@ -426,7 +497,7 @@ class MerchantStoreService:
         if req.photos is not None:
             store.photos = _photo_json(req.photos)
             updated = True
-        if req.remark is not None:
+        if req.remark is not None and req.remark != store.remark:
             store.remark = req.remark
             updated = True
 
@@ -526,9 +597,17 @@ class MerchantStoreService:
         *,
         request: Request | None = None,
     ) -> None:
-        """门店软删除：存在拜访/绑定/线索/协议关联时拒绝（Q44）."""
-        store = self._get_store(store_id)
+        """门店软删除：存在拜访/绑定/线索/协议关联时拒绝（Q44）.
+
+        重复删除按 REQ-M11-004 分支 5 幂等处理（不再抛 404）。
+        """
+        store = self.db.query(MerchantStore).filter(MerchantStore.id == store_id).first()
+        if store is None:
+            msg = "门店不存在"
+            raise ResourceNotFoundError(msg)
         ensure_store_visible(self.db, user, store)
+        if store.is_deleted:
+            return
         relations = (
             (
                 self.db.query(MerchantVisit.id)
@@ -564,8 +643,10 @@ class MerchantStoreService:
             action="delete",
             resource_type="merchant_store",
             resource_id=str(store.id),
-            before=before,
-            after=self._snapshot(store) | {"reason": req.reason},
+            # AC-V01-013 要求 delete 记录 after 为空；BR-M11-014 又要求记录删除原因，
+            # 因此把原因并入 before（删除后的「新状态」确实不存在，不臆造 after）
+            before=before | {"delete_reason": req.reason},
+            after=None,
             request=request,
         )
         self.db.commit()
@@ -586,9 +667,18 @@ class MerchantStoreService:
         if merged.status == MerchantStoreStatus.MERGED.value:
             msg = "被合并门店已是已合并状态"
             raise ValidationError(msg)
+        if keep.status == MerchantStoreStatus.MERGED.value:
+            msg = "保留门店已是已合并状态，请选择正常门店"
+            raise ValidationError(msg)
+        if keep.status == MerchantStoreStatus.DISABLED.value:
+            msg = "保留门店已停用，请先启用或选择其他门店"
+            raise ValidationError(msg)
         if keep.company_id != merged.company_id:
             msg = "不允许跨公司合并门店"
             raise ValidationError(msg)
+        # 数据范围复核（BR-M12-019）：越权门店按 403 拒绝，不泄露是否存在
+        ensure_store_visible(self.db, user, keep)
+        ensure_store_visible(self.db, user, merged)
 
         visit_count = (
             self.db.query(MerchantVisit)
@@ -634,6 +724,8 @@ class MerchantStoreService:
         merged.status = MerchantStoreStatus.MERGED.value
         merged.review_status = MerchantStoreReviewStatus.MERGED.value
         merged.merged_to_store_id = keep.id
+        # 曾用门店号：需求 R-V07-12 未确认取值口径（原 store_no 还是原 store_id），
+        # 且数据模型无门店编号列；此处存门店名，保证详情页「曾用门店」可读可追溯。
         merged.former_store_no = merged.store_name
         merged.is_deleted = False
 
@@ -644,6 +736,13 @@ class MerchantStoreService:
         )
         keep.last_visit_at = max_visit
 
+        migrated = {
+            "visits": int(visit_count),
+            "leads": int(lead_count),
+            "agreements": int(agreement_count),
+            "bindings": int(binding_count),
+            "brokers": int(broker_count),
+        }
         add_audit_log(
             self.db,
             user_id=str(user.id),
@@ -651,17 +750,11 @@ class MerchantStoreService:
             resource_type="merchant_store",
             resource_id=str(merged.id),
             before=before,
-            after=self._snapshot(merged) | {"keep_store_id": str(keep.id), "reason": req.reason},
+            after=self._snapshot(merged) | {"keep_store_id": str(keep.id), "reason": req.reason, "migrated": migrated},
             request=request,
         )
         self.db.commit()
-        return {
-            "visits": int(visit_count),
-            "leads": int(lead_count),
-            "agreements": int(agreement_count),
-            "bindings": int(binding_count),
-            "brokers": int(broker_count),
-        }
+        return migrated
 
     def review_broker_store(
         self,
@@ -692,11 +785,34 @@ class MerchantStoreService:
             self.db.refresh(store)
             return store_response(store, cooperation_label_map(self.db))
 
+        # REQ-M11-012 分支 2：必填字段缺失时拒绝转正并提示先补全
+        missing = [
+            label
+            for label, value in (
+                ("门店名称", store.store_name),
+                ("省份", store.province),
+                ("城市", store.city),
+                ("区县", store.district),
+                ("商圈", store.business_circle),
+                ("详细地址", store.address),
+                ("联系人", store.contact_name),
+                ("联系电话", store.contact_phone),
+            )
+            if not (value or "").strip()
+        ]
+        if missing:
+            msg = f"门店必填字段不完整（{'、'.join(missing)}），请先补全后再转正"
+            raise ValidationError(msg)
+
         before = self._snapshot(store)
         store.review_status = MerchantStoreReviewStatus.APPROVED.value
+        binding_skipped = None
         if store.created_by_broker_id:
             broker = self.db.query(MerchantBroker).filter(MerchantBroker.id == store.created_by_broker_id).first()
-            if broker is not None and broker.store_id is None and broker.bind_status != "disabled":
+            if broker is not None and broker.bind_status == "disabled":
+                # REQ-M11-012 分支 5：创建经纪人已停用 → 允许转正但不自动绑定，记录原因
+                binding_skipped = "创建经纪人已停用，未自动绑定"
+            elif broker is not None and broker.store_id is None:
                 self.db.add(
                     MerchantBrokerBinding(
                         broker_id=broker.id,
@@ -718,7 +834,9 @@ class MerchantStoreService:
             resource_type="merchant_store",
             resource_id=str(store.id),
             before=before,
-            after=self._snapshot(store) | {"review_remark": req.remark},
+            after=self._snapshot(store)
+            | {"review_remark": req.remark}
+            | ({"broker_binding_skipped": binding_skipped} if binding_skipped else {}),
             request=request,
         )
         self.db.commit()
@@ -758,6 +876,18 @@ class MerchantStoreService:
                 .items
             ]
 
+        # REQ-M11-012 主流程 2：待审核门店详情需展示创建经纪人、邀请员工
+        created_by_broker_name = None
+        inviter_employee_name = None
+        if store.created_by_broker_id:
+            creator = self.db.query(MerchantBroker).filter(MerchantBroker.id == store.created_by_broker_id).first()
+            if creator is not None:
+                created_by_broker_name = creator.name
+                if creator.inviter_employee_id:
+                    inviter = self.db.query(User).filter(User.id == creator.inviter_employee_id).first()
+                    if inviter is not None:
+                        inviter_employee_name = inviter.nickname or inviter.username
+
         now = datetime.now(timezone.utc)
         month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         total = self.db.query(Lead.id).filter(Lead.store_id == store.id, Lead.is_deleted.is_(False)).count()
@@ -772,6 +902,8 @@ class MerchantStoreService:
         )
         return MerchantStoreDetailResponse(
             store=store_response(store, cooperation_label_map(self.db)),
+            created_by_broker_name=created_by_broker_name,
+            inviter_employee_name=inviter_employee_name,
             brokers=[item.model_dump(mode="json") for item in brokers],
             visits=visits,
             agreements=agreements,
@@ -828,6 +960,77 @@ class MerchantStoreService:
             resource_id=str(store.id),
             before=before,
             after=self._snapshot(store) | {"reason": req.reason.strip()},
+            request=request,
+        )
+        self.db.commit()
+        self.db.refresh(store)
+        return store_response(store, cooperation_label_map(self.db))
+
+    def merge_preview(self, user: User, merged_store_id: str, keep_store_id: str) -> dict[str, int]:
+        """待迁移数据量预览（REQ-M11-005 主流程 3），校验规则与合并一致."""
+        keep = self._get_store(keep_store_id)
+        merged = self._get_store(merged_store_id)
+        if keep.id == merged.id:
+            msg = "保留门店与被合并门店不能相同"
+            raise ValidationError(msg)
+        if merged.status == MerchantStoreStatus.MERGED.value:
+            msg = "被合并门店已是已合并状态"
+            raise ValidationError(msg)
+        if keep.status == MerchantStoreStatus.MERGED.value:
+            msg = "保留门店已是已合并状态，请选择正常门店"
+            raise ValidationError(msg)
+        if keep.status == MerchantStoreStatus.DISABLED.value:
+            msg = "保留门店已停用，请先启用或选择其他门店"
+            raise ValidationError(msg)
+        if keep.company_id != merged.company_id:
+            msg = "不允许跨公司合并门店"
+            raise ValidationError(msg)
+        ensure_store_visible(self.db, user, keep)
+        ensure_store_visible(self.db, user, merged)
+        return {
+            "visits": self.db.query(MerchantVisit)
+            .filter(MerchantVisit.store_id == merged.id, MerchantVisit.is_deleted.is_(False))
+            .count(),
+            "leads": self.db.query(Lead).filter(Lead.store_id == merged.id).count(),
+            "agreements": self.db.query(MerchantAgreement).filter(MerchantAgreement.store_id == merged.id).count(),
+            "bindings": self.db.query(MerchantBrokerBinding)
+            .filter(MerchantBrokerBinding.store_id == merged.id, MerchantBrokerBinding.status == "active")
+            .count(),
+            "brokers": self.db.query(MerchantBroker).filter(MerchantBroker.store_id == merged.id).count(),
+        }
+
+    def change_activation_status(
+        self,
+        user: User,
+        store_id: str,
+        req: MerchantStoreActivationRequest,
+        *,
+        request: Request | None = None,
+    ) -> MerchantStoreResponse:
+        """门店停用/启用（REQ-M11-003 状态流转：正常 ↔ 停用）.
+
+        停用后按 BR-M11-008 禁止新建拜访/绑定（由 visit/broker 服务校验 status）。
+        """
+        store = self._get_store(store_id)
+        ensure_store_visible(self.db, user, store)
+        if store.status in {MerchantStoreStatus.MERGED.value, MerchantStoreStatus.RELOCATED.value}:
+            msg = "已合并/已搬迁门店不可停用或启用"
+            raise ValidationError(msg)
+        target = req.target_status
+        if target == store.status:
+            msg = "门店状态未发生变化"
+            raise ConflictError(msg)
+
+        before = self._snapshot(store)
+        store.status = target
+        add_audit_log(
+            self.db,
+            user_id=str(user.id),
+            action="disable" if target == MerchantStoreStatus.DISABLED.value else "enable",
+            resource_type="merchant_store",
+            resource_id=str(store.id),
+            before=before,
+            after=self._snapshot(store) | {"reason": req.reason},
             request=request,
         )
         self.db.commit()
@@ -981,6 +1184,22 @@ class MerchantStoreService:
             {"store_id": store_id, "status": "signed"},
         ).scalar_one()
         return int(count) > 0
+
+    @staticmethod
+    def _validate_gcj02(lng: float | None, lat: float | None) -> None:
+        """坐标必须落在 GCJ-02 中国大陆包络内（M09-001：系统统一 GCJ-02）.
+
+        后台支持手填经纬度，若不校验会把 WGS-84 或明显错误的点落到地图之外；
+        需求未给出更细的坐标系判定，这里只做包络拦截并提示改用高德坐标拾取器。
+        """
+        if lng is None and lat is None:
+            return
+        if lng is None or lat is None:
+            msg = "经纬度必须成对填写"
+            raise ValidationError(msg)
+        if not (_GCJ02_LNG_MIN <= lng <= _GCJ02_LNG_MAX and _GCJ02_LAT_MIN <= lat <= _GCJ02_LAT_MAX):
+            msg = "经纬度不在中国大陆范围（GCJ-02），请使用高德坐标拾取器取点"
+            raise ValidationError(msg)
 
     @staticmethod
     def _snapshot(store: MerchantStore) -> dict:

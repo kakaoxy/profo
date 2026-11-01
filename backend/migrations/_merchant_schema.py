@@ -206,6 +206,8 @@ def add_lead_merchant_attribution_columns(engine: Engine) -> None:
     )
 
 
+# 以下两个函数的长字符串拼接必须保持原样：改动会改变迁移 checksum（K4/K5）
+# fmt: off
 def create_merchant_agreement_tables(engine: Engine) -> None:
     """v108：幂等创建协议模板与协议表及索引."""
     from models import Base, MerchantAgreement, MerchantAgreementTemplate
@@ -272,3 +274,22 @@ def add_merchant_store_phone_hash_column(engine: Engine) -> None:
             ),
         ),
     )
+
+
+# fmt: on
+
+
+def add_merchant_visit_location_failure_type(engine: Engine) -> None:
+    """v111：merchant_visits 补 location_failure_type 列（定位失败类型，幂等）.
+
+    AC-V03-007：定位授权被拒绝不得降级提交，只有弱网/超时允许降级并标注；
+    该列落库失败类型，供后台与审计区分「拒绝授权」与「弱网/超时」。
+    """
+    if not _column_exists(engine, "merchant_visits", "location_failure_type"):
+        logger.info("迁移 v111：为 merchant_visits 补 location_failure_type 列")
+        with engine.begin() as conn:
+            conn.execute(
+                text(
+                    "ALTER TABLE merchant_visits ADD COLUMN location_failure_type VARCHAR(20)",
+                ),
+            )

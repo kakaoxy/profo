@@ -171,6 +171,8 @@ class NotificationService:
             )
             if notification is not None and created:
                 self._insert_recipients(notification.id, in_app_users)
+                # 站内信也要落投递日志（此前只记微信渠道，站内投递无审计痕迹）
+                self._record_in_app_delivery(notification.id, in_app_users)
             self.db.commit()
 
         notification_id = notification.id if notification is not None else uuid.uuid4()
@@ -318,6 +320,23 @@ class NotificationService:
             .on_conflict_do_nothing(index_elements=["notification_id", "user_id"])
         )
         self.db.execute(stmt)
+
+    def _record_in_app_delivery(self, notification_id: uuid.UUID, user_ids: list[str]) -> None:
+        """站内信投递日志（channel=in_app，status=success）——列表落库即视为送达."""
+        now = datetime.now(timezone.utc)
+        self.db.add_all(
+            [
+                NotificationDeliveryLog(
+                    notification_id=notification_id,
+                    user_id=uid,
+                    channel="in_app",
+                    status="success",
+                    attempt=1,
+                    created_at=now,
+                )
+                for uid in user_ids
+            ]
+        )
 
     def _record_delivery(
         self,

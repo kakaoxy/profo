@@ -21,6 +21,7 @@ from schemas.public import (
     WechatProfileUpdateRequest,
 )
 from schemas.user import MergeAccountRequest, PhoneWechatBindRequest
+from services.merchant.broker import MerchantBrokerService
 from services.system.auth import AuthService
 from services.system.exceptions import (
     AccountAlreadyMergedError,
@@ -145,6 +146,8 @@ def set_initial_phone(
     """
     try:
         updated_user = user_profile_service.set_initial_phone(db, current_user, body.phone)
+        # AC-V04-015：用户手机号变更后同步经纪人档案（无档案时静默返回）
+        MerchantBrokerService(db).sync_phone_from_user(updated_user, request=request)
     except PhoneTakenByMainAccountError as e:
         return JSONResponse(
             status_code=200,
@@ -170,12 +173,17 @@ def update_phone(
     db: DbSessionDep,
 ) -> PublicPhoneResponse:
     """C端用户修改手机号，需密码确认身份."""
+    broker_service = MerchantBrokerService(db)
+    # BR-M05-002：先校验目标号码未被其他经纪人档案占用，再改 users，避免跨表不一致
+    broker_service.ensure_phone_changeable(current_user, body.phone)
     updated_user = user_profile_service.update_phone_with_verification(
         db,
         current_user,
         body.phone,
         body.password,
     )
+    # AC-V04-015：更新经纪人档案的手机号与唯一哈希
+    broker_service.sync_phone_from_user(updated_user, request=request)
 
     return PublicPhoneResponse(phone=mask_phone(updated_user.phone))
 

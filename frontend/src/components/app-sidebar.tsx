@@ -155,8 +155,9 @@ export function AppSidebar({ user }: { user: User | null }) {
   );
 
   // 按权限/角色过滤一级菜单与子菜单
+  // 分组菜单：父级 permission 只作默认收口，任一子项可见即保留（如角色被收回 merchant:read 但仍有 merchant:map）
   const visibleNav = navMain
-    .filter((item) => isVisible(item))
+    .filter((item) => isVisible(item) || Boolean(item.items?.some((sub) => isVisible(sub))))
     .map((item) => ({
       ...item,
       items: item.items?.filter((sub) => isVisible(sub)),

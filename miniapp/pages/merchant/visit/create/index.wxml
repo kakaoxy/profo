@@ -39,12 +39,18 @@
     <view class="section-title">定位打卡</view>
     <view class="location-box {{locationOk ? 'location-box--ok' : ''}}">
       <view wx:if="{{locationOk}}">已定位：{{lng}}, {{lat}}</view>
-      <view wx:elif="{{locationFailure}}">未定位：{{locationFailure}}</view>
+      <view wx:elif="{{locationFailure}}">未定位（{{locationFailureType === 'timeout' ? '弱网/超时' : '定位不可用'}}）</view>
+      <view wx:elif="{{locationDenied}}" class="location-box__denied">定位授权被拒绝，请点击「获取定位」并在设置中开启位置权限</view>
       <view wx:else>门店拜访需获取当前位置，用于距离校验</view>
     </view>
     <view class="row-actions">
       <view class="mini-btn" bindtap="onGetLocation">获取定位</view>
-      <view class="mini-btn mini-btn--ghost" bindtap="onLocationFallback">定位失败</view>
+      <view
+        wx:if="{{!locationDenied}}"
+        class="mini-btn mini-btn--ghost"
+        bindtap="onLocationFallback"
+        >定位失败</view
+      >
     </view>
     <input
       wx:if="{{locationFailure}}"
@@ -70,9 +76,14 @@
     </view>
     <view class="form-group" wx:if="{{form.is_backfill}}">
       <text class="form-label">拜访日期</text>
-      <picker mode="date" value="{{backfillDate}}" end="{{today}}" bindchange="onBackfillDate">
-        <view class="input picker-value">{{backfillDate || '请选择日期'}}</view>
-      </picker>
+      <view class="form-row">
+        <picker mode="date" value="{{backfillDate}}" end="{{today}}" bindchange="onBackfillDate">
+          <view class="input picker-value">{{backfillDate || '请选择日期'}}</view>
+        </picker>
+        <picker mode="time" value="{{backfillTime}}" bindchange="onBackfillTime">
+          <view class="input picker-value">{{backfillTime || '请选择时间'}}</view>
+        </picker>
+      </view>
       <input class="input" placeholder="补录原因" value="{{form.backfill_reason}}" bindinput="onInput" data-field="backfill_reason" />
     </view>
   </view>

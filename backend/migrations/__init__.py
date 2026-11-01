@@ -209,6 +209,7 @@ from migrations._merchant import seed_merchant_platform
 from migrations._merchant_schema import (
     add_lead_merchant_attribution_columns,
     add_merchant_store_phone_hash_column,
+    add_merchant_visit_location_failure_type,
     alter_merchant_store_coordinates_nullable,
     create_merchant_agreement_tables,
     create_merchant_broker_tables,
@@ -530,6 +531,8 @@ def _run_all_migrations(engine: Engine) -> None:
         add_lead_merchant_attribution_columns(engine)
         # v110：门店经纬度允许为空
         alter_merchant_store_coordinates_nullable(engine)
+        # v111：拜访记录补定位失败类型列（AC-V03-007 区分拒绝授权与弱网/超时）
+        add_merchant_visit_location_failure_type(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

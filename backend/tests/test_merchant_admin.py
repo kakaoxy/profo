@@ -204,6 +204,26 @@ def test_soft_delete_without_relations(admin_client: TestClient, employee: User,
     row = seeded_db["session"].query(MerchantStore).filter(MerchantStore.id == store["id"]).one()
     assert row.is_deleted is True
 
+    # AC-V01-013：delete 审计 after 为空；删除原因并入 before（BR-M11-014）
+    from models import OperationLog
+
+    session = seeded_db["session"]
+    session.expire_all()
+    log = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_store", OperationLog.action == "delete")
+        .one()
+    )
+    assert log.after is None
+    assert log.before["delete_reason"] == "重复录入"
+
+    # REQ-M11-004 分支 5：重复删除幂等（不再 404）
+    again = admin_client.post(
+        f"{API}/admin/merchant/stores/{store['id']}/delete",
+        json={"reason": "重复录入"},
+    )
+    assert again.status_code == 200, again.text
+
 
 def test_soft_delete_with_relations_rejected(
     admin_client: TestClient,
@@ -254,6 +274,7 @@ def test_merge_migrates_relations(
     old = session.query(MerchantStore).filter(MerchantStore.id == merged["id"]).one()
     assert old.status == "merged"
     assert old.merged_to_store_id == keep["id"]
+    # R-V07-12 未确认取值口径（模型无门店编号列），落地为门店名以保证可读追溯
     assert old.former_store_no == "被合并门店"
     assert session.query(MerchantVisit).filter(MerchantVisit.store_id == keep["id"]).count() == 1
     assert session.query(Lead).filter(Lead.store_id == keep["id"]).count() == 1
@@ -431,3 +452,192 @@ def test_review_broker_store_approve_and_merge(
 
 
 pytestmark = pytest.mark.usefixtures("seeded_db")
+
+
+def test_store_list_source_filter_is_applied(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-M11-001：门店列表按来源筛选必须真实生效（避免参数未接线）."""
+    company = _create_company(admin_client)
+    employee_store = _create_store(admin_client, company["id"], employee.id, name="来源员工门店")
+    backoffice_store = _create_store(admin_client, company["id"], employee.id, name="来源后台门店")
+    session: Session = seeded_db["session"]
+    session.query(MerchantStore).filter(MerchantStore.id == employee_store["id"]).update({"source": "employee"})
+    session.commit()
+
+    resp = admin_client.get(f"{API}/admin/merchant/stores", params={"source": "employee"})
+    assert resp.status_code == 200, resp.text
+    ids = [item["id"] for item in resp.json()["items"]]
+    assert employee_store["id"] in ids
+    assert backoffice_store["id"] not in ids
+
+
+def test_store_list_broker_count_range_filter(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-M11-001：门店列表支持按经纪人数量区间筛选."""
+    company = _create_company(admin_client)
+    empty_store = _create_store(admin_client, company["id"], employee.id, name="无经纪人门店")
+    staffed_store = _create_store(admin_client, company["id"], employee.id, name="有经纪人门店")
+    _create_broker(admin_client, staffed_store["id"])
+
+    resp = admin_client.get(f"{API}/admin/merchant/stores", params={"broker_count_min": 1})
+    assert resp.status_code == 200, resp.text
+    ids = [item["id"] for item in resp.json()["items"]]
+    assert staffed_store["id"] in ids
+    assert empty_store["id"] not in ids
+
+    resp_zero = admin_client.get(f"{API}/admin/merchant/stores", params={"broker_count_min": 0, "broker_count_max": 0})
+    assert resp_zero.status_code == 200, resp_zero.text
+    zero_ids = [item["id"] for item in resp_zero.json()["items"]]
+    assert empty_store["id"] in zero_ids
+    assert staffed_store["id"] not in zero_ids
+
+
+def test_merge_preview_returns_migration_counts(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-M11-005 主流程 3：合并前预览待迁移数据量，且同门店合并被拒绝."""
+    company = _create_company(admin_client)
+    keep = _create_store(admin_client, company["id"], employee.id, name="预览保留门店")
+    merged = _create_store(admin_client, company["id"], employee.id, name="预览被合并门店")
+    _create_broker(admin_client, merged["id"])
+    _create_visit(employee_client, merged["id"])
+    template = _create_template(admin_client)
+    _create_agreement(employee_client, merged, template["id"])
+    lead = admin_client.post(f"{API}/leads", json={"community_name": "预览花园", "store_id": merged["id"]})
+    assert lead.status_code == 201, lead.text
+
+    resp = admin_client.get(
+        f"{API}/admin/merchant/stores/{merged['id']}/merge-preview",
+        params={"keep_store_id": keep["id"]},
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["visits"] == 1
+    assert body["leads"] == 1
+    assert body["agreements"] == 1
+    assert body["brokers"] == 1
+    assert body["bindings"] == 1
+
+    same = admin_client.get(
+        f"{API}/admin/merchant/stores/{merged['id']}/merge-preview",
+        params={"keep_store_id": merged["id"]},
+    )
+    assert same.status_code == 400, same.text
+    assert "不能相同" in same.json()["message"]
+
+
+def test_merge_and_agreement_review_require_internal_role(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """BR-M12-003 / BR-M04-031：user 角色即便持有 merchant:write/agreement 也不得合并门店或审核协议."""
+    company = _create_company(admin_client)
+    keep = _create_store(admin_client, company["id"], employee.id, name="保留门店")
+    merged = _create_store(admin_client, company["id"], employee.id, name="被合并门店")
+    template = _create_template(admin_client)
+    agreement = _create_agreement(employee_client, keep, template["id"])
+
+    user_client = _client(seeded_db["session"], employee, c_side=False)
+
+    denied_merge = user_client.post(
+        f"{API}/admin/merchant/stores/merge",
+        json={"keep_store_id": keep["id"], "merged_store_id": merged["id"], "reason": "越权尝试"},
+    )
+    assert denied_merge.status_code == 403, denied_merge.text
+    assert "admin/operator" in denied_merge.json()["message"]
+
+    denied_review = user_client.post(
+        f"{API}/admin/merchant/agreements/{agreement['id']}/review",
+        json={"approve": True, "remark": "越权尝试"},
+    )
+    assert denied_review.status_code == 403, denied_review.text
+
+    # 数据未被改动
+    session: Session = seeded_db["session"]
+    session.expire_all()
+    assert session.query(MerchantStore).filter(MerchantStore.id == merged["id"]).one().status != "merged"
+
+
+def test_store_activation_disable_and_enable(admin_client: TestClient, employee: User, seeded_db: dict) -> None:
+    """REQ-M11-003：门店可停用/启用，写审计；停用后禁止新建拜访."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+
+    disabled = admin_client.post(
+        f"{API}/admin/merchant/stores/{store['id']}/activation",
+        json={"target_status": "disabled", "reason": "门店装修停业"},
+    )
+    assert disabled.status_code == 200, disabled.text
+    assert disabled.json()["status"] == "disabled"
+
+    again = admin_client.post(
+        f"{API}/admin/merchant/stores/{store['id']}/activation",
+        json={"target_status": "disabled", "reason": "重复停用"},
+    )
+    assert again.status_code == 409, again.text
+
+    session: Session = seeded_db["session"]
+    logs = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_store", OperationLog.resource_id == store["id"])
+        .all()
+    )
+    assert any(log.action == "disable" for log in logs)
+
+    enabled = admin_client.post(
+        f"{API}/admin/merchant/stores/{store['id']}/activation",
+        json={"target_status": "normal", "reason": "恢复营业"},
+    )
+    assert enabled.status_code == 200, enabled.text
+    assert enabled.json()["status"] == "normal"
+
+
+def test_review_broker_store_requires_complete_fields(
+    admin_client: TestClient,
+    employee: User,
+    customer_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """REQ-M11-012 分支 2：必填字段缺失时拒绝转正并提示先补全."""
+    company = _create_company(admin_client)
+    customer_client.post(f"{API}/public/merchant/brokers/register", json={"name": "建店经纪人"})
+    payload = {
+        "company_id": company["id"],
+        "store_name": f"缺字段自建店-{uuid.uuid4().hex[:5]}",
+        "province": "上海市",
+        "city": "上海市",
+        "district": "浦东新区",
+        "business_circle": "陆家嘴商圈",
+        "address": "浦东南路 500 号",
+        "lng": 121.52,
+        "lat": 31.25,
+        "contact_name": "李店长",
+        "contact_phone": "13600004444",
+        "cooperation_status": "not_cooperated",
+        "force_create_reason": "测试数据",
+    }
+    created = customer_client.post(f"{API}/public/merchant/brokers/me/store", json=payload)
+    assert created.status_code == 201, created.text
+    store_id = created.json()["store"]["id"]
+
+    session: Session = seeded_db["session"]
+    row = session.query(MerchantStore).filter(MerchantStore.id == store_id).one()
+    row.address = "   "
+    session.commit()
+
+    resp = admin_client.post(f"{API}/admin/merchant/stores/{store_id}/review", json={"action": "approve"})
+    assert resp.status_code == 400, resp.text
+    assert "详细地址" in resp.json()["message"]
+    session.refresh(row)
+    assert row.review_status == "pending"

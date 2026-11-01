@@ -602,3 +602,83 @@ def test_my_recommended_leads_with_followups(
 
 
 pytestmark = pytest.mark.usefixtures("seeded_db")
+
+
+def test_reject_binding_writes_audit_and_disabled_broker_cannot_be_approved(
+    broker_client: TestClient,
+    admin_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """审核拒绝写审计；经纪人停用后存量 pending 申请不得通过."""
+    from models import OperationLog
+
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"])
+    _register(broker_client)
+    broker_client.post(f"{API}/public/merchant/brokers/me/bind", json={"store_id": store["id"]})
+
+    unbind = broker_client.post(f"{API}/public/merchant/brokers/me/unbind", json={"reason": "离职"})
+    binding_id = unbind.json()["id"]
+    reject = admin_client.post(
+        f"{API}/admin/merchant/bindings/{binding_id}/approve",
+        json={"approve": False, "remark": "暂不处理"},
+    )
+    assert reject.status_code == 200, reject.text
+
+    session = seeded_db["session"]
+    session.expire_all()
+    log = (
+        session.query(OperationLog)
+        .filter(
+            OperationLog.resource_type == "merchant_broker_binding",
+            OperationLog.action == "reject",
+        )
+        .order_by(OperationLog.created_at.desc())
+        .first()
+    )
+    assert log is not None
+    assert log.after["remark"] == "暂不处理"
+
+    # 停用经纪人后，新的 pending 申请不得通过
+    second = broker_client.post(f"{API}/public/merchant/brokers/me/unbind", json={"reason": "离职"})
+    assert second.status_code == 200, second.text
+    me = broker_client.get(f"{API}/public/merchant/brokers/me").json()
+    disable = admin_client.post(
+        f"{API}/admin/merchant/brokers/{me['id']}/status",
+        json={"target_status": "disabled", "reason": "E2E 停用"},
+    )
+    assert disable.status_code == 200, disable.text
+
+    approve = admin_client.post(
+        f"{API}/admin/merchant/bindings/{second.json()['id']}/approve",
+        json={"approve": True},
+    )
+    assert approve.status_code == 400, approve.text
+    assert "停用" in approve.json()["message"]
+
+
+def test_phone_change_syncs_broker_phone_and_hash(
+    broker_client: TestClient,
+    customer_user: User,
+    seeded_db: dict,
+) -> None:
+    """AC-V04-015：用户改手机号后，经纪人档案的手机号与 phone_hash 同步更新."""
+    from models.merchant import MerchantBroker
+
+    _register(broker_client, name="换号经纪人")
+
+    session: Session = seeded_db["session"]
+    customer_user.password = get_password_hash("Test123456")
+    session.commit()
+
+    new_phone = f"139{uuid.uuid4().int % 10**8:08d}"
+    resp = broker_client.put(
+        f"{API}/public/users/phone",
+        json={"phone": new_phone, "password": "Test123456"},
+    )
+    assert resp.status_code == 200, resp.text
+
+    session.expire_all()
+    broker = session.query(MerchantBroker).filter(MerchantBroker.user_id == str(customer_user.id)).one()
+    assert broker.phone == new_phone
+    assert broker.phone_hash == hash_phone(new_phone)

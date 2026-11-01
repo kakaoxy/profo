@@ -39,6 +39,14 @@ class MerchantStoreSource(str, Enum):
     BROKER = "broker"
 
 
+MERCHANT_STORE_SOURCE_LABELS: dict[str, str] = {
+    MerchantStoreSource.EMPLOYEE.value: "员工建档",
+    MerchantStoreSource.BACKOFFICE.value: "后台新增",
+    MerchantStoreSource.IMPORT.value: "批量导入",
+    MerchantStoreSource.BROKER.value: "经纪人创建",
+}
+
+
 class MerchantCooperationStatus(str, Enum):
     """门店合作状态（字典 merchant_cooperation_status）."""
 
@@ -73,6 +81,14 @@ class MerchantLocationStatus(str, Enum):
     NORMAL = "normal"
     DEGRADED = "degraded"
     MISSING = "missing"
+
+
+class MerchantLocationFailureType(str, Enum):
+    """定位失败类型（V03 AC-V03-007）：仅弱网/超时允许降级提交."""
+
+    AUTH_DENIED = "auth_denied"
+    TIMEOUT = "timeout"
+    UNAVAILABLE = "unavailable"
 
 
 class MerchantBindStatus(str, Enum):

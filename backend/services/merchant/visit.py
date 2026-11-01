@@ -7,6 +7,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from constants.merchant import (
+    MerchantLocationFailureType,
     MerchantLocationStatus,
     MerchantStoreStatus,
     MerchantVisitSource,
@@ -79,7 +80,8 @@ class MerchantVisitService:
             remark = f"{remark}；补录原因：{req.backfill_reason}" if remark else f"补录原因：{req.backfill_reason}"
 
         distance = None
-        if req.lng is not None and req.lat is not None:
+        # 门店坐标缺失时无法计算距离（曾 float(None) 触发 500）
+        if req.lng is not None and req.lat is not None and store.lng is not None and store.lat is not None:
             distance = haversine_m(float(req.lng), float(req.lat), float(store.lng), float(store.lat))
             if distance > _DISTANCE_LIMIT_M and not (req.distance_abnormal_reason or "").strip():
                 msg = "拜访定位与门店距离超过 500 米，请填写异常原因"
@@ -97,6 +99,7 @@ class MerchantVisitService:
             distance_m=distance,
             distance_abnormal_reason=req.distance_abnormal_reason,
             location_failure_reason=req.location_failure_reason,
+            location_failure_type=req.location_failure_type,
             location_status=req.location_status,
             visit_source=visit_source,
             address=req.address,
@@ -200,7 +203,11 @@ class MerchantVisitService:
         return visit
 
     def _validate_location(self, req: MerchantVisitCreate) -> None:
-        """定位校验：正常必须带坐标；降级/未定位必须写原因（Q05）."""
+        """定位校验：正常必须带坐标；降级/未定位必须写原因（Q05 / AC-V03-007）."""
+        if req.location_failure_type == MerchantLocationFailureType.AUTH_DENIED.value:
+            # AC-V03-007：定位授权被拒绝不得提交，只有弱网/超时允许降级
+            msg = "定位授权被拒绝，请授权定位后重试（不允许以定位失败降级提交）"
+            raise ValidationError(msg)
         if req.location_status == MerchantLocationStatus.NORMAL.value:
             if req.lng is None or req.lat is None:
                 msg = "未获取到定位，请授权定位后重试"
@@ -241,6 +248,7 @@ class MerchantVisitService:
             "distance_m": visit.distance_m,
             "distance_abnormal_reason": visit.distance_abnormal_reason,
             "location_failure_reason": visit.location_failure_reason,
+            "location_failure_type": visit.location_failure_type,
             "location_status": visit.location_status,
             "visit_source": visit.visit_source,
             "address": visit.address,

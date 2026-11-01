@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
-import { Badge } from "@/components/ui/badge";
+import { Field } from "@/app/(main)/admin/merchant/_components/field";
+import { StatusBadge } from "@/app/(main)/admin/merchant/_components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -50,6 +51,7 @@ export default function MerchantAgreementsPage() {
   const [formStoreId, setFormStoreId] = useState("");
   const [formCompanyId, setFormCompanyId] = useState("");
   const [formTemplateId, setFormTemplateId] = useState("");
+  const [canReview, setCanReview] = useState(false);
   const [formSignerName, setFormSignerName] = useState("");
   const [formSignerPhone, setFormSignerPhone] = useState("");
   const [formAgreementNo, setFormAgreementNo] = useState("");
@@ -145,6 +147,16 @@ export default function MerchantAgreementsPage() {
   };
 
   useEffect(() => {
+    // 协议审核仅限 admin/operator（BR-M04-031），无权限角色不展示审核按钮
+    merchantApi<components["schemas"]["UserResponse"]>("/auth/me")
+      .then((me) => {
+        const roles = [me.role?.code, ...(me.additional_roles || []).map((role) => role.code)];
+        setCanReview(roles.includes("admin") || roles.includes("operator"));
+      })
+      .catch(() => setCanReview(false));
+  }, []);
+
+  useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
@@ -199,82 +211,97 @@ export default function MerchantAgreementsPage() {
         />
 
         {createOpen ? (
-          <Card className="flex flex-col gap-3 p-4">
+          <Card className="rounded-cards border-0 shadow-steep-sm flex flex-col gap-3 p-5">
             <div className="text-sm font-medium">发起合作协议</div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <Select value={subjectType} onValueChange={(value) => setSubjectType(value as "store" | "company")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="签约主体" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="store">门店主体</SelectItem>
-                  <SelectItem value="company">公司主体</SelectItem>
-                </SelectContent>
-              </Select>
+              <Field label="签约主体" required hint="门店主体与公司主体二选一，决定模板与变量取值">
+                <Select value={subjectType} onValueChange={(value) => setSubjectType(value as "store" | "company")}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="store">门店主体</SelectItem>
+                    <SelectItem value="company">公司主体</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Field>
               {subjectType === "store" ? (
-                <Select value={formStoreId} onValueChange={onPickStore}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="选择门店" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stores.map((store) => (
-                      <SelectItem key={store.id} value={store.id}>
-                        {store.store_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Field label="门店" required>
+                  <Select value={formStoreId} onValueChange={onPickStore}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="请选择门店" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {stores.map((store) => (
+                        <SelectItem key={store.id} value={store.id}>
+                          {store.store_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
               ) : (
-                <Select value={formCompanyId} onValueChange={setFormCompanyId}>
+                <Field label="公司" required>
+                  <Select value={formCompanyId} onValueChange={setFormCompanyId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="请选择公司" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {companies.map((company) => (
+                        <SelectItem key={company.id} value={company.id}>
+                          {company.company_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              )}
+              <Field label="协议模板" required>
+                <Select value={formTemplateId} onValueChange={setFormTemplateId}>
                   <SelectTrigger>
-                    <SelectValue placeholder="选择公司" />
+                    <SelectValue placeholder="请选择模板" />
                   </SelectTrigger>
                   <SelectContent>
-                    {companies.map((company) => (
-                      <SelectItem key={company.id} value={company.id}>
-                        {company.company_name}
+                    {templates.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.template_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              )}
-              <Select value={formTemplateId} onValueChange={setFormTemplateId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="协议模板" />
-                </SelectTrigger>
-                <SelectContent>
-                  {templates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.template_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input
-                placeholder="协议编号（可空）"
-                value={formAgreementNo}
-                onChange={(event) => setFormAgreementNo(event.target.value)}
-              />
-              <Input
-                placeholder="签署人姓名"
-                value={formSignerName}
-                onChange={(event) => setFormSignerName(event.target.value)}
-              />
-              <Input
-                placeholder="签署人手机号"
-                value={formSignerPhone}
-                onChange={(event) => setFormSignerPhone(event.target.value)}
-              />
-              <Input
-                type="date"
-                value={formExpireDate}
-                onChange={(event) => setFormExpireDate(event.target.value)}
-              />
-              <Input
-                placeholder="备注"
-                value={formRemark}
-                onChange={(event) => setFormRemark(event.target.value)}
-              />
+              </Field>
+              <Field label="协议编号" hint="可留空，系统按规则生成">
+                <Input
+                  value={formAgreementNo}
+                  onChange={(event) => setFormAgreementNo(event.target.value)}
+                />
+              </Field>
+              <Field label="签署人姓名" required>
+                <Input
+                  value={formSignerName}
+                  onChange={(event) => setFormSignerName(event.target.value)}
+                />
+              </Field>
+              <Field label="签署人手机号" required>
+                <Input
+                  value={formSignerPhone}
+                  onChange={(event) => setFormSignerPhone(event.target.value)}
+                  inputMode="tel"
+                />
+              </Field>
+              <Field label="到期日期" hint="留空表示长期有效">
+                <Input
+                  type="date"
+                  value={formExpireDate}
+                  onChange={(event) => setFormExpireDate(event.target.value)}
+                />
+              </Field>
+              <Field label="备注">
+                <Input
+                  value={formRemark}
+                  onChange={(event) => setFormRemark(event.target.value)}
+                />
+              </Field>
             </div>
             <div className="flex gap-2">
               <Button onClick={() => void createAgreement()} disabled={saving}>
@@ -287,58 +314,63 @@ export default function MerchantAgreementsPage() {
           </Card>
         ) : null}
 
-        <Card className="flex flex-wrap gap-3 p-4">
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="w-40">
-              <SelectValue placeholder="协议状态" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
-              {Object.entries(STATUS_LABELS).map(([code, label]) => (
-                <SelectItem key={code} value={code}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={filterStoreId} onValueChange={setFilterStoreId}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="门店筛选" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全部门店</SelectItem>
-              {stores.map((store) => (
-                <SelectItem key={store.id} value={store.id}>
-                  {store.store_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Input
-            className="w-56"
-            placeholder="协议编号"
-            value={agreementNo}
-            onChange={(event) => setAgreementNo(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && void load()}
-          />
-          <Input
-            className="w-80"
-            placeholder="审核意见 / 作废原因"
-            value={reason}
-            onChange={(event) => setReason(event.target.value)}
-          />
-          <Button variant="outline" onClick={() => void load()}>
-            刷新
-          </Button>
+        <Card className="rounded-cards border-0 shadow-steep-sm p-5">
+          {/* Card 自带 flex-col：筛选控件必须放在内层横向容器，直接挂 flex-wrap 会纵向堆叠 */}
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-40" aria-label="协议状态">
+                <SelectValue placeholder="协议状态" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部状态</SelectItem>
+                {Object.entries(STATUS_LABELS).map(([code, label]) => (
+                  <SelectItem key={code} value={code}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterStoreId} onValueChange={setFilterStoreId}>
+              <SelectTrigger className="w-48" aria-label="门店筛选">
+                <SelectValue placeholder="门店筛选" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部门店</SelectItem>
+                {stores.map((store) => (
+                  <SelectItem key={store.id} value={store.id}>
+                    {store.store_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              className="w-56"
+              placeholder="协议编号"
+              aria-label="按协议编号筛选"
+              value={agreementNo}
+              onChange={(event) => setAgreementNo(event.target.value)}
+              onKeyDown={(event) => event.key === "Enter" && void load()}
+            />
+            <Input
+              className="w-80"
+              placeholder="审核意见 / 作废原因"
+              aria-label="审核意见或作废原因"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+            />
+            <Button variant="outline" onClick={() => void load()}>
+              刷新
+            </Button>
+          </div>
         </Card>
 
-        {error ? <Card className="p-4 text-sm text-error">{error}</Card> : null}
-        {loading ? <Card className="p-6 text-sm text-muted-foreground">加载中...</Card> : null}
+        {error ? <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-error">{error}</Card> : null}
+        {loading ? <Card className="rounded-cards border-0 shadow-steep-sm p-6 text-sm text-muted-foreground">加载中...</Card> : null}
 
         {data ? (
-          <Card className="overflow-hidden">
+          <Card className="rounded-cards border-0 shadow-steep-sm overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-mist text-left text-xs text-graphite">
+              <thead className="bg-fog text-left text-xs text-graphite">
                 <tr>
                   <th className="px-4 py-3">协议</th>
                   <th className="px-4 py-3">签约主体</th>
@@ -351,7 +383,7 @@ export default function MerchantAgreementsPage() {
               </thead>
               <tbody>
                 {data.items.map((item) => (
-                  <tr key={item.id} className="border-t border-mist">
+                  <tr key={item.id} className="border-t border-dove">
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/merchant/agreements/${item.id}`}
@@ -370,19 +402,31 @@ export default function MerchantAgreementsPage() {
                       <div className="text-xs text-graphite">{item.signer_phone_masked}</div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant={item.status === "signed" ? "default" : "secondary"}>
+                      <StatusBadge
+                        tone={
+                          item.status === "signed"
+                            ? "positive"
+                            : item.status === "pending_sign"
+                              ? "attention"
+                              : "neutral"
+                        }
+                      >
                         {STATUS_LABELS[item.status] || item.status}
-                      </Badge>
+                      </StatusBadge>
                     </td>
-                    <td className="px-4 py-3 text-xs">{REVIEW_LABELS[item.review_status] || item.review_status}</td>
+                    <td className="px-4 py-3">
+                      <StatusBadge tone={item.review_status === "pending" ? "attention" : item.review_status === "approved" ? "positive" : "neutral"}>
+                        {REVIEW_LABELS[item.review_status] || item.review_status}
+                      </StatusBadge>
+                    </td>
                     <td className="px-4 py-3 text-xs text-graphite">
                       {item.expire_at ? new Date(item.expire_at).toLocaleDateString("zh-CN") : "—"}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {item.review_status === "pending" ? (
+                        {canReview && item.review_status === "pending" ? (
                           <>
-                            <Button size="sm" onClick={() => void review(item, true)}>
+                            <Button size="sm" variant="outline" onClick={() => void review(item, true)}>
                               通过
                              </Button>
                             <Button size="sm" variant="outline" onClick={() => void review(item, false)}>
@@ -391,7 +435,7 @@ export default function MerchantAgreementsPage() {
                           </>
                         ) : null}
                         {item.status !== "voided" ? (
-                          <Button size="sm" variant="destructive" onClick={() => void voidAgreement(item)}>
+                          <Button size="sm" variant="outline" onClick={() => void voidAgreement(item)}>
                             作废
                           </Button>
                         ) : null}

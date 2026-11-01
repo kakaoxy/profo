@@ -109,6 +109,12 @@ export const navMain: NavItem[] = [
         permission: PERMISSION_CODES.MERCHANT_AGREEMENT,
       },
       {
+        title: "通知任务",
+        url: "/admin/merchant/notify-runs",
+        roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],
+        permission: PERMISSION_CODES.MERCHANT_READ,
+      },
+      {
         title: "商户字典",
         url: "/admin/settings/dicts",
         roles: [ROLE_CODES.ADMIN, ROLE_CODES.OPERATOR],

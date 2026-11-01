@@ -433,6 +433,39 @@ def require_any_permission(codes: list[str]) -> Callable[..., User]:
     return permission_checker
 
 
+def require_permission_with_roles(code: str, roles: list[str]) -> Callable[..., User]:
+    """权限 + 角色双重校验依赖工厂.
+
+    用于「除权限点外还限定角色」的高危动作，如门店合并（BR-M12-003：
+    ``merchant:write`` 且当前角色为 admin/operator）、协议审核（BR-M04-031）。
+
+    Args:
+        code: 需要的权限代码
+        roles: 允许的角色代码列表（任一命中即可）
+
+    Returns:
+        依赖函数，用于检查用户权限与角色
+
+    Raises:
+        PermissionDeniedError: 403 Forbidden - 缺少权限或角色不符
+
+    """
+
+    def checker(
+        user: CurrentActiveUserDep,
+        db: DbSessionDep,
+    ) -> User:
+        if not has_permission(user, code, db):
+            msg = f"权限不足：缺少权限 {code}"
+            raise PermissionDeniedError(msg)
+        if not _user_has_any_role(user, set(roles)):
+            msg = f"权限不足：该操作仅限 {'/'.join(roles)} 角色"
+            raise PermissionDeniedError(msg)
+        return user
+
+    return checker
+
+
 # 预定义的权限依赖类型（按需扩展，Task 9 将逐步替换 CurrentAdminUserDep）
 # user 模块
 UserReadPermDep = Annotated[User, Depends(require_permission("user:read"))]
@@ -500,6 +533,11 @@ MerchantVisitPermDep = Annotated[User, Depends(require_permission("merchant:visi
 MerchantBrokerPermDep = Annotated[User, Depends(require_permission("merchant:broker"))]
 MerchantAgreementPermDep = Annotated[User, Depends(require_permission("merchant:agreement"))]
 MerchantMapPermDep = Annotated[User, Depends(require_permission("merchant:map"))]
+# 门店合并（BR-M12-003）与协议审核（BR-M04-031）：权限点之外还必须是 admin/operator
+MerchantMergePermDep = Annotated[User, Depends(require_permission_with_roles("merchant:write", ["admin", "operator"]))]
+MerchantAgreementReviewPermDep = Annotated[
+    User, Depends(require_permission_with_roles("merchant:agreement", ["admin", "operator"]))
+]
 # operation_log 模块
 OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]
 # api_key 模块（API Key 管理端点；使用侧仍受 INTERNAL_ROLE_CODES 机器接口角色限制）

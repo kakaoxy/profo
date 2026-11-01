@@ -171,8 +171,9 @@ def _first_visit(**overrides) -> dict:
 
 
 def _create_employee_store(employee_http: TestClient, company_id: str, **overrides) -> dict:
+    visit_overrides = overrides.pop("first_visit", None) or {}
     payload = _store_payload(company_id, **overrides)
-    payload["first_visit"] = _first_visit()
+    payload["first_visit"] = _first_visit(**visit_overrides)
     resp = employee_http.post(f"{API}/public/merchant/stores", json=payload)
     assert resp.status_code == 201, resp.text
     return resp.json()
@@ -468,3 +469,178 @@ def test_store_update_audit_and_relocate(
     # 历史拜访仍留在原门店
     visits = session.query(MerchantVisit).filter(MerchantVisit.store_id == store["id"]).all()
     assert len(visits) == 1
+
+
+def test_visit_location_auth_denied_and_missing_store_coordinates(
+    admin_http: TestClient,
+    employee_http: TestClient,
+    seeded_db: dict,
+) -> None:
+    """AC-V03-007：拒绝定位授权不得降级提交；门店无坐标时不得 500."""
+    company = _create_company(admin_http)
+    store = _create_employee_store(employee_http, company["id"])["store"]
+
+    denied = employee_http.post(
+        f"{API}/public/merchant/visits",
+        json={
+            "store_id": store["id"],
+            "contact_name": "王店长",
+            "location_status": "degraded",
+            "location_failure_type": "auth_denied",
+            "location_failure_reason": "用户拒绝授权",
+        },
+    )
+    assert denied.status_code == 400, denied.text
+    assert "授权" in denied.json()["message"]
+
+    degraded = employee_http.post(
+        f"{API}/public/merchant/visits",
+        json={
+            "store_id": store["id"],
+            "contact_name": "王店长",
+            "location_status": "degraded",
+            "location_failure_type": "timeout",
+            "location_failure_reason": "弱网超时",
+        },
+    )
+    assert degraded.status_code == 201, degraded.text
+    assert degraded.json()["location_failure_type"] == "timeout"
+
+    # 门店无坐标（v110 允许坐标缺失）：distance 计算跳过，不得因 float(None) 抛 500
+    session = seeded_db["session"]
+    store_row = session.query(MerchantStore).filter(MerchantStore.id == store["id"]).one()
+    store_row.lng = None
+    store_row.lat = None
+    session.commit()
+
+    visit = employee_http.post(
+        f"{API}/public/merchant/visits",
+        json={
+            "store_id": store["id"],
+            "contact_name": "王店长",
+            "location_status": "normal",
+            "lng": 121.5057,
+            "lat": 31.2453,
+        },
+    )
+    assert visit.status_code == 201, visit.text
+    assert visit.json()["distance_m"] is None
+
+
+def test_store_update_rejects_blank_required_fields_and_out_of_china_coordinates(
+    employee_http: TestClient,
+    admin_http: TestClient,
+    seeded_db: dict,
+) -> None:
+    """必填字段被清空拒绝（REQ-M01B-003 分支 2）；坐标越界拒绝（M09-001）；无变化不写审计."""
+    company = _create_company(admin_http)
+    store = _create_employee_store(employee_http, company["id"])["store"]
+    url = f"{API}/public/merchant/stores/{store['id']}"
+
+    blank = employee_http.put(url, json={"store_name": "   "})
+    assert blank.status_code == 400, blank.text
+    assert "门店名称不能为空" in blank.json()["message"]
+
+    blank_address = employee_http.put(url, json={"address": "  "})
+    assert blank_address.status_code == 400, blank_address.text
+
+    outside = employee_http.put(url, json={"lng": 2.35, "lat": 48.85, "change_type": "correct"})
+    assert outside.status_code == 400, outside.text
+    assert "GCJ-02" in outside.json()["message"]
+
+    # 坐标只给一半也拒绝
+    half = employee_http.put(url, json={"lng": 121.5, "change_type": "correct"})
+    assert half.status_code == 400, half.text
+
+    session = seeded_db["session"]
+    session.expire_all()
+    before_count = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_store", OperationLog.action == "update")
+        .count()
+    )
+    # 与当前值完全一致：不写审计、返回 409「没有需要更新的字段」
+    same = employee_http.put(url, json={"store_name": store["store_name"]})
+    assert same.status_code == 409, same.text
+    session.expire_all()
+    after_count = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_store", OperationLog.action == "update")
+        .count()
+    )
+    assert after_count == before_count
+
+
+def test_broker_options_scoped_to_visible_stores(
+    admin_http: TestClient,
+    employee_http: TestClient,
+    other_http: TestClient,
+    employee_user: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-M12-003：经纪人下拉按数据范围收敛，员工看不到范围外门店的经纪人."""
+    company = _create_company(admin_http)
+    mine = _create_employee_store(employee_http, company["id"], name="我的门店")["store"]
+    theirs = _create_employee_store(
+        other_http,
+        company["id"],
+        name="他人门店",
+        address="南京西路 200 号",
+        lng=121.4595,
+        lat=31.2295,
+        contact_phone="13700009999",
+        first_visit={"lng": 121.4595, "lat": 31.2295},
+    )["store"]
+
+    for store_id, name, phone in (
+        (mine["id"], "我的经纪人", "13800002222"),
+        (theirs["id"], "他人经纪人", "13800003333"),
+    ):
+        created = admin_http.post(
+            f"{API}/admin/merchant/brokers",
+            json={"name": name, "phone": phone, "store_id": store_id},
+        )
+        assert created.status_code == 201, created.text
+
+    employee_admin = _client_for(seeded_db["session"], employee_user, c_side=False)
+    resp = employee_admin.get(f"{API}/admin/merchant/brokers/options")
+    assert resp.status_code == 200, resp.text
+    names = {item["name"] for item in resp.json()["items"]}
+    assert names == {"我的经纪人"}
+
+    admin_options = admin_http.get(f"{API}/admin/merchant/brokers/options")
+    assert {item["name"] for item in admin_options.json()["items"]} == {"我的经纪人", "他人经纪人"}
+
+
+def test_duplicate_check_tolerates_store_without_coordinates(
+    admin_http: TestClient,
+    employee_http: TestClient,
+    seeded_db: dict,
+) -> None:
+    """存量门店坐标为空时查重不得 500（旧实现 float(None)），且 completed 语义准确."""
+    from models.merchant import MerchantStore
+
+    company = _create_company(admin_http)
+    store = _create_employee_store(employee_http, company["id"])["store"]
+
+    session: Session = seeded_db["session"]
+    row = session.query(MerchantStore).filter(MerchantStore.id == store["id"]).one()
+    row.lng = None
+    row.lat = None
+    session.commit()
+
+    resp = admin_http.post(
+        f"{API}/admin/merchant/stores/check-duplicates",
+        json={
+            "store_name": row.store_name,
+            "address": row.address,
+            "lng": 121.5057,
+            "lat": 31.2453,
+            "contact_phone": "13700002222",
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["completed"] is True
+    assert body["candidates"], "同名同址门店应被召回"
+    assert all(item["distance_m"] is None for item in body["candidates"])

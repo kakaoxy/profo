@@ -47,4 +47,24 @@
 
     <button class="btn-primary submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit">提交审核</button>
   </view>
+
+  <!-- 查重提示（REQ-M01B-002：只提示不阻断，确认新建须填理由） -->
+  <view class="modal-mask" wx:if="{{duplicateOpen}}">
+    <view class="modal">
+      <view class="modal-title">发现疑似重复门店</view>
+      <view class="modal-sub">请确认是否就是以下门店；若不是，请填写强制新建理由</view>
+      <scroll-view scroll-y class="modal-list">
+        <view class="dup-item" wx:for="{{duplicates}}" wx:key="id" bindtap="onOpenDuplicate">
+          <view class="dup-name">{{item.store_name}}</view>
+          <view class="dup-address">{{item.address}}</view>
+          <view class="dup-meta">匹配：{{item.matchedText}}{{item.distance_m ? ' · 距离 ' + item.distance_m + 'm' : ''}}</view>
+        </view>
+      </scroll-view>
+      <input class="input" placeholder="强制新建理由（选择已有门店则无需填写）" value="{{forceReason}}" bindinput="onForceReason" />
+      <view class="modal-actions">
+        <view class="mini-btn" bindtap="onCloseDuplicate">返回修改</view>
+        <view class="mini-btn mini-btn--primary" bindtap="onForceCreate">确认新建</view>
+      </view>
+    </view>
+  </view>
 </view>

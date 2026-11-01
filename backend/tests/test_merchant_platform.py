@@ -201,3 +201,46 @@ def test_audit_mask_phone_and_snapshot() -> None:
 
 
 pytestmark = pytest.mark.usefixtures("seeded_db")
+
+
+def test_merchant_dict_delete_rejected_when_referenced(
+    backend_client: TestClient,
+    seeded_db: dict[str, Any],
+) -> None:
+    """AC-V01-018：已被门店引用的合作状态禁止删除，提示改为停用."""
+    from models.merchant import MerchantStore
+
+    code = f"ref_{uuid.uuid4().hex[:8]}"
+    created = backend_client.post(
+        "/api/v1/admin/dicts/merchant_cooperation_status/items",
+        json={"code": code, "label": "引用测试", "sort_order": 998},
+    )
+    assert created.status_code == 201, created.text
+    item = created.json()
+
+    session: Session = seeded_db["session"]
+    store = MerchantStore(
+        company_id="00000000-0000-0000-0000-0000000000c1",
+        company_name="引用测试公司",
+        store_name="引用测试门店",
+        province="上海市",
+        city="上海市",
+        district="浦东新区",
+        business_circle="陆家嘴",
+        address="世纪大道 1 号",
+        contact_name="张三",
+        contact_phone="13800001111",
+        cooperation_status=code,
+        source="backoffice",
+        status="normal",
+        review_status="approved",
+    )
+    session.add(store)
+    session.commit()
+
+    blocked = backend_client.delete(
+        f"/api/v1/admin/dicts/merchant_cooperation_status/items/{item['id']}",
+    )
+    assert blocked.status_code == 409, blocked.text
+    assert "改为停用" in blocked.json()["message"]
+    assert session.query(MerchantStore).filter(MerchantStore.id == store.id).one().cooperation_status == code

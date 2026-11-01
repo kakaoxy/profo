@@ -6,7 +6,8 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
-import { Badge } from "@/components/ui/badge";
+import { Field } from "@/app/(main)/admin/merchant/_components/field";
+import { StatusBadge } from "@/app/(main)/admin/merchant/_components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -137,15 +138,15 @@ export default function MerchantAgreementDetailPage() {
           }
         />
 
-        {error ? <Card className="p-4 text-sm text-error">{error}</Card> : null}
-        {loading ? <Card className="p-6 text-sm text-muted-foreground">加载中...</Card> : null}
+        {error ? <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-error">{error}</Card> : null}
+        {loading ? <Card className="rounded-cards border-0 shadow-steep-sm p-6 text-sm text-muted-foreground">加载中...</Card> : null}
         {!loading && !error && !agreement ? (
-          <Card className="p-10 text-center text-sm text-graphite">协议不存在或无权查看</Card>
+          <Card className="rounded-cards border-0 shadow-steep-sm p-10 text-center text-sm text-graphite">协议不存在或无权查看</Card>
         ) : null}
 
         {agreement ? (
           <>
-            <Card className="p-5">
+            <Card className="rounded-cards border-0 shadow-steep-sm p-5">
               <div className="grid grid-cols-1 gap-x-8 gap-y-4 md:grid-cols-2">
                 <Info label="签约主体">
                   {agreement.subject_name || "—"}
@@ -155,9 +156,17 @@ export default function MerchantAgreementDetailPage() {
                 </Info>
                 <Info label="协议模板">{agreement.template_name || "—"}</Info>
                 <Info label="协议状态">
-                  <Badge variant={agreement.status === "signed" ? "default" : "secondary"}>
+                  <StatusBadge
+                    tone={
+                      agreement.status === "signed"
+                        ? "positive"
+                        : agreement.status === "pending_sign" || agreement.status === "not_initiated"
+                          ? "attention"
+                          : "neutral"
+                    }
+                  >
                     {STATUS_LABELS[agreement.status] || agreement.status}
-                  </Badge>
+                  </StatusBadge>
                 </Info>
                 <Info label="审核状态">{REVIEW_LABELS[agreement.review_status] || agreement.review_status}</Info>
                 <Info label="签署人">
@@ -171,7 +180,7 @@ export default function MerchantAgreementDetailPage() {
                 <Info label="备注">{agreement.remark || "—"}</Info>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-3 border-t border-mist pt-4 text-sm">
+              <div className="mt-5 flex flex-wrap gap-3 border-t border-dove pt-4 text-sm">
                 {agreement.store_id ? (
                   <Link
                     href={`/admin/merchant/stores/${agreement.store_id}`}
@@ -203,7 +212,7 @@ export default function MerchantAgreementDetailPage() {
             </Card>
 
             {agreement.attachment_urls.length || agreement.supplement_agreement_ids.length ? (
-              <Card className="p-5">
+              <Card className="rounded-cards border-0 shadow-steep-sm p-5">
                 {agreement.attachment_urls.length ? (
                   <div>
                     <p className="text-sm font-medium text-ink">附件</p>
@@ -246,34 +255,41 @@ export default function MerchantAgreementDetailPage() {
         ) : null}
 
         {scanOpen ? (
-          <Card className="fixed inset-0 z-50 m-auto flex h-fit max-h-[85vh] w-[min(560px,92vw)] flex-col gap-3 overflow-y-auto p-5">
+          <Card className="rounded-cards border-0 shadow-steep-sm fixed inset-0 z-50 m-auto flex h-fit max-h-[85vh] w-[min(560px,92vw)] flex-col gap-3 overflow-y-auto p-5">
             <div className="text-sm font-medium">上传盖章扫描件</div>
             <p className="text-xs text-graphite">支持 PDF/JPG/PNG，提交后协议状态变为已签署。</p>
-            <Input
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              disabled={uploading}
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void uploadScanFile(file);
-              }}
-            />
+            <Field label="盖章扫描件" hint="支持 PDF/JPG/PNG">
+              <Input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                disabled={uploading}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadScanFile(file);
+                }}
+              />
+            </Field>
             {scanFileName ? <p className="text-xs text-graphite">已上传：{scanFileName}</p> : null}
-            <Input
-              placeholder="签署人姓名"
-              value={scanSignerName}
-              onChange={(event) => setScanSignerName(event.target.value)}
-            />
-            <Input
-              placeholder="签署人手机号"
-              value={scanSignerPhone}
-              onChange={(event) => setScanSignerPhone(event.target.value)}
-            />
-            <Input
-              type="date"
-              value={scanSignedDate}
-              onChange={(event) => setScanSignedDate(event.target.value)}
-            />
+            <Field label="签署人姓名" required>
+              <Input
+                value={scanSignerName}
+                onChange={(event) => setScanSignerName(event.target.value)}
+              />
+            </Field>
+            <Field label="签署人手机号" required>
+              <Input
+                value={scanSignerPhone}
+                onChange={(event) => setScanSignerPhone(event.target.value)}
+                inputMode="tel"
+              />
+            </Field>
+            <Field label="签署日期">
+              <Input
+                type="date"
+                value={scanSignedDate}
+                onChange={(event) => setScanSignedDate(event.target.value)}
+              />
+            </Field>
             <div className="flex gap-2">
               <Button onClick={() => void submitScan()} disabled={savingScan || uploading}>
                 {savingScan ? "提交中…" : "提交归档"}

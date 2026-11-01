@@ -5,9 +5,11 @@ from typing import Annotated
 from fastapi import APIRouter, Path, Query, Request, status
 from fastapi.responses import StreamingResponse
 
+from constants.merchant import MERCHANT_STORE_SOURCE_LABELS
 from dependencies.auth import (
     DbSessionDep,
     MerchantBrokerPermDep,
+    MerchantMergePermDep,
     MerchantReadPermDep,
     MerchantVisitPermDep,
     MerchantWritePermDep,
@@ -30,11 +32,13 @@ from schemas.merchant import (
     MerchantCompanyUpdate,
     MerchantDuplicateCheckRequest,
     MerchantDuplicateCheckResponse,
+    MerchantStoreActivationRequest,
     MerchantStoreCreate,
     MerchantStoreCreateResult,
     MerchantStoreDeleteRequest,
     MerchantStoreDetailResponse,
     MerchantStoreListResponse,
+    MerchantStoreMergePreview,
     MerchantStoreMergeRequest,
     MerchantStorePhotosUpdate,
     MerchantStoreRelocateResponse,
@@ -51,10 +55,14 @@ from services.merchant.company import MerchantCompanyService
 from services.merchant.serializers import company_response, cooperation_label_map, store_response
 from services.merchant.store import MerchantStoreService
 from services.merchant.visit import MerchantVisitService
+from services.system.exceptions import ValidationError
 from utils.common import RateLimits, limiter
 from utils.csv_exporter import generate_csv_response
 
 router = APIRouter(prefix="/admin/merchant", tags=["merchant-admin"])
+
+# 导出上限：超过则要求缩小筛选范围，避免静默截断（V07 GAP-22）
+EXPORT_MAX_ROWS = 50000
 
 
 # -------------------- 公司 --------------------
@@ -121,6 +129,9 @@ def list_stores(
     review_status: str | None = None,
     owner_employee_id: str | None = None,
     store_status: Annotated[str | None, Query(alias="status", description="门店状态筛选")] = None,
+    source: Annotated[str | None, Query(description="门店来源筛选")] = None,
+    broker_count_min: Annotated[int | None, Query(ge=0, description="经纪人数量下限")] = None,
+    broker_count_max: Annotated[int | None, Query(ge=0, description="经纪人数量上限")] = None,
 ) -> MerchantStoreListResponse:
     """门店分页列表（按数据范围过滤）."""
     return MerchantStoreService(db).search(
@@ -136,6 +147,9 @@ def list_stores(
         review_status=review_status,
         owner_employee_id=owner_employee_id,
         status=store_status,
+        source=source,
+        broker_count_min=broker_count_min,
+        broker_count_max=broker_count_max,
     )
 
 
@@ -190,12 +204,15 @@ def export_stores(
     review_status: str | None = None,
     owner_employee_id: str | None = None,
     store_status: Annotated[str | None, Query(alias="status")] = None,
+    source: Annotated[str | None, Query(description="门店来源筛选")] = None,
+    broker_count_min: Annotated[int | None, Query(ge=0, description="经纪人数量下限")] = None,
+    broker_count_max: Annotated[int | None, Query(ge=0, description="经纪人数量上限")] = None,
 ) -> StreamingResponse:
     """按当前筛选导出商店列表（手机号脱敏）."""
     result = MerchantStoreService(db).search(
         current_user,
         page=1,
-        page_size=10000,
+        page_size=EXPORT_MAX_ROWS,
         keyword=keyword,
         province=province,
         city=city,
@@ -205,7 +222,13 @@ def export_stores(
         review_status=review_status,
         owner_employee_id=owner_employee_id,
         status=store_status,
+        source=source,
+        broker_count_min=broker_count_min,
+        broker_count_max=broker_count_max,
     )
+    if result.total > EXPORT_MAX_ROWS:
+        msg = f"导出数据超过 {EXPORT_MAX_ROWS} 条，请缩小筛选范围后重试"
+        raise ValidationError(msg)
     rows = [
         [
             item.store_name,
@@ -217,6 +240,7 @@ def export_stores(
             item.contact_phone_masked,
             item.cooperation_status_label,
             item.review_status,
+            MERCHANT_STORE_SOURCE_LABELS.get(item.source, item.source),
             item.owner_employee_name or "",
             item.last_visit_at.isoformat() if item.last_visit_at else "",
             item.status,
@@ -258,6 +282,7 @@ def export_stores(
             "联系电话",
             "合作状态",
             "审核状态",
+            "来源",
             "负责人",
             "最近拜访",
             "门店状态",
@@ -280,11 +305,15 @@ def export_brokers(
     """按当前筛选导出经纪人列表（手机号脱敏）."""
     result = MerchantBrokerService(db).list_admin(
         page=1,
-        page_size=10000,
+        page_size=EXPORT_MAX_ROWS,
         keyword=keyword,
         store_id=store_id,
         bind_status=bind_status,
+        user=current_user,
     )
+    if result.total > EXPORT_MAX_ROWS:
+        msg = f"导出数据超过 {EXPORT_MAX_ROWS} 条，请缩小筛选范围后重试"
+        raise ValidationError(msg)
     rows = [
         [
             item.name,
@@ -347,15 +376,28 @@ def delete_store(
     return {"deleted": True}
 
 
+@router.get("/stores/{store_id}/merge-preview", summary="门店合并待迁移数据量预览")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def merge_store_preview(
+    request: Request,
+    store_id: str,
+    db: DbSessionDep,
+    current_user: MerchantReadPermDep,
+    keep_store_id: Annotated[str, Query(min_length=1, max_length=36, description="保留门店ID")],
+) -> MerchantStoreMergePreview:
+    """合并前展示待迁移的拜访/绑定/经纪人/线索/协议数量（REQ-M11-005）."""
+    return MerchantStoreMergePreview(**MerchantStoreService(db).merge_preview(current_user, store_id, keep_store_id))
+
+
 @router.post("/stores/merge", summary="门店合并")
 @limiter.limit(RateLimits.MERCHANT_WRITE)
 def merge_stores(
     request: Request,
     body: MerchantStoreMergeRequest,
     db: DbSessionDep,
-    current_user: MerchantWritePermDep,
+    current_user: MerchantMergePermDep,
 ) -> dict[str, int]:
-    """迁移拜访/绑定/线索/协议并标记原门店已合并."""
+    """迁移拜访/绑定/线索/协议并标记原门店已合并（仅 admin/operator，BR-M12-003）."""
     return MerchantStoreService(db).merge_stores(current_user, body, request=request)
 
 
@@ -415,6 +457,19 @@ def change_store_status(
     return MerchantStoreService(db).change_cooperation_status(current_user, store_id, body, request=request)
 
 
+@router.post("/stores/{store_id}/activation", summary="门店停用/启用")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def change_store_activation(
+    request: Request,
+    store_id: Annotated[str, Path(description="门店ID")],
+    body: MerchantStoreActivationRequest,
+    db: DbSessionDep,
+    current_user: MerchantWritePermDep,
+) -> MerchantStoreResponse:
+    """状态流转：正常 ↔ 停用（REQ-M11-003）；停用后禁止新建拜访/绑定."""
+    return MerchantStoreService(db).change_activation_status(current_user, store_id, body, request=request)
+
+
 @router.get("/stores/{store_id}/status-logs", summary="门店合作状态时间线")
 @limiter.limit(RateLimits.MERCHANT_READ)
 def list_store_status_logs(
@@ -464,7 +519,7 @@ def list_store_visits(
 def list_brokers(
     request: Request,
     db: DbSessionDep,
-    _current_user: MerchantBrokerPermDep,
+    current_user: MerchantBrokerPermDep,
     pagination: PaginationDep,
     keyword: Annotated[str | None, Query(description="姓名/手机号关键词")] = None,
     store_id: str | None = None,
@@ -477,6 +532,7 @@ def list_brokers(
         keyword=keyword,
         store_id=store_id,
         bind_status=bind_status,
+        user=current_user,
     )
 
 
@@ -485,7 +541,7 @@ def list_brokers(
 def list_broker_options(
     request: Request,
     db: DbSessionDep,
-    _current_user: MerchantReadPermDep,
+    current_user: MerchantReadPermDep,
     store_id: str | None = None,
     keyword: Annotated[str | None, Query(max_length=100, description="姓名/手机号关键词")] = None,
     bind_status: Annotated[str | None, Query(description="绑定状态筛选（门店联动传 bound）")] = None,
@@ -495,6 +551,7 @@ def list_broker_options(
         store_id=store_id,
         keyword=keyword,
         bind_status=bind_status,
+        user=current_user,
     )
 
 

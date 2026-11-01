@@ -173,6 +173,7 @@ class MerchantStoreListItem(BaseModel):
     owner_employee_id: str | None
     owner_employee_name: str | None
     last_visit_at: datetime | None
+    broker_count: int = 0
     status: str
     created_at: datetime
     updated_at: datetime
@@ -238,6 +239,16 @@ class MerchantStoreMergeRequest(BaseModel):
     reason: str = Field(min_length=1, max_length=500, description="合并原因")
 
 
+class MerchantStoreMergePreview(BaseModel):
+    """待迁移数据量预览（REQ-M11-005 主流程 3）."""
+
+    visits: int = 0
+    leads: int = 0
+    agreements: int = 0
+    bindings: int = 0
+    brokers: int = 0
+
+
 class MerchantStoreReviewRequest(BaseModel):
     """经纪人自建门店审核请求."""
 
@@ -258,6 +269,13 @@ class MerchantStoreStatusChangeRequest(BaseModel):
 
     target_status: Literal["not_cooperated", "negotiating", "cooperated", "paused", "terminated"]
     reason: str = Field(min_length=1, max_length=500, description="变更原因")
+
+
+class MerchantStoreActivationRequest(BaseModel):
+    """门店停用/启用请求（REQ-M11-003：状态 正常 ↔ 停用）."""
+
+    target_status: Literal["normal", "disabled"]
+    reason: str | None = Field(default=None, max_length=500, description="停用/启用原因")
 
 
 class MerchantStoreStatusLogResponse(BaseModel):
@@ -310,6 +328,10 @@ class MerchantVisitCreate(BaseModel):
         description="距离超过 500 米的原因",
     )
     location_failure_reason: str | None = Field(default=None, max_length=100, description="无法定位的原因")
+    location_failure_type: Literal["auth_denied", "timeout", "unavailable"] | None = Field(
+        default=None,
+        description="定位失败类型：auth_denied 不允许提交；timeout/unavailable 允许降级（AC-V03-007）",
+    )
     location_status: Literal["normal", "degraded", "missing"] = Field(
         default="normal",
         description="定位状态：normal/degraded/missing",
@@ -333,6 +355,7 @@ class MerchantVisitResponse(BaseModel):
     distance_m: int | None
     distance_abnormal_reason: str | None
     location_failure_reason: str | None
+    location_failure_type: str | None
     location_status: str
     visit_source: str
     address: str | None
@@ -363,6 +386,8 @@ class MerchantStoreDetailResponse(BaseModel):
     """门店详情聚合（Q39：档案、经纪人、拜访、协议、线索统计）."""
 
     store: MerchantStoreResponse
+    created_by_broker_name: str | None = None
+    inviter_employee_name: str | None = None
     brokers: list[dict] = Field(default_factory=list)
     visits: MerchantVisitListResponse
     agreements: list[dict] = Field(default_factory=list)
@@ -479,8 +504,10 @@ __all__ = [
     "MerchantNotifyRunRecord",
     "MerchantNotifyRunResponse",
     "MerchantNotifyTypeStats",
+    "MerchantStoreActivationRequest",
     "MerchantStoreDeleteRequest",
     "MerchantStoreDetailResponse",
+    "MerchantStoreMergePreview",
     "MerchantStoreMergeRequest",
     "MerchantStoreReviewRequest",
     "MerchantTrackItem",

@@ -94,3 +94,64 @@
 .submit-btn {
   margin-top: 36rpx;
 }
+
+/* 查重弹层（与门店建档页保持一致） */
+.modal-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(23, 25, 28, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+  z-index: 20;
+}
+.modal {
+  width: 100%;
+  max-height: 80vh;
+  background: #fff;
+  border-radius: 40rpx;
+  padding: 32rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+.modal-title {
+  font-size: 34rpx;
+  font-weight: 500;
+}
+.modal-sub {
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+.modal-list {
+  max-height: 40vh;
+}
+.dup-item {
+  padding: 20rpx;
+  border-radius: 24rpx;
+  background: var(--fog);
+  margin-bottom: 12rpx;
+}
+.dup-name {
+  font-size: 28rpx;
+  font-weight: 500;
+}
+.dup-address {
+  margin-top: 4rpx;
+  font-size: 24rpx;
+  color: var(--graphite);
+}
+.dup-meta {
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--rust);
+}
+.modal-actions {
+  display: flex;
+  gap: 16rpx;
+}
+.modal-actions .mini-btn {
+  flex: 1;
+}

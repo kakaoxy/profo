@@ -121,14 +121,14 @@ test.beforeEach(async ({ page }) => {
 test("后台新建与编辑经纪人", async ({ page }) => {
   await page.goto("/admin/merchant/brokers");
   await page.getByRole("button", { name: "新建经纪人" }).click();
-  await page.getByPlaceholder("姓名", { exact: true }).fill(`${MARK}经纪人`);
-  await page.getByPlaceholder("手机号", { exact: true }).fill(PHONE);
+  await page.getByLabel("姓名").fill(`${MARK}经纪人`);
+  await page.getByLabel("手机号").fill(PHONE);
   await page.getByRole("button", { name: "保存" }).click();
 
   const row = page.locator("tr").filter({ hasText: `${MARK}经纪人` }).first();
   await expect(row).toBeVisible();
   await row.getByRole("button", { name: "编辑" }).click();
-  await page.getByPlaceholder("姓名", { exact: true }).fill(`${MARK}经纪人改`);
+  await page.getByLabel("姓名").fill(`${MARK}经纪人改`);
   await page.getByRole("button", { name: "保存" }).click();
 
   await expect(page.locator("tr").filter({ hasText: `${MARK}经纪人改` }).first()).toBeVisible();
@@ -140,10 +140,10 @@ test("后台编辑门店并留痕原因", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "编辑门店" })).toBeVisible();
 
   // 等待异步回填完成后再修改，避免并行慢加载把输入覆盖回原值
-  const nameInput = page.getByPlaceholder("门店名称 *");
+  const nameInput = page.getByLabel("门店名称");
   await expect(nameInput).toHaveValue(new RegExp(`${MARK}门店`), { timeout: 15_000 });
   await nameInput.fill(`${MARK}门店改`);
-  await page.getByPlaceholder("变更原因 *").fill("E2E 编辑留痕");
+  await page.getByLabel("变更原因").fill("E2E 编辑留痕");
   await page.getByRole("button", { name: "保存修改" }).click();
 
   await expect(page.getByText(`${MARK}门店改`).first()).toBeVisible({ timeout: 15_000 });
@@ -157,8 +157,8 @@ test("后台发起协议", async ({ page }) => {
   await page.locator('button[role="combobox"]').nth(1).click();
   await page.getByRole("option", { name: new RegExp(storeName) }).click();
 
-  await page.getByPlaceholder("签署人姓名").fill("王店长");
-  await page.getByPlaceholder("签署人手机号").fill("13700002222");
+  await page.getByLabel("签署人姓名").fill("王店长");
+  await page.getByLabel("签署人手机号").fill("13700002222");
   await page.getByRole("button", { name: "提交审核" }).click();
 
   await expect(page.locator("tr").filter({ hasText: storeName }).first()).toBeVisible({ timeout: 15_000 });

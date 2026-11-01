@@ -250,7 +250,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
 
         def _merchant_notify_daily() -> None:
             from db import SessionLocal
-            from services.merchant.tasks import run_daily
+            from services.merchant.tasks import record_failure, run_daily
 
             while True:
                 time.sleep(settings.merchant_notify_interval_seconds)
@@ -269,8 +269,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:  # noqa: ARG001
                         result.visits.deduped,
                         result.visits.failed,
                     )
-                except Exception:
+                except Exception as exc:
                     logger.exception("商户通知任务执行失败")
+                    try:
+                        with SessionLocal() as session:
+                            record_failure(session, exc)
+                    except Exception:
+                        logger.exception("商户通知任务失败记录写入失败")
 
         threading.Thread(target=_merchant_notify_daily, name="merchant-notify-daily", daemon=True).start()
         logger.info("商户通知每日任务线程已启动（每 %d 秒）", settings.merchant_notify_interval_seconds)

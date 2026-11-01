@@ -8,6 +8,7 @@ type CompanyOption = components["schemas"]["BrokerCompanyOption"];
 type CompanyList = components["schemas"]["BrokerCompanyOptionListResponse"];
 type StoreCreateResult = components["schemas"]["MerchantStoreCreateResult"];
 type StoreCreatePayload = components["schemas"]["MerchantStoreCreate"];
+type DuplicateCheck = components["schemas"]["MerchantDuplicateCheckResponse"];
 
 function errMessage(err: unknown): string {
   return (err as { body?: { message?: string } }).body?.message || "操作失败，请重试";
@@ -31,6 +32,9 @@ Page({
     contactPhone: "",
     remark: "",
     submitting: false,
+    duplicateOpen: false,
+    duplicates: [] as Array<{ id: string; store_name: string; address: string; matchedText: string; distance_m?: number | null }>,
+    forceReason: "",
   },
 
   onCompanyKeywordInput(e: WechatMiniprogram.Input) {
@@ -75,7 +79,37 @@ Page({
     });
   },
 
+  onForceReason(e: WechatMiniprogram.Input) {
+    this.setData({ forceReason: e.detail.value });
+  },
+
+  onCloseDuplicate() {
+    this.setData({ duplicateOpen: false });
+  },
+
+  onOpenDuplicate() {
+    // 候选人选择：提示走后台绑定，避免经纪人重复建店
+    wx.showModal({
+      title: "疑似已有门店",
+      content: "该门店已在系统中，可请邀请员工在后台完成绑定；如需新建，请填写强制新建理由。",
+      showCancel: false,
+    });
+  },
+
+  onForceCreate() {
+    if (!this.data.forceReason.trim()) {
+      wx.showToast({ title: "请填写强制新建理由", icon: "none" });
+      return;
+    }
+    this.setData({ duplicateOpen: false });
+    void this.submit(true);
+  },
+
   async onSubmit(): Promise<void> {
+    await this.submit(false);
+  },
+
+  async submit(force: boolean): Promise<void> {
     if (!this.data.companyId) {
       wx.showToast({ title: "请选择公司", icon: "none" });
       return;
@@ -95,6 +129,37 @@ Page({
       wx.showToast({ title: "请选择门店位置", icon: "none" });
       return;
     }
+    if (!force && !this.data.forceReason.trim()) {
+      try {
+        const check = await request<DuplicateCheck>({
+          url: "/public/merchant/stores/check-duplicates",
+          method: "POST",
+          data: {
+            store_name: this.data.storeName.trim(),
+            address: this.data.address.trim(),
+            lng: Number(this.data.lng),
+            lat: Number(this.data.lat),
+            contact_phone: this.data.contactPhone.trim(),
+          },
+        });
+        if (check.candidates && check.candidates.length) {
+          this.setData({
+            duplicateOpen: true,
+            duplicates: check.candidates.map((item) => ({
+              id: item.id,
+              store_name: item.store_name,
+              address: item.address,
+              matchedText: item.matched_by.join(" / "),
+              distance_m: item.distance_m,
+            })),
+          });
+          return;
+        }
+      } catch {
+        // 查重服务异常不阻断建店（REQ-M01B-002 分支 4：记录「查重未完成」由后端复核）
+      }
+    }
+
     const payload: StoreCreatePayload = {
       company_id: this.data.companyId,
       store_name: this.data.storeName.trim(),
@@ -109,6 +174,7 @@ Page({
       contact_phone: this.data.contactPhone.trim(),
       cooperation_status: "not_cooperated",
       remark: this.data.remark.trim() || undefined,
+      force_create_reason: this.data.forceReason.trim() || null,
     };
     this.setData({ submitting: true });
     try {

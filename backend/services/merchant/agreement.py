@@ -190,7 +190,8 @@ class MerchantAgreementService:
 
         agreement = MerchantAgreement(
             store_id=store.id if store is not None else None,
-            company_id=company.id if company is not None else None,
+            # BR-M04-005：签约主体二选一——门店主体协议不得同时写 company_id
+            company_id=company.id if req.subject_type == "company" and company is not None else None,
             subject_type=req.subject_type,
             agreement_no=req.agreement_no,
             template_id=template.id,
