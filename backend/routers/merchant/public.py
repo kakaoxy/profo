@@ -24,6 +24,7 @@ from schemas.merchant import (
     BrokerRegisterRequest,
     BrokerRegisterResult,
     BrokerResponse,
+    BrokerStoreCreate,
     BrokerStoreOptionListResponse,
     BrokerUnbindRequest,
     BrokerUpdateRequest,
@@ -452,6 +453,23 @@ def create_store_as_broker(
         first_visit=None,
         duplicate_candidates=duplicates,
     )
+
+
+@router.post(
+    "/stores/{store_id}/brokers",
+    status_code=status.HTTP_201_CREATED,
+    summary="门店下补录经纪人",
+)
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def create_store_broker(
+    request: Request,
+    store_id: Annotated[str, Path(description="门店ID")],
+    body: BrokerStoreCreate,
+    db: DbSessionDep,
+    current_user: MerchantCWriteDep,
+) -> BrokerResponse:
+    """员工在门店下直接新增经纪人并立即绑定（REQ-IT5-05：发起协议缺签署人时补录）."""
+    return MerchantBrokerService(db).create_for_store(current_user, store_id, body, request=request)
 
 
 @router.get("/stores/{store_id}/brokers", summary="门店有效经纪人列表")

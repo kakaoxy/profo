@@ -321,3 +321,11 @@
 .modal-actions .mini-btn {
   flex: 1;
 }
+
+/* REQ-IT5-06：联系人自动建档为门店经纪人的说明文案 */
+.form-hint {
+  margin: -8rpx 0 24rpx;
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: var(--graphite);
+}

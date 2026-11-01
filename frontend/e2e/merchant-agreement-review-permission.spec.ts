@@ -1,8 +1,8 @@
 // 商户管理 V05 · 协议审核入口按角色收敛（BR-M04-031）
 //
-// 前端 `/admin/merchant/agreements` 只在 admin/operator 角色下渲染「通过/驳回」；
-// 后端负例见 backend/tests/test_merchant_admin.py::test_merge_and_agreement_review_require_internal_role。
-// 本用例用拦截 /auth/me 的方式覆盖「user 角色持 merchant:agreement 也不应看到审核按钮」分支。
+// REQ-IT5-03 起协议审核环节整体下线：任何角色（含 admin/operator）都不再渲染「通过/驳回」。
+// 本用例用拦截 /auth/me 的方式固定「user 角色持 merchant:agreement 也看不到审核动作」的守卫，
+// 后端负例见 backend/tests/test_merchant_admin.py::test_merge_requires_internal_role（审核端点已 404）。
 
 import { test, expect } from "@playwright/test";
 import { loginPage } from "./helpers/auth";

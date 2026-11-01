@@ -7,6 +7,7 @@ import { request } from "../../../../utils/request";
 type StoreListResponse = components["schemas"]["MerchantStoreListResponse"];
 type StoreListItem = components["schemas"]["MerchantStoreListItem"];
 type StoreResponse = components["schemas"]["MerchantStoreResponse"];
+type Broker = components["schemas"]["BrokerResponse"];
 type Template = components["schemas"]["AgreementTemplateResponse"];
 type Agreement = components["schemas"]["AgreementResponse"];
 
@@ -15,6 +16,12 @@ interface StoreOption {
   name: string;
   company_name: string;
   address: string;
+}
+
+interface SignerOption {
+  id: string;
+  name: string;
+  phoneMasked: string;
 }
 
 function errMessage(err: unknown): string {
@@ -33,11 +40,19 @@ Page({
     templateName: "",
     signerName: "",
     signerPhone: "",
+    signers: [] as SignerOption[],
+    signerLabels: [] as string[],
+    signerIndex: -1,
+    signerHint: "",
     agreementNo: "",
     expireDate: "",
     remark: "",
     submitting: false,
     storePickerOpen: false,
+    brokerModalOpen: false,
+    newBrokerName: "",
+    newBrokerPhone: "",
+    brokerSaving: false,
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -82,14 +97,111 @@ Page({
   async selectStore(storeId: string): Promise<void> {
     try {
       const store = await request<StoreResponse>({ url: `/public/merchant/stores/${storeId}` });
-      this.setData({
-        storeId,
-        storeName: store.store_name,
-        signerName: store.contact_name,
-        signerPhone: store.contact_phone,
-      });
+      this.setData({ storeId, storeName: store.store_name });
+      await this.loadSigners(storeId, store);
     } catch (err) {
       wx.showToast({ title: errMessage(err), icon: "none" });
+    }
+  },
+
+  /**
+   * REQ-IT5-04：签署人从门店经纪人中选，避免手填姓名与门店实际经纪人不一致。
+   * 经纪人接口只回脱敏手机号（phone_masked），因此手机号仍由员工填写，默认沿用门店联系电话；
+   * 门店暂无经纪人（或接口失败）时退回手填，不阻断发起流程。
+   */
+  async loadSigners(storeId: string, store: StoreResponse): Promise<void> {
+    try {
+      const brokers = await request<Broker[]>({ url: `/public/merchant/stores/${storeId}/brokers` });
+      const signers: SignerOption[] = brokers.map((item) => ({
+        id: item.id,
+        name: item.name,
+        phoneMasked: item.phone_masked,
+      }));
+      const first = signers[0];
+      this.setData({
+        signers,
+        signerLabels: signers.map((item) => (item.phoneMasked ? `${item.name}（${item.phoneMasked}）` : item.name)),
+        signerIndex: first ? 0 : -1,
+        signerName: first ? first.name : store.contact_name,
+        signerPhone: store.contact_phone,
+        signerHint: signers.length ? "" : "门店暂无经纪人，可手动填写签署人",
+      });
+    } catch {
+      this.setData({
+        signers: [],
+        signerLabels: [],
+        signerIndex: -1,
+        signerName: store.contact_name,
+        signerPhone: store.contact_phone,
+        signerHint: "门店经纪人加载失败，可手动填写签署人",
+      });
+    }
+  },
+
+  onSelectSigner(e: WechatMiniprogram.PickerChange) {
+    const index = Number(e.detail.value);
+    const signer = this.data.signers[index];
+    this.setData({ signerIndex: index, signerName: signer ? signer.name : "" });
+  },
+
+  onOpenBrokerModal() {
+    this.setData({ brokerModalOpen: true });
+  },
+
+  onCloseBrokerModal() {
+    this.setData({ brokerModalOpen: false });
+  },
+
+  onNewBrokerNameInput(e: WechatMiniprogram.Input) {
+    this.setData({ newBrokerName: e.detail.value });
+  },
+
+  onNewBrokerPhoneInput(e: WechatMiniprogram.Input) {
+    this.setData({ newBrokerPhone: e.detail.value });
+  },
+
+  /**
+   * REQ-IT5-05：门店没有经纪人时在发起页直接补录，补录后立即绑定并作为本次签署人。
+   * 新增经纪人的真实手机号在本次操作中已知，因此顺带回填签署人手机号（列表接口只回脱敏值）。
+   */
+  async onSaveBroker(): Promise<void> {
+    if (this.data.brokerSaving) {
+      return;
+    }
+    const storeId = this.data.storeId;
+    if (!storeId) {
+      wx.showToast({ title: "请先选择门店", icon: "none" });
+      return;
+    }
+    const name = this.data.newBrokerName.trim();
+    const phone = this.data.newBrokerPhone.replace(/\s+/g, "");
+    if (!name) {
+      wx.showToast({ title: "请填写经纪人姓名", icon: "none" });
+      return;
+    }
+    if (!/^1\d{10}$/.test(phone)) {
+      wx.showToast({ title: "请填写 11 位手机号", icon: "none" });
+      return;
+    }
+    this.setData({ brokerSaving: true });
+    try {
+      const created = await request<Broker>({
+        url: `/public/merchant/stores/${storeId}/brokers`,
+        method: "POST",
+        data: { name, phone, remark: "发起协议页补录签署人" },
+      });
+      this.setData({ brokerModalOpen: false, newBrokerName: "", newBrokerPhone: "" });
+      const store = await request<StoreResponse>({ url: `/public/merchant/stores/${storeId}` });
+      await this.loadSigners(storeId, store);
+      const index = this.data.signers.findIndex((item) => item.id === created.id);
+      if (index >= 0) {
+        this.setData({ signerIndex: index, signerName: this.data.signers[index].name, signerPhone: phone });
+      }
+      wx.showToast({ title: "经纪人已添加", icon: "success" });
+    } catch (err) {
+      wx.showToast({ title: errMessage(err), icon: "none" });
+    } finally {
+      this.setData({ brokerSaving: false });
     }
   },
 
@@ -144,8 +256,12 @@ Page({
     }
     const signerName = this.data.signerName.trim();
     const signerPhone = this.data.signerPhone.trim();
-    if (!signerName || !signerPhone) {
-      wx.showToast({ title: "请填写签署人姓名和手机号", icon: "none" });
+    if (!signerName || (this.data.signers.length > 0 && this.data.signerIndex < 0)) {
+      wx.showToast({ title: this.data.signers.length ? "请选择签署人" : "请填写签署人姓名", icon: "none" });
+      return;
+    }
+    if (!signerPhone) {
+      wx.showToast({ title: "请填写签署人手机号", icon: "none" });
       return;
     }
     this.setData({ submitting: true });

@@ -267,7 +267,8 @@ def test_merge_migrates_relations(
     )
     assert resp.status_code == 200, resp.text
     assert resp.json()["visits"] == 1
-    assert resp.json()["brokers"] == 1
+    # 2 = 被合并门店的联系人占位经纪人（REQ-IT5-06）+ 手工建档经纪人
+    assert resp.json()["brokers"] == 2
     assert resp.json()["agreements"] == 1
     assert resp.json()["leads"] == 1
 
@@ -281,7 +282,8 @@ def test_merge_migrates_relations(
     assert session.query(Lead).filter(Lead.store_id == keep["id"]).count() == 1
     assert session.query(MerchantAgreement).filter(MerchantAgreement.store_id == keep["id"]).count() == 1
     assert session.query(MerchantBroker).filter(MerchantBroker.id == broker["id"]).one().store_id == keep["id"]
-    assert session.query(MerchantBrokerBinding).filter(MerchantBrokerBinding.store_id == keep["id"]).count() == 1
+    # 3 = 保留门店自身的联系人占位经纪人 + 从被合并门店迁移过来的 2 条绑定
+    assert session.query(MerchantBrokerBinding).filter(MerchantBrokerBinding.store_id == keep["id"]).count() == 3
     keep_row = session.query(MerchantStore).filter(MerchantStore.id == keep["id"]).one()
     assert keep_row.last_visit_at is not None
 
@@ -305,7 +307,8 @@ def test_store_detail_aggregation(
     assert detail.status_code == 200, detail.text
     body = detail.json()
     assert body["store"]["id"] == store["id"]
-    assert len(body["brokers"]) == 1
+    # 2 = 联系人占位经纪人（REQ-IT5-06）+ 手工建档经纪人
+    assert len(body["brokers"]) == 2
     assert body["visits"]["total"] == 1
     assert len(body["agreements"]) == 1
     assert body["lead_stats"]["total"] == 1
@@ -523,17 +526,22 @@ def test_store_list_broker_count_range_filter(
     staffed_store = _create_store(admin_client, company["id"], employee.id, name="有经纪人门店")
     _create_broker(admin_client, staffed_store["id"])
 
-    resp = admin_client.get(f"{API}/admin/merchant/stores", params={"broker_count_min": 1})
-    assert resp.status_code == 200, resp.text
-    ids = [item["id"] for item in resp.json()["items"]]
+    # REQ-IT5-06 起每新建门店都会自动生成 1 个联系人占位经纪人，
+    # 因此这里用「1 个 vs 2 个」两档验证区间过滤，而不是 0 个
+    resp_two = admin_client.get(f"{API}/admin/merchant/stores", params={"broker_count_min": 2})
+    assert resp_two.status_code == 200, resp_two.text
+    ids = [item["id"] for item in resp_two.json()["items"]]
     assert staffed_store["id"] in ids
     assert empty_store["id"] not in ids
 
-    resp_zero = admin_client.get(f"{API}/admin/merchant/stores", params={"broker_count_min": 0, "broker_count_max": 0})
-    assert resp_zero.status_code == 200, resp_zero.text
-    zero_ids = [item["id"] for item in resp_zero.json()["items"]]
-    assert empty_store["id"] in zero_ids
-    assert staffed_store["id"] not in zero_ids
+    resp_one = admin_client.get(
+        f"{API}/admin/merchant/stores",
+        params={"broker_count_min": 1, "broker_count_max": 1},
+    )
+    assert resp_one.status_code == 200, resp_one.text
+    one_ids = [item["id"] for item in resp_one.json()["items"]]
+    assert empty_store["id"] in one_ids
+    assert staffed_store["id"] not in one_ids
 
 
 def test_store_list_created_date_range_filter(
@@ -612,8 +620,10 @@ def test_merge_preview_returns_migration_counts(
     assert body["visits"] == 1
     assert body["leads"] == 1
     assert body["agreements"] == 1
-    assert body["brokers"] == 1
-    assert body["bindings"] == 1
+    # 2 = 联系人占位经纪人（REQ-IT5-06）+ 手工建档经纪人
+    assert body["brokers"] == 2
+    # 2 = 联系人占位经纪人的绑定 + 手工建档经纪人的绑定
+    assert body["bindings"] == 2
 
     same = admin_client.get(
         f"{API}/admin/merchant/stores/{merged['id']}/merge-preview",

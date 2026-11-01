@@ -70,6 +70,9 @@ _CREATE_ALLOWED_COOPERATION = {
 # REQ-IT1-03：省市不再由前端填写，缺省统一补齐（模型列仍为 NOT NULL，报表/导出口径不变）
 _DEFAULT_PROVINCE = "上海市"
 _DEFAULT_CITY = "上海市"
+
+# REQ-IT5-06：建店联系人自动建档的经纪人来源，用于识别「占位经纪人」
+_STORE_CONTACT_BROKER_SOURCE = "store_contact"
 _DISTANCE_LIMIT_M = 500
 _RELOCATE_DISTANCE_M = 1000
 # 1 度纬度约 111.32km，用于把 500m 半径换算成经纬度包围盒（仅作召回，精确距离仍用 haversine_m）
@@ -305,12 +308,27 @@ class MerchantStoreService:
             },
             request=request,
         )
+        # REQ-IT5-06：联系人自动建档为门店经纪人（冲突只留审计，不阻断建店）
+        self._ensure_contact_broker(store, actor_id=actor_id, request=request)
+
         if commit:
             self.db.commit()
             self.db.refresh(store)
         else:
             self.db.flush()
         return store, duplicates, first_visit
+
+    def _ensure_contact_broker(
+        self,
+        store: MerchantStore,
+        *,
+        actor_id: str | None,
+        request: Request | None,
+    ) -> None:
+        """把门店联系人补成门店经纪人（REQ-IT5-06，见 ``MerchantBrokerService.ensure_contact_broker``）."""
+        from services.merchant.broker import MerchantBrokerService
+
+        MerchantBrokerService(self.db).ensure_contact_broker(store, actor_id=actor_id, request=request)
 
     # -------------------- 查询 --------------------
     def search(
@@ -726,7 +744,18 @@ class MerchantStoreService:
                 "拜访记录",
             ),
             (
-                self.db.query(MerchantBrokerBinding.id).filter(MerchantBrokerBinding.store_id == store.id).count(),
+                # REQ-IT5-06：建店自动生成的「联系人占位经纪人」不算真实关联，
+                # 否则任何新建门店都会因这条系统数据而无法删除（只能停用）
+                self.db.query(MerchantBrokerBinding.id)
+                .join(MerchantBroker, MerchantBroker.id == MerchantBrokerBinding.broker_id)
+                .filter(
+                    MerchantBrokerBinding.store_id == store.id,
+                    or_(
+                        MerchantBroker.source != _STORE_CONTACT_BROKER_SOURCE,
+                        MerchantBroker.user_id.isnot(None),
+                    ),
+                )
+                .count(),
                 "经纪人绑定",
             ),
             (

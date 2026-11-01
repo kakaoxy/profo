@@ -45,6 +45,7 @@ from schemas.merchant import (
     BrokerRegisterResult,
     BrokerResponse,
     BrokerStatusChangeRequest,
+    BrokerStoreCreate,
     BrokerStoreOption,
     BrokerStoreOptionListResponse,
     BrokerUnbindRequest,
@@ -860,6 +861,144 @@ class MerchantBrokerService:
         self.db.commit()
         self.db.refresh(broker)
         return self._response(broker)
+
+    def create_for_store(
+        self,
+        user: User,
+        store_id: str,
+        req: BrokerStoreCreate,
+        *,
+        request: Request | None = None,
+    ) -> BrokerResponse:
+        """员工在门店下补录经纪人并立即绑定（REQ-IT5-05：协议/拜访缺签署人时使用）.
+
+        手机号全局唯一（哈希）：已绑定本店视为重复、已绑定他店要求走换绑流程、
+        已停用档案拒绝补录；未绑定的存量档案（如自注册后未绑店）直接绑定到本店。
+        """
+        store = self.db.query(MerchantStore).filter(MerchantStore.id == store_id).first()
+        if store is None or store.is_deleted:
+            msg = "门店不存在"
+            raise ResourceNotFoundError(msg)
+        ensure_store_visible(self.db, user, store)
+
+        phone_hash = hash_phone(req.phone)
+        broker = self.db.query(MerchantBroker).filter(MerchantBroker.phone_hash == phone_hash).first()
+        created = False
+        if broker is None:
+            broker = MerchantBroker(
+                user_id=None,
+                name=req.name.strip(),
+                phone=req.phone,
+                phone_hash=phone_hash,
+                bind_status=MerchantBindStatus.UNBOUND.value,
+                source="store_employee",
+                bind_source=MerchantBindSource.NONE.value,
+                remark=req.remark,
+            )
+            self.db.add(broker)
+            self.db.flush()
+            created = True
+        elif broker.bind_status == MerchantBindStatus.DISABLED.value:
+            msg = "该手机号对应的经纪人档案已停用，请联系运营"
+            raise ValidationError(msg)
+        elif broker.store_id == store.id:
+            msg = "该经纪人已在本门店"
+            raise ConflictError(msg)
+        elif broker.bind_status == MerchantBindStatus.BOUND.value:
+            msg = "该手机号已绑定其他门店，请走换绑流程"
+            raise ConflictError(msg)
+
+        self._activate_binding(
+            broker,
+            store,
+            bind_source=MerchantBindSource.MANUAL.value,
+            inviter_employee_id=str(user.id),
+            approved_by=str(user.id),
+        )
+        add_audit_log(
+            self.db,
+            user_id=str(user.id),
+            action="create" if created else "rebind",
+            resource_type="merchant_broker",
+            resource_id=str(broker.id),
+            before=None,
+            after={**self._snapshot(broker), "store_id": store.id},
+            request=request,
+        )
+        self.db.commit()
+        self.db.refresh(broker)
+        return self._response(broker)
+
+    def ensure_contact_broker(
+        self,
+        store: MerchantStore,
+        *,
+        actor_id: str | None,
+        request: Request | None = None,
+    ) -> MerchantBroker | None:
+        """建店时把门店联系人自动建档为门店经纪人并绑定（REQ-IT5-06）.
+
+        Q19=A 立即绑定：建档后该经纪人即可被协议签署人下拉、线索归属消费。
+        Q20=B 冲突跳过：联系人手机号若已存在经纪人档案（已绑他店或已被微信账号认领），
+        只写一条 ``skip_existing`` 审计、不做任何改写，绝不阻断建店。
+        扫码关联不在这里做：同一手机号的经纪人 ``POST /public/merchant/brokers/register``
+        会按手机号哈希命中本档案并回填 ``user_id``（即「扫码后自动关联上」）。
+        """
+        name = (store.contact_name or "").strip()
+        phone = (store.contact_phone or "").strip()
+        if not name or not phone:
+            return None
+
+        phone_hash = hash_phone(phone)
+        existing = self.db.query(MerchantBroker).filter(MerchantBroker.phone_hash == phone_hash).first()
+        if existing is not None:
+            add_audit_log(
+                self.db,
+                user_id=actor_id,
+                action="skip_existing",
+                resource_type="merchant_broker",
+                resource_id=str(existing.id),
+                before=None,
+                after={
+                    "store_id": store.id,
+                    "contact_name": name,
+                    "phone_hash": phone_hash[:12],
+                    "reason": "联系人手机号已存在经纪人档案，跳过自动建档",
+                },
+                request=request,
+            )
+            return None
+
+        broker = MerchantBroker(
+            user_id=None,
+            name=name,
+            phone=phone,
+            phone_hash=phone_hash,
+            bind_status=MerchantBindStatus.UNBOUND.value,
+            source="store_contact",
+            bind_source=MerchantBindSource.NONE.value,
+            remark="建店联系人自动建档",
+        )
+        self.db.add(broker)
+        self.db.flush()
+        self._activate_binding(
+            broker,
+            store,
+            bind_source=MerchantBindSource.MANUAL.value,
+            inviter_employee_id=actor_id,
+            approved_by=actor_id,
+        )
+        add_audit_log(
+            self.db,
+            user_id=actor_id,
+            action="create",
+            resource_type="merchant_broker",
+            resource_id=str(broker.id),
+            before=None,
+            after={**self._snapshot(broker), "store_id": store.id, "auto": "store_contact"},
+            request=request,
+        )
+        return broker
 
     def update_admin(
         self,

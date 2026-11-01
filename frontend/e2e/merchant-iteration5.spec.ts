@@ -12,6 +12,7 @@ import { createApiContext } from "./helpers/auth";
  * - REQ-IT5-02 协议列表 onShow 刷新（源码断言，小程序页面无法在 Playwright 内运行）
  * - REQ-IT5-03 取消审核：发起即待签署并生成分享码；审核端点已下线；商户用分享码自助签署；
  *   后台/小程序不再出现审核入口
+ * - REQ-IT5-04 发起页签署人从门店经纪人中选择（手机号因脱敏仍手填）
  *
  * C 端（/public/**）需要 C 端令牌（aud=c），后台 admin 令牌调用会 401，故商户签署用例自取令牌。
  * 串行执行：afterAll 按 MARK 清理本文件造的数据，并行会互相删除。
@@ -26,6 +27,8 @@ const API_BASE = process.env.E2E_API_BASE ?? "http://127.0.0.1:8000";
 const MARK = `E2EIT5${Date.now()}`;
 const PHONE = `138${MARK.slice(-8)}`;
 const SIGNER_PHONE = `137${MARK.slice(-8)}`;
+const BROKER_PHONE = `136${MARK.slice(-8)}`;
+const BROKER_PHONE2 = `135${MARK.slice(-8)}`;
 
 let companyId = "";
 let storeId = "";
@@ -117,6 +120,8 @@ from db import SessionLocal
 from models import (
     MerchantAgreement,
     MerchantAgreementTemplate,
+    MerchantBroker,
+    MerchantBrokerBinding,
     MerchantCompany,
     MerchantStore,
 )
@@ -129,6 +134,22 @@ try:
     db.query(MerchantAgreementTemplate).filter(
         MerchantAgreementTemplate.template_name.like(f"%{mark}%")
     ).delete(synchronize_session=False)
+    broker_ids = [
+        row.id for row in db.query(MerchantBroker.id).filter(MerchantBroker.name.like(f"%{mark}%")).all()
+    ]
+    store_ids = [
+        row.id
+        for row in db.query(MerchantStore.id).filter(MerchantStore.store_name.like(f"%{mark}%")).all()
+    ]
+    if broker_ids or store_ids:
+        db.query(MerchantBrokerBinding).filter(
+            (MerchantBrokerBinding.broker_id.in_(broker_ids))
+            | (MerchantBrokerBinding.store_id.in_(store_ids))
+        ).delete(synchronize_session=False)
+    if broker_ids:
+        db.query(MerchantBroker).filter(MerchantBroker.id.in_(broker_ids)).delete(
+            synchronize_session=False
+        )
     db.query(MerchantStore).filter(MerchantStore.store_name.like(f"%{mark}%")).delete(
         synchronize_session=False
     )
@@ -314,7 +335,276 @@ test("REQ-IT5-02/03 小程序源码断言：列表 onShow 刷新、详情页分�
 
   // 员工侧签署页与发起页不再提示「等待运营审核」
   expect(read("pages/merchant/agreement/sign/index.ts")).not.toMatch(/等待运营审核/);
-  expect(read("pages/merchant/agreement/create/index.ts")).not.toMatch(/已提交审核/);
+  const createTs = read("pages/merchant/agreement/create/index.ts");
+  const createWxml = read("pages/merchant/agreement/create/index.wxml");
+  expect(createTs).not.toMatch(/已提交审核/);
+  // 发起页的副标题与按钮文案也不能残留审核口径（REQ-IT5-03）
+  expect(createWxml).not.toContain("提交审核");
+  expect(createWxml).not.toContain("由运营审核");
+});
+
+test("REQ-IT5-04 发起协议签署人来自门店经纪人（接口 + 源码断言）", async () => {
+  // —— 接口侧：门店经纪人列表就是签署人候选来源 ——
+  const { ctx, dispose } = await createApiContext();
+  let brokerName = "";
+  try {
+    const created = await ctx.post("/api/v1/admin/merchant/brokers", {
+      data: { name: `${MARK}经纪人`, phone: BROKER_PHONE, store_id: storeId, remark: `${MARK} 签署人` },
+    });
+    const body = await created.text();
+    expect(created.ok(), `建经纪人失败 HTTP ${created.status()} body=${body.slice(0, 300)}`).toBeTruthy();
+    const broker = JSON.parse(body) as { name: string; phone_masked: string };
+    brokerName = broker.name;
+    // 接口只回脱敏手机号（页面因此保留手填手机号），且不得回明文
+    expect(broker.phone_masked).toMatch(/^\d{3}\*{4}\d{4}$/);
+    expect(broker).not.toHaveProperty("phone");
+  } finally {
+    await dispose();
+  }
+
+  const cCtx = await cApi();
+  try {
+    const brokers = await cCtx.get(`/api/v1/public/merchant/stores/${storeId}/brokers`);
+    expect(brokers.ok(), `门店经纪人列表失败 HTTP ${brokers.status()}`).toBeTruthy();
+    const list = (await brokers.json()) as Array<{ name: string; phone_masked: string }>;
+    expect(list.map((item) => item.name)).toContain(brokerName);
+    expect(list.every((item) => Boolean(item.phone_masked))).toBe(true);
+
+    // 用经纪人姓名作为签署人发起协议：落库的签署人即经纪人，不再手填任意姓名
+    const agreement = await cCtx.post("/api/v1/public/merchant/agreements", {
+      data: {
+        subject_type: "store",
+        store_id: storeId,
+        template_id: templateId,
+        signer_name: brokerName,
+        signer_phone: SIGNER_PHONE,
+        remark: `${MARK} 经纪人签署人`,
+      },
+    });
+    const agreementBody = await agreement.text();
+    expect(
+      agreement.ok(),
+      `以经纪人作为签署人发起失败 HTTP ${agreement.status()} body=${agreementBody.slice(0, 300)}`,
+    ).toBeTruthy();
+    expect((JSON.parse(agreementBody) as { signer_name: string }).signer_name).toBe(brokerName);
+  } finally {
+    await cCtx.dispose();
+  }
+
+  // —— 源码侧：页面确实是「选经纪人 + 手机号手填」的接线 ——
+  const createTs = fs.readFileSync(
+    path.resolve(MINIAPP, "pages/merchant/agreement/create/index.ts"),
+    "utf8",
+  );
+  const createWxml = fs.readFileSync(
+    path.resolve(MINIAPP, "pages/merchant/agreement/create/index.wxml"),
+    "utf8",
+  );
+
+  // 选中门店后拉门店经纪人列表（与拜访登记页同源端点）
+  expect(createTs).toMatch(/public\/merchant\/stores\/\$\{storeId\}\/brokers/);
+  expect(createTs).toMatch(/onSelectSigner/);
+  expect(createTs).toMatch(/signerLabels/);
+  // 经纪人手机号只回脱敏值，因此手机号仍保留手填入口
+  expect(createTs).toMatch(/phone_masked/);
+
+  // 有经纪人时用 picker 选择，无经纪人时退回手填
+  expect(createWxml).toMatch(/<picker[\s\S]{0,200}?bindchange="onSelectSigner"/);
+  expect(createWxml).toContain("请选择门店经纪人");
+  expect(createWxml).toContain("门店暂无经纪人，可填写签署人");
+  expect(createWxml).toContain("签署人手机号");
+});
+
+test("REQ-IT5-05 门店无经纪人时可在发起页直接补录经纪人（接口 + 源码断言）", async () => {
+  // —— 接口侧：员工在门店下新增经纪人并立即绑定，重复/跨店给出明确冲突 ——
+  const { ctx, dispose } = await createApiContext();
+  let emptyStoreId = "";
+  try {
+    const store = await ctx.post("/api/v1/admin/merchant/stores", {
+      data: {
+        company_id: companyId,
+        store_name: `${MARK}无经纪人门店`,
+        district: "浦东新区",
+        business_circle: "陆家嘴商圈",
+        address: `${MARK}无经纪人路 2 号`,
+        lng: 121.5 + (Number(MARK.slice(-4)) % 300) / 1000,
+        lat: 31.1 + (Number(MARK.slice(-4)) % 300) / 1000,
+        contact_name: "迭代五补录",
+        contact_phone: `139${MARK.slice(-8)}`,
+        cooperation_status: "not_cooperated",
+        force_create_reason: "E2E 迭代 5 REQ-IT5-05：坐标唯一但命中历史残留门店",
+      },
+    });
+    const storeBody = await store.text();
+    expect(store.ok(), `建门店失败 HTTP ${store.status()} body=${storeBody.slice(0, 300)}`).toBeTruthy();
+    emptyStoreId = (JSON.parse(storeBody) as { store: { id: string } }).store.id;
+  } finally {
+    await dispose();
+  }
+
+  const cCtx = await cApi();
+  try {
+    // 前提：新门店只有建店联系人自动建档的经纪人（REQ-IT5-06），没有其他经纪人
+    const before = await cCtx.get(`/api/v1/public/merchant/stores/${emptyStoreId}/brokers`);
+    expect(before.ok(), `空门店经纪人列表失败 HTTP ${before.status()}`).toBeTruthy();
+    const beforeList = (await before.json()) as Array<{ name: string }>;
+    expect(beforeList).toHaveLength(1);
+    expect(beforeList[0].name).toBe("迭代五补录");
+
+    // 补录：直接新增并绑定到该门店
+    const created = await cCtx.post(`/api/v1/public/merchant/stores/${emptyStoreId}/brokers`, {
+      data: { name: `${MARK}补录经纪人`, phone: BROKER_PHONE2, remark: `${MARK} 发起页补录` },
+    });
+    const createdBody = await created.text();
+    expect(
+      created.ok(),
+      `补录经纪人失败 HTTP ${created.status()} body=${createdBody.slice(0, 300)}`,
+    ).toBeTruthy();
+    const broker = JSON.parse(createdBody) as {
+      id: string;
+      name: string;
+      store_id: string;
+      bind_status: string;
+      phone_masked: string;
+    };
+    expect(broker.store_id).toBe(emptyStoreId);
+    expect(broker.bind_status).toBe("bound");
+    expect(broker.phone_masked).toMatch(/^\d{3}\*{4}\d{4}$/);
+
+    // 补录后立即成为签署人候选项
+    const after = await cCtx.get(`/api/v1/public/merchant/stores/${emptyStoreId}/brokers`);
+    const list = (await after.json()) as Array<{ id: string }>;
+    expect(list.map((item) => item.id)).toContain(broker.id);
+    expect(list).toHaveLength(2);
+
+    // 重复补录同一手机号 → 409（同店）
+    const dup = await cCtx.post(`/api/v1/public/merchant/stores/${emptyStoreId}/brokers`, {
+      data: { name: `${MARK}补录经纪人`, phone: BROKER_PHONE2 },
+    });
+    expect(dup.status()).toBe(409);
+    expect(((await dup.json()) as { message: string }).message).toContain("已在本门店");
+
+    // 跨店补录同一手机号 → 409（提示走换绑流程）
+    const cross = await cCtx.post(`/api/v1/public/merchant/stores/${storeId}/brokers`, {
+      data: { name: `${MARK}补录经纪人`, phone: BROKER_PHONE2 },
+    });
+    expect(cross.status()).toBe(409);
+    expect(((await cross.json()) as { message: string }).message).toContain("换绑");
+  } finally {
+    await cCtx.dispose();
+  }
+
+  // —— 源码侧：无经纪人时页面提供补录入口与弹层 ——
+  const createTs = fs.readFileSync(
+    path.resolve(MINIAPP, "pages/merchant/agreement/create/index.ts"),
+    "utf8",
+  );
+  const createWxml = fs.readFileSync(
+    path.resolve(MINIAPP, "pages/merchant/agreement/create/index.wxml"),
+    "utf8",
+  );
+
+  expect(createTs).toMatch(/onOpenBrokerModal/);
+  expect(createTs).toMatch(/onSaveBroker/);
+  // 补录走员工侧端点，且是 POST
+  expect(createTs).toMatch(/url: `\/public\/merchant\/stores\/\$\{storeId\}\/brokers`,\s*\n\s*method: "POST"/);
+  expect(createWxml).toContain("新增门店经纪人");
+  expect(createWxml).toMatch(/wx:if="\{\{storeId && !signers\.length\}\}"/);
+  expect(createWxml).toContain("新增后立即绑定到当前门店");
+});
+
+test("REQ-IT5-06 建店联系人自动建档为门店经纪人，重复手机号跳过不阻断建店", async () => {
+  const { ctx, dispose } = await createApiContext();
+  const contactPhone = `134${MARK.slice(-8)}`;
+  let autoStoreId = "";
+  let conflictStoreId = "";
+  try {
+    const payload = {
+      company_id: companyId,
+      // 与 beforeAll 的门店/后续门店错开，避免命中 500m 查重
+      district: "浦东新区",
+      business_circle: "陆家嘴商圈",
+      contact_name: `${MARK}联系人`,
+      contact_phone: contactPhone,
+      cooperation_status: "not_cooperated",
+      force_create_reason: "E2E 迭代 5 REQ-IT5-06：坐标唯一但命中历史残留门店",
+    };
+
+    const auto = await ctx.post("/api/v1/admin/merchant/stores", {
+      data: {
+        ...payload,
+        store_name: `${MARK}自动建档门店`,
+        address: `${MARK}自动建档路 3 号`,
+        lng: 121.7 + (Number(MARK.slice(-4)) % 300) / 1000,
+        lat: 31.5 + (Number(MARK.slice(-4)) % 300) / 1000,
+      },
+    });
+    const autoBody = await auto.text();
+    expect(auto.ok(), `建门店失败 HTTP ${auto.status()} body=${autoBody.slice(0, 300)}`).toBeTruthy();
+    autoStoreId = (JSON.parse(autoBody) as { store: { id: string } }).store.id;
+
+    // 同一手机号再建一家门店：跳过自动建档，建店仍然成功
+    const conflict = await ctx.post("/api/v1/admin/merchant/stores", {
+      data: {
+        ...payload,
+        store_name: `${MARK}冲突门店`,
+        address: `${MARK}冲突路 4 号`,
+        lng: 121.75 + (Number(MARK.slice(-4)) % 300) / 1000,
+        lat: 31.55 + (Number(MARK.slice(-4)) % 300) / 1000,
+      },
+    });
+    const conflictBody = await conflict.text();
+    expect(conflict.ok(), `冲突建店失败 HTTP ${conflict.status()} body=${conflictBody.slice(0, 300)}`).toBeTruthy();
+    conflictStoreId = (JSON.parse(conflictBody) as { store: { id: string } }).store.id;
+    expect(conflictStoreId).not.toBe(autoStoreId);
+  } finally {
+    await dispose();
+  }
+
+  const cCtx = await cApi();
+  try {
+    // 自动建档并立即绑定：门店经纪人列表里就是建店联系人，手机号脱敏
+    const linked = await cCtx.get(`/api/v1/public/merchant/stores/${autoStoreId}/brokers`);
+    expect(linked.ok(), `自动建档门店经纪人列表失败 HTTP ${linked.status()}`).toBeTruthy();
+    const brokers = (await linked.json()) as Array<{ name: string; store_id: string; phone_masked: string }>;
+    expect(brokers).toHaveLength(1);
+    expect(brokers[0].name).toBe(`${MARK}联系人`);
+    expect(brokers[0].store_id).toBe(autoStoreId);
+    expect(brokers[0].phone_masked).toMatch(/^\d{3}\*{4}\d{4}$/);
+
+    // 冲突门店不重复建档：列表为空（原门店仍持有该手机号档案）
+    const empty = await cCtx.get(`/api/v1/public/merchant/stores/${conflictStoreId}/brokers`);
+    expect(empty.ok(), `冲突门店经纪人列表失败 HTTP ${empty.status()}`).toBeTruthy();
+    expect((await empty.json()) as unknown[]).toHaveLength(0);
+  } finally {
+    await cCtx.dispose();
+  }
+
+  // —— 源码侧：建店页与后台表单都提示「联系人会自动成为门店经纪人」——
+  const createWxml = fs.readFileSync(
+    path.resolve(MINIAPP, "pages/merchant/store/create/index.wxml"),
+    "utf8",
+  );
+  expect(createWxml).toContain("保存后该联系人会自动成为门店经纪人");
+
+  const adminForm = fs.readFileSync(
+    path.resolve(__dirname, "../src/app/(main)/admin/merchant/stores/new/page.tsx"),
+    "utf8",
+  );
+  expect(adminForm).toContain("保存后该手机号会自动建档为门店经纪人");
+
+  const brokerService = fs.readFileSync(
+    path.resolve(BACKEND, "services/merchant/broker.py"),
+    "utf8",
+  );
+  expect(brokerService).toMatch(/def ensure_contact_broker\(/);
+  expect(brokerService).toContain('source="store_contact"');
+
+  const storeService = fs.readFileSync(
+    path.resolve(BACKEND, "services/merchant/store.py"),
+    "utf8",
+  );
+  expect(storeService).toMatch(/_ensure_contact_broker\(store, actor_id=actor_id, request=request\)/);
 });
 
 test("REQ-IT5-03 后台协议页不再出现审核入口", () => {

@@ -187,11 +187,12 @@ def test_map_points_stats_and_missing_coordinate(
     normal_point = next(point for point in body["points"] if point["id"] == store["id"])
     missing_point = next(point for point in body["points"] if point["id"] == missing.id)
     assert normal_point["has_coordinate"] is True
-    assert normal_point["broker_count"] == 1
+    # 2 = 联系人占位经纪人（REQ-IT5-06）+ 手工建档经纪人
+    assert normal_point["broker_count"] == 2
     assert missing_point["has_coordinate"] is False
     assert missing_point["lng"] is None
     assert body["stats"]["store_count"] == 2
-    assert body["stats"]["broker_count"] == 1
+    assert body["stats"]["broker_count"] == 2
     # REQ-M09-005：最近拜访时间倒序，无拜访记录的门店排在最后
     assert body["points"][0]["id"] == missing.id
 

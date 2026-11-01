@@ -686,10 +686,11 @@ def test_broker_options_scoped_to_visible_stores(
     resp = employee_admin.get(f"{API}/admin/merchant/brokers/options")
     assert resp.status_code == 200, resp.text
     names = {item["name"] for item in resp.json()["items"]}
-    assert names == {"我的经纪人"}
+    # 王店长 = 我司门店的联系人占位经纪人（REQ-IT5-06），他店经纪人必须不可见
+    assert names == {"我的经纪人", "王店长"}
 
     admin_options = admin_http.get(f"{API}/admin/merchant/brokers/options")
-    assert {item["name"] for item in admin_options.json()["items"]} == {"我的经纪人", "他人经纪人"}
+    assert {item["name"] for item in admin_options.json()["items"]} == {"我的经纪人", "他人经纪人", "王店长"}
 
 
 def test_visit_create_is_idempotent_with_client_request_id(

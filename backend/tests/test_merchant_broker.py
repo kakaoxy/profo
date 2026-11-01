@@ -9,14 +9,17 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 import db
+from constants.merchant import MerchantBindSource, MerchantBindStatus
 from models import (
     BizDictItem,
     Lead,
     LeadFollowUp,
     MerchantBroker,
+    MerchantBrokerBinding,
     MerchantCompany,
     MerchantStore,
     MerchantStoreQRCode,
+    OperationLog,
     RecruitLead,
     RecruitLeadStatus,
     Role,
@@ -141,7 +144,14 @@ def _create_company(admin_client: TestClient) -> dict:
     return resp.json()
 
 
-def _create_store(admin_client: TestClient, company_id: str, *, review_status: str | None = None) -> dict:
+def _create_store(
+    admin_client: TestClient,
+    company_id: str,
+    *,
+    review_status: str | None = None,
+    contact_name: str = "王店长",
+    contact_phone: str | None = None,
+) -> dict:
     payload = {
         "company_id": company_id,
         "store_name": f"门店-{uuid.uuid4().hex[:5]}",
@@ -152,8 +162,8 @@ def _create_store(admin_client: TestClient, company_id: str, *, review_status: s
         "address": "世纪大道 100 号",
         "lng": 121.5057,
         "lat": 31.2453,
-        "contact_name": "王店长",
-        "contact_phone": f"137{uuid.uuid4().int % 10**8:08d}",
+        "contact_name": contact_name,
+        "contact_phone": contact_phone or f"137{uuid.uuid4().int % 10**8:08d}",
         "cooperation_status": "not_cooperated",
         "force_create_reason": "测试数据",
     }
@@ -417,7 +427,8 @@ def test_admin_broker_crud_and_disable_unbind(
 
     listing = admin_client.get(f"{API}/admin/merchant/brokers")
     assert listing.status_code == 200
-    assert listing.json()["total"] == 1
+    # 2 = 建店联系人自动建档（REQ-IT5-06）+ 扫码注册的经纪人
+    assert listing.json()["total"] == 2
 
     created = admin_client.post(
         f"{API}/admin/merchant/brokers",
@@ -788,3 +799,113 @@ def test_qr_generation_requires_store_owner(
     store = _create_store(admin_client, company["id"])  # 未设置 owner_employee_id
     resp = employee_client.post(f"{API}/public/merchant/stores/{store['id']}/broker-qrcode")
     assert resp.status_code == 403, resp.text
+
+
+# -------------------- REQ-IT5-06：建店联系人自动建档为门店经纪人 --------------------
+
+
+def test_store_creation_auto_creates_contact_broker(
+    admin_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """建店时联系人自动建档并立即绑定到该门店（Q19=A）."""
+    session: Session = seeded_db["session"]
+    company = _create_company(admin_client)
+    phone = f"135{uuid.uuid4().int % 10**8:08d}"
+    store = _create_store(admin_client, company["id"], contact_name="张经纪人", contact_phone=phone)
+
+    session.expire_all()
+    broker = session.query(MerchantBroker).filter(MerchantBroker.phone_hash == hash_phone(phone)).one()
+    assert broker.name == "张经纪人"
+    assert broker.store_id == store["id"]
+    assert broker.bind_status == MerchantBindStatus.BOUND.value
+    assert broker.bind_source == MerchantBindSource.MANUAL.value
+    assert broker.user_id is None
+    assert broker.source == "store_contact"
+
+    binding = (
+        session.query(MerchantBrokerBinding)
+        .filter(MerchantBrokerBinding.broker_id == broker.id, MerchantBrokerBinding.store_id == store["id"])
+        .one()
+    )
+    assert binding.status == "active"
+
+    listing = admin_client.get(f"{API}/admin/merchant/brokers", params={"keyword": "张经纪人"})
+    assert listing.status_code == 200, listing.text
+    assert any(item["id"] == broker.id for item in listing.json()["items"])
+
+    logs = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_broker", OperationLog.resource_id == broker.id)
+        .all()
+    )
+    assert [log.action for log in logs] == ["create"]
+
+
+def test_contact_broker_is_linked_when_same_phone_registers(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """同一手机号扫码认证时复用自动建档的档案并回填 user_id，不新增经纪人."""
+    session: Session = seeded_db["session"]
+    phone = f"134{uuid.uuid4().int % 10**8:08d}"
+    customer_role = session.query(Role).filter(Role.code == "customer").one()
+    scanner = User(
+        id=str(uuid.uuid4()),
+        username=f"scanner-{uuid.uuid4().hex[:8]}",
+        password=get_password_hash(f"pw-{uuid.uuid4().hex}"),
+        nickname="扫码店长",
+        role_id=customer_role.id,
+        status="active",
+        phone=phone,
+        phone_hash=hash_phone(phone),
+    )
+    session.add(scanner)
+    session.commit()
+    scanner_client = _client(session, scanner, c_side=True)
+
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], contact_name="扫码店长", contact_phone=phone)
+
+    resp = scanner_client.post(f"{API}/public/merchant/brokers/register", json={"name": "扫码店长"})
+    assert resp.status_code == 200, resp.text
+
+    session.expire_all()
+    brokers = session.query(MerchantBroker).filter(MerchantBroker.phone_hash == hash_phone(phone)).all()
+    assert len(brokers) == 1
+    assert brokers[0].user_id == scanner.id
+    assert brokers[0].store_id == store["id"]
+
+    me = scanner_client.get(f"{API}/public/merchant/brokers/me")
+    assert me.status_code == 200, me.text
+    assert me.json()["store_id"] == store["id"]
+
+
+def test_store_creation_skips_existing_broker_phone(
+    admin_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """联系人手机号已是他人经纪人档案时跳过建档、写审计，不阻断建店（Q20=B）."""
+    session: Session = seeded_db["session"]
+    company = _create_company(admin_client)
+    phone = f"133{uuid.uuid4().int % 10**8:08d}"
+    first_store = _create_store(admin_client, company["id"], contact_phone=phone)
+
+    session.expire_all()
+    broker = session.query(MerchantBroker).filter(MerchantBroker.phone_hash == hash_phone(phone)).one()
+
+    second_store = _create_store(admin_client, company["id"], contact_name="另一位联系人", contact_phone=phone)
+    assert second_store["id"] != first_store["id"]
+
+    session.expire_all()
+    brokers = session.query(MerchantBroker).filter(MerchantBroker.phone_hash == hash_phone(phone)).all()
+    assert len(brokers) == 1
+    assert brokers[0].store_id == first_store["id"]
+
+    logs = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_broker", OperationLog.action == "skip_existing")
+        .all()
+    )
+    assert any(log.resource_id == broker.id and log.after["store_id"] == second_store["id"] for log in logs)

@@ -352,11 +352,13 @@ def test_broker_options_for_lead_entry(admin_client: TestClient, employee: User,
     resp = admin_client.get(f"{API}/admin/merchant/brokers/options?store_id={store['id']}&bind_status=bound")
     assert resp.status_code == 200, resp.text
     items = resp.json()["items"]
-    assert len(items) == 1
-    assert items[0]["id"] == broker["id"]
-    assert items[0]["store_id"] == store["id"]
+    # 2 = 联系人占位经纪人（REQ-IT5-06）+ 手工建档经纪人
+    assert len(items) == 2
+    matched = [item for item in items if item["id"] == broker["id"]]
+    assert len(matched) == 1
+    assert matched[0]["store_id"] == store["id"]
     # 不暴露手机号等敏感字段
-    assert "phone_masked" not in items[0]
+    assert "phone_masked" not in matched[0]
 
     search = admin_client.get(f"{API}/admin/merchant/brokers/options?keyword=联动经纪人")
     assert search.status_code == 200, search.text
@@ -453,8 +455,9 @@ def test_store_broker_linkage_and_broker_search(
 
     linked = client.get(f"{API}/public/merchant/stores/{store['id']}/brokers")
     assert linked.status_code == 200
-    assert len(linked.json()) == 1
-    assert linked.json()[0]["phone_masked"].startswith("139")
+    # 2 = 联系人占位经纪人（REQ-IT5-06）+ 自助绑定的经纪人
+    assert len(linked.json()) == 2
+    assert any(item["phone_masked"].startswith("139") for item in linked.json())
 
     searched = client.get(f"{API}/public/merchant/brokers/search?keyword=代填")
     assert searched.status_code == 200

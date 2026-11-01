@@ -107,6 +107,7 @@
         <input class="input" type="number" value="{{form.contact_phone}}" bindinput="onInput" data-field="contact_phone" />
       </view>
     </view>
+    <view class="form-hint">保存后该联系人会自动成为门店经纪人；其手机号扫码认证时会关联到这个档案（REQ-IT5-06）。</view>
     <view class="form-group">
       <text class="form-label">合作状态</text>
       <view class="chip-row">

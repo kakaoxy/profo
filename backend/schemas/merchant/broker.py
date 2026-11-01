@@ -297,6 +297,24 @@ class BrokerAdminUpdate(BaseModel):
         return _normalize_phone(value)
 
 
+class BrokerStoreCreate(BaseModel):
+    """员工在门店下直接新建经纪人（REQ-IT5-05：协议发起页缺签署人时补录）."""
+
+    name: str = Field(min_length=1, max_length=50, description="经纪人姓名")
+    phone: str = Field(min_length=1, max_length=20, description="经纪人手机号（加密存储，哈希唯一）")
+    remark: str | None = Field(default=None, max_length=500, description="备注（如补录原因）")
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("phone")
+    @classmethod
+    def _strip_phone(cls, value: str) -> str:
+        return _normalize_phone(value) or value
+
+
 class BrokerForceChangeRequest(BaseModel):
     """后台强制换绑经纪人."""
 

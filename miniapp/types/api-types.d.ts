@@ -7877,7 +7877,11 @@ export interface paths {
          */
         get: operations["list_store_brokers_api_v1_public_merchant_stores__store_id__brokers_get"];
         put?: never;
-        post?: never;
+        /**
+         * 门店下补录经纪人
+         * @description 员工在门店下直接新增经纪人并立即绑定（REQ-IT5-05：发起协议缺签署人时补录）.
+         */
+        post: operations["create_store_broker_api_v1_public_merchant_stores__store_id__brokers_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10676,6 +10680,27 @@ export interface components {
             target_status: "disabled" | "unbound";
             /** Reason */
             reason?: string | null;
+        };
+        /**
+         * BrokerStoreCreate
+         * @description 员工在门店下直接新建经纪人（REQ-IT5-05：协议发起页缺签署人时补录）.
+         */
+        BrokerStoreCreate: {
+            /**
+             * Name
+             * @description 经纪人姓名
+             */
+            name: string;
+            /**
+             * Phone
+             * @description 经纪人手机号（加密存储，哈希唯一）
+             */
+            phone: string;
+            /**
+             * Remark
+             * @description 备注（如补录原因）
+             */
+            remark?: string | null;
         };
         /**
          * BrokerStoreOption
@@ -40685,6 +40710,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BrokerResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_store_broker_api_v1_public_merchant_stores__store_id__brokers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 门店ID */
+                store_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrokerStoreCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerResponse"];
                 };
             };
             /** @description Validation Error */

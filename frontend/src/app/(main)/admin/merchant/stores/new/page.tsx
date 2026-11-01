@@ -412,7 +412,7 @@ export default function MerchantStoreCreatePage() {
           <Field label="联系人" required>
             <Input value={form.contact_name} onChange={update("contact_name")} />
           </Field>
-          <Field label="联系电话" required>
+          <Field label="联系电话" required hint="保存后该手机号会自动建档为门店经纪人，本人扫码认证时自动关联（REQ-IT5-06）">
             <Input value={form.contact_phone} onChange={update("contact_phone")} inputMode="tel" />
           </Field>
           <Field label="负责人" hint="选填；门店归属员工，用于数据范围与二维码生成">
