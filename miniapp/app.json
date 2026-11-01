@@ -67,7 +67,8 @@
         "agreement/list/index",
         "agreement/create/index",
         "agreement/detail/index",
-        "agreement/sign/index"
+        "agreement/sign/index",
+        "agreement/merchant-sign/index"
       ]
     },
     {

@@ -208,8 +208,9 @@ test("后台发起协议", async ({ page }) => {
 
   await page.getByLabel("签署人姓名").fill("王店长");
   await page.getByLabel("签署人手机号").fill("13700002222");
-  await page.getByRole("button", { name: "提交审核" }).click();
+  // REQ-IT5-03：取消审核，发起即生成商户签署链接并进入「待签署」
+  await page.getByRole("button", { name: "发起并生成签署链接" }).click();
 
   await expect(page.locator("tr").filter({ hasText: storeName }).first()).toBeVisible({ timeout: 15_000 });
-  await expect(page.locator("tr").filter({ hasText: "待审核" }).first()).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator("tr").filter({ hasText: "待签署" }).first()).toBeVisible({ timeout: 15_000 });
 });

@@ -23,7 +23,6 @@ const STATUS_LABELS: Record<string, string> = {
   expired: "已过期",
   voided: "已作废",
 };
-const REVIEW_LABELS: Record<string, string> = { pending: "待审核", approved: "审核通过", rejected: "审核驳回" };
 
 function formatTime(value: string | null | undefined) {
   return value ? new Date(value).toLocaleString("zh-CN") : "—";
@@ -255,7 +254,6 @@ export default function MerchantAgreementDetailPage() {
                     {STATUS_LABELS[agreement.status] || agreement.status}
                   </StatusBadge>
                 </Info>
-                <Info label="审核状态">{REVIEW_LABELS[agreement.review_status] || agreement.review_status}</Info>
                 <Info label="签署人">
                   {agreement.signer_name}
                   <span className="ml-2 text-xs text-graphite">{agreement.signer_phone_masked || "—"}</span>
@@ -263,7 +261,7 @@ export default function MerchantAgreementDetailPage() {
                 <Info label="签署时间">{formatTime(agreement.signed_at)}</Info>
                 <Info label="到期时间">{formatTime(agreement.expire_at)}</Info>
                 <Info label="创建时间">{formatTime(agreement.created_at)}</Info>
-                <Info label="审核意见">{agreement.review_remark || "—"}</Info>
+                <Info label="作废原因">{agreement.void_reason || "—"}</Info>
                 <Info label="备注">{agreement.remark || "—"}</Info>
               </div>
 

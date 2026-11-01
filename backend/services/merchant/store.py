@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from datetime import date, datetime, timezone
 
 from fastapi import Request
-from sqlalchemy import and_, func, inspect, or_, text
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -1050,7 +1050,7 @@ class MerchantStoreService:
         *,
         request: Request | None = None,
     ) -> MerchantStoreResponse:
-        """合作状态变更（Q19：员工仅可改洽谈中；已合作必须有已签协议）."""
+        """合作状态变更（Q19：员工仅可改洽谈中；REQ-IT5-01：不再要求已签协议）."""
         store = self._get_store(store_id)
         ensure_store_visible(self.db, user, store)
         if store.status in {MerchantStoreStatus.MERGED.value, MerchantStoreStatus.RELOCATED.value}:
@@ -1067,10 +1067,6 @@ class MerchantStoreService:
         if not privileged and target != MerchantCooperationStatus.NEGOTIATING.value:
             msg = "员工仅可将合作状态改为洽谈中"
             raise PermissionDeniedError(msg)
-
-        if target == MerchantCooperationStatus.COOPERATED.value and not self._has_signed_agreement(store.id):
-            msg = "改为已合作前必须先签署电子合作协议"
-            raise ValidationError(msg)
 
         before = self._snapshot(store)
         log = MerchantStoreStatusLog(
@@ -1100,7 +1096,8 @@ class MerchantStoreService:
         """合作状态可选值（REQ-IT4-05）.
 
         与 ``change_cooperation_status`` 共用同一套规则裁剪，小程序只渲染不再自行推导权限：
-        已合并/已搬迁不可变更；无全量权限的员工只能改为「洽谈中」；「已合作」需已有已签协议。
+        已合并/已搬迁不可变更；无全量权限的员工只能改为「洽谈中」。
+        REQ-IT5-01：合作状态与协议完全解耦，「已合作」不再要求已签协议。
         """
         store = self._get_store(store_id)
         ensure_store_visible(self.db, user, store)
@@ -1111,13 +1108,10 @@ class MerchantStoreService:
             reason = "当前门店状态不允许变更合作状态"
         else:
             privileged = ensure_scope_role(user)
-            signed = self._has_signed_agreement(store.id)
             for code, label in self._active_cooperation_items():
                 if code == store.cooperation_status:
                     continue
                 if not privileged and code != MerchantCooperationStatus.NEGOTIATING.value:
-                    continue
-                if code == MerchantCooperationStatus.COOPERATED.value and not signed:
                     continue
                 items.append(MerchantStoreStatusOption(code=code, label=label))
             if not items:
@@ -1367,22 +1361,6 @@ class MerchantStoreService:
         if exists is None:
             msg = f"无效的字典值: {dict_code}={code}"
             raise ValidationError(msg)
-
-    def _has_signed_agreement(self, store_id: str) -> bool:
-        """已签署协议前置校验（V05 表未上线前按无协议处理）."""
-        inspector = inspect(self.db.get_bind())
-        if "merchant_agreements" not in inspector.get_table_names():
-            return False
-        columns = {col["name"] for col in inspector.get_columns("merchant_agreements")}
-        if "store_id" not in columns or "status" not in columns:
-            return False
-        count = self.db.execute(
-            text(
-                'SELECT COUNT(*) FROM "merchant_agreements" WHERE "store_id" = :store_id AND "status" = :status',
-            ),
-            {"store_id": store_id, "status": "signed"},
-        ).scalar_one()
-        return int(count) > 0
 
     @staticmethod
     def _validate_gcj02(lng: float | None, lat: float | None) -> None:

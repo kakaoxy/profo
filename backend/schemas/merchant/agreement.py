@@ -1,4 +1,4 @@
-"""电子合作协议 Schemas（V05）."""
+"""电子合作协议 Schemas（V05；REQ-IT5-03 起取消审核、新增商户签署视图）."""
 
 from datetime import datetime
 from typing import Literal
@@ -68,13 +68,6 @@ class AgreementCreateRequest(BaseModel):
         return value.replace(" ", "").replace("-", "").strip()
 
 
-class AgreementReviewRequest(BaseModel):
-    """协议审核请求."""
-
-    approve: bool
-    remark: str | None = Field(default=None, max_length=500)
-
-
 class AgreementSignRequest(BaseModel):
     """手写签名提交请求（签名 PNG 由文件服务上传）."""
 
@@ -122,10 +115,8 @@ class AgreementResponse(BaseModel):
     template_name: str | None
     parent_agreement_id: str | None
     status: str
-    review_status: str
-    reviewed_at: datetime | None
-    reviewed_by: str | None
-    review_remark: str | None
+    sign_code: str | None = Field(default=None, description="商户签署分享码（员工侧拼分享链接用）")
+    void_reason: str | None = None
     signer_name: str | None
     signer_phone_masked: str | None
     signed_at: datetime | None
@@ -136,6 +127,45 @@ class AgreementResponse(BaseModel):
     remark: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class AgreementSignView(BaseModel):
+    """商户签署视图（REQ-IT5-03：商户微信登录 + 分享码进入，仅展示核对信息）."""
+
+    id: str
+    agreement_no: str | None
+    subject_type: str
+    subject_name: str | None
+    template_name: str | None
+    content: str | None = Field(default=None, description="协议正文（格式条款，原样展示）")
+    signer_name: str | None
+    signer_phone_masked: str | None
+    expire_at: datetime | None
+    status: str
+    status_label: str
+    can_sign: bool
+    reason: str | None = Field(default=None, description="不可签署的原因说明")
+
+
+class AgreementMerchantSignRequest(BaseModel):
+    """商户签署提交（手写签名图 + 确认信息）."""
+
+    signer_name: str = Field(min_length=1, max_length=50)
+    signer_phone: str = Field(min_length=1, max_length=20)
+    signature_url: str = Field(min_length=1, max_length=1000, description="签名图片地址")
+    confirmed: bool = Field(description="商户已核对协议与自身信息")
+
+    @field_validator("signer_phone")
+    @classmethod
+    def _strip_phone(cls, value: str) -> str:
+        return value.replace(" ", "").replace("-", "").strip()
+
+    @model_validator(mode="after")
+    def _must_confirm(self) -> "AgreementMerchantSignRequest":
+        if not self.confirmed:
+            msg = "请先核对协议内容与商户信息"
+            raise ValueError(msg)
+        return self
 
 
 class AgreementListResponse(BaseModel):
@@ -162,10 +192,11 @@ __all__ = [
     "AgreementCreateRequest",
     "AgreementExpiringEvent",
     "AgreementListResponse",
+    "AgreementMerchantSignRequest",
     "AgreementResponse",
-    "AgreementReviewRequest",
     "AgreementScanUploadRequest",
     "AgreementSignRequest",
+    "AgreementSignView",
     "AgreementSupplementCreate",
     "AgreementTemplateCreate",
     "AgreementTemplateResponse",

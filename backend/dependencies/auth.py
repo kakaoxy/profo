@@ -533,14 +533,11 @@ MerchantVisitPermDep = Annotated[User, Depends(require_permission("merchant:visi
 MerchantBrokerPermDep = Annotated[User, Depends(require_permission("merchant:broker"))]
 MerchantAgreementPermDep = Annotated[User, Depends(require_permission("merchant:agreement"))]
 MerchantMapPermDep = Annotated[User, Depends(require_permission("merchant:map"))]
-# 门店合并（BR-M12-003）与协议审核（BR-M04-031）：权限点之外还必须是 admin/operator
+# 门店合并（BR-M12-003）：权限点之外还必须是 admin/operator（REQ-IT5-03 起协议审核已移除）
 MerchantMergePermDep = Annotated[User, Depends(require_permission_with_roles("merchant:write", ["admin", "operator"]))]
 # 门店转正/合并审核（REQ-M11-012，R-V07-13 已确认 operator 可审核）
 MerchantStoreReviewPermDep = Annotated[
     User, Depends(require_permission_with_roles("merchant:write", ["admin", "operator"]))
-]
-MerchantAgreementReviewPermDep = Annotated[
-    User, Depends(require_permission_with_roles("merchant:agreement", ["admin", "operator"]))
 ]
 # operation_log 模块
 OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]

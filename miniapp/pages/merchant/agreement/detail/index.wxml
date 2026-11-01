@@ -19,24 +19,25 @@
 
     <view class="card">
       <view class="row"><text class="row-label">签约主体</text><text>{{agreement.subject_name || '—'}}</text></view>
-      <view class="row"><text class="row-label">审核状态</text><text>{{reviewText}}</text></view>
       <view class="row"><text class="row-label">签署人</text><text>{{agreement.signer_name || '—'}} · {{signerPhoneMasked}}</text></view>
       <view class="row"><text class="row-label">签署时间</text><text>{{signedAtText}}</text></view>
       <view class="row"><text class="row-label">到期时间</text><text>{{expireAtText}}</text></view>
       <view class="row"><text class="row-label">创建时间</text><text>{{createdAtText}}</text></view>
-      <view class="row" wx:if="{{agreement.review_remark}}"><text class="row-label">审核意见</text><text>{{agreement.review_remark}}</text></view>
+      <view class="row" wx:if="{{agreement.void_reason}}"><text class="row-label">作废原因</text><text>{{agreement.void_reason}}</text></view>
       <view class="row" wx:if="{{agreement.remark}}"><text class="row-label">备注</text><text>{{agreement.remark}}</text></view>
     </view>
 
     <view class="card">
       <view class="actions">
+        <button class="mini-btn mini-btn--primary share-btn" wx:if="{{shareReady}}" open-type="share">分享给商户签署</button>
+        <view class="mini-btn" wx:if="{{shareReady}}" bindtap="onCopySignLink">复制签署路径</view>
         <view class="mini-btn" wx:if="{{fileDisplayUrl}}" bindtap="onOpenFile">查看协议文件</view>
         <view class="mini-btn mini-btn--primary" wx:if="{{agreement.status === 'pending_sign'}}" bindtap="onSign">去签署</view>
         <view class="mini-btn" wx:if="{{agreement.status !== 'voided' && agreement.status !== 'expired' && agreement.status !== 'signed'}}" bindtap="onOpenScan">上传盖章扫描件</view>
         <view class="mini-btn" wx:if="{{agreement.status !== 'voided'}}" bindtap="onOpenSupplement">新增补充协议</view>
       </view>
-      <view class="hint" wx:if="{{agreement.status === 'not_initiated' && agreement.review_status === 'pending'}}">
-        协议已提交，等待运营审核；审核通过后可进入签署。
+      <view class="hint" wx:if="{{agreement.status === 'pending_sign'}}">
+        发起后即待签署：点「分享给商户签署」把协议发给商户，商户微信登录后核对信息即可自助签署。
       </view>
       <view class="hint" wx:if="{{agreement.status === 'signed'}}">门店主体协议签署完成后，门店合作状态将联动为「已合作」。</view>
     </view>

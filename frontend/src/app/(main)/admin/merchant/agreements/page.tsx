@@ -33,7 +33,6 @@ const STATUS_LABELS: Record<string, string> = {
   expired: "已过期",
   voided: "已作废",
 };
-const REVIEW_LABELS: Record<string, string> = { pending: "待审核", approved: "审核通过", rejected: "审核驳回" };
 
 export default function MerchantAgreementsPage() {
   const [data, setData] = useState<AgreementList | null>(null);
@@ -53,7 +52,6 @@ export default function MerchantAgreementsPage() {
   const [formStoreId, setFormStoreId] = useState("");
   const [formCompanyId, setFormCompanyId] = useState("");
   const [formTemplateId, setFormTemplateId] = useState("");
-  const [canReview, setCanReview] = useState(false);
   const [formSignerName, setFormSignerName] = useState("");
   const [formSignerPhone, setFormSignerPhone] = useState("");
   const [formAgreementNo, setFormAgreementNo] = useState("");
@@ -154,16 +152,6 @@ export default function MerchantAgreementsPage() {
   };
 
   useEffect(() => {
-    // 协议审核仅限 admin/operator（BR-M04-031），无权限角色不展示审核按钮
-    merchantApi<components["schemas"]["UserResponse"]>("/auth/me")
-      .then((me) => {
-        const roles = [me.role?.code, ...(me.additional_roles || []).map((role) => role.code)];
-        setCanReview(roles.includes("admin") || roles.includes("operator"));
-      })
-      .catch(() => setCanReview(false));
-  }, []);
-
-  useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
@@ -179,22 +167,6 @@ export default function MerchantAgreementsPage() {
       return stillVisible ? current : firstVisible?.id || "";
     });
   }, [createOpen, stores, companies, templates, subjectType]);
-
-  const review = async (item: Agreement, approve: boolean) => {
-    if (!approve && !reason.trim()) {
-      setError("驳回时必须填写审核意见");
-      return;
-    }
-    try {
-      await merchantApi(`/admin/merchant/agreements/${item.id}/review`, {
-        method: "POST",
-        body: JSON.stringify({ approve, remark: reason.trim() || null }),
-      });
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "审核失败");
-    }
-  };
 
   const voidAgreement = async (item: Agreement) => {
     if (!reason.trim()) {
@@ -217,7 +189,7 @@ export default function MerchantAgreementsPage() {
       <PageContainer className="flex flex-col gap-6">
         <PageHeader
           title="协议管理"
-          description="发起、审核、签署归档、到期与作废"
+          description="发起即生成商户签署链接，商户微信登录后自助签署（REQ-IT5-03 取消审核）"
           actions={<Button onClick={openCreate}>发起协议</Button>}
         />
 
@@ -316,7 +288,7 @@ export default function MerchantAgreementsPage() {
             </div>
             <div className="flex gap-2">
               <Button onClick={() => void createAgreement()} disabled={saving}>
-                {saving ? "提交中…" : "提交审核"}
+                {saving ? "提交中…" : "发起并生成签署链接"}
               </Button>
               <Button variant="outline" onClick={() => setCreateOpen(false)}>
                 取消
@@ -378,8 +350,8 @@ export default function MerchantAgreementsPage() {
             />
             <Input
               className="w-80"
-              placeholder="审核意见 / 作废原因"
-              aria-label="审核意见或作废原因"
+              placeholder="作废原因"
+              aria-label="作废原因"
               value={reason}
               onChange={(event) => setReason(event.target.value)}
             />
@@ -402,7 +374,6 @@ export default function MerchantAgreementsPage() {
                   <th className="px-4 py-3">签约主体</th>
                   <th className="px-4 py-3">签署人</th>
                   <th className="px-4 py-3">状态</th>
-                  <th className="px-4 py-3">审核</th>
                   <th className="px-4 py-3">到期时间</th>
                   <th className="px-4 py-3">操作</th>
                 </tr>
@@ -440,26 +411,11 @@ export default function MerchantAgreementsPage() {
                         {STATUS_LABELS[item.status] || item.status}
                       </StatusBadge>
                     </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge tone={item.review_status === "pending" ? "attention" : item.review_status === "approved" ? "positive" : "neutral"}>
-                        {REVIEW_LABELS[item.review_status] || item.review_status}
-                      </StatusBadge>
-                    </td>
                     <td className="px-4 py-3 text-xs text-graphite">
                       {item.expire_at ? new Date(item.expire_at).toLocaleDateString("zh-CN") : "—"}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
-                        {canReview && item.review_status === "pending" ? (
-                          <>
-                            <Button size="sm" variant="outline" onClick={() => void review(item, true)}>
-                              通过
-                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => void review(item, false)}>
-                              驳回
-                            </Button>
-                          </>
-                        ) : null}
                         {item.status !== "voided" ? (
                           <Button size="sm" variant="outline" onClick={() => void voidAgreement(item)}>
                             作废

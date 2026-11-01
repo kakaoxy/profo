@@ -1,0 +1,175 @@
+.page {
+  min-height: 100vh;
+  padding: 32rpx 32rpx 80rpx;
+  box-sizing: border-box;
+}
+.hero {
+  background: var(--ink);
+  color: #fff;
+  border-radius: 40rpx;
+  padding: 40rpx;
+  margin-bottom: 28rpx;
+}
+.hero__title {
+  font-size: 38rpx;
+  font-weight: 600;
+}
+.hero__sub {
+  margin-top: 12rpx;
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.72);
+}
+.card {
+  background: var(--pure-white);
+  border-radius: 40rpx;
+  box-shadow: var(--shadow-sm);
+  padding: 32rpx;
+  margin-bottom: 28rpx;
+}
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+}
+.content {
+  display: block;
+  margin-top: 20rpx;
+  font-size: 26rpx;
+  line-height: 1.8;
+  color: var(--ash);
+  white-space: pre-wrap;
+}
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.link {
+  color: var(--rust);
+  font-size: 26rpx;
+}
+.field-label {
+  margin: 24rpx 0 12rpx;
+  font-size: 26rpx;
+  color: var(--graphite);
+}
+.input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid var(--fog);
+  border-radius: 24rpx;
+  font-size: 28rpx;
+  background: var(--fog);
+  box-sizing: border-box;
+}
+.signature-canvas {
+  width: 100%;
+  height: 360rpx;
+  margin-top: 20rpx;
+  border-radius: 24rpx;
+  background: #fff;
+  border: 2rpx dashed var(--dove);
+  box-sizing: border-box;
+}
+.hint {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--graphite);
+}
+/* REQ-IT4-06：`.btn-primary` 是 inline-flex，无 width 时按钮按内容收缩并贴在容器左侧；
+   表单主操作按钮统一铺满父容器，让文字在整行内居中。 */
+.submit-btn {
+  display: flex;
+  width: 100%;
+  margin-top: 28rpx;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 16rpx 0;
+  font-size: 27rpx;
+  color: var(--ink);
+  border-bottom: 2rpx solid var(--fog);
+}
+.row:last-child {
+  border-bottom: none;
+}
+.row-label {
+  color: var(--graphite);
+  flex-shrink: 0;
+}
+/* REQ-IT5-03：商户确认勾选（原生 checkbox 与自绘风格不统一，用 view 自绘） */
+.confirm-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16rpx;
+  margin-top: 24rpx;
+}
+.checkbox {
+  flex-shrink: 0;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid var(--dove);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26rpx;
+  color: #fff;
+  line-height: 1;
+  box-sizing: border-box;
+}
+.checkbox--on {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.confirm-text {
+  font-size: 25rpx;
+  line-height: 1.5;
+  color: var(--ash);
+}
+.mini-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 76rpx;
+  padding: 0 28rpx;
+  margin-top: 20rpx;
+  border-radius: 9999rpx;
+  background: var(--fog);
+  color: var(--ink);
+  font-size: 26rpx;
+}
+.login-btn {
+  display: flex;
+  width: 100%;
+  margin-top: 32rpx;
+}
+.state {
+  padding: 100rpx 48rpx;
+  text-align: center;
+}
+.state__title {
+  font-size: 34rpx;
+  font-weight: 500;
+  margin-bottom: 16rpx;
+}
+.state__text {
+  font-size: 26rpx;
+  color: var(--graphite);
+  line-height: 1.6;
+}
+.state__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 32rpx;
+  height: 80rpx;
+  padding: 0 48rpx;
+  border-radius: 9999rpx;
+  background: var(--ink);
+  color: #fff;
+  font-size: 28rpx;
+}

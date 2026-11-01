@@ -77,7 +77,6 @@ try:
         subject_type="store",
         agreement_no=f"{mark}-AGR",
         status="signed",
-        review_status="approved",
         signer_name="王店长",
         signer_phone="13800009999",
         signed_at=now - timedelta(days=355),

@@ -168,7 +168,7 @@ Page({
           remark: this.data.remark.trim() || undefined,
         },
       });
-      wx.showToast({ title: "已提交审核", icon: "success" });
+      wx.showToast({ title: "已发起，请分享给商户签署", icon: "success" });
       wx.redirectTo({ url: `/pages/merchant/agreement/detail/index?id=${result.id}` });
     } catch (err) {
       wx.showToast({ title: errMessage(err), icon: "none" });

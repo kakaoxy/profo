@@ -16,12 +16,6 @@ const STATUS_LABELS: Record<string, string> = {
   expired: "已过期",
   voided: "已作废",
 };
-const REVIEW_LABELS: Record<string, string> = {
-  pending: "待审核",
-  approved: "审核通过",
-  rejected: "审核驳回",
-};
-
 function formatDate(value: string | null | undefined): string {
   if (!value) return "—";
   const date = new Date(value);
@@ -40,7 +34,7 @@ Page({
     errorText: "",
     agreement: null as Agreement | null,
     statusText: "",
-    reviewText: "",
+    shareReady: false,
     signerPhoneMasked: "",
     signedAtText: "",
     expireAtText: "",
@@ -86,7 +80,7 @@ Page({
         state: "ok",
         agreement,
         statusText: STATUS_LABELS[agreement.status] || agreement.status,
-        reviewText: REVIEW_LABELS[agreement.review_status] || agreement.review_status,
+        shareReady: agreement.status === "pending_sign" && Boolean(agreement.sign_code),
         signerPhoneMasked: agreement.signer_phone_masked || "—",
         signedAtText: formatDate(agreement.signed_at),
         expireAtText: formatDate(agreement.expire_at),
@@ -100,6 +94,38 @@ Page({
 
   onRetry() {
     this.load();
+  },
+
+  /**
+   * 分享给商户签署（REQ-IT5-03）：链接携带协议 ID 与签署分享码。
+   * 商户用微信登录后打开即进入核对页，签署完成后员工侧看到已签署。
+   */
+  onShareAppMessage() {
+    const agreement = this.data.agreement;
+    if (!agreement) {
+      return { title: "合作协议待签署", path: "/pages/merchant/home/index" };
+    }
+    const title = `请核对并签署《${agreement.template_name || "合作协议"}》`;
+    if (!agreement.sign_code) {
+      return { title, path: "/pages/merchant/home/index" };
+    }
+    return {
+      title,
+      path: `/pages/merchant/agreement/merchant-sign/index?id=${agreement.id}&code=${agreement.sign_code}`,
+    };
+  },
+
+  onCopySignLink() {
+    const agreement = this.data.agreement;
+    if (!agreement || !agreement.sign_code) {
+      wx.showToast({ title: "签署链接尚未生成，请稍后重试", icon: "none" });
+      return;
+    }
+    const path = `/pages/merchant/agreement/merchant-sign/index?id=${agreement.id}&code=${agreement.sign_code}`;
+    wx.setClipboardData({
+      data: path,
+      success: () => wx.showToast({ title: "签署路径已复制", icon: "success" }),
+    });
   },
 
   onSign() {

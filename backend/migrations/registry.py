@@ -85,6 +85,7 @@ from migrations._marketing_notify import (
     widen_subscription_openid_columns,
 )
 from migrations._merchant import seed_merchant_platform
+from migrations._merchant_agreement_no_review import drop_agreement_review_fields
 from migrations._merchant_schema import (
     add_lead_client_request_id,
     add_lead_merchant_attribution_columns,
@@ -1413,6 +1414,16 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=True,
         description="楼盘字典：历史表 merchant_region_dicts 改名为 region_dicts（幂等，保留字典项）",
     ),
+    Migration(
+        version=116,
+        name="drop_agreement_review_fields",
+        fn=drop_agreement_review_fields,
+        kind="schema",
+        risk="A",
+        backup="full",
+        reversible=False,
+        description="商户协议取消审核（REQ-IT5-03）：删审核字段与索引、补 sign_code/void_reason、存量转待签署",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1425,7 +1436,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 116）。"""
+"""登记总数（当前 117）。"""
 
-NEXT_VERSION = 116
+NEXT_VERSION = 117
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

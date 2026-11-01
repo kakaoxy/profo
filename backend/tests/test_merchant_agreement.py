@@ -16,8 +16,6 @@ from models import (
     MerchantAgreement,
     MerchantStore,
     MerchantStoreStatusLog,
-    Notification,
-    NotificationRecipient,
     Role,
     User,
 )
@@ -25,6 +23,7 @@ from settings import settings
 from utils.auth import AUDIENCE_ADMIN, AUDIENCE_C, create_access_token, get_password_hash
 
 API = "/api/v1"
+SIGN_API = f"{API}/public/merchant/agreement-sign"
 
 
 def _client(session: Session, user: User, *, c_side: bool) -> TestClient:
@@ -116,6 +115,23 @@ def signature_url() -> Generator[str, None, None]:
     path.unlink(missing_ok=True)
 
 
+def _merchant_client(seeded_db: dict) -> TestClient:
+    """构造持 customer 角色的商户端客户端（C 端令牌，模拟微信登录后的商户）."""
+    session: Session = seeded_db["session"]
+    customer_role = session.query(Role).filter(Role.code == "customer").one()
+    user = User(
+        id=str(uuid.uuid4()),
+        username=f"merchant-{uuid.uuid4().hex[:8]}",
+        password=get_password_hash(f"pw-{uuid.uuid4().hex}"),
+        nickname="商户签署人",
+        role_id=customer_role.id,
+        status="active",
+    )
+    session.add(user)
+    session.commit()
+    return _client(session, user, c_side=True)
+
+
 def _create_company(admin_client: TestClient) -> dict:
     resp = admin_client.post(
         f"{API}/admin/merchant/companies",
@@ -205,7 +221,7 @@ def test_template_crud_and_agreement_sign_flow(
     seeded_db: dict,
     signature_url: str,
 ) -> None:
-    """模板→发起→审核→签名 PDF→门店已合作."""
+    """模板→发起（直接待签署）→签名 PDF→门店已合作."""
     company = _create_company(admin_client)
     store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
     template = _create_template(admin_client)
@@ -216,15 +232,15 @@ def test_template_crud_and_agreement_sign_flow(
         company_id=None,
         template_id=template["id"],
     )
-    assert agreement["status"] == "not_initiated"
-    assert agreement["review_status"] == "pending"
+    # REQ-IT5-03：发起即待签署，不再经过审核
+    assert agreement["status"] == "pending_sign"
+    assert agreement["sign_code"]
 
     review = admin_client.post(
         f"{API}/admin/merchant/agreements/{agreement['id']}/review",
         json={"approve": True},
     )
-    assert review.status_code == 200, review.text
-    assert review.json()["status"] == "pending_sign"
+    assert review.status_code == 404, review.text
 
     sign = employee_client.post(
         f"{API}/public/merchant/agreements/{agreement['id']}/sign",
@@ -247,13 +263,14 @@ def test_template_crud_and_agreement_sign_flow(
     assert duplicate.status_code == 409, duplicate.text
 
 
-def test_signer_mismatch_and_rejection(
+def test_signer_mismatch_and_pending_sign(
     admin_client: TestClient,
     employee_client: TestClient,
     employee: User,
     seeded_db: dict,
+    signature_url: str,
 ) -> None:
-    """员工签署人必须与门店联系人一致；审核驳回退回未发起."""
+    """员工签署人必须与门店联系人一致；发起即待签署（REQ-IT5-03 取消审核）."""
     company = _create_company(admin_client)
     store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
     template = _create_template(admin_client)
@@ -277,13 +294,14 @@ def test_signer_mismatch_and_rejection(
         company_id=None,
         template_id=template["id"],
     )
-    reject = admin_client.post(
-        f"{API}/admin/merchant/agreements/{agreement['id']}/review",
-        json={"approve": False, "remark": "条款需修改"},
+    assert agreement["status"] == "pending_sign"
+    # REQ-IT5-03：审核已下线，员工发起后可直接签署
+    sign = employee_client.post(
+        f"{API}/public/merchant/agreements/{agreement['id']}/sign",
+        json={"signer_name": "王店长", "signer_phone": "13700002222", "signature_url": signature_url},
     )
-    assert reject.status_code == 200
-    assert reject.json()["status"] == "not_initiated"
-    assert reject.json()["review_status"] == "rejected"
+    assert sign.status_code == 200, sign.text
+    assert sign.json()["status"] == "signed"
 
 
 def test_company_subject_forbidden_for_employee(
@@ -370,8 +388,6 @@ def test_employee_upload_scan_requires_matching_signer(
         company_id=None,
         template_id=template["id"],
     )
-    admin_client.post(f"{API}/admin/merchant/agreements/{agreement['id']}/review", json={"approve": True})
-
     mismatch = employee_client.post(
         f"{API}/public/merchant/agreements/{agreement['id']}/scan",
         json={
@@ -423,7 +439,6 @@ def test_expiring_events_and_expire_scan(
     session: Session = seeded_db["session"]
     row = session.query(MerchantAgreement).filter(MerchantAgreement.id == agreement["id"]).one()
     row.status = "signed"
-    row.review_status = "approved"
     row.expire_at = datetime.now(timezone.utc) + timedelta(days=10)
     session.commit()
 
@@ -538,13 +553,14 @@ def test_admin_can_add_supplement_agreement(
     assert child["id"] in detail.json()["supplement_agreement_ids"]
 
 
-def test_review_rejection_is_idempotent_and_notifies_initiator(
+def test_merchant_self_sign_via_share_code(
     admin_client: TestClient,
     employee_client: TestClient,
     employee: User,
     seeded_db: dict,
+    signature_url: str,
 ) -> None:
-    """REQ-M04-009：重复审核幂等；驳回后通知发起人."""
+    """REQ-IT5-03：商户凭分享码微信登录后自助签署，员工侧直接看到已签署."""
     company = _create_company(admin_client)
     store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
     template = _create_template(admin_client)
@@ -555,33 +571,49 @@ def test_review_rejection_is_idempotent_and_notifies_initiator(
         company_id=None,
         template_id=template["id"],
     )
-    first = admin_client.post(
-        f"{API}/admin/merchant/agreements/{agreement['id']}/review",
-        json={"approve": False, "remark": "材料不齐"},
-    )
-    assert first.status_code == 200, first.text
-    assert first.json()["review_status"] == "rejected"
+    customer_client = _merchant_client(seeded_db)
+    code = agreement["sign_code"]
+    assert agreement["status"] == "pending_sign"
+    assert code
 
-    second = admin_client.post(
-        f"{API}/admin/merchant/agreements/{agreement['id']}/review",
-        json={"approve": True, "remark": "重复提交"},
+    # 分享码错误 → 403，不泄露协议内容
+    forbidden = customer_client.get(f"{SIGN_API}/{agreement['id']}?code=invalid-code-123")
+    assert forbidden.status_code == 403, forbidden.text
+
+    view = customer_client.get(f"{SIGN_API}/{agreement['id']}?code={code}")
+    assert view.status_code == 200, view.text
+    body = view.json()
+    assert body["can_sign"] is True
+    assert body["status_label"] == "待签署"
+    assert body["content"]
+
+    signed = customer_client.post(
+        f"{SIGN_API}/{agreement['id']}?code={code}",
+        json={
+            "signer_name": "王店长",
+            "signer_phone": "13700002222",
+            "signature_url": signature_url,
+            "confirmed": True,
+        },
     )
-    assert second.status_code == 200, second.text
-    assert second.json()["review_status"] == "rejected"
+    assert signed.status_code == 200, signed.text
+    assert signed.json()["status"] == "signed"
 
     session: Session = seeded_db["session"]
-    notification = (
-        session.query(Notification)
-        .filter(Notification.type == "merchant.agreement.reviewed")
-        .order_by(Notification.created_at.desc())
-        .first()
+    store_row = session.query(MerchantStore).filter(MerchantStore.id == store["id"]).one()
+    assert store_row.cooperation_status == "cooperated"
+
+    # 重复签署 → 409
+    again = customer_client.post(
+        f"{SIGN_API}/{agreement['id']}?code={code}",
+        json={
+            "signer_name": "王店长",
+            "signer_phone": "13700002222",
+            "signature_url": signature_url,
+            "confirmed": True,
+        },
     )
-    assert notification is not None
-    recipient = (
-        session.query(NotificationRecipient).filter(NotificationRecipient.notification_id == notification.id).first()
-    )
-    assert recipient is not None
-    assert str(recipient.user_id) == str(employee.id)
+    assert again.status_code == 409, again.text
 
 
 def test_scan_upload_proxy_requires_reason(

@@ -675,13 +675,13 @@ def test_operator_can_review_broker_store(
     assert approved.json()["review_status"] == "approved"
 
 
-def test_merge_and_agreement_review_require_internal_role(
+def test_merge_requires_internal_role(
     admin_client: TestClient,
     employee_client: TestClient,
     employee: User,
     seeded_db: dict,
 ) -> None:
-    """BR-M12-003 / BR-M04-031：user 角色即便持有 merchant:write/agreement 也不得合并门店或审核协议."""
+    """BR-M12-003：user 角色即便持有 merchant:write 也不得合并门店（协议审核已于 REQ-IT5-03 下线）."""
     company = _create_company(admin_client)
     keep = _create_store(admin_client, company["id"], employee.id, name="保留门店")
     merged = _create_store(admin_client, company["id"], employee.id, name="被合并门店")
@@ -697,11 +697,14 @@ def test_merge_and_agreement_review_require_internal_role(
     assert denied_merge.status_code == 403, denied_merge.text
     assert "admin/operator" in denied_merge.json()["message"]
 
-    denied_review = user_client.post(
-        f"{API}/admin/merchant/agreements/{agreement['id']}/review",
-        json={"approve": True, "remark": "越权尝试"},
+    # REQ-IT5-03：审核端点已删除，不存在越权审核面
+    assert (
+        user_client.post(
+            f"{API}/admin/merchant/agreements/{agreement['id']}/review",
+            json={"approve": True, "remark": "越权尝试"},
+        ).status_code
+        == 404
     )
-    assert denied_review.status_code == 403, denied_review.text
 
     # 数据未被改动
     session: Session = seeded_db["session"]

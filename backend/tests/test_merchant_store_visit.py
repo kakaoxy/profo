@@ -327,12 +327,12 @@ def test_data_scope_and_forbidden_detail(
     assert admin_http.get(f"{API}/admin/merchant/stores").json()["total"] == 1
 
 
-def test_employee_status_permission_and_agreement_prerequisite(
+def test_employee_status_permission_and_decoupled_from_agreement(
     admin_http: TestClient,
     employee_http: TestClient,
     seeded_db: dict,
 ) -> None:
-    """员工仅可改洽谈中；已合作必须已签协议."""
+    """员工仅可改洽谈中；运营改已合作不再要求已签协议（REQ-IT5-01 解耦）."""
     company = _create_company(admin_http)
     store = _create_employee_store(employee_http, company["id"])["store"]
 
@@ -349,14 +349,22 @@ def test_employee_status_permission_and_agreement_prerequisite(
     )
     assert denied.status_code == 403, denied.text
 
-    no_agreement = admin_http.post(
+    # REQ-IT5-01：合作状态与协议解耦，未签协议也可由运营改为已合作
+    decoupled = admin_http.post(
         f"{API}/admin/merchant/stores/{store['id']}/status",
         json={"target_status": "cooperated", "reason": "运营变更"},
     )
-    assert no_agreement.status_code == 400, no_agreement.text
-    logs = seeded_db["session"].query(MerchantStoreStatusLog).all()
-    assert len(logs) == 1
-    assert logs[0].to_status == "negotiating"
+    assert decoupled.status_code == 200, decoupled.text
+    assert decoupled.json()["cooperation_status"] == "cooperated"
+
+    logs = (
+        seeded_db["session"]
+        .query(MerchantStoreStatusLog)
+        .filter(MerchantStoreStatusLog.store_id == store["id"])
+        .order_by(MerchantStoreStatusLog.created_at.asc())
+        .all()
+    )
+    assert [log.to_status for log in logs] == ["negotiating", "cooperated"]
 
 
 def test_visit_backfill_distance_and_last_visit(

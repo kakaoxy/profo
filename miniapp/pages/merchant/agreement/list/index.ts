@@ -15,18 +15,11 @@ const STATUS_LABELS: Record<string, string> = {
   voided: "已作废",
 };
 
-const REVIEW_LABELS: Record<string, string> = {
-  pending: "待审核",
-  approved: "审核通过",
-  rejected: "审核驳回",
-};
-
 interface DisplayAgreement {
   id: string;
   title: string;
   subject_name: string;
   statusText: string;
-  reviewText: string;
   expireText: string;
   signerText: string;
 }
@@ -63,15 +56,31 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     const storeId = options.store_id || "";
     this.setData({ storeId });
+    (this as unknown as { shownOnce?: boolean }).shownOnce = false;
     this.load();
+  },
+
+  // REQ-IT5-02：从发起页/签署页返回时重新拉取，否则新发起的待签署协议不会出现在「全部」里
+  onShow() {
+    const self = this as unknown as { shownOnce?: boolean };
+    if (!self.shownOnce) {
+      self.shownOnce = true;
+      return;
+    }
+    if (this.data.state === "needLogin") {
+      return;
+    }
+    void this.load({ silent: this.data.state === "items" || this.data.state === "empty" });
   },
 
   onPullDownRefresh() {
     this.load().finally(() => wx.stopPullDownRefresh());
   },
 
-  async load(): Promise<void> {
-    this.setData({ state: "loading", errorText: "" });
+  async load(options: { silent?: boolean } = {}): Promise<void> {
+    if (!options.silent) {
+      this.setData({ state: "loading", errorText: "" });
+    }
     try {
       const data = await request<AgreementListResponse>({
         url: "/public/merchant/agreements",
@@ -87,7 +96,6 @@ Page({
         title: item.agreement_no || item.id.slice(0, 8),
         subject_name: item.subject_name || "—",
         statusText: STATUS_LABELS[item.status] || item.status,
-        reviewText: REVIEW_LABELS[item.review_status] || item.review_status,
         expireText: formatDate(item.expire_at),
         signerText: item.signer_name || "—",
       }));
@@ -96,6 +104,10 @@ Page({
       const statusCode = (err as { statusCode?: number }).statusCode;
       if (statusCode === 401 || statusCode === 403) {
         this.setData({ state: "needLogin" });
+        return;
+      }
+      if (options.silent && this.data.state === "items") {
+        wx.showToast({ title: errMessage(err), icon: "none" });
         return;
       }
       this.setData({ state: "error", errorText: errMessage(err) });

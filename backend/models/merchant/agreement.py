@@ -1,4 +1,4 @@
-"""电子合作协议与模板模型（V05）."""
+"""电子合作协议与模板模型（V05；REQ-IT5-03 起取消审核环节）."""
 
 from datetime import datetime
 
@@ -50,16 +50,18 @@ class MerchantAgreement(Base):
     agreement_no: Mapped[str | None] = mapped_column(String(100), nullable=True, comment="协议编号")
     template_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="协议模板ID")
     parent_agreement_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="补充协议关联原协议ID")
-    status: Mapped[str] = mapped_column(String(20), nullable=False, default="not_initiated", comment="协议状态")
-    review_status: Mapped[str] = mapped_column(
+    status: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
-        default="pending",
-        comment="审核状态：pending/approved/rejected",
+        default="pending_sign",
+        comment="协议状态：pending_sign/signed/expired/voided（REQ-IT5-03 起发起即待签署）",
     )
-    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    reviewed_by: Mapped[str | None] = mapped_column(String(36), nullable=True)
-    review_remark: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    sign_code: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="商户签署分享码（分享链接凭证，REQ-IT5-03）",
+    )
+    void_reason: Mapped[str | None] = mapped_column(String(500), nullable=True, comment="作废原因")
     signer_name: Mapped[str | None] = mapped_column(String(50), nullable=True, comment="签署人姓名")
     signer_phone: Mapped[str | None] = mapped_column(EncryptedString(20), nullable=True, comment="签署人手机号(加密)")
     signed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -82,7 +84,7 @@ class MerchantAgreement(Base):
         Index("idx_merchant_agreements_store_status", "store_id", "status"),
         Index("idx_merchant_agreements_company_status", "company_id", "status"),
         Index("idx_merchant_agreements_expire", "expire_at", "status"),
-        Index("idx_merchant_agreements_review", "review_status"),
+        Index("idx_merchant_agreements_sign_code", "sign_code"),
         Index("idx_merchant_agreements_parent", "parent_agreement_id"),
     )
 

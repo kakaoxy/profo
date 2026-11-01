@@ -8,7 +8,6 @@ from fastapi import APIRouter, Path, Query, Request, status
 from dependencies.auth import (
     DbSessionDep,
     MerchantAgreementPermDep,
-    MerchantAgreementReviewPermDep,
 )
 from dependencies.common import PaginationDep
 from schemas.merchant import (
@@ -16,7 +15,6 @@ from schemas.merchant import (
     AgreementExpiringEvent,
     AgreementListResponse,
     AgreementResponse,
-    AgreementReviewRequest,
     AgreementScanUploadRequest,
     AgreementSupplementCreate,
     AgreementTemplateCreate,
@@ -167,24 +165,6 @@ def get_agreement(
 ) -> AgreementResponse:
     """协议详情."""
     return MerchantAgreementService(db).get(current_user, agreement_id)
-
-
-@router.post("/agreements/{agreement_id}/review", summary="审核协议")
-@limiter.limit(RateLimits.MERCHANT_WRITE)
-def review_agreement(
-    request: Request,
-    agreement_id: Annotated[str, Path(description="协议ID")],
-    body: AgreementReviewRequest,
-    db: DbSessionDep,
-    current_user: MerchantAgreementReviewPermDep,
-) -> AgreementResponse:
-    """通过进入待签署；驳回记录原因（仅 admin/operator，BR-M04-031）."""
-    return MerchantAgreementService(db).review(
-        agreement_id,
-        body,
-        operator_id=str(current_user.id),
-        request=request,
-    )
 
 
 @router.post("/agreements/{agreement_id}/scan", summary="上传盖章扫描件")

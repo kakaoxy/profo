@@ -1,24 +1,24 @@
 {
-  "measured_at": "2026-10-25T14:57:19.074Z",
+  "measured_at": "2026-11-01T13:24:09.158Z",
   "page_loads": 5,
-  "bd_rooms_rows": 7350621,
-  "seq_scan_before": 100,
-  "seq_scan_after": 100,
+  "bd_rooms_rows": 7340525,
+  "seq_scan_before": 695,
+  "seq_scan_after": 695,
   "seq_scan_delta": 0,
   "page_load_ms": [
-    802,
-    725,
-    758,
-    770,
-    770
+    811,
+    733,
+    733,
+    779,
+    759
   ],
-  "page_load_ms_max": 802,
+  "page_load_ms_max": 811,
   "kpi": {
-    "community_count": 21731,
-    "building_count": 530956,
-    "room_count": 7350621,
-    "linked_project_count": 1,
-    "pending_count": 1
+    "community_count": 21794,
+    "building_count": 530563,
+    "room_count": 7340525,
+    "linked_project_count": 11,
+    "pending_count": 20
   },
   "verdict": "PASS：页面加载不再触发 bd_rooms 全表 COUNT"
 }

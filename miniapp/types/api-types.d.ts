@@ -8112,26 +8112,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/admin/merchant/agreements/{agreement_id}/review": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * 审核协议
-         * @description 通过进入待签署；驳回记录原因（仅 admin/operator，BR-M04-031）.
-         */
-        post: operations["review_agreement_api_v1_admin_merchant_agreements__agreement_id__review_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/admin/merchant/agreements/{agreement_id}/scan": {
         parameters: {
             query?: never;
@@ -8207,7 +8187,7 @@ export interface paths {
         put?: never;
         /**
          * 发起协议
-         * @description 发起后状态未发起、review_status=待审核（S05）.
+         * @description 发起后直接进入待签署（REQ-IT5-03：取消审核），返回体含商户签署分享码.
          */
         post: operations["create_agreement_api_v1_public_merchant_agreements_post"];
         delete?: never;
@@ -8290,6 +8270,30 @@ export interface paths {
          * @description 补充协议独立记录并关联原协议.
          */
         post: operations["add_supplement_api_v1_public_merchant_agreements__agreement_id__supplement_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/agreement-sign/{agreement_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 商户签署视图
+         * @description 商户打开分享链接后的核对视图（协议正文、主体、签署人信息与可签状态）.
+         */
+        get: operations["get_agreement_sign_view_api_v1_public_merchant_agreement_sign__agreement_id__get"];
+        put?: never;
+        /**
+         * 商户提交签署
+         * @description 商户手写签名提交：生成 PDF、协议置已签署（门店主体自动联动已合作）.
+         */
+        post: operations["submit_agreement_sign_api_v1_public_merchant_agreement_sign__agreement_id__post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8779,6 +8783,26 @@ export interface components {
             page_size: number;
         };
         /**
+         * AgreementMerchantSignRequest
+         * @description 商户签署提交（手写签名图 + 确认信息）.
+         */
+        AgreementMerchantSignRequest: {
+            /** Signer Name */
+            signer_name: string;
+            /** Signer Phone */
+            signer_phone: string;
+            /**
+             * Signature Url
+             * @description 签名图片地址
+             */
+            signature_url: string;
+            /**
+             * Confirmed
+             * @description 商户已核对协议与自身信息
+             */
+            confirmed: boolean;
+        };
+        /**
          * AgreementResponse
          * @description 协议响应.
          */
@@ -8803,14 +8827,13 @@ export interface components {
             parent_agreement_id: string | null;
             /** Status */
             status: string;
-            /** Review Status */
-            review_status: string;
-            /** Reviewed At */
-            reviewed_at: string | null;
-            /** Reviewed By */
-            reviewed_by: string | null;
-            /** Review Remark */
-            review_remark: string | null;
+            /**
+             * Sign Code
+             * @description 商户签署分享码（员工侧拼分享链接用）
+             */
+            sign_code?: string | null;
+            /** Void Reason */
+            void_reason?: string | null;
             /** Signer Name */
             signer_name: string | null;
             /** Signer Phone Masked */
@@ -8837,16 +8860,6 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
-        };
-        /**
-         * AgreementReviewRequest
-         * @description 协议审核请求.
-         */
-        AgreementReviewRequest: {
-            /** Approve */
-            approve: boolean;
-            /** Remark */
-            remark?: string | null;
         };
         /**
          * AgreementScanUploadRequest
@@ -8884,6 +8897,44 @@ export interface components {
             /**
              * Reason
              * @description 代签原因（签署人与联系人信息不一致时必填）
+             */
+            reason?: string | null;
+        };
+        /**
+         * AgreementSignView
+         * @description 商户签署视图（REQ-IT5-03：商户微信登录 + 分享码进入，仅展示核对信息）.
+         */
+        AgreementSignView: {
+            /** Id */
+            id: string;
+            /** Agreement No */
+            agreement_no: string | null;
+            /** Subject Type */
+            subject_type: string;
+            /** Subject Name */
+            subject_name: string | null;
+            /** Template Name */
+            template_name: string | null;
+            /**
+             * Content
+             * @description 协议正文（格式条款，原样展示）
+             */
+            content?: string | null;
+            /** Signer Name */
+            signer_name: string | null;
+            /** Signer Phone Masked */
+            signer_phone_masked: string | null;
+            /** Expire At */
+            expire_at: string | null;
+            /** Status */
+            status: string;
+            /** Status Label */
+            status_label: string;
+            /** Can Sign */
+            can_sign: boolean;
+            /**
+             * Reason
+             * @description 不可签署的原因说明
              */
             reason?: string | null;
         };
@@ -41066,42 +41117,6 @@ export interface operations {
             };
         };
     };
-    review_agreement_api_v1_admin_merchant_agreements__agreement_id__review_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                /** @description 协议ID */
-                agreement_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AgreementReviewRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AgreementResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     upload_agreement_scan_api_v1_admin_merchant_agreements__agreement_id__scan_post: {
         parameters: {
             query?: never;
@@ -41387,6 +41402,80 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_agreement_sign_view_api_v1_public_merchant_agreement_sign__agreement_id__get: {
+        parameters: {
+            query: {
+                /** @description 分享链接中的签署码 */
+                code: string;
+            };
+            header?: never;
+            path: {
+                /** @description 协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgreementSignView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_agreement_sign_api_v1_public_merchant_agreement_sign__agreement_id__post: {
+        parameters: {
+            query: {
+                /** @description 分享链接中的签署码 */
+                code: string;
+            };
+            header?: never;
+            path: {
+                /** @description 协议ID */
+                agreement_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgreementMerchantSignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };

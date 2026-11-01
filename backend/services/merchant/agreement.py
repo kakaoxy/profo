@@ -1,6 +1,10 @@
-"""电子合作协议服务（V05）：模板、发起、审核、签署、归档、作废与到期事件."""
+"""电子合作协议服务（V05）：模板、发起、签署、归档、作废与到期事件.
+
+REQ-IT5-03：取消审核环节——员工发起即进入待签署，商户用微信登录 + 分享码自助签署。
+"""
 
 import logging
+import uuid
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import Request
@@ -18,10 +22,11 @@ from schemas.merchant import (
     AgreementCreateRequest,
     AgreementExpiringEvent,
     AgreementListResponse,
+    AgreementMerchantSignRequest,
     AgreementResponse,
-    AgreementReviewRequest,
     AgreementScanUploadRequest,
     AgreementSignRequest,
+    AgreementSignView,
     AgreementSupplementCreate,
     AgreementTemplateCreate,
     AgreementTemplateResponse,
@@ -32,8 +37,6 @@ from services.merchant.agreement_pdf import generate_agreement_pdf
 from services.merchant.audit import add_audit_log
 from services.merchant.scope import ensure_scope_role, ensure_store_visible, store_scope_condition
 from services.merchant.store import MerchantStoreService
-from services.notification import Audience, EventType
-from services.notification.service import NotificationEvent, NotificationService
 from services.system.exceptions import (
     ConflictError,
     PermissionDeniedError,
@@ -50,9 +53,13 @@ STATUS_SIGNED = "signed"
 STATUS_EXPIRED = "expired"
 STATUS_VOIDED = "voided"
 
-REVIEW_PENDING = "pending"
-REVIEW_APPROVED = "approved"
-REVIEW_REJECTED = "rejected"
+STATUS_LABELS: dict[str, str] = {
+    STATUS_NOT_INITIATED: "未发起",
+    STATUS_PENDING_SIGN: "待签署",
+    STATUS_SIGNED: "已签署",
+    STATUS_EXPIRED: "已过期",
+    STATUS_VOIDED: "已作废",
+}
 
 
 def _now() -> datetime:
@@ -143,7 +150,7 @@ class MerchantAgreementService:
         *,
         request: Request | None = None,
     ) -> AgreementResponse:
-        """发起协议：状态未发起、review_status=待审核（S05）."""
+        """发起协议：直接进入待签署并生成商户签署分享码（REQ-IT5-03，不再需要审核）."""
         privileged = ensure_scope_role(user)
         template = self._get_template(req.template_id)
         if template.status != "enabled":
@@ -201,8 +208,8 @@ class MerchantAgreementService:
             subject_type=req.subject_type,
             agreement_no=req.agreement_no,
             template_id=template.id,
-            status=STATUS_NOT_INITIATED,
-            review_status=REVIEW_PENDING,
+            status=STATUS_PENDING_SIGN,
+            sign_code=str(uuid.uuid4()),
             signer_name=req.signer_name.strip(),
             signer_phone=req.signer_phone,
             expire_at=req.expire_at,
@@ -226,69 +233,6 @@ class MerchantAgreementService:
         self.db.commit()
         self.db.refresh(agreement)
         return self._response(agreement, store=store, company=company, template_name=template.template_name)
-
-    def review(
-        self,
-        agreement_id: str,
-        req: AgreementReviewRequest,
-        *,
-        operator_id: str,
-        request: Request | None = None,
-    ) -> AgreementResponse:
-        """运营审核：通过进入待签署；驳回退回发起人."""
-        agreement = self._get_agreement(agreement_id)
-        # REQ-M04-009 分支：重复审核幂等返回当前结果，而非报错
-        if agreement.review_status != REVIEW_PENDING:
-            return self._response(agreement)
-        if agreement.status in {STATUS_VOIDED, STATUS_SIGNED, STATUS_EXPIRED}:
-            msg = "当前协议状态不可审核"
-            raise ValidationError(msg)
-
-        before = self._snapshot(agreement)
-        agreement.reviewed_at = _now()
-        agreement.reviewed_by = operator_id
-        agreement.review_remark = req.remark
-        if req.approve:
-            agreement.review_status = REVIEW_APPROVED
-            agreement.status = STATUS_PENDING_SIGN
-        else:
-            agreement.review_status = REVIEW_REJECTED
-            agreement.status = STATUS_NOT_INITIATED
-        add_audit_log(
-            self.db,
-            user_id=operator_id,
-            action="update",
-            resource_type="merchant_agreement",
-            resource_id=str(agreement.id),
-            before=before,
-            after=self._snapshot(agreement),
-            request=request,
-        )
-        self.db.commit()
-        self.db.refresh(agreement)
-        # 驳回后通知发起人（站内信，best-effort：通知失败不影响审核结果）
-        if not req.approve and agreement.created_by_id:
-            try:
-                NotificationService(self.db).emit(
-                    NotificationEvent(
-                        type=EventType.MERCHANT_AGREEMENT_REVIEWED,
-                        audience=Audience(user_ids=(str(agreement.created_by_id),)),
-                        fields={
-                            "agreement_id": str(agreement.id),
-                            "subject_name": agreement.agreement_no or "合作协议",
-                            "review_status": agreement.review_status,
-                            "review_label": "审核驳回",
-                            "remark": req.remark or "无",
-                        },
-                        dedupe_fields={"agreement_id": str(agreement.id), "review_status": agreement.review_status},
-                        source_module="merchant",
-                        source_id=str(agreement.id),
-                        created_by=operator_id,
-                    )
-                )
-            except Exception:  # 通知为 best-effort，不阻断审核事务
-                logger.exception("协议驳回通知发送失败 agreement_id=%s", agreement.id)
-        return self._response(agreement)
 
     # -------------------- 签署/扫描件/作废 --------------------
     def sign(
@@ -348,6 +292,78 @@ class MerchantAgreementService:
         self.db.refresh(agreement)
         return self._response(agreement)
 
+    # -------------------- 商户自助签署（REQ-IT5-03） --------------------
+    def merchant_sign_view(self, agreement_id: str, code: str) -> AgreementSignView:
+        """商户打开分享链接后的核对视图（需商户微信登录后调用）."""
+        agreement = self._get_by_sign_code(agreement_id, code)
+        template = self._get_template(agreement.template_id or "") if agreement.template_id else None
+        reason = self._unsignable_reason(agreement)
+        return AgreementSignView(
+            id=str(agreement.id),
+            agreement_no=agreement.agreement_no,
+            subject_type=agreement.subject_type,
+            subject_name=self._subject_name(agreement),
+            template_name=template.template_name if template is not None else None,
+            content=template.content if template is not None else None,
+            signer_name=agreement.signer_name,
+            signer_phone_masked=mask_phone(agreement.signer_phone),
+            expire_at=agreement.expire_at,
+            status=agreement.status,
+            status_label=STATUS_LABELS.get(agreement.status, agreement.status),
+            can_sign=reason is None,
+            reason=reason,
+        )
+
+    def merchant_sign(
+        self,
+        agreement_id: str,
+        code: str,
+        req: AgreementMerchantSignRequest,
+        *,
+        signer_user_id: str,
+        request: Request | None = None,
+    ) -> AgreementResponse:
+        """商户自助签署：校验分享码 → 生成 PDF → 置已签署（门店主体联动已合作）."""
+        agreement = self._get_by_sign_code(agreement_id, code)
+        self._ensure_signable(agreement, allow_not_initiated=True)
+        template = self._get_template(agreement.template_id or "") if agreement.template_id else None
+        store, company = self._subject_entities(agreement)
+        subject_name = (
+            store.store_name if store is not None else (company.company_name if company is not None else None)
+        )
+
+        signed_at = _now()
+        file_url = generate_agreement_pdf(
+            agreement_id=str(agreement.id),
+            title=template.template_name if template is not None else "合作协议",
+            content=template.content if template is not None else "",
+            signer_name=req.signer_name,
+            signer_phone=req.signer_phone,
+            signed_at=signed_at,
+            signature_url=req.signature_url,
+            subject_name=subject_name,
+        )
+        before = self._snapshot(agreement)
+        agreement.signer_name = req.signer_name.strip()
+        agreement.signer_phone = req.signer_phone
+        agreement.signed_at = signed_at
+        agreement.file_url = file_url
+        agreement.status = STATUS_SIGNED
+        self._link_store_cooperation(agreement, store, operator_id=signer_user_id, request=request)
+        add_audit_log(
+            self.db,
+            user_id=signer_user_id,
+            action="update",
+            resource_type="merchant_agreement",
+            resource_id=str(agreement.id),
+            before=before,
+            after=self._snapshot(agreement) | {"sign_channel": "merchant_self"},
+            request=request,
+        )
+        self.db.commit()
+        self.db.refresh(agreement)
+        return self._response(agreement)
+
     def upload_scan(
         self,
         agreement_id: str,
@@ -359,7 +375,7 @@ class MerchantAgreementService:
     ) -> AgreementResponse:
         """上传线下盖章扫描件，协议置已签署."""
         agreement = self._get_agreement(agreement_id)
-        self._ensure_signable(agreement, allow_not_initiated=True, require_review=False)
+        self._ensure_signable(agreement, allow_not_initiated=True)
         self._validate_signer(
             req.signer_name,
             req.signer_phone,
@@ -404,7 +420,7 @@ class MerchantAgreementService:
             raise ConflictError(msg)
         before = self._snapshot(agreement)
         agreement.status = STATUS_VOIDED
-        agreement.review_remark = req.reason
+        agreement.void_reason = req.reason
         add_audit_log(
             self.db,
             user_id=operator_id,
@@ -440,7 +456,7 @@ class MerchantAgreementService:
             template_id=parent.template_id,
             parent_agreement_id=parent.id,
             status=STATUS_SIGNED if req.file_url else STATUS_PENDING_SIGN,
-            review_status=REVIEW_APPROVED,
+            sign_code=str(uuid.uuid4()),
             signer_name=req.signer_name or parent.signer_name,
             signer_phone=req.signer_phone or parent.signer_phone,
             file_url=req.file_url,
@@ -526,22 +542,14 @@ class MerchantAgreementService:
         )
 
     def get(self, user: User, agreement_id: str) -> AgreementResponse:
-        """协议详情（校验数据范围）."""
+        """协议详情（校验数据范围；待签署协议缺分享码时补齐，便于员工分享）."""
         agreement = self._get_agreement(agreement_id)
         self._ensure_visible(user, agreement)
+        if agreement.sign_code is None and agreement.status == STATUS_PENDING_SIGN:
+            agreement.sign_code = str(uuid.uuid4())
+            self.db.commit()
+            self.db.refresh(agreement)
         return self._response(agreement)
-
-    def has_signed_agreement(self, store_id: str) -> bool:
-        """门店是否存在已签署协议（V02“已合作”前置校验）."""
-        return (
-            self.db.query(MerchantAgreement.id)
-            .filter(
-                MerchantAgreement.store_id == store_id,
-                MerchantAgreement.status == STATUS_SIGNED,
-            )
-            .first()
-            is not None
-        )
 
     # -------------------- 到期扫描（V09 事件源） --------------------
     def scan_expiring(self, *, days: int = 30, now: datetime | None = None) -> list[AgreementExpiringEvent]:
@@ -610,6 +618,32 @@ class MerchantAgreementService:
             raise ResourceNotFoundError(msg)
         return agreement
 
+    def _get_by_sign_code(self, agreement_id: str, code: str) -> MerchantAgreement:
+        """按分享码取协议（链接即凭证；历史协议首次打开时补写分享码）."""
+        agreement = self._get_agreement(agreement_id)
+        if agreement.sign_code is None:
+            # 历史行兜底：没有分享码时以首个打开链接的码为准（链接本身即凭证）
+            agreement.sign_code = code
+            self.db.commit()
+            self.db.refresh(agreement)
+            return agreement
+        if code != agreement.sign_code:
+            msg = "签署链接无效或已失效"
+            raise PermissionDeniedError(msg)
+        return agreement
+
+    def _unsignable_reason(self, agreement: MerchantAgreement) -> str | None:
+        """返回不可签署的原因；None 表示可签."""
+        if agreement.status == STATUS_VOIDED:
+            return "协议已作废"
+        if agreement.status == STATUS_SIGNED:
+            return "协议已签署"
+        if agreement.status == STATUS_EXPIRED:
+            return "协议已过期"
+        if agreement.expire_at is not None and agreement.expire_at <= _now():
+            return "协议已到期"
+        return None
+
     def _subject_entities(self, agreement: MerchantAgreement) -> tuple[MerchantStore | None, MerchantCompany | None]:
         store = None
         company = None
@@ -644,7 +678,6 @@ class MerchantAgreementService:
         agreement: MerchantAgreement,
         *,
         allow_not_initiated: bool = False,
-        require_review: bool = True,
     ) -> None:
         if agreement.status == STATUS_VOIDED:
             msg = "协议已作废，不能签署"
@@ -652,9 +685,6 @@ class MerchantAgreementService:
         if agreement.status in {STATUS_EXPIRED, STATUS_SIGNED}:
             msg = "协议已签署/已过期，不能重复签署"
             raise ConflictError(msg)
-        if require_review and agreement.review_status != REVIEW_APPROVED:
-            msg = "协议未通过审核，不能签署"
-            raise ValidationError(msg)
         if agreement.status == STATUS_NOT_INITIATED and not allow_not_initiated:
             msg = "协议未进入待签署状态"
             raise ValidationError(msg)
@@ -755,10 +785,8 @@ class MerchantAgreementService:
             template_name=template_name,
             parent_agreement_id=str(agreement.parent_agreement_id) if agreement.parent_agreement_id else None,
             status=agreement.status,
-            review_status=agreement.review_status,
-            reviewed_at=agreement.reviewed_at,
-            reviewed_by=str(agreement.reviewed_by) if agreement.reviewed_by else None,
-            review_remark=agreement.review_remark,
+            sign_code=agreement.sign_code,
+            void_reason=agreement.void_reason,
             signer_name=agreement.signer_name,
             signer_phone_masked=mask_phone(agreement.signer_phone),
             signed_at=agreement.signed_at,
@@ -790,7 +818,8 @@ class MerchantAgreementService:
             "agreement_no": agreement.agreement_no,
             "template_id": str(agreement.template_id) if agreement.template_id else None,
             "status": agreement.status,
-            "review_status": agreement.review_status,
+            "sign_code": agreement.sign_code,
+            "void_reason": agreement.void_reason,
             "signer_name": agreement.signer_name,
             "signer_phone": agreement.signer_phone,
             "signed_at": agreement.signed_at.isoformat() if agreement.signed_at else None,

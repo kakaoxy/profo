@@ -42,7 +42,7 @@ def create_agreement(
     db: DbSessionDep,
     current_user: MerchantCAgreementDep,
 ) -> AgreementResponse:
-    """发起后状态未发起、review_status=待审核（S05）."""
+    """发起后直接进入待签署（REQ-IT5-03：取消审核），返回体含商户签署分享码."""
     return MerchantAgreementService(db).create(current_user, body, request=request)
 
 
