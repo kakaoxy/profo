@@ -772,6 +772,11 @@ class MerchantStoreService:
             msg = f"门店存在关联数据（{'、'.join(blocked)}），不能删除，请改用停用"
             raise ConflictError(msg)
 
+        # REQ-IT5-06：占位经纪人不阻断删除，但删除后必须解绑，避免档案永久指向已删除门店
+        from services.merchant.broker import MerchantBrokerService
+
+        MerchantBrokerService(self.db).release_contact_brokers(store.id, operator_id=str(user.id))
+
         before = self._snapshot(store)
         store.is_deleted = True
         store.deleted_at = datetime.now(timezone.utc)

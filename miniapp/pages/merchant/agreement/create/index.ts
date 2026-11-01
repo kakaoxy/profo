@@ -28,6 +28,15 @@ function errMessage(err: unknown): string {
   return (err as { body?: { message?: string } }).body?.message || "操作失败，请重试";
 }
 
+/** 与后端 mask_phone 对齐：脱敏值用于判断当前手机号是否属于所选经纪人. */
+function maskPhone(phone: string): string {
+  const normalized = phone.replace(/[\s-]/g, "");
+  if (!normalized || normalized.length < 7) {
+    return "";
+  }
+  return `${normalized.slice(0, 3)}****${normalized.slice(-4)}`;
+}
+
 Page({
   data: {
     state: "loading" as "loading" | "error" | "ok",
@@ -106,8 +115,8 @@ Page({
 
   /**
    * REQ-IT5-04：签署人从门店经纪人中选，避免手填姓名与门店实际经纪人不一致。
-   * 经纪人接口只回脱敏手机号（phone_masked），因此手机号仍由员工填写，默认沿用门店联系电话；
-   * 门店暂无经纪人（或接口失败）时退回手填，不阻断发起流程。
+   * 经纪人接口只回脱敏手机号（phone_masked），因此手机号仍由员工填写：选中号码与门店联系电话
+   * 一致的经纪人时默认带出联系电话，否则留空重填；门店暂无经纪人（或接口失败）时退回手填。
    */
   async loadSigners(storeId: string, store: StoreResponse): Promise<void> {
     try {
@@ -117,13 +126,20 @@ Page({
         name: item.name,
         phoneMasked: item.phone_masked,
       }));
-      const first = signers[0];
+      const maskedContact = maskPhone(store.contact_phone);
+      // 联系人自动建档（REQ-IT5-06）后通常能在列表里命中门店联系电话，优先选中该经纪人；
+      // 命中不到时不预填手机号，避免把联系人的号码填给另一位经纪人导致签错人。
+      const matchedIndex = signers.findIndex(
+        (item) => Boolean(maskedContact) && item.phoneMasked === maskedContact,
+      );
+      const selectedIndex = signers.length ? (matchedIndex >= 0 ? matchedIndex : 0) : -1;
+      const selected = selectedIndex >= 0 ? signers[selectedIndex] : null;
       this.setData({
         signers,
         signerLabels: signers.map((item) => (item.phoneMasked ? `${item.name}（${item.phoneMasked}）` : item.name)),
-        signerIndex: first ? 0 : -1,
-        signerName: first ? first.name : store.contact_name,
-        signerPhone: store.contact_phone,
+        signerIndex: selectedIndex,
+        signerName: selected ? selected.name : store.contact_name,
+        signerPhone: selected && matchedIndex < 0 ? "" : store.contact_phone,
         signerHint: signers.length ? "" : "门店暂无经纪人，可手动填写签署人",
       });
     } catch {
@@ -141,7 +157,13 @@ Page({
   onSelectSigner(e: WechatMiniprogram.PickerChange) {
     const index = Number(e.detail.value);
     const signer = this.data.signers[index];
-    this.setData({ signerIndex: index, signerName: signer ? signer.name : "" });
+    // 切换签署人时，仅当已填手机号确实属于该经纪人（脱敏值一致）才保留，否则清空重填
+    const keepPhone = signer ? maskPhone(this.data.signerPhone) === signer.phoneMasked : false;
+    this.setData({
+      signerIndex: index,
+      signerName: signer ? signer.name : "",
+      signerPhone: keepPhone ? this.data.signerPhone : "",
+    });
   },
 
   onOpenBrokerModal() {

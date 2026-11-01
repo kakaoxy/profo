@@ -151,6 +151,7 @@ def _create_store(
     review_status: str | None = None,
     contact_name: str = "王店长",
     contact_phone: str | None = None,
+    owner_employee_id: str | None = None,
 ) -> dict:
     payload = {
         "company_id": company_id,
@@ -167,6 +168,8 @@ def _create_store(
         "cooperation_status": "not_cooperated",
         "force_create_reason": "测试数据",
     }
+    if owner_employee_id is not None:
+        payload["owner_employee_id"] = owner_employee_id
     resp = admin_client.post(f"{API}/admin/merchant/stores", json=payload)
     assert resp.status_code == 201, resp.text
     return resp.json()["store"]
@@ -909,3 +912,40 @@ def test_store_creation_skips_existing_broker_phone(
         .all()
     )
     assert any(log.resource_id == broker.id and log.after["store_id"] == second_store["id"] for log in logs)
+
+
+def test_store_broker_create_rejects_blank_name(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+) -> None:
+    """REQ-IT5-05 补录：姓名只有空白时 schema 直接拒绝（422），不落空名档案."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=str(employee.id))
+    resp = employee_client.post(
+        f"{API}/public/merchant/stores/{store['id']}/brokers",
+        json={"name": "   ", "phone": f"136{uuid.uuid4().int % 10**8:08d}"},
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_store_broker_create_rejects_disabled_store(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+) -> None:
+    """BR-M11-008：门店停用后不得再新建经纪人绑定（REQ-IT5-05 补录同口径）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=str(employee.id))
+    disabled = admin_client.post(
+        f"{API}/admin/merchant/stores/{store['id']}/activation",
+        json={"target_status": "disabled", "reason": "停业"},
+    )
+    assert disabled.status_code == 200, disabled.text
+
+    resp = employee_client.post(
+        f"{API}/public/merchant/stores/{store['id']}/brokers",
+        json={"name": "停用门店经纪人", "phone": f"135{uuid.uuid4().int % 10**8:08d}"},
+    )
+    assert resp.status_code == 400, resp.text
+    assert "不能绑定" in resp.json()["message"]

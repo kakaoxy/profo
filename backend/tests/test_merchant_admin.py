@@ -205,6 +205,22 @@ def test_soft_delete_without_relations(admin_client: TestClient, employee: User,
     row = seeded_db["session"].query(MerchantStore).filter(MerchantStore.id == store["id"]).one()
     assert row.is_deleted is True
 
+    # REQ-IT5-06：删除门店后占位经纪人必须解绑，否则档案会永久挂在已删除门店上
+    session = seeded_db["session"]
+    session.expire_all()
+    placeholder = (
+        session.query(MerchantBroker)
+        .filter(
+            MerchantBroker.phone_hash == hash_phone(store["contact_phone"]),
+            MerchantBroker.source == "store_contact",
+        )
+        .one()
+    )
+    assert placeholder.store_id is None
+    assert placeholder.bind_status == "unbound_after"
+    binding = session.query(MerchantBrokerBinding).filter(MerchantBrokerBinding.broker_id == placeholder.id).one()
+    assert binding.status == "unbound"
+
     # AC-V01-013：delete 审计 after 为空；删除原因并入 before（BR-M11-014）
     from models import OperationLog
 

@@ -307,7 +307,11 @@ class BrokerStoreCreate(BaseModel):
     @field_validator("name")
     @classmethod
     def _strip_name(cls, value: str) -> str:
-        return value.strip()
+        stripped = value.strip()
+        if not stripped:
+            msg = "经纪人姓名不能为空"
+            raise ValueError(msg)
+        return stripped
 
     @field_validator("phone")
     @classmethod

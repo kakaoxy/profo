@@ -11,9 +11,11 @@ from fastapi import Request
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from constants.merchant import MerchantBindStatus
 from models.merchant import (
     MerchantAgreement,
     MerchantAgreementTemplate,
+    MerchantBroker,
     MerchantCompany,
     MerchantStore,
 )
@@ -43,6 +45,7 @@ from services.system.exceptions import (
     ResourceNotFoundError,
     ValidationError,
 )
+from utils.crypto import hash_phone
 from utils.formatters import mask_phone
 
 logger = logging.getLogger(__name__)
@@ -165,11 +168,10 @@ class MerchantAgreementService:
             if store.status != "normal":
                 msg = "门店已停用/已合并/已搬迁，不能发起协议"
                 raise ValidationError(msg)
-            self._validate_signer(
+            self._validate_store_signer(
                 req.signer_name,
                 req.signer_phone,
-                expected_name=store.contact_name,
-                expected_phone=store.contact_phone,
+                store=store,
                 privileged=privileged,
             )
             subject_name = store.store_name
@@ -689,6 +691,42 @@ class MerchantAgreementService:
         if agreement.expire_at is not None and agreement.expire_at <= _now():
             msg = "协议已到期，不能签署"
             raise ValidationError(msg)
+
+    def _validate_store_signer(
+        self,
+        signer_name: str,
+        signer_phone: str,
+        *,
+        store: MerchantStore,
+        privileged: bool,
+    ) -> None:
+        """门店主体签署人校验：门店联系人，或该门店当前有效绑定的经纪人（REQ-IT5-04）.
+
+        员工发起协议时签署人来自门店经纪人下拉（REQ-IT5-04），因此除门店联系人外，
+        还必须放行本店经纪人；其他任意姓名/手机号仍拒绝，避免员工冒名发起。
+        """
+        if not store.contact_name or not store.contact_phone:
+            return
+        name = signer_name.strip()
+        phone = signer_phone.replace(" ", "").replace("-", "").strip()
+        if name == store.contact_name.strip() and phone == store.contact_phone.replace(" ", "").replace("-", ""):
+            return
+        if privileged:
+            return
+        broker = (
+            self.db.query(MerchantBroker.id)
+            .filter(
+                MerchantBroker.store_id == store.id,
+                MerchantBroker.bind_status == MerchantBindStatus.BOUND.value,
+                MerchantBroker.phone_hash == hash_phone(phone),
+                MerchantBroker.name == name,
+            )
+            .first()
+        )
+        if broker is not None:
+            return
+        msg = "签署人必须为门店联系人或门店经纪人；如需代签请联系运营"
+        raise ValidationError(msg)
 
     def _validate_signer(
         self,

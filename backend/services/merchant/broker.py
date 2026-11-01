@@ -875,10 +875,8 @@ class MerchantBrokerService:
         手机号全局唯一（哈希）：已绑定本店视为重复、已绑定他店要求走换绑流程、
         已停用档案拒绝补录；未绑定的存量档案（如自注册后未绑店）直接绑定到本店。
         """
-        store = self.db.query(MerchantStore).filter(MerchantStore.id == store_id).first()
-        if store is None or store.is_deleted:
-            msg = "门店不存在"
-            raise ResourceNotFoundError(msg)
+        # BR-M11-008：停用/已合并/已搬迁门店禁止新建绑定（与拜访、后台建经纪人同一校验）
+        store = self._selectable_store(store_id, allow_pending=True)
         ensure_store_visible(self.db, user, store)
 
         phone_hash = hash_phone(req.phone)
@@ -999,6 +997,25 @@ class MerchantBrokerService:
             request=request,
         )
         return broker
+
+    def release_contact_brokers(self, store_id: str, *, operator_id: str) -> None:
+        """门店删除时解绑建店自动生成的占位经纪人（REQ-IT5-06）.
+
+        占位档案保留在档案表（Q20=B），但必须解除绑定：否则档案会永久指向已删除门店，
+        该联系人后续补录/扫码绑定到其他门店时会被「已绑定其他门店」拦住。
+        """
+        rows = (
+            self.db.query(MerchantBroker)
+            .filter(
+                MerchantBroker.store_id == store_id,
+                MerchantBroker.source == "store_contact",
+                MerchantBroker.user_id.is_(None),
+                MerchantBroker.bind_status == MerchantBindStatus.BOUND.value,
+            )
+            .all()
+        )
+        for broker in rows:
+            self._unbind_current(broker, operator_id=operator_id, reason="门店删除")
 
     def update_admin(
         self,

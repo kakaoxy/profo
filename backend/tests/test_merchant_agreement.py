@@ -304,6 +304,50 @@ def test_signer_mismatch_and_pending_sign(
     assert sign.json()["status"] == "signed"
 
 
+def test_employee_can_use_store_broker_as_signer(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-IT5-04：员工可用本门店经纪人为签署人，任意冒名仍拒绝（保持防冒名口径）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    template = _create_template(admin_client)
+    broker_phone = f"139{uuid.uuid4().int % 10**8:08d}"
+    broker = admin_client.post(
+        f"{API}/admin/merchant/brokers",
+        json={"name": "门店经纪人甲", "phone": broker_phone, "store_id": store["id"]},
+    )
+    assert broker.status_code == 201, broker.text
+
+    resp = employee_client.post(
+        f"{API}/public/merchant/agreements",
+        json={
+            "subject_type": "store",
+            "store_id": store["id"],
+            "template_id": template["id"],
+            "signer_name": "门店经纪人甲",
+            "signer_phone": broker_phone,
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    assert resp.json()["signer_name"] == "门店经纪人甲"
+
+    # 既不是门店联系人、也不是本店经纪人的签署人仍被拒绝
+    mismatch = employee_client.post(
+        f"{API}/public/merchant/agreements",
+        json={
+            "subject_type": "store",
+            "store_id": store["id"],
+            "template_id": template["id"],
+            "signer_name": "冒名",
+            "signer_phone": f"138{uuid.uuid4().int % 10**8:08d}",
+        },
+    )
+    assert mismatch.status_code == 400, mismatch.text
+
+
 def test_company_subject_forbidden_for_employee(
     admin_client: TestClient,
     employee_client: TestClient,
