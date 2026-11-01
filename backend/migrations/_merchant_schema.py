@@ -8,10 +8,16 @@ import logging
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
+from sqlalchemy.exc import ProgrammingError
 
 from migrations._helpers import _column_exists, _index_exists
 
 logger = logging.getLogger(__name__)
+
+# 索引列被后续迁移删除后的兼容开关：v108 建 review_status 索引，v116 删除该列。
+# 全新库或 legacy 重跑时 v108 会先于 v116 执行，此时表由当前模型创建、已无该列；
+# 跳过这类「列不存在」的索引（索引本身已随列删除，属预期），其余 SQL 错误仍照常抛出。
+_MISSING_COLUMN_MARKERS = ("does not exist", "UndefinedColumn")
 
 _CORE_INDEXES: tuple[tuple[str, str], ...] = (
     (
@@ -74,12 +80,18 @@ _VISIT_INDEXES: tuple[tuple[str, str], ...] = (
 
 
 def _ensure_indexes(engine: Engine, indexes: tuple[tuple[str, str], ...]) -> None:
-    """幂等创建索引."""
+    """幂等创建索引；索引列已被后续迁移删除时跳过该索引."""
     for index_name, ddl in indexes:
-        if not _index_exists(engine, index_name):
-            logger.info("迁移：创建 %s 索引", index_name)
+        if _index_exists(engine, index_name):
+            continue
+        logger.info("迁移：创建 %s 索引", index_name)
+        try:
             with engine.begin() as conn:
                 conn.execute(text(ddl))
+        except ProgrammingError as exc:
+            if not any(marker in str(exc) for marker in _MISSING_COLUMN_MARKERS):
+                raise
+            logger.warning("迁移：跳过 %s 索引（索引列已不存在）：%s", index_name, exc.orig)
 
 
 def create_merchant_core_tables(engine: Engine) -> None:

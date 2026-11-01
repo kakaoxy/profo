@@ -170,6 +170,10 @@ Page({
     this.setData({ backfillDate: String(e.detail.value) });
   },
 
+  onBackfillTime(e: WechatMiniprogram.PickerChange) {
+    this.setData({ backfillTime: String(e.detail.value) });
+  },
+
   onGetLocation() {
     // REQ-M10-005：员工首次使用定位前必须告知用途（最小必要，仅打卡时点采集）
     if (!wx.getStorageSync("merchant_location_notice_ack")) {

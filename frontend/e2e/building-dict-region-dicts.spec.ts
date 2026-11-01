@@ -163,6 +163,19 @@ test("REQ-IT3-01 楼盘字典区域商圈页：新增/重命名同步业务数�
     }
   });
 
+  await test.step("商圈的所属区域随区域改名同步：新区域下仍能看到该商圈候选", async () => {
+    const { ctx: verifyCtx, dispose: disposeVerify } = await createApiContext();
+    try {
+      const circles = await read<{ items: string[] }>(
+        verifyCtx,
+        `/api/v1/admin/merchant/business-circles?district=${encodeURIComponent(DISTRICT_RENAMED)}`,
+      );
+      expect(circles.items).toContain(CIRCLE);
+    } finally {
+      await disposeVerify();
+    }
+  });
+
   await test.step("停用后不再出现在门店表单候选", async () => {
     const disabled = page.waitForResponse(
       (res) => res.request().method() === "POST" && res.url().includes(`/region-dicts/${districtId}/status`),

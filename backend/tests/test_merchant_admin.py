@@ -713,9 +713,17 @@ def test_merge_requires_internal_role(
 
 
 def test_store_activation_disable_and_enable(admin_client: TestClient, employee: User, seeded_db: dict) -> None:
-    """REQ-M11-003：门店可停用/启用，写审计；停用后禁止新建拜访."""
+    """REQ-M11-003：门店可停用/启用，写审计；user 角色（持 merchant:write）不得操作."""
     company = _create_company(admin_client)
     store = _create_store(admin_client, company["id"], employee.id)
+
+    user_client = _client(seeded_db["session"], employee, c_side=False)
+    denied = user_client.post(
+        f"{API}/admin/merchant/stores/{store['id']}/activation",
+        json={"target_status": "disabled", "reason": "越权尝试"},
+    )
+    assert denied.status_code == 403, denied.text
+    assert "admin/operator" in denied.json()["message"]
 
     disabled = admin_client.post(
         f"{API}/admin/merchant/stores/{store['id']}/activation",

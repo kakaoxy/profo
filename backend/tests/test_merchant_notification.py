@@ -160,7 +160,6 @@ def _make_agreement(
         subject_type=subject_type,
         agreement_no=f"V09-{uuid.uuid4().hex[:8]}",
         status=status,
-        review_status="approved",
         signer_name="王店长",
         signer_phone="13700002222",
         expire_at=expire_at,

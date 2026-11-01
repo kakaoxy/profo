@@ -1436,7 +1436,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 117）。"""
+"""登记总数（当前 116）。"""
 
 NEXT_VERSION = 117
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

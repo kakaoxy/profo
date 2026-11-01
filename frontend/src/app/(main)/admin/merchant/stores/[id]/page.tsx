@@ -487,7 +487,7 @@ export default function MerchantStoreDetailPage() {
                 {cooperationOptionsError ? (
                   <p className="mt-2 text-xs text-rust">{cooperationOptionsError}</p>
                 ) : (
-                  <p className="mt-2 text-xs text-graphite">改为「已合作」前必须先签署电子合作协议。</p>
+                  <p className="mt-2 text-xs text-graphite">合作状态与协议已解耦，可直接变更为「已合作」。</p>
                 )}
                 <div className="mt-4 space-y-2 text-xs text-graphite">
                   {statusLogs.map((log) => (

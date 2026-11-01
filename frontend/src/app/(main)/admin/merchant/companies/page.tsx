@@ -95,7 +95,8 @@ export default function MerchantCompaniesPage() {
     setForm({
       company_name: company.company_name,
       contact_name: company.contact_name ?? "",
-      contact_phone: company.contact_phone_masked ?? "",
+      // 接口只返回脱敏手机号（138****1234），不能回填到可提交字段，否则保存会把真实号码覆盖成脱敏串
+      contact_phone: "",
       remark: company.remark ?? "",
       status: company.status === "disabled" ? "disabled" : "normal",
     });
@@ -261,10 +262,11 @@ export default function MerchantCompaniesPage() {
                 onChange={(event) => setForm({ ...form, contact_name: event.target.value })}
               />
             </Field>
-            <Field label="联系电话">
+            <Field label="联系电话" hint={editingId ? "留空则不修改原号码" : undefined}>
               <Input
                 value={form.contact_phone}
                 onChange={(event) => setForm({ ...form, contact_phone: event.target.value })}
+                inputMode="tel"
               />
             </Field>
             {editingId ? (

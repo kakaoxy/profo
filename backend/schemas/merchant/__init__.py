@@ -15,6 +15,14 @@ StoreChangeType = Literal["edit", "correct", "relocate"]
 # ----------------------
 # 公司（V02 M01A）
 # ----------------------
+def _reject_masked_phone(value: str | None) -> str | None:
+    """拒绝把脱敏手机号（含 *）写回公司档案（响应仅返回 contact_phone_masked）."""
+    if value is not None and "*" in value:
+        msg = "联系电话不能使用脱敏值，请填写完整号码"
+        raise ValueError(msg)
+    return value
+
+
 class MerchantCompanyCreate(BaseModel):
     """创建公司请求."""
 
@@ -22,6 +30,11 @@ class MerchantCompanyCreate(BaseModel):
     contact_name: str | None = Field(default=None, max_length=50, description="联系人")
     contact_phone: str | None = Field(default=None, max_length=20, description="联系电话")
     remark: str | None = Field(default=None, max_length=500, description="备注")
+
+    @field_validator("contact_phone")
+    @classmethod
+    def _validate_contact_phone(cls, value: str | None) -> str | None:
+        return _reject_masked_phone(value)
 
 
 class MerchantCompanyUpdate(BaseModel):
@@ -32,6 +45,11 @@ class MerchantCompanyUpdate(BaseModel):
     contact_name: str | None = Field(default=None, max_length=50)
     contact_phone: str | None = Field(default=None, max_length=20)
     remark: str | None = Field(default=None, max_length=500)
+
+    @field_validator("contact_phone")
+    @classmethod
+    def _validate_contact_phone(cls, value: str | None) -> str | None:
+        return _reject_masked_phone(value)
 
 
 class MerchantCompanyResponse(BaseModel):
@@ -525,7 +543,6 @@ __all__ = [
     "AgreementListResponse",
     "AgreementMerchantSignRequest",
     "AgreementResponse",
-    "AgreementReviewRequest",
     "AgreementScanUploadRequest",
     "AgreementSignRequest",
     "AgreementSignView",

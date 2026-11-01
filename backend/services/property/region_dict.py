@@ -214,6 +214,12 @@ class RegionDictService:
 
         before = self._snapshot(row)
         affected = self._sync_business_data_name(row.dict_type, old_name, new_name)
+        if row.dict_type == RegionDictType.DISTRICT.value and old_name != new_name:
+            # 商圈字典项按所属区域文本过滤：区域改名后必须同步，否则该区域的商圈候选会全部落空
+            self.db.query(RegionDict).filter(
+                RegionDict.dict_type == RegionDictType.BUSINESS_CIRCLE.value,
+                RegionDict.district == old_name,
+            ).update({RegionDict.district: new_name}, synchronize_session=False)
         row.name = new_name
         if req.district is not None:
             row.district = (req.district or "").strip() or None

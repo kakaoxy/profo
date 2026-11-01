@@ -616,6 +616,38 @@ def test_merchant_self_sign_via_share_code(
     assert again.status_code == 409, again.text
 
 
+def test_share_link_without_sign_code_is_rejected(
+    admin_client: TestClient,
+    employee_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """历史协议缺分享码时必须拒绝，不能把调用方传入的 code 认领为分享码."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    template = _create_template(admin_client)
+    agreement = _create_agreement(
+        employee_client,
+        subject_type="store",
+        store_id=store["id"],
+        company_id=None,
+        template_id=template["id"],
+    )
+
+    session: Session = seeded_db["session"]
+    row = session.query(MerchantAgreement).filter(MerchantAgreement.id == agreement["id"]).one()
+    row.sign_code = None
+    session.commit()
+
+    customer_client = _merchant_client(seeded_db)
+    claimed = customer_client.get(f"{SIGN_API}/{agreement['id']}?code=claim-by-anyone")
+    assert claimed.status_code == 403, claimed.text
+    assert "签署链接无效" in claimed.json()["message"]
+
+    session.expire_all()
+    assert session.query(MerchantAgreement).filter(MerchantAgreement.id == agreement["id"]).one().sign_code is None
+
+
 def test_scan_upload_proxy_requires_reason(
     admin_client: TestClient,
     employee_client: TestClient,

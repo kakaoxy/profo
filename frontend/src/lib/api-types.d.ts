@@ -7085,7 +7085,7 @@ export interface paths {
         put?: never;
         /**
          * 变更门店合作状态
-         * @description 变更合作状态（已合作需已签协议）.
+         * @description 变更合作状态（员工仅可改为洽谈中；运营可改全部，REQ-IT5-01 起不再校验协议）.
          */
         post: operations["change_store_status_api_v1_admin_merchant_stores__store_id__status_post"];
         delete?: never;
@@ -7105,7 +7105,7 @@ export interface paths {
         put?: never;
         /**
          * 门店停用/启用
-         * @description 状态流转：正常 ↔ 停用（REQ-M11-003）；停用后禁止新建拜访/绑定.
+         * @description 状态流转：正常 ↔ 停用（REQ-M11-003，仅 admin/operator）；停用后禁止新建拜访/绑定.
          */
         post: operations["change_store_activation_api_v1_admin_merchant_stores__store_id__activation_post"];
         delete?: never;

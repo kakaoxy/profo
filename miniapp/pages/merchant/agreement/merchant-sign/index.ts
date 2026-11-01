@@ -90,12 +90,13 @@ Page({
       }
     } catch (err) {
       const statusCode = (err as { statusCode?: number }).statusCode;
-      if (statusCode === 401 || statusCode === 403) {
-        this.setData({
-          state: "needLogin",
-          errorText:
-            statusCode === 403 ? "签署链接无效或已失效，请联系门店员工重新分享" : "请先登录后再签署协议",
-        });
+      if (statusCode === 401) {
+        this.setData({ state: "needLogin", errorText: "请先登录后再签署协议" });
+        return;
+      }
+      if (statusCode === 403) {
+        // 403 表示分享码无效/缺失（身份已登录），不能再引导去登录，否则会陷入反复登录
+        this.setData({ state: "error", errorText: "签署链接无效或已失效，请联系门店员工重新分享" });
         return;
       }
       this.setData({ state: "error", errorText: errMessage(err) });

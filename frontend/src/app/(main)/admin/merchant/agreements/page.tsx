@@ -427,7 +427,7 @@ export default function MerchantAgreementsPage() {
                 ))}
                 {data.items.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-10 text-center text-sm text-graphite" colSpan={7}>
+                    <td className="px-4 py-10 text-center text-sm text-graphite" colSpan={6}>
                       暂无协议
                     </td>
                   </tr>

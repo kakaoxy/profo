@@ -12,6 +12,7 @@ from dependencies.auth import (
     MerchantBrokerPermDep,
     MerchantMergePermDep,
     MerchantReadPermDep,
+    MerchantStoreManagePermDep,
     MerchantStoreReviewPermDep,
     MerchantVisitPermDep,
     MerchantWritePermDep,
@@ -465,7 +466,7 @@ def change_store_status(
     db: DbSessionDep,
     current_user: MerchantWritePermDep,
 ) -> MerchantStoreResponse:
-    """变更合作状态（已合作需已签协议）."""
+    """变更合作状态（员工仅可改为洽谈中；运营可改全部，REQ-IT5-01 起不再校验协议）."""
     return MerchantStoreService(db).change_cooperation_status(current_user, store_id, body, request=request)
 
 
@@ -476,9 +477,9 @@ def change_store_activation(
     store_id: Annotated[str, Path(description="门店ID")],
     body: MerchantStoreActivationRequest,
     db: DbSessionDep,
-    current_user: MerchantWritePermDep,
+    current_user: MerchantStoreManagePermDep,
 ) -> MerchantStoreResponse:
-    """状态流转：正常 ↔ 停用（REQ-M11-003）；停用后禁止新建拜访/绑定."""
+    """状态流转：正常 ↔ 停用（REQ-M11-003，仅 admin/operator）；停用后禁止新建拜访/绑定."""
     return MerchantStoreService(db).change_activation_status(current_user, store_id, body, request=request)
 
 

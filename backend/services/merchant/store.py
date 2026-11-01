@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from datetime import date, datetime, timezone
 
 from fastapi import Request
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 
@@ -106,8 +106,13 @@ def distance_m_expr(origin_lng: float, origin_lat: float) -> ColumnElement[float
     d_lng = func.radians(MerchantStore.lng) - math.radians(origin_lng)
     cos_lat = math.cos(math.radians(origin_lat))
     a = func.power(func.sin(d_lat / 2), 2) + cos_lat * func.cos(lat_rad) * func.power(func.sin(d_lng / 2), 2)
-    # least(...,1) 兜住浮点误差导致的 asin 域外值
-    return 2 * radius * func.asin(func.sqrt(func.least(a, 1.0)))
+    # least(...,1) 兜住浮点误差导致的 asin 域外值；PostgreSQL 的 LEAST 会忽略 NULL 返回 1.0，
+    # 因此缺坐标时必须显式置 NULL，否则会被算成半个地球周长而不是排到末尾。
+    distance = 2 * radius * func.asin(func.sqrt(func.least(a, 1.0)))
+    return case(
+        (MerchantStore.lng.is_(None) | MerchantStore.lat.is_(None), None),
+        else_=distance,
+    )
 
 
 def _photo_json(photos: Sequence[StorePhotoItem]) -> list[dict]:

@@ -5,6 +5,34 @@ import { loginPage } from "./helpers/auth";
 
 const BACKEND = path.resolve(__dirname, "../../backend");
 const MARK = `E2E-COMPANY-${Date.now()}`;
+// 手机号按 MARK 派生，避免与真实号码重复；用于验证「编辑公司不会用脱敏值覆盖真实号码」
+const PHONE = `139${MARK.slice(-8)}`;
+const COMPANY_NAME = `${MARK}公司`;
+
+/** 读取公司当前手机号明文（接口只返回脱敏值，必须查库验证未被覆盖） */
+function readStoredPhone(): string {
+  return execFileSync(
+    path.resolve(BACKEND, ".venv/bin/python"),
+    [
+      "-c",
+      `
+import os, sys
+sys.path.insert(0, ".")
+from db import SessionLocal
+from models import MerchantCompany
+db = SessionLocal()
+try:
+    row = db.query(MerchantCompany).filter(MerchantCompany.company_name == os.environ["E2E_COMPANY"]).first()
+    print(row.contact_phone if row else "")
+finally:
+    db.close()
+`,
+    ],
+    { cwd: BACKEND, env: { ...process.env, E2E_COMPANY: COMPANY_NAME } },
+  )
+    .toString()
+    .trim();
+}
 
 // 并行跑 merchant 用例会撞后端登录限流（5 次/分钟），登录助手退避 20s/40s，
 // 默认 30s 用例超时不够，放宽到 120s，避免把限流退避误判为用例失败。
@@ -34,18 +62,21 @@ test("公司管理可新建、搜索、停用，停用后不再被门店选择",
   await expect(page.getByText("输入公司名称后查询").or(page.getByText("没有符合条件的公司"))).toBeVisible();
 
   await page.getByRole("button", { name: "新建公司" }).click();
-  await page.getByPlaceholder("请输入公司名称").fill(`${MARK}公司`);
+  await page.getByPlaceholder("请输入公司名称").fill(COMPANY_NAME);
   await page.getByLabel("联系人").fill("张三");
+  await page.getByLabel("联系电话").fill(PHONE);
   await page.getByRole("button", { name: "保存" }).click();
-  await expect(page.locator("tr").filter({ hasText: `${MARK}公司` }).first()).toBeVisible();
+  await expect(page.locator("tr").filter({ hasText: COMPANY_NAME }).first()).toBeVisible();
   await expect(page.getByText("正常").first()).toBeVisible();
 
-  const row = page.locator("tr").filter({ hasText: `${MARK}公司` }).first();
+  const row = page.locator("tr").filter({ hasText: COMPANY_NAME }).first();
   await row.getByRole("button", { name: "编辑" }).click();
   await page.getByRole("combobox", { name: "公司状态", exact: true }).click();
   await page.getByRole("option", { name: "停用" }).click();
   await page.getByRole("button", { name: "保存" }).click();
-  await expect(page.locator("tr").filter({ hasText: `${MARK}公司` }).first().getByText("已停用")).toBeVisible();
+  await expect(page.locator("tr").filter({ hasText: COMPANY_NAME }).first().getByText("已停用")).toBeVisible();
+  // 回归：编辑表单不能把脱敏手机号（139****8901）回填提交，真实号码必须保持不变
+  expect(readStoredPhone()).toBe(PHONE);
   await page.screenshot({ path: "../tmp/ui-audit-r18/companies.png", fullPage: true });
 
   const scoped = await page.evaluate(async (mark) => {

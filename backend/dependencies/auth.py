@@ -539,6 +539,10 @@ MerchantMergePermDep = Annotated[User, Depends(require_permission_with_roles("me
 MerchantStoreReviewPermDep = Annotated[
     User, Depends(require_permission_with_roles("merchant:write", ["admin", "operator"]))
 ]
+# 门店停用/启用（REQ-M11-003 权限 admin/operator；role=user 也持有 merchant:write，必须再限角色）
+MerchantStoreManagePermDep = Annotated[
+    User, Depends(require_permission_with_roles("merchant:write", ["admin", "operator"]))
+]
 # operation_log 模块
 OperationLogReadPermDep = Annotated[User, Depends(require_permission("operation_log:read"))]
 # api_key 模块（API Key 管理端点；使用侧仍受 INTERNAL_ROLE_CODES 机器接口角色限制）
@@ -829,6 +833,7 @@ __all__ = [
     "MerchantBrokerPermDep",
     "MerchantMapPermDep",
     "MerchantReadPermDep",
+    "MerchantStoreManagePermDep",
     "MerchantStoreReviewPermDep",
     "MerchantVisitPermDep",
     "MerchantWritePermDep",

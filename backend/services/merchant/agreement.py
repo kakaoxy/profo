@@ -619,14 +619,12 @@ class MerchantAgreementService:
         return agreement
 
     def _get_by_sign_code(self, agreement_id: str, code: str) -> MerchantAgreement:
-        """按分享码取协议（链接即凭证；历史协议首次打开时补写分享码）."""
+        """按分享码取协议（分享码是唯一凭证，缺失即视为链接失效）."""
         agreement = self._get_agreement(agreement_id)
         if agreement.sign_code is None:
-            # 历史行兜底：没有分享码时以首个打开链接的码为准（链接本身即凭证）
-            agreement.sign_code = code
-            self.db.commit()
-            self.db.refresh(agreement)
-            return agreement
+            # 不信任调用方传入的 code：历史行若缺分享码，只能由员工在后台详情获取（get 会补齐）
+            msg = "签署链接无效或已失效"
+            raise PermissionDeniedError(msg)
         if code != agreement.sign_code:
             msg = "签署链接无效或已失效"
             raise PermissionDeniedError(msg)

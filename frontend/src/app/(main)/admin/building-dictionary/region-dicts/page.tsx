@@ -201,7 +201,17 @@ export default function RegionDictsPage() {
 
       <Card className="rounded-cards border-0 shadow-steep-sm p-5">
         <div className="flex flex-wrap items-center gap-3">
-          <Select value={dictType} onValueChange={(value) => setDictType(value as DictType)}>
+          <Select
+            value={dictType}
+            onValueChange={(value) => {
+              setDictType(value as DictType);
+              // 切换字典类型后旧编辑对象不再适用，重置右侧表单避免把区域项按商圈口径提交
+              setEditingId(null);
+              setForm(EMPTY_FORM);
+              setError("");
+              setNotice("");
+            }}
+          >
             <SelectTrigger className="w-32" aria-label="字典类型">
               <SelectValue />
             </SelectTrigger>

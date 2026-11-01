@@ -135,6 +135,12 @@ export default function MerchantBrokersPage() {
       setError("新建需填写姓名和手机号；编辑时手机号留空表示不修改");
       return;
     }
+    // 换绑/解绑原因必须在提交基础资料前校验，避免「资料已保存、绑定变更被拒」的半提交
+    const storeChanged = editing ? formStoreId !== (editing.store_id || "") : false;
+    if (editing && storeChanged && !formStoreChangeReason.trim()) {
+      setError("变更绑定门店必须填写原因");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -147,12 +153,7 @@ export default function MerchantBrokersPage() {
             remark: formRemark.trim() || null,
           }),
         });
-        const storeChanged = formStoreId !== (editing.store_id || "");
         if (storeChanged) {
-          if (!formStoreChangeReason.trim()) {
-            setError("变更绑定门店必须填写原因");
-            return;
-          }
           if (formStoreId) {
             await merchantApi(`/admin/merchant/brokers/${editing.id}/change`, {
               method: "POST",

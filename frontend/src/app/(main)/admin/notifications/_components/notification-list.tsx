@@ -126,7 +126,8 @@ export function NotificationList({ initialList, initialUnread }: NotificationLis
       }
       // 按 action_type 跳转（route 类型才有地址）
       if (item.action_type === "route" && item.action_url) {
-        if (!hasPathPermission(item.action_url, permissions)) {
+        // 权限集尚未加载完成（null）时先放行，由目标页的服务端守卫兜底，避免误报「无权访问」
+        if (permissions !== null && !hasPathPermission(item.action_url, permissions)) {
           toast.error("无权访问该通知对应的页面，请联系管理员");
           return;
         }
