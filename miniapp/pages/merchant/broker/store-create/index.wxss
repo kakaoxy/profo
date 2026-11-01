@@ -43,6 +43,13 @@
 .input--flex {
   flex: 1;
 }
+.input--picker {
+  display: flex;
+  align-items: center;
+  height: 88rpx;
+  line-height: 88rpx;
+  color: var(--ink);
+}
 .grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

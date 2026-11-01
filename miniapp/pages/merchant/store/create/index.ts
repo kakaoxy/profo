@@ -6,7 +6,9 @@
  */
 import type { components } from "../../../../types/api-types";
 import { pickAndUploadPhotos } from "../../../../utils/image-upload";
+import { chooseMapLocation } from "../../../../utils/location";
 import type { MerchantPhoto, MerchantPhotoType } from "../../../../utils/image-upload";
+import { matchDistrict } from "../../../../utils/region";
 import { request } from "../../../../utils/request";
 import { resolveAssetUrl } from "../../../../utils/url";
 
@@ -26,8 +28,6 @@ interface DisplayPhoto extends MerchantPhoto {
 
 interface StoreForm {
   store_name: string;
-  province: string;
-  city: string;
   district: string;
   business_circle: string;
   address: string;
@@ -71,7 +71,10 @@ interface PageData {
   firstVisit: FirstVisitForm;
   cooperationOptions: Option[];
   visitResultOptions: Option[];
+  districts: string[];
+  districtIndex: number;
   businessCircles: string[];
+  businessCircleIndex: number;
   changeType: "edit" | "correct" | "relocate";
   changeReason: string;
   submitting: boolean;
@@ -118,9 +121,7 @@ Page({
     newCompanyPhone: "",
     form: {
       store_name: "",
-      province: "上海市",
-      city: "上海市",
-      district: "浦东新区",
+      district: "",
       business_circle: "",
       address: "",
       lng: null as number | null,
@@ -139,7 +140,10 @@ Page({
     },
     cooperationOptions: DEFAULT_COOPERATION_OPTIONS,
     visitResultOptions: DEFAULT_VISIT_RESULT_OPTIONS,
+    districts: [] as string[],
+    districtIndex: -1,
     businessCircles: [] as string[],
+    businessCircleIndex: -1,
     changeType: "edit" as "edit" | "correct" | "relocate",
     changeReason: "",
     submitting: false,
@@ -154,8 +158,20 @@ Page({
     this.setData({ mode, storeId });
     wx.setNavigationBarTitle({ title: mode === "edit" ? "编辑门店" : "门店建档" });
     this.loadDictOptions();
+    void this.loadDistricts();
     if (mode === "edit" && storeId) {
       this.loadStore(storeId);
+    }
+  },
+
+  /** 区域字典（REQ-IT1-04：只能从系统区域列表选择，避免手填错误） */
+  async loadDistricts(): Promise<void> {
+    try {
+      const data = await request<{ items: string[] }>({ url: "/public/merchant/districts" });
+      const districts = data.items || [];
+      this.setData({ districts, districtIndex: districts.indexOf(this.data.form.district) });
+    } catch {
+      // 字典不可用不阻断建档，选择器会退化为空列表并提示
     }
   },
 
@@ -193,8 +209,6 @@ Page({
         },
         form: {
           store_name: store.store_name,
-          province: store.province,
-          city: store.city,
           district: store.district,
           business_circle: store.business_circle,
           address: store.address,
@@ -207,6 +221,8 @@ Page({
           photos: toDisplayPhotos(store.photos || []),
         },
       });
+      this.setData({ districtIndex: this.data.districts.indexOf(store.district) });
+      void this.loadBusinessCircles(store.district, store.business_circle);
     } catch (err) {
       wx.showToast({ title: errMessage(err), icon: "none" });
     } finally {
@@ -303,36 +319,64 @@ Page({
     }
   },
 
-  onChooseLocation() {
-    wx.chooseLocation({
-      success: (res) => {
-        const address = res.address ? `${res.address}${res.name ? ` ${res.name}` : ""}` : res.name;
-        this.setData({
-          "form.address": address || this.data.form.address,
-          "form.lng": res.longitude,
-          "form.lat": res.latitude,
-        });
-      },
-      fail: () => {
-        wx.showToast({ title: "地图选点失败，请重试或检查定位权限", icon: "none" });
-      },
+  async onChooseLocation(): Promise<void> {
+    const picked = await chooseMapLocation();
+    if (!picked) {
+      return;
+    }
+    const district = matchDistrict(picked.address, picked.name, this.data.districts);
+    this.setData({
+      "form.address": picked.address || this.data.form.address,
+      "form.lng": picked.longitude,
+      "form.lat": picked.latitude,
+      "form.district": district || this.data.form.district,
+      districtIndex: district ? this.data.districts.indexOf(district) : this.data.districtIndex,
     });
+    if (district) {
+      void this.loadBusinessCircles(district, "");
+    } else {
+      wx.showToast({ title: "未识别到区域，请手动选择区域与商圈", icon: "none" });
+    }
   },
 
-  async onLoadBusinessCircles(): Promise<void> {
+  onSelectDistrict(e: WechatMiniprogram.PickerChange) {
+    const index = Number(e.detail.value);
+    const district = this.data.districts[index] || "";
+    this.setData({
+      "form.district": district,
+      "form.business_circle": "",
+      districtIndex: index,
+      businessCircles: [],
+      businessCircleIndex: -1,
+    });
+    void this.loadBusinessCircles(district, "");
+  },
+
+  /** 商圈候选（REQ-IT1-04：从列表选择；该区域无候选时退回手填，避免建不了店） */
+  async loadBusinessCircles(district: string, current: string): Promise<void> {
+    if (!district) {
+      this.setData({ businessCircles: [], businessCircleIndex: -1 });
+      return;
+    }
     try {
       const data = await request<{ items: string[] }>({
         url: "/public/merchant/business-circles",
-        data: { district: this.data.form.district },
+        data: { district },
       });
-      this.setData({ businessCircles: data.items || [] });
+      const circles = data.items || [];
+      this.setData({
+        businessCircles: circles,
+        businessCircleIndex: current ? circles.indexOf(current) : -1,
+      });
     } catch (err) {
       wx.showToast({ title: errMessage(err), icon: "none" });
     }
   },
 
-  onSelectBusinessCircle(e: WechatMiniprogram.BaseEvent) {
-    this.setData({ "form.business_circle": e.currentTarget.dataset.value as string });
+  onSelectBusinessCircle(e: WechatMiniprogram.PickerChange) {
+    const index = Number(e.detail.value);
+    const value = this.data.businessCircles[index] || "";
+    this.setData({ "form.business_circle": value, businessCircleIndex: index });
   },
 
   onSelectCooperation(e: WechatMiniprogram.BaseEvent) {
@@ -406,11 +450,11 @@ Page({
     if (!form.store_name.trim()) {
       return "请填写门店名称";
     }
-    if (!form.province.trim() || !form.city.trim() || !form.district.trim()) {
-      return "请填写省市区";
+    if (!form.district.trim()) {
+      return "请选择区域";
     }
     if (!form.business_circle.trim()) {
-      return "请填写商圈";
+      return "请选择商圈";
     }
     if (!form.address.trim()) {
       return "请填写详细地址";
@@ -482,8 +526,6 @@ Page({
           data: {
             company_id: selectedCompany.id,
             store_name: form.store_name,
-            province: form.province,
-            city: form.city,
             district: form.district,
             business_circle: form.business_circle,
             address: form.address,
@@ -512,8 +554,6 @@ Page({
         data: {
           company_id: selectedCompany.id,
           store_name: form.store_name,
-          province: form.province,
-          city: form.city,
           district: form.district,
           business_circle: form.business_circle,
           address: form.address,

@@ -29,8 +29,6 @@ type DuplicateCandidate = components["schemas"]["MerchantDuplicateCandidate"];
 
 interface FormState {
   store_name: string;
-  province: string;
-  city: string;
   district: string;
   business_circle: string;
   address: string;
@@ -46,9 +44,7 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   store_name: "",
-  province: "上海市",
-  city: "上海市",
-  district: "浦东新区",
+  district: "",
   business_circle: "",
   address: "",
   lng: "",
@@ -76,7 +72,15 @@ export default function MerchantStoreCreatePage() {
   const [employees, setEmployees] = useState<components["schemas"]["UserSimpleResponse"][]>([]);
   const [duplicates, setDuplicates] = useState<DuplicateCandidate[]>([]);
   const [circleOptions, setCircleOptions] = useState<string[]>([]);
+  const [districtOptions, setDistrictOptions] = useState<string[]>([]);
   const [loadedUpdatedAt, setLoadedUpdatedAt] = useState("");
+
+  // REQ-IT1-04：区域只能从系统区域列表选择
+  useEffect(() => {
+    merchantApi<components["schemas"]["MerchantDistrictListResponse"]>("/admin/merchant/districts")
+      .then((result) => setDistrictOptions(result.items))
+      .catch(() => setDistrictOptions([]));
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -99,8 +103,6 @@ export default function MerchantStoreCreatePage() {
           setLoadedUpdatedAt(store.updated_at);
           setForm({
             store_name: store.store_name,
-            province: store.province,
-            city: store.city,
             district: store.district,
             business_circle: store.business_circle,
             address: store.address,
@@ -142,7 +144,7 @@ export default function MerchantStoreCreatePage() {
     setError("");
     try {
       const result = await merchantApi<CompanyList>(
-        `/admin/merchant/companies?keyword=${encodeURIComponent(companyKeyword)}&limit=20`,
+        `/admin/merchant/companies?keyword=${encodeURIComponent(companyKeyword)}&page_size=20`,
       );
       setCompanies(result.items);
     } catch (err) {
@@ -206,8 +208,6 @@ export default function MerchantStoreCreatePage() {
           body: JSON.stringify({
             company_id: company.id,
             store_name: form.store_name,
-            province: form.province,
-            city: form.city,
             district: form.district,
             business_circle: form.business_circle,
             address: form.address,
@@ -231,8 +231,6 @@ export default function MerchantStoreCreatePage() {
         body: JSON.stringify({
           company_id: company.id,
           store_name: form.store_name,
-          province: form.province,
-          city: form.city,
           district: form.district,
           business_circle: form.business_circle,
           address: form.address,
@@ -320,39 +318,60 @@ export default function MerchantStoreCreatePage() {
           <Field label="门店名称" required>
             <Input value={form.store_name} onChange={update("store_name")} />
           </Field>
-          <Field
-            label="商圈"
-            required
-            hint={circleOptions.length ? "可参考该区县已有商圈，也可直接输入新商圈" : undefined}
-          >
-            <Input
-              list="merchant-business-circle-options"
-              value={form.business_circle}
-              onChange={update("business_circle")}
-            />
-            <datalist id="merchant-business-circle-options">
-              {circleOptions.map((circle) => (
-                <option key={circle} value={circle} />
-              ))}
-            </datalist>
-          </Field>
-          <Field label="省份" required>
-            <Input value={form.province} onChange={update("province")} />
-          </Field>
-          <Field label="城市" required>
-            <Input value={form.city} onChange={update("city")} />
-          </Field>
-          <Field label="区县" required>
-            <Input value={form.district} onChange={update("district")} />
-          </Field>
-          <Field label="详细地址" required>
-            <Input value={form.address} onChange={update("address")} />
-          </Field>
           <Field label="经度（GCJ-02）" required hint="取高德坐标拾取器的 GCJ-02 经度，非 WGS-84">
             <Input value={form.lng} onChange={update("lng")} inputMode="decimal" />
           </Field>
           <Field label="纬度（GCJ-02）" required hint="取高德坐标拾取器的 GCJ-02 纬度，非 WGS-84">
             <Input value={form.lat} onChange={update("lat")} inputMode="decimal" />
+          </Field>
+          <Field label="区域" required hint="来自系统区域列表（小区主数据），不可手工填写">
+            <Select
+              value={form.district}
+              onValueChange={(value) => setForm((previous) => ({ ...previous, district: value, business_circle: "" }))}
+            >
+              <SelectTrigger aria-label="区域">
+                <SelectValue placeholder={districtOptions.length ? "请选择区域" : "区域列表加载失败"} />
+              </SelectTrigger>
+              <SelectContent>
+                {districtOptions.map((district) => (
+                  <SelectItem key={district} value={district}>
+                    {district}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field
+            label="商圈"
+            required
+            hint={circleOptions.length ? "来自该区域的系统商圈列表" : "该区域暂无候选商圈，可直接输入"}
+          >
+            {circleOptions.length ? (
+              <Select
+                value={form.business_circle}
+                onValueChange={(value) => setForm((previous) => ({ ...previous, business_circle: value }))}
+              >
+                <SelectTrigger aria-label="商圈">
+                  <SelectValue placeholder="请选择商圈" />
+                </SelectTrigger>
+                <SelectContent>
+                  {circleOptions.map((circle) => (
+                    <SelectItem key={circle} value={circle}>
+                      {circle}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={form.business_circle}
+                onChange={update("business_circle")}
+                placeholder="该区域暂无候选商圈，可直接输入"
+              />
+            )}
+          </Field>
+          <Field label="详细地址" required>
+            <Input value={form.address} onChange={update("address")} />
           </Field>
           <Field label="联系人" required>
             <Input value={form.contact_name} onChange={update("contact_name")} />

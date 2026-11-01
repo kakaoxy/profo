@@ -82,7 +82,7 @@ export default function MerchantAgreementsPage() {
         ),
         merchantApi<AgreementTemplate[]>("/admin/merchant/agreement-templates"),
         merchantApi<StoreList>("/admin/merchant/stores?page=1&page_size=200"),
-        merchantApi<CompanyList>("/admin/merchant/companies?limit=100"),
+        merchantApi<CompanyList>("/admin/merchant/companies?page_size=100"),
       ]);
       setData(result);
       setTemplates(templateList.filter((item) => item.status === "enabled"));

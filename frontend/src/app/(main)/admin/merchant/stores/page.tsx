@@ -39,8 +39,6 @@ export default function MerchantStoresPage() {
   const [keyword, setKeyword] = useState("");
   const [status, setStatus] = useState("all");
   const [reviewStatus, setReviewStatus] = useState("all");
-  const [province, setProvince] = useState("");
-  const [city, setCity] = useState("");
   const [district, setDistrict] = useState("");
   const [businessCircle, setBusinessCircle] = useState("");
   const [source, setSource] = useState("all");
@@ -63,8 +61,6 @@ export default function MerchantStoresPage() {
           keyword: keyword.trim() || undefined,
           status: status === "all" ? undefined : status,
           review_status: reviewStatus === "all" ? undefined : reviewStatus,
-          province: province.trim() || undefined,
-          city: city.trim() || undefined,
           district: district.trim() || undefined,
           business_circle: businessCircle.trim() || undefined,
           owner_employee_id: ownerId === "all" ? undefined : ownerId,
@@ -111,8 +107,6 @@ export default function MerchantStoresPage() {
                     keyword: keyword.trim() || undefined,
                     status: status === "all" ? undefined : status,
                     review_status: reviewStatus === "all" ? undefined : reviewStatus,
-                    province: province.trim() || undefined,
-                    city: city.trim() || undefined,
                     district: district.trim() || undefined,
                     business_circle: businessCircle.trim() || undefined,
                     owner_employee_id: ownerId === "all" ? undefined : ownerId,
@@ -169,22 +163,6 @@ export default function MerchantStoresPage() {
                 <SelectItem value="merged">已合并</SelectItem>
               </SelectContent>
             </Select>
-            <Input
-              className="w-28"
-              placeholder="省份"
-              aria-label="按省份筛选"
-              value={province}
-              onChange={(event) => setProvince(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && void load(1)}
-            />
-            <Input
-              className="w-28"
-              placeholder="城市"
-              aria-label="按城市筛选"
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && void load(1)}
-            />
             <Input
               className="w-32"
               placeholder="区县"

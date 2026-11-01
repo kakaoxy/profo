@@ -63,6 +63,9 @@ _CREATE_ALLOWED_COOPERATION = {
     MerchantCooperationStatus.NOT_COOPERATED.value,
     MerchantCooperationStatus.NEGOTIATING.value,
 }
+# REQ-IT1-03：省市不再由前端填写，缺省统一补齐（模型列仍为 NOT NULL，报表/导出口径不变）
+_DEFAULT_PROVINCE = "上海市"
+_DEFAULT_CITY = "上海市"
 _DISTANCE_LIMIT_M = 500
 _RELOCATE_DISTANCE_M = 1000
 # 1 度纬度约 111.32km，用于把 500m 半径换算成经纬度包围盒（仅作召回，精确距离仍用 haversine_m）
@@ -225,8 +228,8 @@ class MerchantStoreService:
             company_id=company.id,
             company_name=company.company_name,
             store_name=req.store_name.strip(),
-            province=req.province.strip(),
-            city=req.city.strip(),
+            province=(req.province or "").strip() or _DEFAULT_PROVINCE,
+            city=(req.city or "").strip() or _DEFAULT_CITY,
             district=req.district.strip(),
             business_circle=req.business_circle.strip(),
             address=req.address.strip(),
@@ -1195,7 +1198,19 @@ class MerchantStoreService:
         self.db.refresh(store)
         return store_response(store, cooperation_label_map(self.db))
 
-    # -------------------- 商圈建议 --------------------
+    # -------------------- 区域 / 商圈字典 --------------------
+    def districts(self) -> list[str]:
+        """区域（区县）字典：小区主数据优先 + 已建门店兜底（REQ-IT1-04，供选择而非手填）."""
+        values: list[str] = []
+        community_query = self.db.query(Community.district).filter(Community.district.isnot(None))
+        values.extend(row[0] for row in community_query.distinct().limit(200).all())
+
+        store_query = self.db.query(MerchantStore.district).filter(MerchantStore.is_deleted.is_(False))
+        values.extend(row[0] for row in store_query.distinct().limit(200).all())
+
+        deduped = sorted({value.strip() for value in values if value and value.strip()})
+        return deduped[:100]
+
     def business_circles(self, *, district: str | None = None) -> list[str]:
         """商圈建议：小区商圈优先 + 已建门店商圈兜底（Q03）."""
         values: list[str] = []

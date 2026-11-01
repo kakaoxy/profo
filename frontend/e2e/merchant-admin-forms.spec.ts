@@ -7,6 +7,7 @@ import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { test, expect } from "@playwright/test";
 import { loginPage } from "./helpers/auth";
+import { pickStoreRegion } from "./helpers/merchant-store-form";
 
 test.describe.configure({ mode: "serial" });
 
@@ -141,7 +142,7 @@ test("后台新建门店可指定负责人与合作状态", async ({ page }) => 
   await page.getByRole("button", { name: new RegExp(`${MARK}公司`) }).first().click();
 
   await page.getByLabel("门店名称").fill(`${MARK}新门店`);
-  await page.getByLabel("商圈").fill("南京东路商圈");
+  await pickStoreRegion(page);
   await page.getByLabel("详细地址").fill("南京东路 200 号");
   await page.getByLabel("经度（GCJ-02）").fill("121.4805");
   await page.getByLabel("纬度（GCJ-02）").fill("31.2380");
@@ -171,7 +172,7 @@ test("后台新建门店命中重复时展示候选门店", async ({ page }) => 
   await page.getByRole("button", { name: "搜索" }).click();
   await page.getByRole("button", { name: new RegExp(`${MARK}公司`) }).first().click();
   await page.getByLabel("门店名称").fill(storeName);
-  await page.getByLabel("商圈").fill("南京东路商圈");
+  await pickStoreRegion(page);
   await page.getByLabel("详细地址").fill("南京东路 200 号");
   await page.getByLabel("经度（GCJ-02）").fill("121.4805");
   await page.getByLabel("纬度（GCJ-02）").fill("31.2380");

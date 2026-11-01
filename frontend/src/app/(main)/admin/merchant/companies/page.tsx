@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Pagination } from "@/components/common/pagination";
 import { PageContainer } from "../../_components/page-container";
 import { PageHeader } from "../../_components/page-header";
 import { StatusBadge } from "../_components/status-badge";
@@ -27,42 +28,62 @@ const EMPTY_FORM: CompanyForm = { company_name: "", contact_name: "", contact_ph
 
 export default function MerchantCompaniesPage() {
   const [keyword, setKeyword] = useState("");
+  const [appliedKeyword, setAppliedKeyword] = useState("");
   const [includeDisabled, setIncludeDisabled] = useState("all");
   const [companies, setCompanies] = useState<Company[]>([]);
-  const [searched, setSearched] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<CompanyForm>(EMPTY_FORM);
   const [duplicateName, setDuplicateName] = useState("");
+  // 请求序号：只有最后一次请求的结果才允许落地，避免「默认列表」与「搜索结果」乱序覆盖
+  const requestSeq = useRef(0);
 
-  const load = useCallback(async () => {
-    const trimmed = keyword.trim();
-    if (!trimmed) {
-      setCompanies([]);
-      setSearched(false);
-      return;
-    }
-    setLoading(true);
-    setError("");
-    try {
-      const query = new URLSearchParams({ keyword: trimmed, limit: "100" });
-      if (includeDisabled === "all") query.set("include_disabled", "true");
-      const result = await merchantApi<CompanyList>(`/admin/merchant/companies?${query.toString()}`);
-      setCompanies(result.items);
-      setSearched(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "公司列表加载失败");
-    } finally {
-      setLoading(false);
-    }
-  }, [keyword, includeDisabled]);
+  // REQ-IT1-05：默认展示最新创建的公司（关键词为空表示不过滤），并分页
+  const load = useCallback(
+    async (targetPage: number, term: string) => {
+      const seq = requestSeq.current + 1;
+      requestSeq.current = seq;
+      setLoading(true);
+      setError("");
+      try {
+        const query = new URLSearchParams({
+          page: String(targetPage),
+          page_size: String(pageSize),
+        });
+        if (term) query.set("keyword", term);
+        if (includeDisabled === "all") query.set("include_disabled", "true");
+        const result = await merchantApi<CompanyList>(`/admin/merchant/companies?${query.toString()}`);
+        if (seq !== requestSeq.current) return;
+        setCompanies(result.items);
+        setTotal(result.total);
+        setPage(result.page ?? targetPage);
+      } catch (err) {
+        if (seq !== requestSeq.current) return;
+        setError(err instanceof Error ? err.message : "公司列表加载失败");
+      } finally {
+        if (seq === requestSeq.current) setLoading(false);
+      }
+    },
+    [includeDisabled, pageSize],
+  );
 
   useEffect(() => {
-    if (searched) void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [includeDisabled]);
+    void load(1, appliedKeyword);
+  }, [load, appliedKeyword]);
+
+  const search = () => {
+    const term = keyword.trim();
+    if (term === appliedKeyword) {
+      void load(1, term);
+      return;
+    }
+    setAppliedKeyword(term);
+  };
 
   const startCreate = () => {
     setEditingId(null);
@@ -90,7 +111,7 @@ export default function MerchantCompaniesPage() {
       // REQ-M01A-001 分支 2：同名公司提示但不阻断，二次确认后允许创建
       try {
         const existing = await merchantApi<CompanyList>(
-          `/admin/merchant/companies?keyword=${encodeURIComponent(name)}&include_disabled=true&limit=20`,
+          `/admin/merchant/companies?keyword=${encodeURIComponent(name)}&include_disabled=true&page_size=20`,
         );
         if (existing.items.some((item) => item.company_name.trim() === name)) {
           setDuplicateName(name);
@@ -121,7 +142,7 @@ export default function MerchantCompaniesPage() {
       setForm(EMPTY_FORM);
       setEditingId(null);
       setDuplicateName("");
-      await load();
+      await load(page, appliedKeyword);
     } catch (err) {
       setError(err instanceof Error ? err.message : "保存公司失败");
     } finally {
@@ -140,9 +161,9 @@ export default function MerchantCompaniesPage() {
             value={keyword}
             onChange={(event) => setKeyword(event.target.value)}
             onKeyDown={(event) => {
-              if (event.key === "Enter") void load();
+              if (event.key === "Enter") search();
             }}
-            placeholder="按公司名称搜索"
+            placeholder="按公司名称搜索（留空显示最新）"
             aria-label="按公司名称搜索"
           />
           <Select value={includeDisabled} onValueChange={setIncludeDisabled}>
@@ -154,7 +175,7 @@ export default function MerchantCompaniesPage() {
               <SelectItem value="normal">仅正常</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" onClick={() => void load()} disabled={loading}>
+          <Button variant="outline" onClick={search} disabled={loading}>
             {loading ? "查询中…" : "查询"}
           </Button>
           <Button className="ml-auto" variant="outline" onClick={startCreate}>
@@ -205,13 +226,23 @@ export default function MerchantCompaniesPage() {
                 {companies.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-10 text-center text-graphite">
-                      {searched ? "没有符合条件的公司" : "输入公司名称后查询"}
+                      {loading ? "加载中…" : appliedKeyword ? "没有符合条件的公司" : "暂无公司，可在右侧新建"}
                     </td>
                   </tr>
                 ) : null}
               </tbody>
             </table>
           </div>
+          <Pagination
+            mode="controlled"
+            totalItems={total}
+            currentPage={page}
+            totalPages={Math.max(1, Math.ceil(total / pageSize))}
+            pageSize={pageSize}
+            showPageSizeSelector
+            onPageChange={(next) => void load(next, appliedKeyword)}
+            onPageSizeChange={setPageSize}
+          />
         </Card>
 
         <Card className="rounded-cards border-0 shadow-steep-sm p-5">

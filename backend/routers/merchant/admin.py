@@ -33,6 +33,7 @@ from schemas.merchant import (
     MerchantCompanyListResponse,
     MerchantCompanyResponse,
     MerchantCompanyUpdate,
+    MerchantDistrictListResponse,
     MerchantDuplicateCheckRequest,
     MerchantDuplicateCheckResponse,
     MerchantStoreActivationRequest,
@@ -69,18 +70,23 @@ EXPORT_MAX_ROWS = 50000
 
 
 # -------------------- 公司 --------------------
-@router.get("/companies", summary="公司搜索")
+@router.get("/companies", summary="公司分页列表")
 @limiter.limit(RateLimits.MERCHANT_READ)
 def search_companies(
     request: Request,
     db: DbSessionDep,
     _current_user: MerchantReadPermDep,
-    keyword: Annotated[str | None, Query(description="公司名称关键词")] = None,
+    pagination: PaginationDep,
+    keyword: Annotated[str | None, Query(description="公司名称关键词（为空则不过滤）")] = None,
     include_disabled: Annotated[bool, Query(description="是否包含已停用公司")] = False,
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> MerchantCompanyListResponse:
-    """按名称搜索公司；空关键词返回空列表（REQ-M01A-002）."""
-    return MerchantCompanyService(db).search(keyword, include_disabled=include_disabled, limit=limit)
+    """公司分页列表，默认按创建时间倒序（REQ-IT1-05；小程序建档仍走 /public 搜索语义）."""
+    return MerchantCompanyService(db).paginate(
+        keyword,
+        include_disabled=include_disabled,
+        page=pagination.page,
+        page_size=pagination.page_size,
+    )
 
 
 @router.post("/companies", status_code=status.HTTP_201_CREATED, summary="新建公司")
@@ -706,6 +712,17 @@ def approve_binding(
         operator_id=str(current_user.id),
         request=request,
     )
+
+
+@router.get("/districts", summary="区域（区县）字典")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def districts(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: MerchantReadPermDep,
+) -> MerchantDistrictListResponse:
+    """区域候选（REQ-IT1-04：表单从列表选择，避免手填错误）."""
+    return MerchantDistrictListResponse(items=MerchantStoreService(db).districts())
 
 
 @router.get("/business-circles", summary="商圈建议")

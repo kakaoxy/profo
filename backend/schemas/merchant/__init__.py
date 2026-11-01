@@ -48,10 +48,12 @@ class MerchantCompanyResponse(BaseModel):
 
 
 class MerchantCompanyListResponse(BaseModel):
-    """公司搜索响应."""
+    """公司分页列表响应."""
 
     items: list[MerchantCompanyResponse]
     total: int
+    page: int = 1
+    page_size: int = 20
 
 
 # ----------------------
@@ -71,8 +73,8 @@ class MerchantStoreCreate(BaseModel):
 
     company_id: str = Field(min_length=1, max_length=36, description="所属公司ID")
     store_name: str = Field(min_length=1, max_length=200, description="门店名称")
-    province: str = Field(min_length=1, max_length=50, description="省")
-    city: str = Field(min_length=1, max_length=50, description="市")
+    province: str | None = Field(default=None, max_length=50, description="省（前端不再填写，缺省由后端补齐）")
+    city: str | None = Field(default=None, max_length=50, description="市（前端不再填写，缺省由后端补齐）")
     district: str = Field(min_length=1, max_length=50, description="区县")
     business_circle: str = Field(min_length=1, max_length=100, description="商圈")
     address: str = Field(min_length=1, max_length=500, description="详细地址")
@@ -313,6 +315,12 @@ class MerchantStoreStatusLogResponse(BaseModel):
 
 class MerchantBusinessCircleResponse(BaseModel):
     """商圈建议响应."""
+
+    items: list[str]
+
+
+class MerchantDistrictListResponse(BaseModel):
+    """区域（区县）字典响应（REQ-IT1-04）."""
 
     items: list[str]
 

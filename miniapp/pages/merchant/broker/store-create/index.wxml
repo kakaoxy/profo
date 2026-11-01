@@ -26,17 +26,21 @@
     <view class="field-label">门店名称</view>
     <input class="input" placeholder="门店名称" value="{{storeName}}" data-field="storeName" bindinput="onFieldInput" maxlength="200" />
 
+    <view class="link-btn" bindtap="onChooseLocation">选择门店位置（自动带出区域）</view>
+    <view class="hint" wx:if="{{lng && lat}}">坐标：{{lng}}, {{lat}}</view>
+
     <view class="grid">
-      <input class="input" placeholder="省" value="{{province}}" data-field="province" bindinput="onFieldInput" />
-      <input class="input" placeholder="市" value="{{city}}" data-field="city" bindinput="onFieldInput" />
-      <input class="input" placeholder="区县" value="{{district}}" data-field="district" bindinput="onFieldInput" />
-      <input class="input" placeholder="商圈" value="{{businessCircle}}" data-field="businessCircle" bindinput="onFieldInput" />
+      <picker mode="selector" range="{{districts}}" value="{{districtIndex}}" bindchange="onSelectDistrict" disabled="{{!districts.length}}">
+        <view class="input input--picker">{{district || (districts.length ? '选择区域' : '区域加载失败')}}</view>
+      </picker>
+      <picker wx:if="{{businessCircles.length}}" mode="selector" range="{{businessCircles}}" value="{{businessCircleIndex}}" bindchange="onSelectBusinessCircle">
+        <view class="input input--picker">{{businessCircle || '选择商圈'}}</view>
+      </picker>
+      <input wx:else class="input" placeholder="{{district ? '该区域暂无商圈候选，可手填' : '请先选择区域'}}" value="{{businessCircle}}" data-field="businessCircle" bindinput="onFieldInput" />
     </view>
 
     <view class="field-label">详细地址</view>
     <input class="input" placeholder="详细地址" value="{{address}}" data-field="address" bindinput="onFieldInput" maxlength="500" />
-    <view class="link-btn" bindtap="onChooseLocation">选择门店位置</view>
-    <view class="hint" wx:if="{{lng && lat}}">坐标：{{lng}}, {{lat}}</view>
 
     <view class="field-label">联系人</view>
     <input class="input" placeholder="联系人" value="{{contactName}}" data-field="contactName" bindinput="onFieldInput" maxlength="50" />

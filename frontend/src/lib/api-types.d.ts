@@ -6746,8 +6746,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 公司搜索
-         * @description 按名称搜索公司；空关键词返回空列表（REQ-M01A-002）.
+         * 公司分页列表
+         * @description 公司分页列表，默认按创建时间倒序（REQ-IT1-05；小程序建档仍走 /public 搜索语义）.
          */
         get: operations["search_companies_api_v1_admin_merchant_companies_get"];
         put?: never;
@@ -7278,6 +7278,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/districts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 区域（区县）字典
+         * @description 区域候选（REQ-IT1-04：表单从列表选择，避免手填错误）.
+         */
+        get: operations["districts_api_v1_admin_merchant_districts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/business-circles": {
         parameters: {
             query?: never;
@@ -7443,6 +7463,26 @@ export interface paths {
          * @description 门店照片补录/替换.
          */
         put: operations["update_store_photos_api_v1_public_merchant_stores__store_id__photos_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/merchant/districts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 区域（区县）字典
+         * @description 区域候选（REQ-IT1-04：门店建档从列表选择，避免手填错误）.
+         */
+        get: operations["districts_api_v1_public_merchant_districts_get"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -16453,13 +16493,23 @@ export interface components {
         };
         /**
          * MerchantCompanyListResponse
-         * @description 公司搜索响应.
+         * @description 公司分页列表响应.
          */
         MerchantCompanyListResponse: {
             /** Items */
             items: components["schemas"]["MerchantCompanyResponse"][];
             /** Total */
             total: number;
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 20
+             */
+            page_size: number;
         };
         /**
          * MerchantCompanyResponse
@@ -16504,6 +16554,14 @@ export interface components {
             contact_phone?: string | null;
             /** Remark */
             remark?: string | null;
+        };
+        /**
+         * MerchantDistrictListResponse
+         * @description 区域（区县）字典响应（REQ-IT1-04）.
+         */
+        MerchantDistrictListResponse: {
+            /** Items */
+            items: string[];
         };
         /**
          * MerchantDuplicateCandidate
@@ -16764,14 +16822,14 @@ export interface components {
             store_name: string;
             /**
              * Province
-             * @description 省
+             * @description 省（前端不再填写，缺省由后端补齐）
              */
-            province: string;
+            province?: string | null;
             /**
              * City
-             * @description 市
+             * @description 市（前端不再填写，缺省由后端补齐）
              */
-            city: string;
+            city?: string | null;
             /**
              * District
              * @description 区县
@@ -38118,11 +38176,14 @@ export interface operations {
     search_companies_api_v1_admin_merchant_companies_get: {
         parameters: {
             query?: {
-                /** @description 公司名称关键词 */
+                /** @description 公司名称关键词（为空则不过滤） */
                 keyword?: string | null;
                 /** @description 是否包含已停用公司 */
                 include_disabled?: boolean;
-                limit?: number;
+                /** @description 页码 */
+                page?: number;
+                /** @description 每页数量 */
+                page_size?: number;
             };
             header?: never;
             path?: never;
@@ -39218,6 +39279,26 @@ export interface operations {
             };
         };
     };
+    districts_api_v1_admin_merchant_districts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantDistrictListResponse"];
+                };
+            };
+        };
+    };
     business_circles_api_v1_admin_merchant_business_circles_get: {
         parameters: {
             query?: {
@@ -39596,6 +39677,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    districts_api_v1_public_merchant_districts_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantDistrictListResponse"];
                 };
             };
         };

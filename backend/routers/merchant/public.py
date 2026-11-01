@@ -31,6 +31,7 @@ from schemas.merchant import (
     MerchantCompanyCreate,
     MerchantCompanyListResponse,
     MerchantCompanyResponse,
+    MerchantDistrictListResponse,
     MerchantDuplicateCheckRequest,
     MerchantDuplicateCheckResponse,
     MerchantStoreCreate,
@@ -219,6 +220,17 @@ def update_store_photos(
 ) -> MerchantStoreResponse:
     """门店照片补录/替换."""
     return MerchantStoreService(db).update_photos(current_user, store_id, body.photos, request=request)
+
+
+@router.get("/districts", summary="区域（区县）字典")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def districts(
+    request: Request,
+    db: DbSessionDep,
+    _current_user: MerchantCReadDep,
+) -> MerchantDistrictListResponse:
+    """区域候选（REQ-IT1-04：门店建档从列表选择，避免手填错误）."""
+    return MerchantDistrictListResponse(items=MerchantStoreService(db).districts())
 
 
 @router.get("/business-circles", summary="商圈建议")

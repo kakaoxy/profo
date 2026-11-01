@@ -51,6 +51,33 @@ class MerchantCompanyService:
         companies = query.order_by(MerchantCompany.created_at.desc()).limit(limit).all()
         return MerchantCompanyListResponse(items=[company_response(c) for c in companies], total=total)
 
+    def paginate(
+        self,
+        keyword: str | None,
+        *,
+        include_disabled: bool = False,
+        page: int = 1,
+        page_size: int = 20,
+    ) -> MerchantCompanyListResponse:
+        """管理端公司分页列表（REQ-IT1-05）：keyword 为空返回全部，按创建时间倒序."""
+        keyword = (keyword or "").strip()
+        query = self.db.query(MerchantCompany)
+        if keyword:
+            query = query.filter(MerchantCompany.company_name.ilike(f"%{keyword}%"))
+        if not include_disabled:
+            query = query.filter(MerchantCompany.status == MerchantCompanyStatus.NORMAL.value)
+        total = query.count()
+        page = max(page, 1)
+        companies = (
+            query.order_by(MerchantCompany.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        )
+        return MerchantCompanyListResponse(
+            items=[company_response(c) for c in companies],
+            total=total,
+            page=page,
+            page_size=page_size,
+        )
+
     def list_all(self, *, include_disabled: bool = True, limit: int = 100) -> list[MerchantCompany]:
         """管理端公司列表（下拉选项用）."""
         query = self.db.query(MerchantCompany)

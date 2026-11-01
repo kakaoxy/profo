@@ -26,7 +26,7 @@
         </view>
       </view>
       <view class="company-empty" wx:elif="{{companySearched}}">未找到，可新增公司</view>
-      <view class="link-row">
+      <view class="link-row" wx:if="{{companySearched}}">
         <text class="link" bindtap="onToggleCompanyCreate">{{showCompanyCreate ? '收起' : '＋ 新增公司'}}</text>
       </view>
       <view class="company-create" wx:if="{{showCompanyCreate}}">
@@ -45,34 +45,6 @@
       <text class="form-label">门店名称 *</text>
       <input class="input" placeholder="如：链家·世纪大道店" value="{{form.store_name}}" bindinput="onInput" data-field="store_name" />
     </view>
-    <view class="form-row">
-      <view class="form-group form-group--flex">
-        <text class="form-label">省 *</text>
-        <input class="input" value="{{form.province}}" bindinput="onInput" data-field="province" />
-      </view>
-      <view class="form-group form-group--flex">
-        <text class="form-label">市 *</text>
-        <input class="input" value="{{form.city}}" bindinput="onInput" data-field="city" />
-      </view>
-      <view class="form-group form-group--flex">
-        <text class="form-label">区县 *</text>
-        <input class="input" value="{{form.district}}" bindinput="onInput" data-field="district" />
-      </view>
-    </view>
-    <view class="form-group">
-      <view class="label-row">
-        <text class="form-label">商圈 *</text>
-        <text class="link" bindtap="onLoadBusinessCircles">加载建议</text>
-      </view>
-      <input class="input" placeholder="如：陆家嘴商圈" value="{{form.business_circle}}" bindinput="onInput" data-field="business_circle" />
-      <view class="chip-row" wx:if="{{businessCircles.length}}">
-        <view class="chip chip-fog chip--tap" wx:for="{{businessCircles}}" wx:key="*this" data-value="{{item}}" bindtap="onSelectBusinessCircle">{{item}}</view>
-      </view>
-    </view>
-    <view class="form-group">
-      <text class="form-label">详细地址 *</text>
-      <input class="input" placeholder="街道、门牌号" value="{{form.address}}" bindinput="onInput" data-field="address" />
-    </view>
     <view class="form-group">
       <view class="label-row">
         <text class="form-label">地图选点 *</text>
@@ -80,8 +52,50 @@
       </view>
       <view class="coord-box {{form.lng ? 'coord-box--ok' : ''}}">
         <block wx:if="{{form.lng}}">经度 {{form.lng}} · 纬度 {{form.lat}}（GCJ-02）</block>
-        <block wx:else>未选择坐标，保存前必须地图选点</block>
+        <block wx:else>未选择坐标，保存前必须地图选点（选点后自动带出区域）</block>
       </view>
+    </view>
+    <view class="form-row">
+      <view class="form-group form-group--flex">
+        <text class="form-label">区域 *</text>
+        <picker
+          mode="selector"
+          range="{{districts}}"
+          value="{{districtIndex}}"
+          bindchange="onSelectDistrict"
+          disabled="{{!districts.length}}"
+        >
+          <view class="input input--picker {{form.district ? '' : 'input--placeholder'}}">
+            {{form.district || (districts.length ? '请选择区域' : '区域列表加载失败')}}
+          </view>
+        </picker>
+      </view>
+      <view class="form-group form-group--flex">
+        <text class="form-label">商圈 *</text>
+        <picker
+          wx:if="{{businessCircles.length}}"
+          mode="selector"
+          range="{{businessCircles}}"
+          value="{{businessCircleIndex}}"
+          bindchange="onSelectBusinessCircle"
+        >
+          <view class="input input--picker {{form.business_circle ? '' : 'input--placeholder'}}">
+            {{form.business_circle || '请选择商圈'}}
+          </view>
+        </picker>
+        <input
+          wx:else
+          class="input"
+          placeholder="{{form.district ? '该区域暂无商圈候选，请手动填写' : '请先选择区域'}}"
+          value="{{form.business_circle}}"
+          bindinput="onInput"
+          data-field="business_circle"
+        />
+      </view>
+    </view>
+    <view class="form-group">
+      <text class="form-label">详细地址 *</text>
+      <input class="input" placeholder="街道、门牌号" value="{{form.address}}" bindinput="onInput" data-field="address" />
     </view>
     <view class="form-row">
       <view class="form-group form-group--flex">

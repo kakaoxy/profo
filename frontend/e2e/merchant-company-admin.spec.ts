@@ -6,6 +6,10 @@ import { loginPage } from "./helpers/auth";
 const BACKEND = path.resolve(__dirname, "../../backend");
 const MARK = `E2E-COMPANY-${Date.now()}`;
 
+// 并行跑 merchant 用例会撞后端登录限流（5 次/分钟），登录助手退避 20s/40s，
+// 默认 30s 用例超时不够，放宽到 120s，避免把限流退避误判为用例失败。
+test.describe.configure({ timeout: 120_000 });
+
 test.afterAll(() => {
   execFileSync(path.resolve(BACKEND, ".venv/bin/python"), ["-c", `
 import os, sys

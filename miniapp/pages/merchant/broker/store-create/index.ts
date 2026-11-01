@@ -3,6 +3,8 @@
  */
 import type { components } from "../../../../types/api-types";
 import { request } from "../../../../utils/request";
+import { chooseMapLocation } from "../../../../utils/location";
+import { matchDistrict } from "../../../../utils/region";
 
 type CompanyOption = components["schemas"]["BrokerCompanyOption"];
 type CompanyList = components["schemas"]["BrokerCompanyOptionListResponse"];
@@ -21,10 +23,12 @@ Page({
     companyId: "",
     companyName: "",
     storeName: "",
-    province: "上海市",
-    city: "上海市",
     district: "",
+    districtIndex: -1,
+    districts: [] as string[],
     businessCircle: "",
+    businessCircles: [] as string[],
+    businessCircleIndex: -1,
     address: "",
     lng: "",
     lat: "",
@@ -39,6 +43,51 @@ Page({
 
   onCompanyKeywordInput(e: WechatMiniprogram.Input) {
     this.setData({ companyKeyword: e.detail.value });
+  },
+
+  onLoad() {
+    void this.loadDistricts();
+  },
+
+  /** 区域字典（REQ-IT1-04：只能从系统区域列表选择） */
+  async loadDistricts(): Promise<void> {
+    try {
+      const data = await request<{ items: string[] }>({ url: "/public/merchant/districts" });
+      this.setData({ districts: data.items || [] });
+    } catch {
+      // 字典不可用不阻断建店，选择器提示加载失败
+    }
+  },
+
+  async loadBusinessCircles(district: string): Promise<void> {
+    if (!district) {
+      this.setData({ businessCircles: [], businessCircleIndex: -1 });
+      return;
+    }
+    try {
+      const data = await request<{ items: string[] }>({
+        url: "/public/merchant/business-circles",
+        data: { district },
+      });
+      this.setData({ businessCircles: data.items || [], businessCircleIndex: -1 });
+    } catch (err) {
+      wx.showToast({ title: errMessage(err), icon: "none" });
+    }
+  },
+
+  onSelectDistrict(e: WechatMiniprogram.PickerChange) {
+    const index = Number(e.detail.value);
+    const district = this.data.districts[index] || "";
+    this.setData({ district, districtIndex: index, businessCircle: "", businessCircles: [], businessCircleIndex: -1 });
+    void this.loadBusinessCircles(district);
+  },
+
+  onSelectBusinessCircle(e: WechatMiniprogram.PickerChange) {
+    const index = Number(e.detail.value);
+    this.setData({
+      businessCircle: this.data.businessCircles[index] || "",
+      businessCircleIndex: index,
+    });
   },
 
   async searchCompanies(): Promise<void> {
@@ -66,17 +115,25 @@ Page({
     this.setData({ [field]: e.detail.value });
   },
 
-  onChooseLocation() {
-    wx.chooseLocation({
-      success: (res) => {
-        this.setData({
-          address: res.address || res.name,
-          lng: String(res.longitude),
-          lat: String(res.latitude),
-        });
-      },
-      fail: () => wx.showToast({ title: "未选择位置", icon: "none" }),
+  async onChooseLocation(): Promise<void> {
+    const picked = await chooseMapLocation();
+    if (!picked) {
+      return;
+    }
+    const district = matchDistrict(picked.address, picked.name, this.data.districts);
+    this.setData({
+      address: picked.address || this.data.address,
+      lng: String(picked.longitude),
+      lat: String(picked.latitude),
+      ...(district
+        ? { district, districtIndex: this.data.districts.indexOf(district), businessCircle: "" }
+        : {}),
     });
+    if (district) {
+      void this.loadBusinessCircles(district);
+    } else if (this.data.districts.length) {
+      wx.showToast({ title: "未识别到区域，请手动选择", icon: "none" });
+    }
   },
 
   onForceReason(e: WechatMiniprogram.Input) {
@@ -163,8 +220,6 @@ Page({
     const payload: StoreCreatePayload = {
       company_id: this.data.companyId,
       store_name: this.data.storeName.trim(),
-      province: this.data.province.trim(),
-      city: this.data.city.trim(),
       district: this.data.district.trim(),
       business_circle: this.data.businessCircle.trim(),
       address: this.data.address.trim(),
