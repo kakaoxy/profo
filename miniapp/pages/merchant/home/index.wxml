@@ -50,18 +50,27 @@
       data-id="{{item.id}}"
       bindtap="onStoreTap"
     >
-      <view class="store-card__top">
-        <view class="store-card__name">{{item.store_name}}</view>
-        <view class="chip {{item.review_status === 'pending' ? 'chip-apricot' : 'chip-fog'}}">
-          {{item.review_status === 'pending' ? '待审核' : item.cooperation_status_label}}
+      <view class="store-card__body">
+        <view class="store-card__info">
+          <view class="store-card__top">
+            <view class="store-card__name">{{item.store_name}}</view>
+            <view class="chip {{item.review_status === 'pending' ? 'chip-apricot' : 'chip-fog'}}">
+              {{item.review_status === 'pending' ? '待审核' : item.cooperation_status_label}}
+            </view>
+          </view>
+          <view class="store-card__company">{{item.company_name}}</view>
+          <!-- REQ-IT6-01：只保留区域·商圈，详细地址进详情页看，卡片更紧凑 -->
+          <view class="store-card__region" wx:if="{{item.district || item.business_circle}}">
+            {{item.district}}{{item.district && item.business_circle ? ' · ' : ''}}{{item.business_circle}}
+          </view>
+          <view class="store-card__meta">
+            <text>最近拜访：{{item.lastVisitText}}</text>
+            <text class="store-card__distance" wx:if="{{item.distanceText}}">{{item.distanceText}}</text>
+          </view>
         </view>
-      </view>
-      <view class="store-card__company">{{item.company_name}}</view>
-      <view class="store-card__address">{{item.district}} · {{item.business_circle}} · {{item.address}}</view>
-      <view class="store-card__meta">
-        <text>最近拜访：{{item.lastVisitText}}</text>
-        <view class="store-card__tail">
-          <text class="store-card__distance" wx:if="{{item.distanceText}}">{{item.distanceText}}</text>
+        <view class="store-card__aside">
+          <!-- catchtap：避免冒泡到卡片 tap 又跳一次详情页 -->
+          <view class="visit-btn" catchtap="onVisitTap" data-id="{{item.id}}">＋ 拜访</view>
           <text class="store-card__arrow">›</text>
         </view>
       </view>

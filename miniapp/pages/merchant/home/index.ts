@@ -185,4 +185,10 @@ Page({
     const id = e.currentTarget.dataset.id as string;
     wx.navigateTo({ url: `/pages/merchant/store/detail/index?store_id=${id}` });
   },
+
+  /** REQ-IT6-01：卡片右侧「拜访」直达拜访录入，省去先进详情再点登记 */
+  onVisitTap(e: WechatMiniprogram.BaseEvent) {
+    const id = e.currentTarget.dataset.id as string;
+    wx.navigateTo({ url: `/pages/merchant/visit/create/index?store_id=${id}` });
+  },
 });

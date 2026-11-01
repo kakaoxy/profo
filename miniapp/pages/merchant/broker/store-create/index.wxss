@@ -1,12 +1,15 @@
+@import "../../../../styles/merchant-theme.wxss";
+
 .page {
   min-height: 100vh;
   padding: 32rpx 32rpx 80rpx;
   box-sizing: border-box;
 }
 .hero {
-  background: var(--ink);
-  color: #fff;
-  border-radius: 40rpx;
+  background: var(--pure-white);
+  color: var(--ink);
+  box-shadow: var(--merchant-shadow);
+  border-radius: var(--merchant-card-radius);
   padding: 40rpx;
   margin-bottom: 28rpx;
 }
@@ -17,13 +20,13 @@
 .hero__sub {
   margin-top: 12rpx;
   font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.72);
+  color: var(--graphite);
 }
 .card {
   background: var(--pure-white);
-  border-radius: 40rpx;
-  box-shadow: var(--shadow-sm);
-  padding: 32rpx;
+  border-radius: var(--merchant-card-radius);
+  box-shadow: var(--merchant-shadow);
+  padding: var(--merchant-card-padding);
 }
 .field-label {
   margin: 24rpx 0 12rpx;
@@ -34,8 +37,8 @@
   width: 100%;
   height: 88rpx;
   padding: 0 24rpx;
-  border: 2rpx solid var(--fog);
-  border-radius: 24rpx;
+  border: 2rpx solid var(--merchant-hairline);
+  border-radius: 32rpx;
   font-size: 28rpx;
   background: var(--fog);
   box-sizing: border-box;
@@ -64,7 +67,7 @@
 }
 .option {
   padding: 20rpx;
-  border: 2rpx solid var(--fog);
+  border: 1rpx solid var(--merchant-hairline);
   border-radius: 20rpx;
   margin-bottom: 12rpx;
   font-size: 27rpx;
@@ -76,8 +79,8 @@
   height: 88rpx;
   padding: 0 32rpx;
   border-radius: 9999rpx;
-  background: var(--ink);
-  color: #fff;
+  background: var(--fog);
+  color: var(--ink);
   font-size: 27rpx;
 }
 .link-btn {
@@ -120,8 +123,8 @@
 .modal {
   width: 100%;
   max-height: 80vh;
-  background: #fff;
-  border-radius: 40rpx;
+  background: var(--pure-white);
+  border-radius: var(--merchant-card-radius);
   padding: 32rpx;
   box-sizing: border-box;
   display: flex;

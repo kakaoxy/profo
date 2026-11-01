@@ -2,7 +2,6 @@
  * 门店详情：档案、照片、拜访时间线、合作状态时间线，以及拜访/编辑/状态/照片入口.
  */
 import type { components } from "../../../../types/api-types";
-import { pickAndUploadPhotos } from "../../../../utils/image-upload";
 import type { MerchantPhoto } from "../../../../utils/image-upload";
 import { request } from "../../../../utils/request";
 import { resolveAssetUrl } from "../../../../utils/url";
@@ -16,6 +15,19 @@ type DictItem = components["schemas"]["PublicDictItemResponse"];
 type AgreementListResponse = components["schemas"]["AgreementListResponse"];
 type Agreement = components["schemas"]["AgreementResponse"];
 type BrokerQRCode = components["schemas"]["BrokerQRCodeResponse"];
+
+/**
+ * REQ-IT6-02：动作区图标使用内联 SVG（base64 data URI）而不是图标字体/远程图片，
+ * 避免国内网络下拉取 iconfont/CDN 失败导致按钮变成空白方块。
+ */
+const ACTION_ICONS = {
+  visit: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTIgMjFjNC00LjIgNi03LjYgNi0xMC40QTYgNiAwIDAgMCA2IDEwLjZDNiAxMy40IDggMTYuOCAxMiAyMXoiLz48cGF0aCBkPSJNOS40IDEwLjRsMS45IDEuOSAzLjMtMy40Ii8+PC9zdmc+",
+  edit: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNC41IDE5LjVoNEwxOSA5YTIuMTIgMi4xMiAwIDAgMC0zLTNMNS41IDE2djMuNXoiLz48cGF0aCBkPSJNMTQuOCA2LjJsMy41IDMuNSIvPjwvc3ZnPg==",
+  status: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTEuNiAzLjVINUExLjUgMS41IDAgMCAwIDMuNSA1djYuNmw4LjkgOSA4LjEtOC4xLTktOXoiLz48Y2lyY2xlIGN4PSI4IiBjeT0iOCIgcj0iMS4yIi8+PC9zdmc+",
+  agreement: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNi41IDMuNWg3TDE4IDh2MTIuNUg2LjV6Ii8+PHBhdGggZD0iTTEzIDMuNVY4aDUiLz48cGF0aCBkPSJNOS4yIDEyLjVoNiIvPjxwYXRoIGQ9Ik05LjIgMTYuMmg2Ii8+PC9zdmc+",
+  commission: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNC41IDguMkEyLjIgMi4yIDAgMCAxIDYuNyA2SDE5djMuMiIvPjxwYXRoIGQ9Ik00LjUgOC4ydjkuMUExLjcgMS43IDAgMCAwIDYuMiAxOUgxOVY5LjJINi43Ii8+PHBhdGggZD0iTTE2IDEzLjdoMi4yIi8+PC9zdmc+",
+  invite: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNiIgaGVpZ2h0PSI2IiByeD0iMS4yIi8+PHJlY3QgeD0iMTQiIHk9IjQiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxLjIiLz48cmVjdCB4PSI0IiB5PSIxNCIgd2lkdGg9IjYiIGhlaWdodD0iNiIgcng9IjEuMiIvPjxwYXRoIGQ9Ik0xNCAxNGgyLjZ2Mi42SDE0eiIvPjxwYXRoIGQ9Ik0xNy42IDE3LjZIMjBWMjBoLTIuNHoiLz48cGF0aCBkPSJNMTQgMjBoMi40Ii8+PC9zdmc+",
+};
 
 const AGREEMENT_STATUS_LABELS: Record<string, string> = {
   not_initiated: "未发起",
@@ -83,7 +95,6 @@ Page({
     errorText: "",
     store: null as StoreResponse | null,
     lastVisitText: "",
-    rawPhotos: [] as MerchantPhoto[],
     photos: [] as DisplayPhoto[],
     visits: [] as DisplayVisit[],
     statusLogs: [] as DisplayStatusLog[],
@@ -98,6 +109,7 @@ Page({
     qrOpen: false,
     qrImage: "",
     qrExpiresText: "",
+    actionIcons: ACTION_ICONS,
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -161,7 +173,6 @@ Page({
         state: "ok",
         store,
         lastVisitText: formatDate(store.last_visit_at) || "暂无拜访",
-        rawPhotos,
         photos: rawPhotos.map((photo) => ({ ...photo, displayUrl: resolveAssetUrl(photo.file_url) })),
         visits: (visits.items || []).map((item) => ({
           id: item.id,
@@ -214,6 +225,11 @@ Page({
   onEdit() {
     const storeId = (this as unknown as { storeId: string }).storeId;
     wx.navigateTo({ url: `/pages/merchant/store/create/index?mode=edit&store_id=${storeId}` });
+  },
+
+  /** REQ-IT6-02：佣金结算为下一期功能，先提供入口并说明，避免员工以为功能缺失 */
+  onCommission() {
+    wx.showToast({ title: "佣金结算功能下一期开发", icon: "none" });
   },
 
   onOpenAgreements() {
@@ -313,26 +329,6 @@ Page({
       });
       this.setData({ statusOpen: false });
       wx.showToast({ title: "已变更", icon: "success" });
-      void this.loadAll({ silent: true });
-    } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
-    }
-  },
-
-  async onAddPhotos(): Promise<void> {
-    try {
-      const picked = await pickAndUploadPhotos(20 - this.data.rawPhotos.length, "other");
-      if (!picked.length) {
-        return;
-      }
-      const photos = this.data.rawPhotos.concat(picked);
-      const storeId = (this as unknown as { storeId: string }).storeId;
-      await request<StoreResponse>({
-        url: `/public/merchant/stores/${storeId}/photos`,
-        method: "PUT",
-        data: { photos },
-      });
-      wx.showToast({ title: "已补录", icon: "success" });
       void this.loadAll({ silent: true });
     } catch (err) {
       wx.showToast({ title: errMessage(err), icon: "none" });

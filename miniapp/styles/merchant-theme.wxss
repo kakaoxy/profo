@@ -1,0 +1,16 @@
+/* 商户分包主题 · 对齐 DESIGN.md Tokens / Surfaces / Elevation（REQ-IT6-03）
+ *
+ * 仅被 miniapp/pages/merchant/** 的页面样式 @import，不改变 app.wxss 的全局 token，
+ * 避免影响 C 端页面。约定：
+ *  - 内容卡片一律用 --merchant-shadow（DESIGN 三层阴影：1rpx 内描边 + 两层投影）
+ *  - 分隔线一律用 --merchant-hairline（1rpx 半透明墨色，替代淡灰实线）
+ *  - 页面 hero 使用白底 + 墨色文字（DESIGN：深墨填充只留给主 CTA，不做大块底色）
+ */
+page {
+  --merchant-shadow: 0 0 0 1rpx rgba(23, 25, 28, 0.06), 0 40rpx 50rpx -10rpx rgba(0, 0, 0, 0.08),
+    0 16rpx 20rpx -12rpx rgba(0, 0, 0, 0.08);
+  --merchant-hairline: rgba(23, 25, 28, 0.08);
+  --merchant-card-radius: 48rpx;
+  --merchant-card-padding: 40rpx;
+}
+

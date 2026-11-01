@@ -1,3 +1,5 @@
+@import "../../../styles/merchant-theme.wxss";
+
 .page {
   min-height: 100vh;
   padding: 32rpx 32rpx 180rpx;
@@ -34,13 +36,16 @@
   font-size: 28rpx;
   box-sizing: border-box;
 }
+/* DESIGN §Do's：一屏只留一个 Ink 填充 CTA（页脚「新增门店」），搜索降级为文字链接 */
 .search-btn {
+  flex-shrink: 0;
   height: 88rpx;
-  padding: 0 32rpx;
+  padding: 0 12rpx;
   border-radius: 9999rpx;
-  background: var(--ink);
-  color: #fff;
+  background: transparent;
+  color: var(--rust);
   font-size: 28rpx;
+  font-weight: 500;
   line-height: 88rpx;
 }
 .search-btn::after {
@@ -61,8 +66,8 @@
 
 .store-card {
   background: var(--pure-white);
-  border-radius: 40rpx;
-  box-shadow: var(--shadow-sm);
+  border-radius: var(--merchant-card-radius);
+  box-shadow: var(--merchant-shadow);
   padding: 32rpx;
   margin-bottom: 24rpx;
 }
@@ -82,33 +87,59 @@
   font-size: 26rpx;
   color: var(--graphite);
 }
-.store-card__address {
+.store-card__region {
   margin-top: 12rpx;
   font-size: 26rpx;
   color: var(--ash);
   line-height: 1.5;
 }
+/* REQ-IT6-01：正文左、动作右，拜访按钮与卡片 tap 并存 */
+.store-card__body {
+  display: flex;
+  gap: 24rpx;
+}
+.store-card__info {
+  flex: 1;
+  min-width: 0;
+}
+.store-card__aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16rpx;
+}
 .store-card__meta {
   margin-top: 24rpx;
   padding-top: 20rpx;
-  border-top: 1rpx solid var(--fog);
+  border-top: 1rpx solid var(--merchant-hairline);
   display: flex;
   justify-content: space-between;
+  gap: 16rpx;
   font-size: 24rpx;
   color: var(--graphite);
 }
 .store-card__arrow {
   color: var(--dove);
 }
-/* REQ-IT4-02：距离与箭头成组靠右，避免 distance 缺失时布局跳动 */
-.store-card__tail {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-}
 .store-card__distance {
   color: var(--ink);
   font-weight: 500;
+}
+/* REQ-IT6-01：访客入口用次要按钮样式（Fog 底 + 墨字），避免与页脚主 CTA 抢焦点 */
+.visit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 60rpx;
+  padding: 0 22rpx;
+  border-radius: 9999rpx;
+  background: var(--fog);
+  color: var(--ink);
+  font-size: 24rpx;
+  font-weight: 500;
+  line-height: 1;
 }
 
 .footer {
@@ -146,9 +177,10 @@
   justify-content: center;
   margin-top: 32rpx;
   height: 80rpx;
-  padding: 0 48rpx;
+  padding: 0 24rpx;
   border-radius: 9999rpx;
-  background: var(--ink);
-  color: #fff;
+  background: transparent;
+  color: var(--rust);
   font-size: 28rpx;
+  font-weight: 500;
 }

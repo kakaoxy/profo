@@ -1,3 +1,5 @@
+@import "../../../../styles/merchant-theme.wxss";
+
 .page {
   min-height: 100vh;
   padding: 32rpx 32rpx 200rpx;
@@ -5,9 +7,10 @@
 }
 
 .store-head {
-  background: var(--ink);
-  color: #fff;
-  border-radius: 40rpx;
+  background: var(--pure-white);
+  color: var(--ink);
+  box-shadow: var(--merchant-shadow);
+  border-radius: var(--merchant-card-radius);
   padding: 32rpx;
   margin-bottom: 28rpx;
 }
@@ -18,20 +21,20 @@
 .store-address {
   margin-top: 12rpx;
   font-size: 26rpx;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--ash);
   line-height: 1.5;
 }
 .store-meta {
   margin-top: 12rpx;
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--graphite);
 }
 
 .section {
   background: var(--pure-white);
-  border-radius: 40rpx;
-  box-shadow: var(--shadow-sm);
-  padding: 32rpx;
+  border-radius: var(--merchant-card-radius);
+  box-shadow: var(--merchant-shadow);
+  padding: var(--merchant-card-padding);
   margin-bottom: 28rpx;
 }
 .section-title {
@@ -54,8 +57,8 @@
   width: 100%;
   height: 88rpx;
   padding: 0 24rpx;
-  border: 2rpx solid var(--fog);
-  border-radius: 24rpx;
+  border: 2rpx solid var(--merchant-hairline);
+  border-radius: 32rpx;
   font-size: 28rpx;
   background: var(--fog);
   color: var(--ink);
@@ -120,8 +123,8 @@
   height: 72rpx;
   padding: 0 28rpx;
   border-radius: 9999rpx;
-  background: var(--ink);
-  color: #fff;
+  background: var(--fog);
+  color: var(--ink);
   font-size: 26rpx;
 }
 .mini-btn--ghost {
@@ -166,7 +169,7 @@
   height: 40rpx;
   border-radius: 50%;
   background: rgba(23, 25, 28, 0.7);
-  color: #fff;
+  color: var(--pure-white);
   text-align: center;
   line-height: 40rpx;
 }
