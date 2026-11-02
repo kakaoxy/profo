@@ -179,6 +179,21 @@ describe("共享层是商户模块唯一样式来源", () => {
     expect(themeWxss).toContain("1rpx solid var(--mp-hairline)");
     expect(themeWxss).not.toMatch(/font-weight:\s*(?:600|700)/);
   });
+
+  it("底栏主按钮撑满（回归：<button> 自带 184px 宽度，父级必须 flex + flex:1）", () => {
+    const footBlock = /\.foot\s*\{([^}]*)\}/.exec(themeWxss)?.[1] || "";
+    expect(footBlock, "底栏 .foot 必须是 flex 容器").toMatch(/display:\s*flex/);
+    expect(themeWxss, "底栏按钮必须由父级 flex:1 分配宽度").toMatch(/\.foot\s+\.mbtn\s*\{[^}]*flex:\s*1/);
+  });
+
+  it("按钮复位小程序 <button> 内置的 184px 固定宽度", () => {
+    expect(themeWxss, ".mbtn 需复位 width/min-width").toMatch(
+      /\.mbtn\s*\{[^}]*width:\s*auto\s*!important/,
+    );
+    expect(themeWxss, ".mbtn--cta / .mbtn--block 需全宽").toMatch(
+      /\.mbtn--cta\s*\{[^}]*width:\s*100%\s*!important/,
+    );
+  });
 });
 
 describe.each(PAGES)("$dir 的设计基线", ({ dir, wxml, wxss }) => {

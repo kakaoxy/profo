@@ -19,6 +19,10 @@
   margin: 0;
   line-height: inherit;
   border: none;
+  /* 同 .mbtn：微信内置 `button:not([size='mini'])` 固定 width/min-width: 184px，
+     这里复位回文本动作宽度，否则「分享」会撑出 184px 隐形盒子、与相邻行错位。 */
+  width: auto !important;
+  min-width: 88rpx !important;
 }
 .share-btn::after {
   border: none;
