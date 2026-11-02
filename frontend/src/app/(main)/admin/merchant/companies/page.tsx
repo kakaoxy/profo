@@ -11,6 +11,7 @@ import { PageHeader } from "../../_components/page-header";
 import { StatusBadge } from "@/app/(main)/admin/_components/status-badge";
 import { Field } from "@/app/(main)/admin/_components/field";
 import { merchantApi } from "../_components/merchant-api";
+import { CompanyDeleteDialog } from "./_components/company-delete-dialog";
 import type { components } from "@/lib/api-types";
 
 type Company = components["schemas"]["MerchantCompanyResponse"];
@@ -40,6 +41,7 @@ export default function MerchantCompaniesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<CompanyForm>(EMPTY_FORM);
   const [duplicateName, setDuplicateName] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
   // 请求序号：只有最后一次请求的结果才允许落地，避免「默认列表」与「搜索结果」乱序覆盖
   const requestSeq = useRef(0);
 
@@ -218,9 +220,19 @@ export default function MerchantCompaniesPage() {
                       {new Date(company.created_at).toLocaleString("zh-CN")}
                     </td>
                     <td className="px-4 py-3">
-                      <Button variant="outline" size="sm" onClick={() => startEdit(company)}>
-                        编辑
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" onClick={() => startEdit(company)}>
+                          编辑
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-label={`删除公司 ${company.company_name}`}
+                          onClick={() => setDeleteTarget(company)}
+                        >
+                          删除
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -301,6 +313,17 @@ export default function MerchantCompaniesPage() {
           </div>
         </Card>
       </div>
+
+      <CompanyDeleteDialog
+        company={deleteTarget ? { id: deleteTarget.id, company_name: deleteTarget.company_name } : null}
+        onOpenChange={(next) => {
+          if (!next) setDeleteTarget(null);
+        }}
+        onDeleted={() => {
+          setDeleteTarget(null);
+          void load(page, appliedKeyword);
+        }}
+      />
     </PageContainer>
   );
 }

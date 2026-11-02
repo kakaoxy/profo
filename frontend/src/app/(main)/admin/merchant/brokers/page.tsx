@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronRight, Download, Search } from "lucide-react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
-import { Field } from "@/app/(main)/admin/_components/field";
 import { StatusBadge } from "@/app/(main)/admin/_components/status-badge";
+import { Pagination } from "@/components/common/pagination";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -18,259 +18,149 @@ import {
 } from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
 import { merchantApi, queryString } from "../_components/merchant-api";
+import { BrokerActionDialog } from "./_components/broker-action-dialog";
+import { BrokerAvatar } from "./_components/broker-avatar";
+import { BrokerDetailDrawer } from "./_components/broker-detail-drawer";
+import { BrokerFormDialog } from "./_components/broker-form-dialog";
+import { BrokerPendingPanel } from "./_components/broker-pending-panel";
+import { BrokerRebindDialog } from "./_components/broker-rebind-dialog";
+import { BrokerSummaryCards } from "./_components/broker-summary-cards";
+import {
+  BROKER_SOURCE_LABELS,
+  BROKER_SOURCE_OPTIONS,
+  BROKER_STATUS_LABELS,
+  brokerStatusTone,
+} from "./_components/broker-labels";
 
 type BrokerList = components["schemas"]["BrokerListResponse"];
 type Broker = components["schemas"]["BrokerResponse"];
+type BrokerSummary = components["schemas"]["BrokerSummaryResponse"];
 type StoreList = components["schemas"]["MerchantStoreListResponse"];
 type PendingBinding = components["schemas"]["BrokerBindingResponse"];
-type BindingList = components["schemas"]["BrokerBindingListResponse"];
 
-const SOURCE_LABELS: Record<string, string> = {
-  self_apply: "自主申请",
-  employee: "员工推荐",
-  backoffice: "后台新增",
-  broker: "经纪人推荐",
-  import: "批量导入",
-};
+type TabKey = "all" | "bound" | "unbound" | "pending";
+type ActionKind = "unbind" | "disable" | "enable";
 
-const BINDING_RECORD_LABELS: Record<string, string> = {
-  pending: "待审核",
-  active: "已绑定",
-  rejected: "已拒绝",
-  unbound: "已解绑",
-};
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "all", label: "全部" },
+  { key: "bound", label: "已绑定" },
+  { key: "unbound", label: "未绑定" },
+  { key: "pending", label: "待审核" },
+];
 
-const STATUS_LABELS: Record<string, string> = {
-  unbound: "未绑定",
-  bound: "已绑定",
-  unbound_after: "已解绑",
-  disabled: "已停用",
-  pending: "待审核",
-};
+const PAGE_SIZE = 10;
 
+function tabCount(summary: BrokerSummary | null, key: TabKey): number {
+  if (!summary) return 0;
+  if (key === "all") return summary.total;
+  return summary[key];
+}
+
+function formatDate(value: string): string {
+  const date = new Date(value);
+  const now = new Date();
+  const includeYear = date.getFullYear() !== now.getFullYear();
+  return date.toLocaleString("zh-CN", {
+    ...(includeYear ? { year: "numeric" as const } : {}),
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
+/**
+ * 经纪人管理（REQ-IT7-03 设计稿落地）.
+ *
+ * 结构：KPI 四卡 → 待审核绑定 → 列表卡（分段 tabs / 搜索 / 门店 / 来源 / 表格 / 分页）→ 详情抽屉。
+ * 交互：整行点击开抽屉；新建 / 编辑用弹层；换绑、解绑、启停用独立动作并留审计。
+ */
 export default function MerchantBrokersPage() {
-  const [data, setData] = useState<BrokerList | null>(null);
-  const [pending, setPending] = useState<PendingBinding[]>([]);
+  const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
+  const [tab, setTab] = useState<TabKey>("all");
   const [storeFilter, setStoreFilter] = useState("all");
-  const [bindStatusFilter, setBindStatusFilter] = useState("all");
-  const [reason, setReason] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [page, setPage] = useState(1);
+
+  const [data, setData] = useState<BrokerList | null>(null);
+  const [summary, setSummary] = useState<BrokerSummary | null>(null);
+  const [pending, setPending] = useState<PendingBinding[]>([]);
+  const [stores, setStores] = useState<StoreList["items"]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [stores, setStores] = useState<StoreList["items"]>([]);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<Broker | null>(null);
-  const [formName, setFormName] = useState("");
-  const [formPhone, setFormPhone] = useState("");
-  const [formStoreId, setFormStoreId] = useState("");
-  const [formStatus, setFormStatus] = useState<"normal" | "disabled">("normal");
-  const [formStoreChangeReason, setFormStoreChangeReason] = useState("");
-  const [formRemark, setFormRemark] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [changeTarget, setChangeTarget] = useState<BrokerList["items"][number] | null>(null);
-  const [changeStoreId, setChangeStoreId] = useState("");
-  const [changeReasonText, setChangeReasonText] = useState("");
-  const [historyBroker, setHistoryBroker] = useState<BrokerList["items"][number] | null>(null);
-  const [history, setHistory] = useState<BindingList | null>(null);
-  const [historyLoading, setHistoryLoading] = useState(false);
 
-  const load = async () => {
+  const [drawerBrokerId, setDrawerBrokerId] = useState<string | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerReloadKey, setDrawerReloadKey] = useState(0);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const [rebindTarget, setRebindTarget] = useState<Broker | null>(null);
+  const [actionTarget, setActionTarget] = useState<{ broker: Broker; kind: ActionKind } | null>(null);
+  const [actionPending, setActionPending] = useState(false);
+
+  const requestId = useRef(0);
+
+  const load = useCallback(async () => {
+    const current = ++requestId.current;
     setLoading(true);
     setError("");
     try {
-      const [list, bindings, storeList] = await Promise.all([
+      const [list, nextSummary, pendingBindings, storeList] = await Promise.all([
         merchantApi<BrokerList>(
           `/admin/merchant/brokers${queryString({
-            page: 1,
-            page_size: 50,
-            keyword: keyword.trim() || undefined,
+            page,
+            page_size: PAGE_SIZE,
+            keyword: keyword || undefined,
             store_id: storeFilter === "all" ? undefined : storeFilter,
-            bind_status: bindStatusFilter === "all" ? undefined : bindStatusFilter,
+            source: sourceFilter === "all" ? undefined : sourceFilter,
+            bind_status: tab === "all" || tab === "pending" ? undefined : tab,
+            pending_only: tab === "pending" ? "true" : undefined,
           })}`,
         ),
+        merchantApi<BrokerSummary>("/admin/merchant/brokers/summary"),
         merchantApi<PendingBinding[]>("/admin/merchant/bindings/pending"),
         merchantApi<StoreList>("/admin/merchant/stores?page=1&page_size=200"),
       ]);
+      if (current !== requestId.current) return;
       setData(list);
-      setPending(bindings);
+      setSummary(nextSummary);
+      setPending(pendingBindings);
       setStores(storeList.items);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "加载失败");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openCreate = () => {
-    setEditing(null);
-    setFormName("");
-    setFormPhone("");
-    setFormStoreId("");
-    setFormRemark("");
-    setFormStatus("normal");
-    setFormStoreChangeReason("");
-    setFormOpen(true);
-  };
-
-  const openEdit = async (item: BrokerList["items"][number]) => {
-    try {
-      const broker = await merchantApi<Broker>(`/admin/merchant/brokers/${item.id}`);
-      setEditing(broker);
-      setFormName(broker.name);
-      setFormPhone("");
-      setFormStoreId(broker.store_id || "");
-      setFormRemark(broker.remark || "");
-      setFormStatus(broker.bind_status === "disabled" ? "disabled" : "normal");
-      setFormStoreChangeReason("");
-      setFormOpen(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "加载经纪人失败");
-    }
-  };
-
-  const saveBroker = async () => {
-    const name = formName.trim();
-    const phone = formPhone.trim();
-    if (!name || (!editing && !phone)) {
-      setError("新建需填写姓名和手机号；编辑时手机号留空表示不修改");
-      return;
-    }
-    // 换绑/解绑原因必须在提交基础资料前校验，避免「资料已保存、绑定变更被拒」的半提交
-    const storeChanged = editing ? formStoreId !== (editing.store_id || "") : false;
-    if (editing && storeChanged && !formStoreChangeReason.trim()) {
-      setError("变更绑定门店必须填写原因");
-      return;
-    }
-    setSaving(true);
-    setError("");
-    try {
-      if (editing) {
-        await merchantApi(`/admin/merchant/brokers/${editing.id}`, {
-          method: "PUT",
-          body: JSON.stringify({
-            name,
-            phone: phone || undefined,
-            remark: formRemark.trim() || null,
-          }),
-        });
-        if (storeChanged) {
-          if (formStoreId) {
-            await merchantApi(`/admin/merchant/brokers/${editing.id}/change`, {
-              method: "POST",
-              body: JSON.stringify({ store_id: formStoreId, reason: formStoreChangeReason.trim() }),
-            });
-          } else {
-            await merchantApi(
-              `/admin/merchant/brokers/${editing.id}/unbind?reason=${encodeURIComponent(formStoreChangeReason.trim())}`,
-              { method: "POST" },
-            );
-          }
-        }
-        const wasDisabled = editing.bind_status === "disabled";
-        if (formStatus === "disabled" && !wasDisabled) {
-          await merchantApi(`/admin/merchant/brokers/${editing.id}/status`, {
-            method: "POST",
-            body: JSON.stringify({ target_status: "disabled", reason: "后台编辑时设置" }),
-          });
-        } else if (formStatus === "normal" && wasDisabled) {
-          await merchantApi(`/admin/merchant/brokers/${editing.id}/status`, {
-            method: "POST",
-            body: JSON.stringify({ target_status: "unbound", reason: "后台编辑时恢复" }),
-          });
-        }
-      } else {
-        const created = await merchantApi<Broker>("/admin/merchant/brokers", {
-          method: "POST",
-          body: JSON.stringify({
-            name,
-            phone,
-            store_id: formStoreId || undefined,
-            remark: formRemark.trim() || null,
-          }),
-        });
-        if (formStatus === "disabled") {
-          await merchantApi(`/admin/merchant/brokers/${created.id}/status`, {
-            method: "POST",
-            body: JSON.stringify({ target_status: "disabled", reason: "后台新建时设置" }),
-          });
-        }
+      if (current === requestId.current) {
+        setError(err instanceof Error ? err.message : "加载经纪人列表失败");
       }
-      setFormOpen(false);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "保存失败");
     } finally {
-      setSaving(false);
+      if (current === requestId.current) setLoading(false);
     }
-  };
+  }, [page, keyword, storeFilter, sourceFilter, tab]);
 
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [load]);
 
-  const openHistory = async (item: BrokerList["items"][number]) => {
-    setHistoryBroker(item);
-    setHistory(null);
-    setHistoryLoading(true);
-    try {
-      const result = await merchantApi<BindingList>(
-        `/admin/merchant/brokers/${item.id}/bindings?page=1&page_size=50`,
-      );
-      setHistory(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "加载绑定历史失败");
-    } finally {
-      setHistoryLoading(false);
-    }
+  const refresh = async () => {
+    await load();
+    setDrawerReloadKey((key) => key + 1);
   };
 
-  const changeStatus = async (id: string, target: "disabled" | "unbound") => {
-    try {
-      await merchantApi(`/admin/merchant/brokers/${id}/status`, {
-        method: "POST",
-        body: JSON.stringify({ target_status: target, reason: reason.trim() || "后台操作" }),
-      });
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "操作失败");
-    }
+  const openDetail = (brokerId: string) => {
+    setDrawerBrokerId(brokerId);
+    setDrawerOpen(true);
   };
 
-  const forceUnbind = async (id: string) => {
-    if (!reason.trim()) {
-      setError("强制解绑必须填写原因");
-      return;
-    }
-    try {
-      await merchantApi(`/admin/merchant/brokers/${id}/unbind?reason=${encodeURIComponent(reason.trim())}`, {
-        method: "POST",
-      });
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "解绑失败");
-    }
+  const openCreate = () => {
+    setEditingId(null);
+    setFormOpen(true);
   };
 
-  const submitForceChange = async () => {
-    if (!changeTarget || !changeStoreId || !changeReasonText.trim()) {
-      setError("请选择新门店并填写换绑原因");
-      return;
-    }
-    setSaving(true);
-    setError("");
-    try {
-      await merchantApi(`/admin/merchant/brokers/${changeTarget.id}/change`, {
-        method: "POST",
-        body: JSON.stringify({ store_id: changeStoreId, reason: changeReasonText.trim() }),
-      });
-      setChangeTarget(null);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "强制换绑失败");
-    } finally {
-      setSaving(false);
-    }
+  const openEdit = (broker: Broker) => {
+    setEditingId(broker.id);
+    setFormOpen(true);
   };
 
   const approveBinding = async (id: string, approve: boolean) => {
@@ -279,353 +169,303 @@ export default function MerchantBrokersPage() {
         method: "POST",
         body: JSON.stringify({ approve, remark: approve ? null : "后台驳回" }),
       });
-      await load();
+      await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "审核失败");
     }
   };
 
+  const submitAction = async (reason: string) => {
+    if (!actionTarget) return;
+    const { broker, kind } = actionTarget;
+    setActionPending(true);
+    try {
+      if (kind === "unbind") {
+        await merchantApi(`/admin/merchant/brokers/${broker.id}/unbind?reason=${encodeURIComponent(reason)}`, {
+          method: "POST",
+        });
+      } else {
+        await merchantApi(`/admin/merchant/brokers/${broker.id}/status`, {
+          method: "POST",
+          body: JSON.stringify({ target_status: kind === "disable" ? "disabled" : "unbound", reason }),
+        });
+      }
+      setActionTarget(null);
+      await refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "操作失败");
+    } finally {
+      setActionPending(false);
+    }
+  };
+
+  const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
+  const activeTabLabel = TABS.find((item) => item.key === tab)?.label ?? "全部";
+
   return (
     <div className="min-h-screen bg-fog">
-      <PageContainer className="flex flex-col gap-6">
+      <PageContainer className="flex flex-col gap-5">
         <PageHeader
           title="经纪人管理"
-          description="经纪人档案、门店绑定与换绑/解绑审批"
-          actions={<Button onClick={openCreate}>新建经纪人</Button>}
-        />
-
-        {formOpen ? (
-          <Card className="rounded-cards border-0 shadow-steep-sm flex flex-col gap-3 p-5">
-            <div className="text-sm font-medium">{editing ? `编辑经纪人：${editing.name}` : "新建经纪人"}</div>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <Field label="姓名" required>
-                <Input value={formName} onChange={(event) => setFormName(event.target.value)} />
-              </Field>
-              <Field
-                label="手机号"
-                required={!editing}
-                hint={editing ? "留空表示不修改" : undefined}
-              >
-                <Input
-                  value={formPhone}
-                  onChange={(event) => setFormPhone(event.target.value)}
-                  inputMode="tel"
-                />
-              </Field>
-              <Field
-                label="绑定门店"
-                hint={editing ? "变更门店将强制换绑/解绑并留痕" : "可不绑定（独立经纪人），后续由经纪人扫码或申请绑定"}
-              >
-                <Select
-                  value={formStoreId || "none"}
-                  onValueChange={(value) => setFormStoreId(value === "none" ? "" : value)}
-                >
-                  <SelectTrigger aria-label="绑定门店">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">暂不绑定门店</SelectItem>
-                    {stores.map((store) => (
-                      <SelectItem key={store.id} value={store.id}>
-                        {store.store_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-              {editing && formStoreId !== (editing.store_id || "") ? (
-                <Field label="变更门店原因" required>
-                  <Input
-                    value={formStoreChangeReason}
-                    onChange={(event) => setFormStoreChangeReason(event.target.value)}
-                  />
-                </Field>
-              ) : null}
-              <Field label="状态" hint="停用后不可登录、不可被新绑定">
-                <Select
-                  value={formStatus}
-                  onValueChange={(value) => setFormStatus(value === "disabled" ? "disabled" : "normal")}
-                >
-                  <SelectTrigger aria-label="经纪人状态">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="normal">正常</SelectItem>
-                    <SelectItem value="disabled">已停用</SelectItem>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field label="备注">
-                <Input
-                  value={formRemark}
-                  onChange={(event) => setFormRemark(event.target.value)}
-                />
-              </Field>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => void saveBroker()} disabled={saving}>
-                {saving ? "保存中…" : "保存"}
-              </Button>
-              <Button variant="outline" onClick={() => setFormOpen(false)}>
-                取消
-              </Button>
-            </div>
-          </Card>
-        ) : null}
-
-        <Card className="rounded-cards border-0 shadow-steep-sm p-5">
-          {/* Card 自带 flex-col：筛选控件必须放在内层横向容器，直接挂 flex-wrap 会纵向堆叠 */}
-          <div className="flex flex-wrap items-center gap-3">
-            <Input
-              className="w-72"
-              placeholder="姓名 / 手机号"
-              aria-label="搜索经纪人"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-              onKeyDown={(event) => event.key === "Enter" && void load()}
-            />
-            <Select value={storeFilter} onValueChange={setStoreFilter}>
-              <SelectTrigger className="w-44" aria-label="按所属门店筛选">
-                <SelectValue placeholder="所属门店" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部门店</SelectItem>
-                {stores.map((store) => (
-                  <SelectItem key={store.id} value={store.id}>
-                    {store.store_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={bindStatusFilter} onValueChange={setBindStatusFilter}>
-              <SelectTrigger className="w-36" aria-label="按绑定状态筛选">
-                <SelectValue placeholder="绑定状态" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部绑定状态</SelectItem>
-                <SelectItem value="unbound">未绑定</SelectItem>
-                <SelectItem value="bound">已绑定</SelectItem>
-                <SelectItem value="disabled">已停用</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input
-              className="w-72"
-              placeholder="操作原因（停用/强制解绑）"
-              value={reason}
-              onChange={(event) => setReason(event.target.value)}
-            />
-            <Button variant="outline" onClick={() => void load()} disabled={loading}>
-              查询
-            </Button>
-            <Button variant="outline" asChild>
+          description="经纪人档案、门店绑定与换绑/解绑审批。手机号仅展示脱敏值。"
+          actions={
+            <div className="flex items-center gap-4">
               <a
                 href={`/api/v1/admin/merchant/brokers/export${queryString({
-                  keyword: keyword.trim() || undefined,
+                  keyword: keyword || undefined,
+                  store_id: storeFilter === "all" ? undefined : storeFilter,
+                  bind_status: tab === "all" || tab === "pending" ? undefined : tab,
                 })}`}
+                className="inline-flex items-center gap-1.5 text-sm text-ink underline-offset-4 hover:underline"
               >
+                <Download className="h-4 w-4" strokeWidth={1.7} />
                 导出 CSV
               </a>
-            </Button>
-          </div>
-        </Card>
-
-        {changeTarget ? (
-          <Card className="rounded-cards border-0 shadow-steep-sm flex flex-col gap-3 p-5">
-            <div className="text-sm font-medium">强制换绑：{changeTarget.name}</div>
-            <Select value={changeStoreId} onValueChange={setChangeStoreId}>
-              <SelectTrigger>
-                <SelectValue placeholder="选择新门店" />
-              </SelectTrigger>
-              <SelectContent>
-                {stores.map((store) => (
-                  <SelectItem key={store.id} value={store.id}>
-                    {store.store_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Input
-              placeholder="换绑原因（必填）"
-              value={changeReasonText}
-              onChange={(event) => setChangeReasonText(event.target.value)}
-            />
-            <div className="flex gap-2">
-              <Button onClick={() => void submitForceChange()} disabled={saving}>
-                确认换绑
-              </Button>
-              <Button variant="outline" onClick={() => setChangeTarget(null)}>
-                取消
-              </Button>
+              <Button onClick={openCreate}>＋ 新建经纪人</Button>
             </div>
-          </Card>
+          }
+        />
+
+        <BrokerSummaryCards summary={summary} />
+
+        {error ? (
+          <div className="rounded-cards border border-rust/20 bg-white px-5 py-3 text-sm text-error">{error}</div>
         ) : null}
 
-        {historyBroker ? (
-          <Card className="rounded-cards border-0 shadow-steep-sm p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <div className="text-sm font-medium">
-                绑定历史：{historyBroker.name}（{history?.total ?? 0} 条）
-              </div>
-              <Button variant="outline" size="sm" onClick={() => setHistoryBroker(null)}>
-                关闭
-              </Button>
-            </div>
-            {historyLoading ? (
-              <p className="text-sm text-graphite">加载中…</p>
-            ) : history && history.items.length ? (
-              <div className="space-y-2">
-                {history.items.map((record) => (
-                  <div
-                    key={record.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-images bg-fog p-3 text-sm"
-                  >
-                    <span>
-                      {record.store_name} · {BINDING_RECORD_LABELS[record.status] || record.status} ·{" "}
-                      {record.reason || "无原因"}
-                    </span>
-                    <span className="text-xs text-graphite">
-                      {new Date(record.applied_at).toLocaleString("zh-CN")}
-                      {record.approved_at
-                        ? ` / 审批 ${new Date(record.approved_at).toLocaleString("zh-CN")}`
-                        : ""}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-graphite">暂无绑定记录</p>
-            )}
-          </Card>
-        ) : null}
+        <BrokerPendingPanel
+          pending={pending}
+          onApprove={(id, approve) => void approveBinding(id, approve)}
+          onViewAll={() => {
+            setTab("pending");
+            setPage(1);
+          }}
+        />
 
-        {error ? <Card className="rounded-cards border-0 shadow-steep-sm p-5 text-sm text-error">{error}</Card> : null}
-
-        {pending.length ? (
-          <Card className="rounded-cards border-0 shadow-steep-sm p-5">
-            <div className="mb-3 text-sm font-medium">待审核绑定申请（{pending.length}）</div>
-            <div className="space-y-2">
-              {pending.map((item) => (
-                <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-images bg-fog p-3 text-sm">
-                  <span>
-                    {item.broker_name || "经纪人"} · {item.store_name} · {item.reason || "换绑/解绑"}
+        <section className="rounded-cards bg-white shadow-steep-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-4">
+            <div className="flex items-center gap-1">
+              {TABS.map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  aria-pressed={tab === item.key}
+                  onClick={() => {
+                    setTab(item.key);
+                    setPage(1);
+                  }}
+                  className={`rounded-full px-3.5 py-1.5 text-[13px] transition-colors ${
+                    tab === item.key ? "bg-ink text-white" : "text-graphite hover:bg-fog hover:text-ink"
+                  }`}
+                >
+                  {item.label}
+                  <span className={`ml-1.5 text-[11px] ${tab === item.key ? "text-white/70" : "text-dove"}`}>
+                    {tabCount(summary, item.key)}
                   </span>
-                  <span className="flex gap-2">
-                    <Button size="sm" onClick={() => void approveBinding(item.id, true)}>
-                      通过
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={() => void approveBinding(item.id, false)}>
-                      驳回
-                    </Button>
-                  </span>
-                </div>
+                </button>
               ))}
             </div>
-          </Card>
-        ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <Search
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-dove"
+                  strokeWidth={1.7}
+                />
+                <Input
+                  className="h-9 w-60 pl-9"
+                  placeholder="搜索姓名 / 手机号"
+                  aria-label="搜索经纪人"
+                  value={keywordInput}
+                  onChange={(event) => setKeywordInput(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      setKeyword(keywordInput.trim());
+                      setPage(1);
+                    }
+                  }}
+                />
+              </div>
+              <Select
+                value={storeFilter}
+                onValueChange={(value) => {
+                  setStoreFilter(value);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[148px]" aria-label="按所属门店筛选">
+                  <SelectValue placeholder="全部门店" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部门店</SelectItem>
+                  {stores.map((store) => (
+                    <SelectItem key={store.id} value={store.id}>
+                      {store.store_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={sourceFilter}
+                onValueChange={(value) => {
+                  setSourceFilter(value);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="h-9 w-[132px]" aria-label="按来源筛选">
+                  <SelectValue placeholder="全部来源" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部来源</SelectItem>
+                  {BROKER_SOURCE_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
 
-        {loading ? <Card className="rounded-cards border-0 shadow-steep-sm p-6 text-sm text-muted-foreground">加载中...</Card> : null}
-
-        {data ? (
-          <Card className="rounded-cards border-0 shadow-steep-sm overflow-hidden">
-            <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead className="bg-fog text-left text-xs text-graphite">
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[940px] text-sm">
+              <thead className="bg-fog text-left text-[11px] uppercase tracking-wide text-graphite">
                 <tr>
-                  <th className="px-4 py-3">姓名</th>
-                  <th className="px-4 py-3">手机号</th>
-                  <th className="px-4 py-3">所属门店</th>
-                  <th className="px-4 py-3">绑定状态</th>
-                  <th className="px-4 py-3">来源</th>
-                  <th className="px-4 py-3">推荐线索</th>
-                  <th className="px-4 py-3">更新时间</th>
-                  <th className="px-4 py-3">操作</th>
+                  <th className="px-5 py-2.5 font-medium">经纪人</th>
+                  <th className="px-4 py-2.5 font-medium">绑定门店</th>
+                  <th className="px-4 py-2.5 font-medium">状态</th>
+                  <th className="px-4 py-2.5 font-medium">来源</th>
+                  <th className="px-4 py-2.5 font-medium">最近变更</th>
+                  <th className="w-10 px-2 py-2.5" aria-label="打开详情" />
                 </tr>
               </thead>
               <tbody>
-                {data.items.map((item) => (
-                  <tr key={item.id} className="border-t border-dove">
-                    <td className="px-4 py-3 font-medium">
-                      {item.name}
-                      {item.recruit_lead_id ? (
-                        <div className="text-xs font-normal text-graphite">
-                          招募线索 {item.recruit_lead_id.slice(0, 8)}…
-                        </div>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3">{item.phone_masked}</td>
-                    <td className="px-4 py-3">{item.store_name || "—"}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge
-                        tone={
-                          item.bind_status === "bound"
-                            ? "positive"
-                            : item.bind_status === "pending"
-                              ? "attention"
-                              : "neutral"
-                        }
-                      >
-                        {STATUS_LABELS[item.bind_status] || item.bind_status}
-                      </StatusBadge>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-graphite">
-                      {SOURCE_LABELS[item.source] || item.source}
-                    </td>
-                    <td className="px-4 py-3">{item.recommendation_count}</td>
-                    <td className="px-4 py-3 text-xs text-graphite">
-                      {item.updated_at ? new Date(item.updated_at).toLocaleString("zh-CN") : "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        <Button size="sm" variant="outline" onClick={() => void openHistory(item)}>
-                          绑定历史
-                        </Button>
-                        <Button size="sm" variant="outline" onClick={() => void openEdit(item)}>
-                          编辑
-                        </Button>
-                        {item.store_id ? (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setChangeTarget(item);
-                                setChangeStoreId("");
-                                setChangeReasonText("");
-                              }}
-                            >
-                              换绑
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => void forceUnbind(item.id)}>
-                              强制解绑
-                            </Button>
-                          </>
-                        ) : null}
-                        {item.bind_status === "disabled" ? (
-                          <Button size="sm" variant="outline" onClick={() => void changeStatus(item.id, "unbound")}>
-                            启用
-                          </Button>
-                        ) : (
-                          <Button size="sm" variant="outline" onClick={() => void changeStatus(item.id, "disabled")}>
-                            停用
-                          </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {data.items.length === 0 ? (
+                {loading && !data ? (
                   <tr>
-                    <td className="px-4 py-10 text-center text-sm text-graphite" colSpan={8}>
-                      暂无经纪人
+                    <td colSpan={6} className="px-5 py-16 text-center text-sm text-graphite">
+                      加载中…
                     </td>
                   </tr>
-                ) : null}
+                ) : data && data.items.length ? (
+                  data.items.map((item) => (
+                    <tr
+                      key={item.id}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`查看经纪人 ${item.name}`}
+                      onClick={() => openDetail(item.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openDetail(item.id);
+                        }
+                      }}
+                      className="cursor-pointer border-t border-fog transition-colors hover:bg-fog/60 focus-visible:bg-fog/60 focus-visible:outline-none"
+                    >
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-3">
+                          <BrokerAvatar name={item.name} id={item.id} />
+                          <div className="min-w-0">
+                            <p className="truncate font-medium text-ink">{item.name}</p>
+                            <p className="mt-0.5 text-xs tabular-nums text-graphite">{item.phone_masked}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-[13px] text-ink">{item.store_name || "未分配"}</td>
+                      <td className="px-4 py-3">
+                        <StatusBadge tone={brokerStatusTone(item.bind_status)}>
+                          {BROKER_STATUS_LABELS[item.bind_status] || item.bind_status}
+                        </StatusBadge>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-graphite">
+                        {BROKER_SOURCE_LABELS[item.source] || item.source}
+                      </td>
+                      <td className="px-4 py-3 text-xs tabular-nums text-graphite">{formatDate(item.updated_at)}</td>
+                      <td className="px-2 py-3 text-right">
+                        <ChevronRight className="ml-auto h-4 w-4 text-dove" strokeWidth={1.7} />
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="px-5 py-16 text-center text-sm text-graphite">
+                      没有符合条件的经纪人
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
-            </div>
-          </Card>
-        ) : null}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-fog px-5 py-3">
+            <p className="text-xs text-graphite">
+              共 {data?.total ?? 0} 位经纪人 · 当前 {activeTabLabel}
+            </p>
+            <Pagination
+              mode="controlled"
+              currentPage={page}
+              totalPages={totalPages}
+              pageSize={PAGE_SIZE}
+              totalItems={data?.total ?? 0}
+              onPageChange={setPage}
+            />
+          </div>
+        </section>
       </PageContainer>
+
+      <BrokerDetailDrawer
+        brokerId={drawerBrokerId}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        reloadKey={drawerReloadKey}
+        onEdit={openEdit}
+        onRebind={(broker) => setRebindTarget(broker)}
+        onUnbind={(broker) => setActionTarget({ broker, kind: "unbind" })}
+        onToggleStatus={(broker) =>
+          setActionTarget({ broker, kind: broker.bind_status === "disabled" ? "enable" : "disable" })
+        }
+      />
+
+      <BrokerFormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        brokerId={editingId}
+        onSaved={() => void refresh()}
+      />
+
+      <BrokerRebindDialog
+        open={Boolean(rebindTarget)}
+        onOpenChange={(open) => {
+          if (!open) setRebindTarget(null);
+        }}
+        brokerId={rebindTarget?.id ?? null}
+        brokerName={rebindTarget?.name ?? ""}
+        onDone={() => void refresh()}
+      />
+
+      <BrokerActionDialog
+        open={Boolean(actionTarget)}
+        onOpenChange={(open) => {
+          if (!open) setActionTarget(null);
+        }}
+        title={
+          actionTarget?.kind === "unbind"
+            ? `解绑经纪人：${actionTarget.broker.name}`
+            : actionTarget?.kind === "enable"
+              ? `启用经纪人：${actionTarget?.broker.name}`
+              : `停用经纪人：${actionTarget?.broker.name}`
+        }
+        description={
+          actionTarget?.kind === "unbind"
+            ? "解绑后经纪人不再归属当前门店，绑定历史会保留。"
+            : actionTarget?.kind === "enable"
+              ? "启用后经纪人可重新登录并接受门店绑定。"
+              : "停用后经纪人不可登录、不可被新绑定，已有绑定不受影响。"
+        }
+        confirmLabel={
+          actionTarget?.kind === "unbind" ? "确认解绑" : actionTarget?.kind === "enable" ? "确认启用" : "确认停用"
+        }
+        pending={actionPending}
+        onConfirm={(reason) => void submitAction(reason)}
+      />
     </div>
   );
 }

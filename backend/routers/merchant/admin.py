@@ -29,8 +29,10 @@ from schemas.merchant import (
     BrokerOptionListResponse,
     BrokerResponse,
     BrokerStatusChangeRequest,
+    BrokerSummaryResponse,
     MerchantBusinessCircleResponse,
     MerchantCompanyCreate,
+    MerchantCompanyDeleteRequest,
     MerchantCompanyListResponse,
     MerchantCompanyResponse,
     MerchantCompanyUpdate,
@@ -120,6 +122,25 @@ def update_company(
         request=request,
     )
     return company_response(company)
+
+
+@router.post("/companies/{company_id}/delete", summary="公司软删除")
+@limiter.limit(RateLimits.MERCHANT_WRITE)
+def delete_company(
+    request: Request,
+    company_id: Annotated[str, Path(description="公司ID")],
+    body: MerchantCompanyDeleteRequest,
+    db: DbSessionDep,
+    current_user: MerchantWritePermDep,
+) -> dict[str, bool]:
+    """公司下仍有未删除门店时拒绝删除（REQ-IT7-02）."""
+    MerchantCompanyService(db).soft_delete(
+        company_id,
+        body,
+        operator_id=str(current_user.id),
+        request=request,
+    )
+    return {"deleted": True}
 
 
 # -------------------- 门店 --------------------
@@ -537,6 +558,8 @@ def list_brokers(
     keyword: Annotated[str | None, Query(description="姓名/手机号关键词")] = None,
     store_id: str | None = None,
     bind_status: str | None = None,
+    source: Annotated[str | None, Query(description="来源筛选（自主申请/员工推荐/后台新增等）")] = None,
+    pending_only: Annotated[bool, Query(description="仅看存在待审绑定申请的经纪人")] = False,
 ) -> BrokerListResponse:
     """后台经纪人分页列表."""
     return MerchantBrokerService(db).list_admin(
@@ -545,8 +568,21 @@ def list_brokers(
         keyword=keyword,
         store_id=store_id,
         bind_status=bind_status,
+        source=source,
+        pending_only=pending_only,
         user=current_user,
     )
+
+
+@router.get("/brokers/summary", summary="经纪人概览计数")
+@limiter.limit(RateLimits.MERCHANT_READ)
+def broker_summary(
+    request: Request,
+    db: DbSessionDep,
+    current_user: MerchantBrokerPermDep,
+) -> BrokerSummaryResponse:
+    """后台经纪人 KPI 与分段计数（REQ-IT7-03）."""
+    return MerchantBrokerService(db).summary(user=current_user)
 
 
 @router.get("/brokers/options", summary="经纪人下拉选项（线索录入二级联动）")

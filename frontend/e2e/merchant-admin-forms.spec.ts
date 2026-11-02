@@ -128,11 +128,14 @@ test("后台新建与编辑经纪人", async ({ page }) => {
 
   const row = page.locator("tr").filter({ hasText: `${MARK}经纪人` }).first();
   await expect(row).toBeVisible();
-  await row.getByRole("button", { name: "编辑" }).click();
+  // REQ-IT7-03 设计稿落代码后：行内不再有「编辑」按钮，改为整行打开详情抽屉 → 编辑资料
+  await row.click();
+  const drawer = page.getByRole("dialog");
+  await drawer.getByRole("button", { name: /编辑资料/ }).click();
   await page.getByLabel("姓名").fill(`${MARK}经纪人改`);
   await page.getByRole("button", { name: "保存" }).click();
 
-  await expect(page.locator("tr").filter({ hasText: `${MARK}经纪人改` }).first()).toBeVisible();
+  await expect(page.getByRole("dialog").getByText(`${MARK}经纪人改`).first()).toBeVisible();
 });
 
 test("后台新建门店可指定负责人与合作状态", async ({ page }) => {

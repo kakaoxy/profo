@@ -1361,7 +1361,7 @@ class MerchantStoreService:
 
     def _active_company(self, company_id: str) -> MerchantCompany:
         company = self.db.query(MerchantCompany).filter(MerchantCompany.id == company_id).first()
-        if company is None:
+        if company is None or company.deleted_at is not None:
             msg = "公司不存在"
             raise ResourceNotFoundError(msg)
         if company.status != "normal":

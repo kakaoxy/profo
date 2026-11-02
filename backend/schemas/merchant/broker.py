@@ -250,6 +250,17 @@ class BrokerListResponse(BaseModel):
     page_size: int
 
 
+class BrokerSummaryResponse(BaseModel):
+    """后台经纪人概览计数（REQ-IT7-03 列表页 KPI / 分段筛选）."""
+
+    total: int
+    bound: int
+    unbound: int
+    pending: int
+    disabled: int
+    pending_binding_count: int
+
+
 class BrokerOption(BaseModel):
     """线索录入门店→经纪人二级联动选项（不暴露手机号等敏感信息）."""
 

@@ -48,6 +48,7 @@ from schemas.merchant import (
     BrokerStoreCreate,
     BrokerStoreOption,
     BrokerStoreOptionListResponse,
+    BrokerSummaryResponse,
     BrokerUnbindRequest,
     BrokerUpdateRequest,
     MerchantDuplicateCandidate,
@@ -773,6 +774,8 @@ class MerchantBrokerService:
         keyword: str | None = None,
         store_id: str | None = None,
         bind_status: str | None = None,
+        source: str | None = None,
+        pending_only: bool = False,
         user: User | None = None,
     ) -> BrokerListResponse:
         """后台经纪人列表（姓名/手机号哈希/门店/状态筛选；按数据范围收敛）."""
@@ -791,6 +794,14 @@ class MerchantBrokerService:
             query = query.filter(MerchantBroker.store_id == store_id)
         if bind_status:
             query = query.filter(MerchantBroker.bind_status == bind_status)
+        if source:
+            query = query.filter(MerchantBroker.source == source)
+        if pending_only:
+            pending_ids = self.db.query(MerchantBrokerBinding.broker_id).filter(
+                MerchantBrokerBinding.status == MerchantBindingRecordStatus.PENDING.value,
+                MerchantBrokerBinding.broker_id.isnot(None),
+            )
+            query = query.filter(MerchantBroker.id.in_(pending_ids))
 
         total = query.count()
         rows = query.order_by(MerchantBroker.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
@@ -813,6 +824,39 @@ class MerchantBrokerService:
             total=total,
             page=page,
             page_size=page_size,
+        )
+
+    def summary(self, user: User | None = None) -> BrokerSummaryResponse:
+        """后台经纪人概览计数（KPI 与分段 tabs）.
+
+        待审核绑定单独统计绑定记录表（BrokerBinding.status=pending），
+        因为「待审核」动作发生在绑定申请上，而不是经纪人档案本身。
+        """
+        scope = visible_store_ids(self.db, user) if user is not None else None
+        base = self.db.query(MerchantBroker)
+        if scope is not None:
+            base = base.filter(MerchantBroker.store_id.in_(scope))
+        rows = (
+            base.with_entities(MerchantBroker.bind_status, func.count(MerchantBroker.id))
+            .group_by(MerchantBroker.bind_status)
+            .all()
+        )
+        counts = {status: int(count) for status, count in rows}
+        pending_query = self.db.query(MerchantBrokerBinding.broker_id).filter(
+            MerchantBrokerBinding.status == MerchantBindingRecordStatus.PENDING.value,
+            MerchantBrokerBinding.broker_id.isnot(None),
+        )
+        if scope is not None:
+            pending_query = pending_query.filter(MerchantBrokerBinding.store_id.in_(scope))
+        pending_ids = pending_query.distinct().subquery()
+        return BrokerSummaryResponse(
+            total=sum(counts.values()),
+            bound=counts.get(MerchantBindStatus.BOUND.value, 0),
+            unbound=counts.get(MerchantBindStatus.UNBOUND.value, 0)
+            + counts.get(MerchantBindStatus.UNBOUND_AFTER.value, 0),
+            pending=self.db.query(pending_ids).count(),
+            disabled=counts.get(MerchantBindStatus.DISABLED.value, 0),
+            pending_binding_count=pending_query.count(),
         )
 
     def create_admin(

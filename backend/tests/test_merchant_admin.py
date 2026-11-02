@@ -818,3 +818,59 @@ def test_review_broker_store_requires_complete_fields(
     assert "详细地址" in resp.json()["message"]
     session.refresh(row)
     assert row.review_status == "pending"
+
+
+def test_company_soft_delete_hides_from_lists(admin_client: TestClient, seeded_db: dict) -> None:
+    """REQ-IT7-02：公司软删除后列表、下拉与再次删除都按不存在处理."""
+    company = _create_company(admin_client)
+    company_id = company["id"]
+
+    resp = admin_client.post(
+        f"{API}/admin/merchant/companies/{company_id}/delete",
+        json={"reason": "测试删除"},
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json() == {"deleted": True}
+
+    # 列表（默认含停用）不再展示
+    listed = admin_client.get(f"{API}/admin/merchant/companies?page=1&page_size=100&include_disabled=true")
+    assert listed.status_code == 200
+    assert all(item["id"] != company_id for item in listed.json()["items"])
+
+    # 重复删除幂等（仍 200，不抛 404）
+    again = admin_client.post(
+        f"{API}/admin/merchant/companies/{company_id}/delete",
+        json={"reason": "重复删除"},
+    )
+    assert again.status_code == 200, again.text
+
+    session: Session = seeded_db["session"]
+    log = (
+        session.query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_company", OperationLog.action == "delete")
+        .order_by(OperationLog.created_at.desc())
+        .first()
+    )
+    assert log is not None
+    assert "测试删除" in str(log.before)
+
+
+def test_company_soft_delete_rejected_when_has_store(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """REQ-IT7-02：公司下仍有门店时拒绝删除，提示先处理门店."""
+    company = _create_company(admin_client)
+    _create_store(admin_client, company["id"], employee.id)
+
+    resp = admin_client.post(
+        f"{API}/admin/merchant/companies/{company['id']}/delete",
+        json={"reason": "尝试删除"},
+    )
+    assert resp.status_code == 409, resp.text
+    assert "门店" in resp.json()["message"]
+
+    # 未被软删，仍能在列表里看到
+    listed = admin_client.get(f"{API}/admin/merchant/companies?page=1&page_size=100&include_disabled=true")
+    assert any(item["id"] == company["id"] for item in listed.json()["items"])

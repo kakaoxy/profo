@@ -1,0 +1,23 @@
+{
+  "type": "design",
+  "designSystems": [],
+  "primaryDesignSystem": null,
+  "assets": {
+    "经纪人管理": {
+      "versions": [
+        {
+          "path": "index.html",
+          "createdAt": "2026-11-02T13:48:52.870Z",
+          "status": "needs-review",
+          "subtitle": "列表 + 详情抽屉 + 新建/编辑弹层",
+          "viewport": {
+            "width": 1440,
+            "height": 900
+          }
+        }
+      ]
+    }
+  },
+  "createdAt": "2026-11-02T13:48:52.873Z",
+  "updatedAt": "2026-11-02T13:48:52.873Z"
+}

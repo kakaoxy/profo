@@ -65,6 +65,17 @@ class MerchantCompanyResponse(BaseModel):
     updated_at: datetime
 
 
+class MerchantCompanyDeleteRequest(BaseModel):
+    """公司软删除请求（REQ-IT7-02）."""
+
+    reason: str = Field(min_length=1, max_length=500, description="删除原因")
+
+    @field_validator("reason")
+    @classmethod
+    def _strip_reason(cls, value: str) -> str:
+        return value.strip()
+
+
 class MerchantCompanyListResponse(BaseModel):
     """公司分页列表响应."""
 
@@ -521,6 +532,7 @@ from .broker import (  # noqa: E402
     BrokerStoreCreate,
     BrokerStoreOption,
     BrokerStoreOptionListResponse,
+    BrokerSummaryResponse,
     BrokerUnbindRequest,
     BrokerUpdateRequest,
 )
@@ -579,6 +591,7 @@ __all__ = [
     "BrokerStoreCreate",
     "BrokerStoreOption",
     "BrokerStoreOptionListResponse",
+    "BrokerSummaryResponse",
     "BrokerUnbindRequest",
     "BrokerUpdateRequest",
     "MerchantLeadStats",

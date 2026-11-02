@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Trash2 } from "lucide-react";
 
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/select";
 import type { components } from "@/lib/api-types";
 import { merchantApi, queryString } from "../_components/merchant-api";
+import { StoreDeleteDialog } from "./_components/store-delete-dialog";
+import { StoreDrawer } from "./_components/store-drawer";
 
 type StoreList = components["schemas"]["MerchantStoreListResponse"];
 type StoreItem = components["schemas"]["MerchantStoreListItem"];
@@ -49,6 +51,9 @@ export default function MerchantStoresPage() {
   const [ownerId, setOwnerId] = useState("all");
   const [employees, setEmployees] = useState<components["schemas"]["UserSimpleResponse"][]>([]);
   const [page, setPage] = useState(1);
+  const [drawerStoreId, setDrawerStoreId] = useState<string | null>(null);
+  const [drawerSummary, setDrawerSummary] = useState<StoreItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<StoreItem | null>(null);
 
   const load = async (nextPage = page) => {
     setLoading(true);
@@ -271,13 +276,25 @@ export default function MerchantStoresPage() {
                   <th className="px-4 py-3">经纪人</th>
                   <th className="px-4 py-3">最近拜访</th>
                   <th className="px-4 py-3">门店状态</th>
+                  <th className="px-4 py-3">操作</th>
                 </tr>
               </thead>
               <tbody>
                 {data.items.map((item: StoreItem) => (
-                  <tr key={item.id} className="border-t border-dove">
+                  <tr
+                    key={item.id}
+                    className="cursor-pointer border-t border-dove hover:bg-fog/70"
+                    onClick={() => {
+                      setDrawerStoreId(item.id);
+                      setDrawerSummary(item);
+                    }}
+                  >
                     <td className="px-4 py-3">
-                      <Link className="font-medium text-ink hover:text-rust" href={`/admin/merchant/stores/${item.id}`}>
+                      <Link
+                        className="font-medium text-ink hover:text-rust"
+                        href={`/admin/merchant/stores/${item.id}`}
+                        onClick={(event) => event.stopPropagation()}
+                      >
                         {item.store_name}
                       </Link>
                       <div className="text-xs text-graphite">{item.address}</div>
@@ -330,11 +347,37 @@ export default function MerchantStoresPage() {
                       {item.last_visit_at ? new Date(item.last_visit_at).toLocaleString("zh-CN") : "—"}
                     </td>
                     <td className="px-4 py-3">{STATUS_LABELS[item.status] || item.status}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDrawerStoreId(item.id);
+                            setDrawerSummary(item);
+                          }}
+                        >
+                          详情
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-label={`删除门店 ${item.store_name}`}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setDeleteTarget(item);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 {data.items.length === 0 ? (
                   <tr>
-                    <td className="px-4 py-10 text-center text-sm text-graphite" colSpan={10}>
+                    <td className="px-4 py-10 text-center text-sm text-graphite" colSpan={11}>
                       没有符合条件的门店
                     </td>
                   </tr>
@@ -365,6 +408,30 @@ export default function MerchantStoresPage() {
           </div>
         </div>
       </PageContainer>
+
+      <StoreDrawer
+        storeId={drawerStoreId}
+        summary={drawerSummary}
+        open={Boolean(drawerStoreId)}
+        onOpenChange={(next) => {
+          if (!next) {
+            setDrawerStoreId(null);
+            setDrawerSummary(null);
+          }
+        }}
+        onSaved={() => void load(page)}
+      />
+
+      <StoreDeleteDialog
+        store={deleteTarget ? { id: deleteTarget.id, store_name: deleteTarget.store_name } : null}
+        onOpenChange={(next) => {
+          if (!next) setDeleteTarget(null);
+        }}
+        onDeleted={() => {
+          setDeleteTarget(null);
+          void load(page);
+        }}
+      />
     </div>
   );
 }

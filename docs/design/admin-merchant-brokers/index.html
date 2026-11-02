@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>经纪人管理 · 设计稿 · Steep</title>
+<!--
+  设计说明（给评审）：
+  1) 设计上下文：本项目已有 DESIGN.md（Steep：白 + Fog 画布、Ink 墨色、Rust 暖点缀、24px 圆角、Signifier/Sohne 字体配对），
+     本稿以 DESIGN.md 为唯一视觉来源，不引入新的颜色/间距/圆角。
+  2) 范围（与需求方确认）：经纪人列表页 + 详情抽屉 + 新建/编辑弹层；待审核绑定作为列表页内的次级卡片保留。
+  3) 核心取舍：
+     - 一屏只保留一个 Ink 填充 CTA（右上「新建经纪人」）；其余动作（编辑、换绑、解绑、停用）全部为文字链接，符合 DESIGN 的 “Text Link Button”。
+     - 表格行可整行点击打开右侧抽屉；抽屉内“编辑资料”切换为只读→表单，避免跳页。
+     - 状态用文字+圆点/浅底徽标表达，不用饱和色；待审核用 Apricot Wash，已绑定用白底 Ink 描边，未绑定用 Fog。
+     - 头像用姓名首字 + 浅色底（Apricot/Sky 交替），作为表格里唯一彩色点。
+  4) 本文件是自包含静态原型（无外链依赖），可直接双击打开，也可通过 HTTP 预览。
+-->
+<style>
+  :root{
+    --ink:#17191c; --pure-white:#fff; --fog:#f7f7f8; --ash:#4c4c4c; --graphite:#777b86;
+    --dove:#a3a6af; --slate:#8b8c8d; --rust:#5d2a1a; --apricot:#fbe1d1; --sky:#d3e3fc;
+    --font-serif:"Songti SC","Noto Serif SC",Georgia,"Times New Roman",serif;
+    --font-sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Segoe UI",sans-serif;
+    --r-card:24px; --r-input:16px; --r-pill:9999px;
+    --shadow-card:0 0 0 1px rgba(4,23,43,.05), 0 20px 25px -5px rgba(0,0,0,.10), 0 8px 10px -6px rgba(0,0,0,.10);
+    --shadow-soft:0 0 0 1px rgba(23,25,28,.06), 0 10px 24px -12px rgba(0,0,0,.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:var(--font-sans); color:var(--ink); background:var(--fog);
+    -webkit-font-smoothing:antialiased; font-size:14px; letter-spacing:-.009em;
+  }
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  input,select,textarea{font:inherit;color:inherit}
+  a{color:inherit;text-decoration:none}
+
+  /* shell */
+  .shell{display:flex;min-height:100vh}
+  .sidebar{width:240px;flex:0 0 240px;background:var(--fog);padding:22px 14px;display:flex;flex-direction:column;gap:28px}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 10px 0}
+  .brand__mark{width:28px;height:28px;border-radius:9px;background:var(--ink);color:#fff;display:grid;place-items:center;font-family:var(--font-serif);font-size:15px}
+  .brand__name{font-weight:600;font-size:15px;letter-spacing:-.01em}
+  .nav-group{display:flex;flex-direction:column;gap:2px}
+  .nav-title{font-size:11px;color:var(--graphite);letter-spacing:.08em;padding:0 12px 8px}
+  .nav-item{display:flex;align-items:center;gap:10px;height:38px;padding:0 12px;border-radius:12px;color:var(--ash);font-size:14px}
+  .nav-item svg{width:16px;height:16px;stroke:var(--graphite);fill:none;stroke-width:1.6}
+  .nav-item:hover{background:rgba(23,25,28,.04)}
+  .nav-item.active{background:var(--pure-white);color:var(--ink);font-weight:500;box-shadow:0 0 0 1px rgba(23,25,28,.07),0 1px 2px rgba(23,25,28,.04)}
+  .nav-item.active svg{stroke:var(--ink)}
+  .sidebar__foot{margin-top:auto;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.6)}
+  .avatar{border-radius:var(--r-pill);display:grid;place-items:center;font-weight:500}
+  .avatar--sm{width:28px;height:28px;font-size:11px;background:var(--apricot)}
+  .sidebar__foot small{display:block;color:var(--graphite);font-size:11px}
+
+  .main{flex:1;min-width:0;padding:28px 36px 56px}
+  .page{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+
+  .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding-top:6px}
+  .eyebrow{font-size:12px;color:var(--graphite);letter-spacing:.1em;margin-bottom:10px}
+  h1{font-family:var(--font-serif);font-weight:400;font-size:44px;line-height:1.1;letter-spacing:-.015em;margin:0}
+  .sub{margin:10px 0 0;color:var(--graphite);font-size:14px}
+  .head-actions{display:flex;align-items:center;gap:18px;padding-bottom:4px}
+  .link-btn{font-size:14px;color:var(--ink);font-weight:450;padding:6px 2px;border-bottom:1px solid transparent}
+  .link-btn:hover{border-color:var(--ink)}
+  .cta{height:40px;padding:0 20px;border-radius:var(--r-pill);background:var(--ink);color:#fff;font-size:14px;font-weight:480;display:inline-flex;align-items:center;gap:8px}
+  .cta:hover{background:#000}
+  .cta svg{width:16px;height:16px;stroke:#fff;fill:none;stroke-width:1.8}
+
+  /* stats */
+  .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+  .stat{background:var(--pure-white);border-radius:var(--r-card);padding:20px 22px;box-shadow:var(--shadow-soft);display:flex;flex-direction:column;gap:6px}
+  .stat__label{font-size:12px;color:var(--graphite)}
+  .stat__value{font-size:32px;font-weight:480;letter-spacing:-.02em}
+  .stat__foot{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--graphite)}
+  .stat__dot{width:6px;height:6px;border-radius:50%;background:var(--dove)}
+  .stat--warm{background:var(--apricot);box-shadow:none}
+  .stat--warm .stat__label,.stat--warm .stat__foot{color:rgba(93,42,26,.72)}
+  .stat--cool{background:var(--sky);box-shadow:none}
+
+  /* card */
+  .card{background:var(--pure-white);border-radius:var(--r-card);box-shadow:var(--shadow-soft)}
+  .card--flat{box-shadow:0 0 0 1px rgba(23,25,28,.06)}
+
+  /* pending strip */
+  .pending{padding:18px 22px;display:flex;flex-direction:column;gap:14px}
+  .pending__head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .pending__title{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:500}
+  .badge-count{min-width:22px;height:22px;padding:0 7px;border-radius:var(--r-pill);background:var(--apricot);color:var(--rust);font-size:12px;display:inline-grid;place-items:center}
+  .pending__list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .pending__item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:var(--fog)}
+  .pending__item .grow{flex:1;min-width:0}
+  .pending__item b{display:block;font-weight:500;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pending__item span{color:var(--graphite);font-size:12px}
+  .mini-link{font-size:12px;color:var(--rust);font-weight:500;white-space:nowrap}
+  .mini-link--muted{color:var(--graphite)}
+
+  /* toolbar */
+  .toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;flex-wrap:wrap}
+  .tabs{display:flex;align-items:center;gap:2px;background:var(--fog);border-radius:var(--r-pill);padding:4px}
+  .tab{height:32px;padding:0 16px;border-radius:var(--r-pill);font-size:13px;color:var(--graphite);display:inline-flex;align-items:center;gap:6px}
+  .tab b{font-weight:500;font-size:12px;color:var(--dove)}
+  .tab.on{background:var(--pure-white);color:var(--ink);box-shadow:0 0 0 1px rgba(23,25,28,.06)}
+  .tab.on b{color:var(--ink)}
+  .filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .search{position:relative}
+  .search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:15px;height:15px;stroke:var(--graphite);fill:none;stroke-width:1.7}
+  .search input{width:240px;height:38px;border-radius:var(--r-pill);border:1px solid rgba(23,25,28,.1);background:var(--pure-white);padding:0 14px 0 38px;outline:none}
+  .search input:focus{border-color:var(--ink)}
+  .select{position:relative}
+  .select select{height:38px;border-radius:var(--r-pill);border:1px solid rgba(23,25,28,.1);background:var(--pure-white);padding:0 34px 0 14px;appearance:none;outline:none;color:var(--ash);font-size:13px}
+  .select::after{content:"";position:absolute;right:14px;top:50%;width:7px;height:7px;border-right:1.5px solid var(--graphite);border-bottom:1.5px solid var(--graphite);transform:translateY(-65%) rotate(45deg);pointer-events:none}
+
+  /* table */
+  .table-card{overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{text-align:left;font-size:12px;font-weight:450;color:var(--graphite);padding:14px 20px;background:var(--fog)}
+  thead th:first-child{padding-left:24px}
+  tbody td{padding:15px 20px;border-top:1px solid rgba(163,166,175,.35);font-size:13.5px;vertical-align:middle}
+  tbody td:first-child{padding-left:24px}
+  tbody tr{cursor:pointer;transition:background .12s}
+  tbody tr:hover{background:#fbfaf9}
+  .person{display:flex;align-items:center;gap:12px;min-width:190px}
+  .person b{display:block;font-weight:500;font-size:14px}
+  .person span{display:block;color:var(--graphite);font-size:12px;margin-top:2px}
+  .avatar--row{width:36px;height:36px;font-size:12px}
+  .muted{color:var(--graphite)}
+  .mono{font-variant-numeric:tabular-nums}
+  .pill{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 11px;border-radius:var(--r-pill);font-size:12px;white-space:nowrap}
+  .pill__dot{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.7}
+  .pill--bound{background:var(--pure-white);box-shadow:inset 0 0 0 1px rgba(23,25,28,.18);color:var(--ink)}
+  .pill--unbound{background:var(--fog);color:var(--graphite)}
+  .pill--disabled{background:#fff;box-shadow:inset 0 0 0 1px rgba(163,166,175,.7);color:var(--dove)}
+  .pill--pending{background:var(--apricot);color:var(--rust)}
+  .row-chevron{width:18px;height:18px;stroke:var(--dove);fill:none;stroke-width:1.6;transition:transform .15s}
+  tbody tr:hover .row-chevron{transform:translateX(2px);stroke:var(--ink)}
+  .empty{padding:56px 24px;text-align:center;color:var(--graphite);font-size:13px}
+  .table-foot{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;border-top:1px solid rgba(163,166,175,.35);color:var(--graphite);font-size:12.5px}
+  .pager{display:flex;align-items:center;gap:6px}
+  .pager button{height:30px;min-width:30px;padding:0 10px;border-radius:10px;border:1px solid rgba(23,25,28,.1);background:#fff;font-size:12px}
+  .pager button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  /* drawer */
+  .scrim{position:fixed;inset:0;background:rgba(23,25,28,.32);opacity:0;pointer-events:none;transition:opacity .2s;z-index:40}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:460px;max-width:92vw;background:var(--pure-white);z-index:50;
+    transform:translateX(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;
+    box-shadow:-24px 0 60px -20px rgba(23,25,28,.28)}
+  .drawer.on{transform:none}
+  .drawer__head{padding:26px 26px 20px;border-bottom:1px solid rgba(163,166,175,.35)}
+  .drawer__top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+  .drawer__person{display:flex;align-items:center;gap:14px}
+  .avatar--lg{width:52px;height:52px;font-size:16px}
+  .drawer h2{font-family:var(--font-serif);font-weight:400;font-size:26px;line-height:1.2;margin:0}
+  .drawer__sub{margin:4px 0 0;color:var(--graphite);font-size:12.5px}
+  .icon-btn{width:32px;height:32px;border-radius:50%;display:grid;place-items:center}
+  .icon-btn:hover{background:var(--fog)}
+  .icon-btn svg{width:16px;height:16px;stroke:var(--graphite);fill:none;stroke-width:1.7}
+  .drawer__body{flex:1;overflow-y:auto;padding:6px 26px 26px}
+  .section{padding:20px 0;border-bottom:1px solid rgba(163,166,175,.28)}
+  .section:last-child{border-bottom:0}
+  .section__title{font-size:12px;color:var(--graphite);letter-spacing:.06em;margin-bottom:14px}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px}
+  .kv dt{font-size:11.5px;color:var(--graphite);margin-bottom:4px}
+  .kv dd{margin:0;font-size:13.5px}
+  .kv .span2{grid-column:span 2}
+  .binding{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;background:var(--fog)}
+  .binding__icon{width:34px;height:34px;border-radius:10px;background:#fff;display:grid;place-items:center;box-shadow:0 0 0 1px rgba(23,25,28,.06)}
+  .binding__icon svg{width:17px;height:17px;stroke:var(--ink);fill:none;stroke-width:1.6}
+  .timeline{display:flex;flex-direction:column;gap:0}
+  .tl{display:flex;gap:14px;padding-bottom:18px;position:relative}
+  .tl:last-child{padding-bottom:0}
+  .tl__rail{width:9px;display:flex;justify-content:center;position:relative}
+  .tl__rail::before{content:"";width:1px;background:rgba(163,166,175,.5);position:absolute;top:12px;bottom:-6px}
+  .tl:last-child .tl__rail::before{display:none}
+  .tl__dot{width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 2px var(--dove);margin-top:4px}
+  .tl--current .tl__dot{box-shadow:inset 0 0 0 2px var(--rust);background:var(--apricot)}
+  .tl__body b{display:block;font-size:13px;font-weight:500}
+  .tl__body span{display:block;color:var(--graphite);font-size:12px;margin-top:2px}
+  .drawer__foot{padding:16px 26px 22px;border-top:1px solid rgba(163,166,175,.35);display:flex;align-items:center;gap:18px;background:var(--pure-white)}
+  .drawer__foot .spacer{flex:1}
+  .btn-outline{height:38px;padding:0 18px;border-radius:var(--r-pill);box-shadow:inset 0 0 0 1px rgba(23,25,28,.16);font-size:13px;font-weight:450}
+  .btn-outline:hover{box-shadow:inset 0 0 0 1px var(--ink)}
+  .danger{color:var(--rust)}
+
+  /* modal */
+  .modal-wrap{position:fixed;inset:0;z-index:60;display:none;place-items:center;padding:24px}
+  .modal-wrap.on{display:grid}
+  .modal-scrim{position:absolute;inset:0;background:rgba(23,25,28,.32)}
+  .modal{position:relative;width:520px;max-width:100%;background:var(--pure-white);border-radius:var(--r-card);
+    box-shadow:var(--shadow-card);padding:26px 26px 22px;display:flex;flex-direction:column;gap:20px;max-height:88vh;overflow:auto}
+  .modal h3{font-family:var(--font-serif);font-weight:400;font-size:26px;margin:0}
+  .modal p.hint{margin:6px 0 0;color:var(--graphite);font-size:12.5px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+  .field{display:flex;flex-direction:column;gap:7px}
+  .field.span2{grid-column:span 2}
+  .field label{font-size:12px;color:var(--graphite)}
+  .field label i{color:var(--rust);font-style:normal;margin-left:2px}
+  .field input,.field select,.field textarea{height:40px;border-radius:12px;border:1px solid rgba(23,25,28,.14);background:#fff;padding:0 12px;outline:none;font-size:13.5px}
+  .field textarea{height:74px;padding:10px 12px;resize:vertical}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--ink)}
+  .modal__foot{display:flex;align-items:center;justify-content:flex-end;gap:16px}
+  .toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:#fff;font-size:13px;
+    padding:10px 18px;border-radius:var(--r-pill);opacity:0;pointer-events:none;transition:.22s;z-index:80}
+  .toast.on{opacity:1;transform:translate(-50%,0)}
+  @media (max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.pending__list{grid-template-columns:1fr}}
+  @media (max-width:760px){.sidebar{display:none}.main{padding:20px}.page-head{flex-direction:column;align-items:flex-start}.search input{width:100%}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><span class="brand__mark">S</span><span class="brand__name">Steep</span></div>
+    <div class="nav-group">
+      <div class="nav-title">商户管理</div>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h12V9.5"/></svg>门店列表</a>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/></svg>公司管理</a>
+      <a class="nav-item active" href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="3.2"/><path d="M5.5 19c1.2-3.2 3.6-4.8 6.5-4.8S17.3 15.8 18.5 19"/></svg>经纪人管理</a>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>拜访轨迹</a>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M7 4h10v16H7z"/><path d="M9.5 8h5M9.5 12h5"/></svg>协议管理</a>
+    </div>
+    <div class="nav-group">
+      <div class="nav-title">楼盘字典</div>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M4 19V7l8-3 8 3v12"/><path d="M4 19h16"/></svg>楼盘字典</a>
+      <a class="nav-item" href="#"><svg viewBox="0 0 24 24"><path d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10Z"/><circle cx="12" cy="11" r="2.2"/></svg>区域商圈</a>
+    </div>
+    <div class="sidebar__foot">
+      <span class="avatar avatar--sm">林</span>
+      <div style="min-width:0"><div style="font-size:13px">林知远</div><small>运营 · 上海</small></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page">
+      <header class="page-head">
+        <div>
+          <div class="eyebrow">商户管理 / 经纪人</div>
+          <h1>经纪人管理</h1>
+          <p class="sub">经纪人档案、门店绑定与换绑/解绑审批。手机号仅展示脱敏值。</p>
+        </div>
+        <div class="head-actions">
+          <button class="link-btn" onclick="toast('已开始导出 CSV（原型）')">导出 CSV</button>
+          <button class="cta" onclick="openModal()">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            新建经纪人
+          </button>
+        </div>
+      </header>
+
+      <section class="stats">
+        <div class="stat"><span class="stat__label">经纪人总数</span><span class="stat__value mono" id="statTotal">128</span><span class="stat__foot"><span class="stat__dot"></span>本周新增 6</span></div>
+        <div class="stat stat--warm"><span class="stat__label">已绑定门店</span><span class="stat__value mono" id="statBound">104</span><span class="stat__foot">覆盖率 81.3%</span></div>
+        <div class="stat stat--cool"><span class="stat__label">未绑定</span><span class="stat__value mono" id="statUnbound">18</span><span class="stat__foot">可直接分配门店</span></div>
+        <div class="stat"><span class="stat__label">待审核绑定</span><span class="stat__value mono" id="statPending">2</span><span class="stat__foot"><span class="stat__dot"></span>需要今日处理</span></div>
+      </section>
+
+      <section class="card pending" id="pendingCard">
+        <div class="pending__head">
+          <div class="pending__title">待审核绑定 <span class="badge-count" id="pendingCount">2</span></div>
+          <button class="link-btn muted" style="font-size:12.5px" onclick="toast('跳转到待审核列表（原型）')">查看全部</button>
+        </div>
+        <div class="pending__list" id="pendingList"></div>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <div class="tabs" id="tabs">
+            <button class="tab on" data-tab="all">全部 <b id="tabAll">7</b></button>
+            <button class="tab" data-tab="bound">已绑定 <b id="tabBound">3</b></button>
+            <button class="tab" data-tab="unbound">未绑定 <b id="tabUnbound">2</b></button>
+            <button class="tab" data-tab="pending">待审核 <b id="tabPending">2</b></button>
+          </div>
+          <div class="filters">
+            <div class="search">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+              <input id="q" placeholder="搜索姓名 / 手机号后四位" oninput="render()" />
+            </div>
+            <div class="select"><select id="storeFilter" onchange="render()">
+              <option value="">全部门店</option><option>南京东路旗舰店</option><option>静安嘉里中心店</option><option>陆家嘴滨江店</option><option>徐汇滨江店</option>
+            </select></div>
+            <div class="select"><select id="sourceFilter" onchange="render()">
+              <option value="">全部来源</option><option>自主申请</option><option>员工推荐</option><option>后台新增</option>
+            </select></div>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th style="width:26%">经纪人</th><th>绑定门店</th><th>状态</th><th>来源</th><th>最近变更</th><th style="width:44px"></th>
+            </tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="table-foot"><span id="footCount">共 6 条</span>
+          <div class="pager"><button>上一页</button><button class="on">1</button><button>2</button><button>下一页</button></div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="scrim" id="scrim" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer" aria-label="经纪人详情">
+  <div class="drawer__head">
+    <div class="drawer__top">
+      <div class="drawer__person">
+        <span class="avatar avatar--lg" id="dAvatar">陈</span>
+        <div>
+          <h2 id="dName">陈嘉禾</h2>
+          <p class="drawer__sub" id="dSub">138****6621 · 自主申请</p>
+        </div>
+      </div>
+      <button class="icon-btn" onclick="closeDrawer()" aria-label="关闭"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:8px" id="dBadges"></div>
+  </div>
+  <div class="drawer__body">
+    <div class="section">
+      <div class="section__title">绑定信息</div>
+      <div class="binding">
+        <span class="binding__icon"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5"/><path d="M6 9.5V20h12V9.5"/></svg></span>
+        <div style="flex:1;min-width:0"><b id="dStore" style="display:block;font-size:13.5px;font-weight:500">南京东路旗舰店</b><span style="color:var(--graphite);font-size:12px" id="dStoreSince">绑定于 2026-09-18 · 由 林知远 审批</span></div>
+        <button class="mini-link" onclick="toast('打开换绑流程（原型）')">换绑</button>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section__title">基本信息</div>
+      <dl class="kv">
+        <div><dt>手机号</dt><dd class="mono" id="dPhone">138****6621</dd></div>
+        <div><dt>来源</dt><dd id="dSource">自主申请</dd></div>
+        <div><dt>创建时间</dt><dd id="dCreated">2026-08-02 10:14</dd></div>
+        <div><dt>最近更新</dt><dd id="dUpdated">2026-09-18 16:40</dd></div>
+        <div class="span2"><dt>备注</dt><dd id="dRemark">原链家经纪人，熟悉南京东路商圈。</dd></div>
+      </dl>
+    </div>
+    <div class="section">
+      <div class="section__title">绑定历史</div>
+      <div class="timeline">
+        <div class="tl tl--current"><span class="tl__rail"><span class="tl__dot"></span></span><div class="tl__body"><b>绑定至 南京东路旗舰店</b><span>2026-09-18 · 林知远 · 审批通过</span></div></div>
+        <div class="tl"><span class="tl__rail"><span class="tl__dot"></span></span><div class="tl__body"><b>申请绑定 静安嘉里中心店</b><span>2026-09-12 · 系统 · 员工推荐</span></div></div>
+        <div class="tl"><span class="tl__rail"><span class="tl__dot"></span></span><div class="tl__body"><b>完成经纪人认证</b><span>2026-08-02 · 系统 · 微信扫码</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="drawer__foot">
+    <button class="btn-outline" onclick="toast('打开资料编辑（原型）')">编辑资料</button>
+    <button class="link-btn danger" onclick="toast('已提交解绑申请（原型）')">解绑</button>
+    <span class="spacer"></span>
+    <button class="link-btn danger" onclick="toast('已停用该经纪人（原型）')">停用</button>
+  </div>
+</aside>
+
+<div class="modal-wrap" id="modal">
+  <div class="modal-scrim" onclick="closeModal()"></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div>
+      <h3 id="modalTitle">新建经纪人</h3>
+      <p class="hint">手机号用于绑定唯一档案；创建后可在详情抽屉里分配门店。</p>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>姓名<i>*</i></label><input placeholder="请输入经纪人姓名" /></div>
+      <div class="field"><label>手机号<i>*</i></label><input placeholder="11 位手机号" inputmode="tel" /></div>
+      <div class="field span2"><label>绑定门店</label><select><option>暂不绑定</option><option>南京东路旗舰店</option><option>静安嘉里中心店</option><option>陆家嘴滨江店</option></select></div>
+      <div class="field span2"><label>备注</label><textarea placeholder="选填，例如熟悉商圈、原从业经历"></textarea></div>
+    </div>
+    <div class="modal__foot">
+      <button class="link-btn" onclick="closeModal()">取消</button>
+      <button class="cta" onclick="closeModal();toast('已创建经纪人（原型）')">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const brokers = [
+  {id:'b1',name:'陈嘉禾',phone:'138****6621',store:'南京东路旗舰店',status:'bound',source:'自主申请',updated:'09-18 16:40',created:'2026-08-02 10:14',remark:'原链家经纪人，熟悉南京东路商圈。'},
+  {id:'b2',name:'周敏',phone:'139****2043',store:'静安嘉里中心店',status:'bound',source:'员工推荐',updated:'09-15 09:22',created:'2026-07-21 14:05',remark:'擅长高端住宅客户。'},
+  {id:'b3',name:'林一凡',phone:'137****8890',store:'陆家嘴滨江店',status:'pending',source:'自主申请',updated:'09-14 18:03',created:'2026-09-14 17:58',remark:'待审核：申请绑定陆家嘴滨江店。'},
+  {id:'b4',name:'赵语彤',phone:'136****1174',store:'',status:'unbound',source:'后台新增',updated:'09-10 11:31',created:'2026-09-10 11:31',remark:'待分配门店。'},
+  {id:'b5',name:'许之航',phone:'135****7742',store:'徐汇滨江店',status:'bound',source:'员工推荐',updated:'09-06 10:02',created:'2026-06-18 09:47',remark:'—'},
+  {id:'b6',name:'高芷晴',phone:'133****3391',store:'',status:'unbound',source:'自主申请',updated:'09-02 15:26',created:'2026-09-02 15:26',remark:'尚未选择门店。'},
+  {id:'b7',name:'沈望舒',phone:'135****9022',store:'静安嘉里中心店',status:'pending',source:'员工推荐',updated:'09-13 09:41',created:'2026-09-13 09:36',remark:'待审核：申请绑定静安嘉里中心店。'}
+];
+const statusMeta = {
+  bound:{label:'已绑定',cls:'pill--bound'},
+  unbound:{label:'未绑定',cls:'pill--unbound'},
+  pending:{label:'待审核',cls:'pill--pending'},
+  disabled:{label:'已停用',cls:'pill--disabled'}
+};
+const pastel = i => i % 2 === 0 ? 'var(--apricot)' : 'var(--sky)';
+const initial = name => name.slice(0,1);
+
+let tab = 'all';
+document.getElementById('tabs').addEventListener('click', e => {
+  const btn = e.target.closest('.tab'); if(!btn) return;
+  tab = btn.dataset.tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t === btn));
+  render();
+});
+
+function filtered(){
+  const q = (document.getElementById('q').value || '').trim();
+  const store = document.getElementById('storeFilter').value;
+  const source = document.getElementById('sourceFilter').value;
+  return brokers.filter(b =>
+    (tab === 'all' || b.status === tab) &&
+    (!store || b.store === store) &&
+    (!source || b.source === source) &&
+    (!q || b.name.includes(q) || b.phone.includes(q))
+  );
+}
+
+function render(){
+  const rows = filtered();
+  document.getElementById('rows').innerHTML = rows.map((b,i) => `
+    <tr onclick="openDrawer('${b.id}')">
+      <td><div class="person"><span class="avatar avatar--row" style="background:${pastel(i)}">${initial(b.name)}</span>
+        <div><b>${b.name}</b><span class="mono">${b.phone}</span></div></div></td>
+      <td>${b.store || '<span class="muted">未分配</span>'}</td>
+      <td><span class="pill ${statusMeta[b.status].cls}"><span class="pill__dot"></span>${statusMeta[b.status].label}</span></td>
+      <td class="muted">${b.source}</td>
+      <td class="muted mono">${b.updated}</td>
+      <td><svg class="row-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></svg></td>
+    </tr>`).join('') || '<tr><td colspan="6"><div class="empty">没有符合条件的经纪人</div></td></tr>';
+  document.getElementById('footCount').textContent = `共 ${rows.length} 条`;
+}
+
+function openDrawer(id){
+  const b = brokers.find(x => x.id === id); if(!b) return;
+  document.getElementById('dAvatar').textContent = initial(b.name);
+  document.getElementById('dAvatar').style.background = pastel(brokers.indexOf(b));
+  document.getElementById('dName').textContent = b.name;
+  document.getElementById('dSub').textContent = `${b.phone} · ${b.source}`;
+  document.getElementById('dBadges').innerHTML = `<span class="pill ${statusMeta[b.status].cls}"><span class="pill__dot"></span>${statusMeta[b.status].label}</span>`;
+  document.getElementById('dStore').textContent = b.store || '未绑定门店';
+  document.getElementById('dStoreSince').textContent = b.store ? '绑定于 2026-09-18 · 由 林知远 审批' : '尚未绑定任何门店';
+  document.getElementById('dPhone').textContent = b.phone;
+  document.getElementById('dSource').textContent = b.source;
+  document.getElementById('dCreated').textContent = b.created;
+  document.getElementById('dUpdated').textContent = b.updated;
+  document.getElementById('dRemark').textContent = b.remark || '—';
+  document.getElementById('scrim').classList.add('on');
+  document.getElementById('drawer').classList.add('on');
+}
+function closeDrawer(){document.getElementById('scrim').classList.remove('on');document.getElementById('drawer').classList.remove('on')}
+function openModal(){document.getElementById('modal').classList.add('on')}
+function closeModal(){document.getElementById('modal').classList.remove('on')}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('on');clearTimeout(window.__t);window.__t=setTimeout(()=>t.classList.remove('on'),1800)}
+document.addEventListener('keydown', e => { if(e.key === 'Escape'){ closeDrawer(); closeModal(); } });
+
+const pending = [
+  {name:'林一凡', store:'陆家嘴滨江店', time:'今天 18:03'},
+  {name:'沈望舒', store:'静安嘉里中心店', time:'昨天 09:41'}
+];
+document.getElementById('pendingList').innerHTML = pending.map(p => `
+  <div class="pending__item">
+    <span class="avatar avatar--sm" style="background:var(--sky)">${initial(p.name)}</span>
+    <div class="grow"><b>${p.name}</b><span>${p.store} · ${p.time}</span></div>
+    <button class="mini-link" onclick="event.stopPropagation();toast('已通过 ${p.name} 的绑定申请（原型）')">通过</button>
+    <button class="mini-link mini-link--muted" onclick="event.stopPropagation();toast('已驳回 ${p.name} 的绑定申请（原型）')">驳回</button>
+  </div>`).join('');
+
+render();
+</script>
+</body>
+</html>

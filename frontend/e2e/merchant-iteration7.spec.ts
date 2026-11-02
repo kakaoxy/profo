@@ -1,0 +1,402 @@
+import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
+import { test, expect } from "@playwright/test";
+import { createApiContext, loginPage } from "./helpers/auth";
+
+/**
+ * 商户管理模块 迭代 7（docs/商户管理模块需求/商户管理模块-需求与迭代记录.md §13，来源 m03941）验证用例。
+ *
+ * 覆盖：
+ * - REQ-IT7-02 公司软删除：接口删除后列表隐藏、有门店时 409、后台 UI 填原因删除
+ * - REQ-IT7-01 门店软删除：后台 UI 删除后列表不再展示
+ * - REQ-IT7-01 门店详情抽屉：整行/详情按钮打开抽屉 → 编辑 → 保存修改 → 接口回读
+ * - REQ-IT7-03 经纪人模块设计稿：文件存在且包含 Steep 设计要素、无外部资源依赖
+ * - REQ-IT7-03 经纪人管理页：KPI / 分段筛选 / 新建弹层 / 详情抽屉 / 编辑资料（设计稿落代码）
+ *
+ * 串行执行：afterAll 按 MARK 清理本文件造的数据，并行会互相删除。
+ */
+
+test.describe.configure({ mode: "serial", timeout: 120_000 });
+
+const BACKEND = path.resolve(__dirname, "../../backend");
+const DESIGN = path.resolve(__dirname, "../../designs/admin-merchant-brokers");
+const MARK = `E2EIT7${Date.now()}`;
+const PHONE = `138${MARK.slice(-8)}`;
+
+async function createCompany(
+  ctx: Awaited<ReturnType<typeof createApiContext>>["ctx"],
+  suffix: string,
+): Promise<string> {
+  const res = await ctx.post("/api/v1/admin/merchant/companies", {
+    data: { company_name: `${MARK}${suffix}` },
+  });
+  expect(res.ok(), `建公司失败 HTTP ${res.status()}`).toBeTruthy();
+  return ((await res.json()) as { id: string }).id;
+}
+
+async function createStore(
+  ctx: Awaited<ReturnType<typeof createApiContext>>["ctx"],
+  companyId: string,
+  suffix: string,
+): Promise<string> {
+  const seq = Number(MARK.slice(-4)) % 400;
+  const res = await ctx.post("/api/v1/admin/merchant/stores", {
+    data: {
+      company_id: companyId,
+      store_name: `${MARK}${suffix}`,
+      district: "浦东新区",
+      business_circle: "陆家嘴商圈",
+      address: `${MARK}${suffix}路 1 号`,
+      lng: 121.5 + seq / 1000,
+      lat: 31.2 + seq / 1200,
+      contact_name: "迭代七",
+      contact_phone: PHONE,
+      cooperation_status: "not_cooperated",
+      force_create_reason: "E2E 迭代 7 用例：坐标唯一但可能命中历史残留门店",
+    },
+  });
+  expect(res.ok(), `建门店失败 HTTP ${res.status()}`).toBeTruthy();
+  return ((await res.json()) as { store: { id: string } }).store.id;
+}
+
+let deletableCompany = "";
+let companyWithStore = "";
+let companyWithStoreId = "";
+let uiCompany = "";
+let storeForUiDelete = "";
+let storeForDrawer = "";
+let drawerCompany = "";
+let storeForRebind = "";
+
+test.beforeAll(async () => {
+  const { ctx, dispose } = await createApiContext();
+  try {
+    deletableCompany = await createCompany(ctx, "可删公司");
+    companyWithStore = await createCompany(ctx, "有店公司");
+    companyWithStoreId = await createStore(ctx, companyWithStore, "有店门店");
+    uiCompany = await createCompany(ctx, "界面删除公司");
+    const storeDeleteCompany = await createCompany(ctx, "门店删除公司");
+    storeForUiDelete = await createStore(ctx, storeDeleteCompany, "待删门店");
+    drawerCompany = await createCompany(ctx, "抽屉公司");
+    storeForDrawer = await createStore(ctx, drawerCompany, "抽屉门店");
+    const rebindCompany = await createCompany(ctx, "换绑公司");
+    storeForRebind = await createStore(ctx, rebindCompany, "换绑目标门店");
+  } finally {
+    await dispose();
+  }
+});
+
+test("REQ-IT7-02 公司软删除：删除后列表隐藏，有门店时 409", async () => {
+  const { ctx, dispose } = await createApiContext();
+  try {
+    const del = await ctx.post(`/api/v1/admin/merchant/companies/${deletableCompany}/delete`, {
+      data: { reason: "E2E 迭代 7：公司软删除" },
+    });
+    expect(del.status(), await del.text()).toBe(200);
+
+    const list = await ctx.get(
+      `/api/v1/admin/merchant/companies?keyword=${encodeURIComponent(`${MARK}可删公司`)}&include_disabled=true&page=1&page_size=20`,
+    );
+    expect(list.ok()).toBeTruthy();
+    const body = (await list.json()) as { items: { id: string }[]; total: number };
+    expect(body.items.map((item) => item.id)).not.toContain(deletableCompany);
+    expect(body.total).toBe(0);
+
+    const blocked = await ctx.post(`/api/v1/admin/merchant/companies/${companyWithStore}/delete`, {
+      data: { reason: "E2E 迭代 7：有门店应拦截" },
+    });
+    expect(blocked.status()).toBe(409);
+    expect(((await blocked.json()) as { message: string }).message).toContain("门店");
+
+    // 幂等：重复删除同一公司仍返回 200
+    const again = await ctx.post(`/api/v1/admin/merchant/companies/${deletableCompany}/delete`, {
+      data: { reason: "E2E 迭代 7：重复删除" },
+    });
+    expect(again.status()).toBe(200);
+    expect(companyWithStoreId).toBeTruthy();
+  } finally {
+    await dispose();
+  }
+});
+
+test("REQ-IT7-02 公司删除 UI：填写原因后从列表移除", async ({ page }) => {
+  await loginPage(page);
+  await page.goto("/admin/merchant/companies");
+  await page.getByLabel("按公司名称搜索").fill(`${MARK}界面删除公司`);
+  await page.getByRole("button", { name: "查询" }).click();
+  await expect(page.getByText(`${MARK}界面删除公司`).first()).toBeVisible();
+
+  await page.getByRole("button", { name: `删除公司 ${MARK}界面删除公司` }).click();
+  await page.getByLabel("删除原因").fill("E2E 迭代 7：后台 UI 删除公司");
+  await page.getByRole("button", { name: "确认删除" }).click();
+  await expect(page.getByText(`${MARK}界面删除公司`)).toHaveCount(0);
+
+  const { ctx, dispose } = await createApiContext();
+  try {
+    const res = await ctx.get(
+      `/api/v1/admin/merchant/companies?keyword=${encodeURIComponent(`${MARK}界面删除公司`)}&include_disabled=true&page=1&page_size=20`,
+    );
+    const body = (await res.json()) as { items: { id: string }[] };
+    expect(body.items.map((item) => item.id)).not.toContain(uiCompany);
+  } finally {
+    await dispose();
+  }
+});
+
+test("REQ-IT7-01 门店软删除：后台 UI 删除后列表不再展示", async ({ page }) => {
+  await loginPage(page);
+  await page.goto("/admin/merchant/stores");
+  await page.getByLabel("搜索门店").fill(`${MARK}待删门店`);
+  await page.getByRole("button", { name: "查询" }).click();
+  await expect(page.getByText(`${MARK}待删门店`).first()).toBeVisible();
+
+  await page.getByRole("button", { name: `删除门店 ${MARK}待删门店` }).click();
+  await page.getByLabel("删除原因").fill("E2E 迭代 7：后台 UI 删除门店");
+  await page.getByRole("button", { name: "确认删除" }).click();
+  await expect(page.getByText(`${MARK}待删门店`)).toHaveCount(0);
+
+  const { ctx, dispose } = await createApiContext();
+  try {
+    const res = await ctx.get(
+      `/api/v1/admin/merchant/stores?keyword=${encodeURIComponent(`${MARK}待删门店`)}&page=1&page_size=20`,
+    );
+    expect(res.ok()).toBeTruthy();
+    const body = (await res.json()) as { items: { id: string }[] };
+    expect(body.items.map((item) => item.id)).not.toContain(storeForUiDelete);
+  } finally {
+    await dispose();
+  }
+});
+
+test("REQ-IT7-01 门店详情抽屉：查看 → 编辑 → 保存修改", async ({ page }) => {
+  await loginPage(page);
+  await page.goto("/admin/merchant/stores");
+  await page.getByLabel("搜索门店").fill(`${MARK}抽屉门店`);
+  await page.getByRole("button", { name: "查询" }).click();
+  await page.getByRole("button", { name: "详情" }).first().click();
+
+  const drawer = page.getByRole("dialog");
+  await expect(drawer.getByText("基础信息")).toBeVisible();
+  await expect(drawer.getByText(`${MARK}抽屉门店`).first()).toBeVisible();
+
+  await drawer.getByRole("button", { name: "编辑" }).click();
+  const nameInput = drawer.getByLabel(/门店名称/);
+  await expect(nameInput).toBeVisible();
+  await nameInput.fill(`${MARK}抽屉门店改名`);
+  await drawer.getByRole("button", { name: "保存修改" }).click();
+  await expect(drawer.getByText(`${MARK}抽屉门店改名`).first()).toBeVisible();
+
+  const { ctx, dispose } = await createApiContext();
+  try {
+    const res = await ctx.get(`/api/v1/admin/merchant/stores/${storeForDrawer}`);
+    expect(res.ok()).toBeTruthy();
+    const detail = (await res.json()) as { store_name: string; district: string };
+    expect(detail.store_name).toBe(`${MARK}抽屉门店改名`);
+    expect(detail.district).toBeTruthy();
+  } finally {
+    await dispose();
+  }
+});
+
+test("REQ-IT7-03 经纪人管理页：KPI / 分段筛选 / 新建弹层 / 详情抽屉 / 编辑资料", async ({ page }) => {
+  const phone = `137${MARK.slice(-8)}`;
+  const { ctx, dispose } = await createApiContext();
+  let brokerId = "";
+  try {
+    const res = await ctx.post("/api/v1/admin/merchant/brokers", {
+      data: { name: `${MARK}经纪人`, phone, store_id: storeForDrawer, remark: "E2E 迭代 7 经纪人模块" },
+    });
+    expect(res.ok(), `建经纪人失败 HTTP ${res.status()}`).toBeTruthy();
+    brokerId = ((await res.json()) as { id: string }).id;
+  } finally {
+    await dispose();
+  }
+
+  await loginPage(page);
+  await page.goto("/admin/merchant/brokers");
+  await expect(page.getByText("经纪人总数")).toBeVisible();
+  await expect(page.getByText("待审核绑定")).toBeVisible();
+  for (const label of ["全部", "已绑定", "未绑定", "待审核"]) {
+    await expect(page.getByRole("button", { name: new RegExp(`^${label}`) })).toBeVisible();
+  }
+
+  const createdName = `${MARK}新建经纪人`;
+  await page.getByRole("button", { name: /新建经纪人/ }).click();
+  await expect(page.getByText("手机号用于绑定唯一档案")).toBeVisible();
+  await page.getByLabel("经纪人姓名").fill(createdName);
+  await page.getByLabel("经纪人手机号").fill(`136${MARK.slice(-8)}`);
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByText(createdName)).toBeVisible();
+
+  const { ctx: createCtx, dispose: createDispose } = await createApiContext();
+  try {
+    const res = await createCtx.get(`/api/v1/admin/merchant/brokers?keyword=${encodeURIComponent(createdName)}`);
+    expect(res.ok()).toBeTruthy();
+    expect(((await res.json()) as { total: number }).total).toBe(1);
+  } finally {
+    await createDispose();
+  }
+
+  await page.getByLabel("搜索经纪人").fill(`${MARK}经纪人`);
+  await page.getByLabel("搜索经纪人").press("Enter");
+  const row = page.getByRole("button", { name: `查看经纪人 ${MARK}经纪人` });
+  await expect(row).toBeVisible();
+  await expect(page.getByText(`${MARK}经纪人改名`)).toHaveCount(0);
+  await row.click();
+
+  const drawer = page.getByRole("dialog");
+  await expect(drawer.getByRole("heading", { name: "绑定信息" })).toBeVisible();
+  await expect(drawer.getByRole("heading", { name: "基本信息" })).toBeVisible();
+  await expect(drawer.getByRole("heading", { name: "绑定历史" })).toBeVisible();
+  await drawer.getByRole("button", { name: /编辑资料/ }).click();
+  const nameInput = page.getByLabel("经纪人姓名");
+  await expect(nameInput).toBeVisible();
+  await nameInput.fill(`${MARK}经纪人改名`);
+  await page.getByRole("button", { name: "保存" }).click();
+  await expect(page.getByRole("dialog").getByText(`${MARK}经纪人改名`).first()).toBeVisible();
+
+  const verify = await createApiContext();
+  try {
+    const res = await verify.ctx.get(`/api/v1/admin/merchant/brokers/${brokerId}`);
+    expect(res.ok()).toBeTruthy();
+    expect(((await res.json()) as { name: string }).name).toBe(`${MARK}经纪人改名`);
+  } finally {
+    await verify.dispose();
+  }
+});
+
+test("REQ-IT7-05 换绑门店改为关键词搜索选择（万级门店可用）", async ({ page }) => {
+  const phone = `139${MARK.slice(-8)}`;
+  const brokerName = `${MARK}换绑经纪人`;
+  let brokerId = "";
+  const { ctx, dispose } = await createApiContext();
+  try {
+    const res = await ctx.post("/api/v1/admin/merchant/brokers", {
+      data: { name: brokerName, phone, store_id: storeForDrawer, remark: "E2E 迭代 7 换绑搜索" },
+    });
+    expect(res.ok(), `建经纪人失败 HTTP ${res.status()}`).toBeTruthy();
+    brokerId = ((await res.json()) as { id: string }).id;
+  } finally {
+    await dispose();
+  }
+
+  await loginPage(page);
+  await page.goto("/admin/merchant/brokers");
+  await page.getByLabel("搜索经纪人").fill(brokerName);
+  await page.getByLabel("搜索经纪人").press("Enter");
+  await page.getByRole("button", { name: `查看经纪人 ${brokerName}` }).click();
+
+  const drawer = page.getByRole("dialog").first();
+  await drawer.getByRole("button", { name: "换绑" }).click();
+  const rebind = page.getByRole("dialog").last();
+  await rebind.getByLabel("搜索新门店").fill(`${MARK}换绑目标门店`);
+  await rebind
+    .getByRole("option")
+    .filter({ hasText: `${MARK}换绑目标门店` })
+    .first()
+    .click();
+  await rebind.getByLabel("换绑原因").fill("E2E 迭代 7：换绑到目标门店");
+  await rebind.getByRole("button", { name: "确认换绑" }).click();
+  await expect(page.getByRole("button", { name: "确认换绑" })).toHaveCount(0);
+
+  const verify = await createApiContext();
+  try {
+    await expect
+      .poll(
+        async () => {
+          const res = await verify.ctx.get(`/api/v1/admin/merchant/brokers/${brokerId}?t=${Date.now()}`);
+          if (!res.ok()) return "";
+          const body = (await res.json()) as { store_id: string | null };
+          return body.store_id ?? "";
+        },
+        { timeout: 10_000 },
+      )
+      .toBe(storeForRebind);
+    const res = await verify.ctx.get(`/api/v1/admin/merchant/brokers/${brokerId}?t=${Date.now()}`);
+    const body = (await res.json()) as { store_name: string | null };
+    expect(body.store_name).toContain(`${MARK}换绑目标门店`);
+  } finally {
+    await verify.dispose();
+  }
+});
+
+test("REQ-IT7-03 经纪人模块设计稿存在且遵循 Steep 规范", () => {
+  const htmlPath = path.join(DESIGN, "index.html");
+  const metaPath = path.join(DESIGN, "_d_meta.json");
+  expect(fs.existsSync(htmlPath), `缺少设计稿 ${htmlPath}`).toBeTruthy();
+  expect(fs.existsSync(metaPath), `缺少设计资产登记 ${metaPath}`).toBeTruthy();
+
+  const html = fs.readFileSync(htmlPath, "utf8");
+  expect(html).toContain("经纪人管理");
+  expect(html).toContain("新建经纪人");
+  expect(html).toContain("#17191c");
+  expect(html).toMatch(/--font-serif/);
+  // 自包含：不得引用外部脚本/样式/字体/图片（评审环境可能离线）
+  expect(html).not.toMatch(/<script[^>]+src=/i);
+  expect(html).not.toMatch(/<link[^>]+href=["']https?:/i);
+  expect(html).not.toMatch(/url\(["']?https?:/i);
+
+  const meta = JSON.parse(fs.readFileSync(metaPath, "utf8")) as {
+    type: string;
+    assets: Record<string, { versions: { path: string; status: string }[] }>;
+  };
+  expect(meta.type).toBe("design");
+  expect(meta.assets["经纪人管理"]?.versions[0]?.path).toBe("index.html");
+  expect(meta.assets["经纪人管理"]?.versions[0]?.status).toBe("needs-review");
+});
+
+test.afterAll(() => {
+  execFileSync(
+    path.resolve(BACKEND, ".venv/bin/python"),
+    [
+      "-c",
+      `
+import os, sys
+sys.path.insert(0, ".")
+from sqlalchemy import or_
+from db import SessionLocal
+from models import (
+    MerchantBroker,
+    MerchantBrokerBinding,
+    MerchantCompany,
+    MerchantStore,
+)
+mark = os.environ["E2E_MARK"]
+db = SessionLocal()
+try:
+    store_ids = [
+        row.id
+        for row in db.query(MerchantStore.id).filter(MerchantStore.store_name.like(f"%{mark}%")).all()
+    ]
+    # REQ-IT5-06：建店会自动生成联系人占位经纪人，按门店归属一并清理
+    store_filter = MerchantBroker.store_id.in_(store_ids) if store_ids else False
+    broker_ids = [
+        row.id
+        for row in db.query(MerchantBroker.id)
+        .filter(or_(MerchantBroker.name.like(f"%{mark}%"), store_filter))
+        .all()
+    ]
+    if broker_ids or store_ids:
+        db.query(MerchantBrokerBinding).filter(
+            (MerchantBrokerBinding.broker_id.in_(broker_ids))
+            | (MerchantBrokerBinding.store_id.in_(store_ids))
+        ).delete(synchronize_session=False)
+    if broker_ids:
+        db.query(MerchantBroker).filter(MerchantBroker.id.in_(broker_ids)).delete(
+            synchronize_session=False
+        )
+    db.query(MerchantStore).filter(MerchantStore.store_name.like(f"%{mark}%")).delete(
+        synchronize_session=False
+    )
+    db.query(MerchantCompany).filter(MerchantCompany.company_name.like(f"%{mark}%")).delete(
+        synchronize_session=False
+    )
+    db.commit()
+finally:
+    db.close()
+`,
+    ],
+    { cwd: BACKEND, env: { ...process.env, E2E_MARK: MARK } },
+  );
+});

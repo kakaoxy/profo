@@ -1,5 +1,7 @@
 """商户（公司）服务（V02 REQ-M01A-001/002）."""
 
+from datetime import datetime, timezone
+
 from fastapi import Request
 from sqlalchemy.orm import Session
 
@@ -7,6 +9,7 @@ from constants.merchant import MerchantCompanyStatus
 from models.merchant import MerchantCompany
 from schemas.merchant import (
     MerchantCompanyCreate,
+    MerchantCompanyDeleteRequest,
     MerchantCompanyListResponse,
     MerchantCompanyUpdate,
 )
@@ -22,8 +25,12 @@ class MerchantCompanyService:
         self.db = db
 
     def get(self, company_id: str, *, include_disabled: bool = True) -> MerchantCompany:
-        """按 ID 取公司."""
-        company = self.db.query(MerchantCompany).filter(MerchantCompany.id == company_id).first()
+        """按 ID 取公司（已软删的按不存在处理）."""
+        company = (
+            self.db.query(MerchantCompany)
+            .filter(MerchantCompany.id == company_id, MerchantCompany.deleted_at.is_(None))
+            .first()
+        )
         if company is None:
             msg = "公司不存在"
             raise ResourceNotFoundError(msg)
@@ -44,7 +51,9 @@ class MerchantCompanyService:
         if not keyword:
             return MerchantCompanyListResponse(items=[], total=0)
 
-        query = self.db.query(MerchantCompany).filter(MerchantCompany.company_name.ilike(f"%{keyword}%"))
+        query = self.db.query(MerchantCompany).filter(
+            MerchantCompany.company_name.ilike(f"%{keyword}%"), MerchantCompany.deleted_at.is_(None)
+        )
         if not include_disabled:
             query = query.filter(MerchantCompany.status == MerchantCompanyStatus.NORMAL.value)
         total = query.count()
@@ -61,7 +70,7 @@ class MerchantCompanyService:
     ) -> MerchantCompanyListResponse:
         """管理端公司分页列表（REQ-IT1-05）：keyword 为空返回全部，按创建时间倒序."""
         keyword = (keyword or "").strip()
-        query = self.db.query(MerchantCompany)
+        query = self.db.query(MerchantCompany).filter(MerchantCompany.deleted_at.is_(None))
         if keyword:
             query = query.filter(MerchantCompany.company_name.ilike(f"%{keyword}%"))
         if not include_disabled:
@@ -80,7 +89,7 @@ class MerchantCompanyService:
 
     def list_all(self, *, include_disabled: bool = True, limit: int = 100) -> list[MerchantCompany]:
         """管理端公司列表（下拉选项用）."""
-        query = self.db.query(MerchantCompany)
+        query = self.db.query(MerchantCompany).filter(MerchantCompany.deleted_at.is_(None))
         if not include_disabled:
             query = query.filter(MerchantCompany.status == MerchantCompanyStatus.NORMAL.value)
         return query.order_by(MerchantCompany.company_name.asc()).limit(limit).all()
@@ -174,6 +183,51 @@ class MerchantCompanyService:
         self.db.commit()
         self.db.refresh(company)
         return company
+
+    def soft_delete(
+        self,
+        company_id: str,
+        req: MerchantCompanyDeleteRequest,
+        *,
+        operator_id: str | None,
+        request: Request | None = None,
+    ) -> None:
+        """公司软删除（REQ-IT7-02）.
+
+        公司下有未删除门店时拒绝删除，避免门店指向已删公司；重复删除幂等。
+        """
+        from models.merchant import MerchantStore
+
+        company = self.db.query(MerchantCompany).filter(MerchantCompany.id == company_id).first()
+        if company is None:
+            msg = "公司不存在"
+            raise ResourceNotFoundError(msg)
+        if company.deleted_at is not None:
+            return
+        store_count = (
+            self.db.query(MerchantStore.id)
+            .filter(MerchantStore.company_id == company.id, MerchantStore.is_deleted.is_(False))
+            .count()
+        )
+        if store_count > 0:
+            msg = f"公司下仍有 {store_count} 家门店，不能删除，请先处理门店或改用停用"
+            raise ConflictError(msg)
+
+        before = self._snapshot(company)
+        company.deleted_at = datetime.now(timezone.utc)
+        company.deleted_by = operator_id
+        add_audit_log(
+            self.db,
+            user_id=operator_id,
+            action="delete",
+            resource_type="merchant_company",
+            resource_id=str(company.id),
+            # 与门店删除一致：删除后不存在「新状态」，原因并入 before
+            before=before | {"delete_reason": req.reason},
+            after=None,
+            request=request,
+        )
+        self.db.commit()
 
     def _sync_store_company_name(self, company_id: str, company_name: str) -> None:
         """公司改名后同步门店冗余 company_name（BR-M01B-013）."""

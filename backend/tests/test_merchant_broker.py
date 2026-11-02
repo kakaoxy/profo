@@ -455,6 +455,37 @@ def test_admin_broker_crud_and_disable_unbind(
     assert disabled.json()["store_id"] is None
 
 
+def test_admin_broker_summary_and_source_filter(
+    admin_client: TestClient,
+    seeded_db: dict,
+) -> None:
+    """概览计数与来源筛选（REQ-IT7-03 列表页 KPI / tabs）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"])
+    created = admin_client.post(
+        f"{API}/admin/merchant/brokers",
+        json={"name": "来源筛选经纪人", "phone": "13500002222", "store_id": store["id"]},
+    )
+    assert created.status_code == 201, created.text
+
+    summary = admin_client.get(f"{API}/admin/merchant/brokers/summary")
+    assert summary.status_code == 200, summary.text
+    body = summary.json()
+    assert body["total"] == 2
+    assert body["bound"] == 2
+    assert body["pending_binding_count"] == 0
+    assert body["disabled"] == 0
+
+    backoffice = admin_client.get(f"{API}/admin/merchant/brokers", params={"source": "backoffice"})
+    assert backoffice.status_code == 200
+    assert backoffice.json()["total"] == 1
+    assert backoffice.json()["items"][0]["name"] == "来源筛选经纪人"
+
+    contact = admin_client.get(f"{API}/admin/merchant/brokers", params={"source": "store_contact"})
+    assert contact.status_code == 200
+    assert contact.json()["total"] == 1
+
+
 def test_admin_force_change_keeps_history(
     broker_client: TestClient,
     admin_client: TestClient,

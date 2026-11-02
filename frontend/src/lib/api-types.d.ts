@@ -6866,6 +6866,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/merchant/companies/{company_id}/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 公司软删除
+         * @description 公司下仍有未删除门店时拒绝删除（REQ-IT7-02）.
+         */
+        post: operations["delete_company_api_v1_admin_merchant_companies__company_id__delete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/merchant/stores": {
         parameters: {
             query?: never;
@@ -7192,6 +7212,26 @@ export interface paths {
          * @description 后台新建经纪人（手机号加密，哈希唯一）.
          */
         post: operations["create_broker_api_v1_admin_merchant_brokers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/merchant/brokers/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 经纪人概览计数
+         * @description 后台经纪人 KPI 与分段计数（REQ-IT7-03）.
+         */
+        get: operations["broker_summary_api_v1_admin_merchant_brokers_summary_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -10739,6 +10779,24 @@ export interface components {
             page: number;
             /** Page Size */
             page_size: number;
+        };
+        /**
+         * BrokerSummaryResponse
+         * @description 后台经纪人概览计数（REQ-IT7-03 列表页 KPI / 分段筛选）.
+         */
+        BrokerSummaryResponse: {
+            /** Total */
+            total: number;
+            /** Bound */
+            bound: number;
+            /** Unbound */
+            unbound: number;
+            /** Pending */
+            pending: number;
+            /** Disabled */
+            disabled: number;
+            /** Pending Binding Count */
+            pending_binding_count: number;
         };
         /**
          * BrokerUnbindRequest
@@ -16672,6 +16730,17 @@ export interface components {
              * @description 备注
              */
             remark?: string | null;
+        };
+        /**
+         * MerchantCompanyDeleteRequest
+         * @description 公司软删除请求（REQ-IT7-02）.
+         */
+        MerchantCompanyDeleteRequest: {
+            /**
+             * Reason
+             * @description 删除原因
+             */
+            reason: string;
         };
         /**
          * MerchantCompanyListResponse
@@ -38777,6 +38846,44 @@ export interface operations {
             };
         };
     };
+    delete_company_api_v1_admin_merchant_companies__company_id__delete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description 公司ID */
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MerchantCompanyDeleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_stores_api_v1_admin_merchant_stores_get: {
         parameters: {
             query?: {
@@ -39409,6 +39516,10 @@ export interface operations {
                 keyword?: string | null;
                 store_id?: string | null;
                 bind_status?: string | null;
+                /** @description 来源筛选（自主申请/员工推荐/后台新增等） */
+                source?: string | null;
+                /** @description 仅看存在待审绑定申请的经纪人 */
+                pending_only?: boolean;
                 /** @description 页码 */
                 page?: number;
                 /** @description 每页数量 */
@@ -39469,6 +39580,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    broker_summary_api_v1_admin_merchant_brokers_summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrokerSummaryResponse"];
                 };
             };
         };

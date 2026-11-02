@@ -207,6 +207,7 @@ from migrations._marketing_notify import (
 # 独立迁移模块
 from migrations._merchant import seed_merchant_platform
 from migrations._merchant_agreement_no_review import drop_agreement_review_fields
+from migrations._merchant_company_soft_delete import add_merchant_company_soft_delete_columns
 from migrations._merchant_schema import (
     add_lead_client_request_id,
     add_lead_merchant_attribution_columns,
@@ -547,6 +548,8 @@ def _run_all_migrations(engine: Engine) -> None:
         migrate_legacy_merchant_region_dict(engine)
         # v116：商户协议取消审核——删审核字段/索引，补 sign_code/void_reason，存量未发起转待签署（幂等）
         drop_agreement_review_fields(engine)
+        # v117：公司管理支持软删除——补 deleted_at/deleted_by 与删除态索引（幂等）
+        add_merchant_company_soft_delete_columns(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise
