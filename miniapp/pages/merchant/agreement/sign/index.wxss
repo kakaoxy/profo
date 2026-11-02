@@ -1,116 +1,38 @@
 @import "../../../../styles/merchant-theme.wxss";
 
-.page {
-  min-height: 100vh;
-  padding: 32rpx 32rpx 80rpx;
-  box-sizing: border-box;
+/* 协议签署页布局。基础件（页面标题 / 卡片 / 状态四态 / 按钮 / 输入 / 底栏）
+ * 全部来自 shared 层 styles/merchant-theme.wxss；本文件只写本页独有的正文块、
+ * 签署人字段与签名画布排布，不重定义任何字号 / 字重 / 颜色 / 圆角 / 阴影。 */
+
+/* ---- 协议正文卡 ---- */
+.agreement-body {
+  margin-top: var(--mp-gap);
 }
-.hero {
-  background: var(--pure-white);
-  color: var(--ink);
-  box-shadow: var(--merchant-shadow);
-  border-radius: var(--merchant-card-radius);
-  padding: 40rpx;
-  margin-bottom: 28rpx;
-}
-.hero__title {
-  font-size: 38rpx;
-  font-weight: 600;
-}
-.hero__sub {
-  margin-top: 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-.card {
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  box-shadow: var(--merchant-shadow);
-  padding: var(--merchant-card-padding);
-  margin-bottom: 28rpx;
-}
-.card-title {
-  font-size: 32rpx;
-  font-weight: 600;
-}
-.content {
+/* 协议正文属长文阅读，行高 1.7（DESIGN.md:470 长文唯一例外，其余说明文字统一 1.5） */
+.agreement-text {
   display: block;
-  margin-top: 20rpx;
-  font-size: 26rpx;
-  line-height: 1.8;
+  font-size: var(--mp-label);
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: -0.13px;
   color: var(--ash);
   white-space: pre-wrap;
 }
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+
+/* ---- 签署人信息卡：卡内最后一个字段贴齐卡片内边距 ---- */
+.field:last-child {
+  margin-bottom: 0;
 }
-.link {
-  color: var(--rust);
-  font-size: 26rpx;
-}
-.field-label {
-  margin: 24rpx 0 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-.input {
-  width: 100%;
-  height: 88rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid var(--merchant-hairline);
-  border-radius: 32rpx;
-  font-size: 28rpx;
-  background: var(--fog);
-  box-sizing: border-box;
-}
+
+/* ---- 签名卡：白底 + dashed hairline 边框，圆角走内层圆角 ---- */
 .signature-canvas {
   width: 100%;
   height: 360rpx;
-  margin-top: 20rpx;
-  border-radius: 24rpx;
   background: var(--pure-white);
-  border: 2rpx dashed var(--dove);
+  border: 2rpx dashed var(--mp-hairline);
+  border-radius: var(--mp-radius-inner);
   box-sizing: border-box;
 }
-.hint {
+.signature-hint {
   margin-top: 16rpx;
-  font-size: 24rpx;
-  line-height: 1.6;
-  color: var(--graphite);
-}
-/* REQ-IT4-06：`.btn-primary` 是 inline-flex，无 width 时按钮按内容收缩并贴在容器左侧；
-   表单主操作按钮统一铺满父容器，让文字在整行内居中。 */
-.submit-btn {
-  display: flex;
-  width: 100%;
-  margin-top: 28rpx;
-}
-.state {
-  padding: 100rpx 48rpx;
-  text-align: center;
-}
-.state__title {
-  font-size: 34rpx;
-  font-weight: 500;
-  margin-bottom: 16rpx;
-}
-.state__text {
-  font-size: 26rpx;
-  color: var(--graphite);
-  line-height: 1.6;
-}
-.state__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 32rpx;
-  height: 80rpx;
-  padding: 0 24rpx;
-  border-radius: 9999rpx;
-  background: transparent;
-  color: var(--rust);
-  font-size: 28rpx;
-  font-weight: 500;
 }

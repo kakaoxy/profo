@@ -1,13 +1,20 @@
 /**
  * 协议手写签名（V05 REQ-M04-003）：阅读正文 → 画布签名 → 上传图片 → 生成 PDF.
+ *
+ * 四态：loading / needLogin / error / ok，与商户模块其余页面一致
+ * （DESIGN.md M7「登录 / 加载 / 错误 / 空 四态统一」）。
  */
 import type { components } from "../../../../types/api-types";
 import { uploadFileToServer } from "../../../../utils/image-upload";
+import { describeRequestError } from "../../../../utils/merchant-errors";
 import { request } from "../../../../utils/request";
+import { getCAccessToken } from "../../../../utils/token";
 
 type Agreement = components["schemas"]["AgreementResponse"];
 type Template = components["schemas"]["AgreementTemplateResponse"];
 type AgreementSignRequest = components["schemas"]["AgreementSignRequest"];
+
+type PageState = "loading" | "error" | "needLogin" | "ok";
 
 interface CanvasInfo {
   node: WechatMiniprogram.Canvas;
@@ -15,13 +22,9 @@ interface CanvasInfo {
   height: number;
 }
 
-function errMessage(err: unknown): string {
-  return (err as { body?: { message?: string } }).body?.message || "操作失败，请重试";
-}
-
 Page({
   data: {
-    state: "loading" as "loading" | "error" | "ok",
+    state: "loading" as PageState,
     errorText: "",
     agreement: null as Agreement | null,
     content: "",
@@ -34,18 +37,29 @@ Page({
   onLoad(options: Record<string, string | undefined>) {
     const id = options.id || "";
     if (!id) {
-      this.setData({ state: "error", errorText: "缺少协议ID" });
+      this.setData({ state: "error", errorText: "签署入口不完整，请返回协议详情重新进入" });
       return;
     }
     (this as unknown as { agreementId: string }).agreementId = id;
-    this.load();
+    void this.load();
+  },
+
+  /** 从登录页返回后若仍是未登录态，重新尝试（登录成功后即可签署）. */
+  onShow() {
+    if (this.data.state === "needLogin" && getCAccessToken()) {
+      void this.load();
+    }
   },
 
   onReady() {
-    this.initCanvas();
+    if (this.data.state === "ok") this.initCanvas();
   },
 
   async load(): Promise<void> {
+    if (!getCAccessToken()) {
+      this.setData({ state: "needLogin" });
+      return;
+    }
     this.setData({ state: "loading", errorText: "" });
     try {
       const agreement = await request<Agreement>({
@@ -57,7 +71,7 @@ Page({
           errorText:
             agreement.status === "signed"
               ? "协议已签署，无需重复操作"
-              : "协议当前不可签署，请返回详情页查看最新状态",
+              : "协议当前不可签署，请返回协议详情查看最新状态",
         });
         return;
       }
@@ -66,17 +80,25 @@ Page({
       this.setData({
         state: "ok",
         agreement,
-        content: template?.content || "协议正文未找到，请联系运营补全模板。",
+        content: template?.content || "协议正文未找到，请联系对接人补全后再签署",
         signerName: agreement.signer_name || "",
       });
       setTimeout(() => this.initCanvas(), 100);
     } catch (err) {
-      this.setData({ state: "error", errorText: errMessage(err) });
+      if ((err as { statusCode?: number }).statusCode === 401) {
+        this.setData({ state: "needLogin" });
+        return;
+      }
+      this.setData({ state: "error", errorText: describeRequestError(err, "协议加载失败") });
     }
   },
 
   onRetry() {
-    this.load();
+    void this.load();
+  },
+
+  onGoLogin() {
+    wx.navigateTo({ url: "/pages/login/index/index" });
   },
 
   initCanvas(): void {
@@ -181,7 +203,7 @@ Page({
       dirty: boolean;
     };
     if (!agreement || !holder.canvas) {
-      wx.showToast({ title: "签名画布未就绪", icon: "none" });
+      wx.showToast({ title: "签名区还没准备好，请稍后再试", icon: "none" });
       return;
     }
     if (!this.data.hasStroke) {
@@ -221,7 +243,7 @@ Page({
       setTimeout(() => wx.navigateBack(), 800);
     } catch (err) {
       wx.hideLoading();
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "签署失败，请重试"), icon: "none" });
     } finally {
       this.setData({ submitting: false });
     }

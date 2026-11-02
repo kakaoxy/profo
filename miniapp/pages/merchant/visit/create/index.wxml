@@ -1,127 +1,170 @@
-<view class="page">
-  <view class="store-head" wx:if="{{store}}">
-    <view class="store-name">{{store.store_name}}</view>
-    <view class="store-address">{{store.address}}</view>
-    <view class="store-meta">{{store.cooperation_status_label}} · {{store.business_circle}}</view>
+<view class="page page--foot">
+  <view class="head">
+    <view class="head__title">{{store ? store.store_name : '拜访登记'}}</view>
+    <view class="head__sub" wx:if="{{store}}">{{store.address}}</view>
+    <view class="head__meta" wx:if="{{store && store.cooperation_status_label}}">
+      <view class="chip chip--{{storeTone}}">{{storeLabel}}</view>
+    </view>
   </view>
 
-  <view class="section">
-    <view class="section-title">拜访信息</view>
-    <view class="form-row">
-      <view class="form-group form-group--flex">
-        <text class="form-label">拜访人 *</text>
-        <!-- REQ-IT2-03：优先从门店经纪人中选；门店暂无经纪人时退回手填联系人 -->
-        <picker
-          wx:if="{{brokers.length}}"
-          mode="selector"
-          range="{{brokerLabels}}"
-          value="{{brokerIndex}}"
-          bindchange="onSelectBroker"
-        >
-          <view class="input input--picker {{form.contact_name ? '' : 'input--placeholder'}}">
-            {{form.contact_name || '请选择门店经纪人'}}
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">请先登录</view>
+    <view class="state__text">拜访登记需要登录商户账号，登录后这里会自动打开</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onGoLogin">去登录</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中…</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">没能打开这家门店</view>
+    <view class="state__text">{{errorText}}</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onRetry">重试</view>
+  </view>
+
+  <block wx:else>
+    <!-- 拜访信息 -->
+    <view class="card">
+      <view class="card__title">拜访信息</view>
+      <view class="card__body">
+        <view class="field-row">
+          <view class="field">
+            <text class="field__label">拜访人 *</text>
+            <picker wx:if="{{brokers.length}}" mode="selector" range="{{brokerLabels}}" value="{{brokerIndex}}" bindchange="onSelectBroker">
+              <view class="pick {{form.contact_name ? '' : 'pick--empty'}}">
+                <text>{{form.contact_name || '请选择门店经纪人'}}</text>
+                <image class="pick__icon" src="{{icons.chevronDown}}" />
+              </view>
+            </picker>
+            <input
+              wx:else
+              class="input"
+              placeholder="门店暂无经纪人，可填写联系人"
+              placeholder-class="ph"
+              value="{{form.contact_name}}"
+              bindinput="onInput"
+              data-field="contact_name"
+            />
           </view>
-        </picker>
-        <input
-          wx:else
-          class="input"
-          placeholder="门店暂无经纪人，可填写联系人"
-          value="{{form.contact_name}}"
-          bindinput="onInput"
-          data-field="contact_name"
-        />
-      </view>
-      <view class="form-group form-group--flex">
-        <text class="form-label">联系电话</text>
-        <input class="input" type="number" value="{{form.contact_phone}}" bindinput="onInput" data-field="contact_phone" />
-      </view>
-    </view>
-    <view class="form-group">
-      <text class="form-label">拜访结果</text>
-      <view class="chip-row">
-        <view
-          wx:for="{{resultOptions}}"
-          wx:key="code"
-          class="chip chip--tap {{form.result === item.code ? 'chip-sky' : 'chip-fog'}}"
-          data-code="{{item.code}}"
-          bindtap="onSelectResult"
-        >{{item.label}}</view>
-      </view>
-    </view>
-    <view class="form-group">
-      <text class="form-label">备注</text>
-      <textarea class="input textarea" placeholder="本次拜访情况" value="{{form.remark}}" bindinput="onInput" data-field="remark" />
-    </view>
-  </view>
+          <view class="field">
+            <text class="field__label">联系电话</text>
+            <input class="input tnum" type="number" value="{{form.contact_phone}}" bindinput="onInput" data-field="contact_phone" />
+          </view>
+        </view>
 
-  <view class="section">
-    <view class="section-title">定位打卡</view>
-    <view class="location-box {{locationOk ? 'location-box--ok' : ''}}">
-      <view wx:if="{{locationOk}}">已定位：{{lng}}, {{lat}}</view>
-      <view wx:elif="{{locationFailure}}">未定位（{{locationFailureType === 'timeout' ? '弱网/超时' : '定位不可用'}}）</view>
-      <view wx:elif="{{locationDenied}}" class="location-box__denied">定位授权被拒绝，请点击「获取定位」并在设置中开启位置权限</view>
-      <view wx:else>门店拜访需获取当前位置，用于距离校验</view>
-    </view>
-    <view class="row-actions">
-      <view class="mini-btn" bindtap="onGetLocation">获取定位</view>
-      <view
-        wx:if="{{!locationDenied}}"
-        class="mini-btn mini-btn--ghost"
-        bindtap="onLocationFallback"
-        >定位失败</view
-      >
-    </view>
-    <input
-      wx:if="{{locationFailure}}"
-      class="input"
-      placeholder="请填写无法定位的原因（弱网/超时）"
-      value="{{locationFailureReason}}"
-      bindinput="onLocationFailureReason"
-    />
-    <input
-      class="input"
-      placeholder="距离门店超过 500 米时请填写原因"
-      value="{{form.distance_abnormal_reason}}"
-      bindinput="onInput"
-      data-field="distance_abnormal_reason"
-    />
-  </view>
+        <view class="field">
+          <text class="field__label">拜访结果</text>
+          <view class="chip-row">
+            <view
+              wx:for="{{resultOptions}}"
+              wx:key="code"
+              class="chip chip--tap {{form.result === item.code ? 'chip--on' : ''}}"
+              data-code="{{item.code}}"
+              hover-class="hoverable"
+              bindtap="onSelectResult"
+            >{{item.label}}</view>
+          </view>
+        </view>
 
-  <view class="section">
-    <view class="section-title">补录</view>
-    <view class="switch-row">
-      <text>这是一次补录（仅支持 7 天内）</text>
-      <switch checked="{{form.is_backfill}}" bindchange="onToggleBackfill" />
-    </view>
-    <view class="form-group" wx:if="{{form.is_backfill}}">
-      <text class="form-label">拜访日期</text>
-      <view class="form-row">
-        <picker mode="date" value="{{backfillDate}}" end="{{today}}" bindchange="onBackfillDate">
-          <view class="input picker-value">{{backfillDate || '请选择日期'}}</view>
-        </picker>
-        <picker mode="time" value="{{backfillTime}}" bindchange="onBackfillTime">
-          <view class="input picker-value">{{backfillTime || '请选择时间'}}</view>
-        </picker>
-      </view>
-      <input class="input" placeholder="补录原因" value="{{form.backfill_reason}}" bindinput="onInput" data-field="backfill_reason" />
-    </view>
-  </view>
-
-  <view class="section">
-    <view class="section-title">拜访照片（选拍）</view>
-    <view class="photo-grid">
-      <view class="photo-item" wx:for="{{photos}}" wx:key="file_url">
-        <image class="photo-img" src="{{item.displayUrl}}" mode="aspectFill" />
-        <view class="photo-remove" data-index="{{index}}" bindtap="onRemovePhoto">×</view>
-      </view>
-      <view class="photo-add" bindtap="onAddPhoto">
-        <text class="photo-add__icon">＋</text>
-        <text>添加照片</text>
+        <view class="field field--last">
+          <text class="field__label">备注</text>
+          <textarea class="input input--area" placeholder="本次拜访聊了什么、下次什么时候跟进" placeholder-class="ph" value="{{form.remark}}" bindinput="onInput" data-field="remark" />
+        </view>
       </view>
     </view>
-  </view>
 
-  <view class="footer">
-    <button class="btn-primary footer__btn" loading="{{submitting}}" bindtap="onSubmit">提交拜访</button>
-  </view>
+    <!-- 定位打卡 -->
+    <view class="card">
+      <view class="card__title">定位打卡</view>
+      <view class="card__body">
+        <view class="hint tnum" wx:if="{{locationOk}}">已定位：{{lng}}, {{lat}}</view>
+        <view class="hint hint--warn" wx:elif="{{locationDenied}}">定位授权被拒绝，请在设置中开启位置权限后重试</view>
+        <view class="hint hint--warn" wx:elif="{{locationFailure}}">
+          已标记为定位失败（{{locationFailureType === 'timeout' ? '弱网或超时' : '设备定位不可用'}}）
+        </view>
+        <view class="hint" wx:else>拜访需要当前位置，用于校验是否到店</view>
+
+        <view class="loc-actions">
+          <view class="mbtn" hover-class="hoverable" bindtap="onGetLocation">
+            <image class="icon" src="{{icons.pin}}" />
+            <text>{{locationOk ? '重新定位' : '获取定位'}}</text>
+          </view>
+          <view class="link" wx:if="{{!locationDenied}}" hover-class="hoverable" bindtap="onLocationFallback">定位失败</view>
+        </view>
+
+        <view class="field field--last" wx:if="{{locationFailure}}">
+          <text class="field__label">无法定位的原因 *</text>
+          <input class="input" placeholder="例如：门店在地下二层没有信号" placeholder-class="ph" value="{{locationFailureReason}}" bindinput="onLocationFailureReason" />
+        </view>
+
+        <view class="field field--last">
+          <text class="field__label">距离异常说明</text>
+          <input class="input" placeholder="距离门店超过 500 米时填写" placeholder-class="ph" value="{{form.distance_abnormal_reason}}" bindinput="onInput" data-field="distance_abnormal_reason" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 补录 -->
+    <view class="card">
+      <view class="rowhead">
+        <view class="card__title">补录</view>
+        <switch color="#17191c" checked="{{form.is_backfill}}" bindchange="onToggleBackfill" />
+      </view>
+      <view class="card__body">
+        <view class="hint">补录用于当天忘记打卡的情况，只支持最近 7 天。</view>
+        <block wx:if="{{form.is_backfill}}">
+          <view class="field">
+            <text class="field__label">拜访日期 *</text>
+            <view class="field-row">
+              <picker class="backfill-pick" mode="date" value="{{backfillDate}}" end="{{today}}" bindchange="onBackfillDate">
+                <view class="pick {{backfillDate ? '' : 'pick--empty'}}">
+                  <text>{{backfillDate || '请选择日期'}}</text>
+                  <image class="pick__icon" src="{{icons.chevronDown}}" />
+                </view>
+              </picker>
+              <picker class="backfill-pick" mode="time" value="{{backfillTime}}" bindchange="onBackfillTime">
+                <view class="pick">
+                  <text>{{backfillTime || '请选择时间'}}</text>
+                  <image class="pick__icon" src="{{icons.chevronDown}}" />
+                </view>
+              </picker>
+            </view>
+          </view>
+          <view class="field field--last">
+            <text class="field__label">补录原因 *</text>
+            <input class="input" placeholder="例如：当天手机没电" placeholder-class="ph" value="{{form.backfill_reason}}" bindinput="onInput" data-field="backfill_reason" />
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <!-- 拜访照片 -->
+    <view class="card">
+      <view class="rowhead">
+        <view class="card__title">拜访照片</view>
+        <view class="hint tnum">{{photos.length}}/20</view>
+      </view>
+      <view class="photo-grid">
+        <view class="photo-item" wx:for="{{photos}}" wx:key="file_url">
+          <image class="photo-img" src="{{item.displayUrl}}" mode="aspectFill" />
+          <view class="photo-remove" data-index="{{index}}" hover-class="hoverable" bindtap="onRemovePhoto">
+            <view class="photo-remove__dot">
+              <image class="icon photo-remove__icon" src="{{icons.close}}" />
+            </view>
+          </view>
+        </view>
+        <view class="photo-add" hover-class="hoverable" bindtap="onAddPhoto">
+          <image class="icon" src="{{icons.camera}}" />
+          <text class="photo-add__label">添加照片</text>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>
+
+<view class="foot" wx:if="{{state === 'ok'}}">
+  <button class="mbtn mbtn--ink mbtn--cta" hover-class="hoverable" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit">
+    提交拜访
+  </button>
 </view>

@@ -1,54 +1,72 @@
-<view class="page">
-  <view class="hero">
-    <view class="hero__title">合作协议</view>
-    <view class="hero__sub">发起、商户签署与归档</view>
+<view class="page page--foot">
+  <view class="head">
+    <view class="head__title">合作协议</view>
+    <view class="head__sub">发起、商户签署与归档</view>
   </view>
 
-  <view class="tabs">
+  <!-- L6：横向列表用 scroll-view，enable-flex 让 tab 不换行也不被压缩 -->
+  <scroll-view class="tabs" scroll-x enable-flex enhanced show-scrollbar="{{false}}">
     <view
       wx:for="{{tabs}}"
       wx:key="code"
       class="tab {{status === item.code ? 'tab--active' : ''}}"
       data-code="{{item.code}}"
       bindtap="onSelectTab"
+      hover-class="hoverable"
     >{{item.label}}</view>
-  </view>
+  </scroll-view>
 
   <view class="state" wx:if="{{state === 'needLogin'}}">
     <view class="state__title">请先登录</view>
     <view class="state__text">协议功能仅对具备商户协议权限的员工开放</view>
-    <view class="state__btn" bindtap="onGoLogin">去登录</view>
+    <view class="state__btn" bindtap="onGoLogin" hover-class="hoverable">去登录</view>
   </view>
   <view class="state" wx:elif="{{state === 'loading'}}">
-    <view class="state__text">加载中...</view>
+    <view class="state__text">加载中…</view>
   </view>
   <view class="state" wx:elif="{{state === 'error'}}">
-    <view class="state__title">加载失败</view>
+    <view class="state__title">没能加载协议列表</view>
     <view class="state__text">{{errorText}}</view>
-    <view class="state__btn" bindtap="onRetry">重试</view>
+    <view class="state__btn" bindtap="onRetry" hover-class="hoverable">重试</view>
   </view>
   <view class="state" wx:elif="{{state === 'empty'}}">
-    <view class="state__title">暂无协议</view>
-    <view class="state__text">选择门店与模板后发起合作协议</view>
+    <view class="state__title">{{status === 'all' ? '还没有合作协议' : '没有' + statusLabel + '的协议'}}</view>
+    <view class="state__text">选择门店与模板后即可发起，签署进度会回到这里</view>
+    <view
+      wx:if="{{status !== 'all'}}"
+      class="state__btn"
+      data-code="all"
+      bindtap="onSelectTab"
+      hover-class="hoverable"
+    >查看全部协议</view>
   </view>
 
   <block wx:elif="{{state === 'items'}}">
-    <view class="list-head">共 {{total}} 份协议</view>
-    <view class="agreement-card" wx:for="{{items}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapItem">
-      <view class="agreement-top">
-        <view class="agreement-title">{{item.title}}</view>
-        <text class="chip {{item.statusText === '待签署' ? 'chip-apricot' : 'chip-fog'}}">{{item.statusText}}</text>
+    <view class="listhead">
+      <text class="listhead__count">共 {{total}} 份协议</text>
+    </view>
+    <!-- T2：「到期」只在页脚区出现一次 -->
+    <view
+      wx:for="{{items}}"
+      wx:key="id"
+      class="card card--tap agreement"
+      data-id="{{item.id}}"
+      bindtap="onTapItem"
+      hover-class="hoverable"
+    >
+      <view class="agreement__top">
+        <view class="agreement__title">{{item.title}}</view>
+        <text class="chip chip--{{item.statusTone}}">{{item.statusText}}</text>
       </view>
-      <view class="agreement-line">签约主体：{{item.subject_name}}</view>
-      <view class="agreement-line">签署人：{{item.signerText}} · 到期：{{item.expireText}}</view>
-      <view class="agreement-meta">
-        <text>到期：{{item.expireText}}</text>
-        <text class="chevron">›</text>
+      <view class="agreement__sub">签约主体：{{item.subject_name}}</view>
+      <view class="agreement__foot">
+        <view class="agreement__meta">签署人 {{item.signerText}} · 到期 {{item.expireText}}</view>
+        <image class="icon" src="{{icons.chevronRight}}" />
       </view>
     </view>
   </block>
 
-  <view class="footer">
-    <button class="btn-primary footer__btn" bindtap="onCreate">发起协议</button>
+  <view class="foot" wx:if="{{state === 'items' || state === 'empty'}}">
+    <button class="mbtn mbtn--ink mbtn--cta" bindtap="onCreate" hover-class="hoverable">发起协议</button>
   </view>
 </view>

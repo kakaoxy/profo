@@ -1,74 +1,212 @@
-<view class="page">
-  <view class="hero">
-    <view class="hero__title">创建门店</view>
-    <view class="hero__sub">创建后进入后台审核，并自动绑定为你的门店</view>
+<view class="page page--foot">
+  <view class="head">
+    <view class="head__title">创建门店</view>
+    <view class="head__sub">提交后由后台审核，通过后门店进入你的门店列表</view>
   </view>
 
-  <view class="card">
-    <view class="field-label">所属公司</view>
-    <view wx:if="{{companyName}}" class="hint">已选择：{{companyName}}</view>
-    <view wx:else>
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">请先登录</view>
+    <view class="state__text">登录后才能提交门店，登录成功后回到本页继续填写</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onGoLogin">去登录</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中…</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">没能加载区域列表</view>
+    <view class="state__text">{{errorText}}</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onRetry">重试</view>
+  </view>
+
+  <view class="card" wx:else>
+    <!-- 所属公司 -->
+    <view class="field">
+      <text class="field__label">所属公司 *</text>
       <view class="search-row">
-        <input class="input input--flex" placeholder="输入公司名称搜索" value="{{companyKeyword}}" bindinput="onCompanyKeywordInput" bindconfirm="searchCompanies" />
-        <view class="mini-btn" bindtap="searchCompanies">搜索</view>
+        <input
+          class="input input--flex"
+          placeholder="输入公司名称搜索"
+          placeholder-class="ph"
+          confirm-type="search"
+          value="{{companyKeyword}}"
+          bindinput="onCompanyKeywordInput"
+          bindconfirm="searchCompanies"
+        />
+        <button class="mbtn" hover-class="hoverable" bindtap="searchCompanies">搜索</button>
       </view>
-      <view wx:if="{{companies.length}}" class="option-list">
+
+      <view class="company-list" wx:if="{{companies.length}}">
         <view
+          class="option {{item.id === companyId ? 'option--active' : ''}}"
           wx:for="{{companies}}"
           wx:key="id"
-          class="option"
           data-id="{{item.id}}"
+          hover-class="hoverable"
           bindtap="onPickCompany"
-        >{{item.company_name}}</view>
+        >
+          <view class="company-opt">
+            <view class="option__title">{{item.company_name}}</view>
+          </view>
+          <image class="icon" wx:if="{{item.id === companyId}}" src="{{icons.check}}" />
+        </view>
+      </view>
+
+      <view class="hint picked-hint" wx:if="{{companyName}}">已选择：{{companyName}}</view>
+    </view>
+
+    <!-- 门店名称 -->
+    <view class="field">
+      <text class="field__label">门店名称 *</text>
+      <input
+        class="input"
+        placeholder="如：链家·世纪大道店"
+        placeholder-class="ph"
+        value="{{storeName}}"
+        data-field="storeName"
+        bindinput="onFieldInput"
+        maxlength="200"
+      />
+    </view>
+
+    <!-- 门店位置 -->
+    <view class="field">
+      <text class="field__label">门店位置 *</text>
+      <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onChooseLocation">选择门店位置</button>
+      <view class="hint">选择后自动带出区域与商圈</view>
+      <view class="hint tnum" wx:if="{{lng && lat}}">经度 {{lng}} · 纬度 {{lat}}</view>
+    </view>
+
+    <!-- 区域 / 商圈 -->
+    <view class="field-row">
+      <view class="field">
+        <text class="field__label">区域 *</text>
+        <picker
+          mode="selector"
+          range="{{districts}}"
+          value="{{districtIndex}}"
+          disabled="{{!districts.length}}"
+          bindchange="onSelectDistrict"
+        >
+          <view class="pick {{district ? '' : 'pick--empty'}}" hover-class="hoverable">
+            <text>{{district || '请选择区域'}}</text>
+            <image class="pick__icon" src="{{icons.chevronDown}}" />
+          </view>
+        </picker>
+      </view>
+      <view class="field">
+        <text class="field__label">商圈 *</text>
+        <picker
+          wx:if="{{businessCircles.length}}"
+          mode="selector"
+          range="{{businessCircles}}"
+          value="{{businessCircleIndex}}"
+          bindchange="onSelectBusinessCircle"
+        >
+          <view class="pick {{businessCircle ? '' : 'pick--empty'}}" hover-class="hoverable">
+            <text>{{businessCircle || '请选择商圈'}}</text>
+            <image class="pick__icon" src="{{icons.chevronDown}}" />
+          </view>
+        </picker>
+        <input
+          wx:else
+          class="input"
+          placeholder="{{district ? '该区域暂无候选，手动填写' : '请先选择区域'}}"
+          placeholder-class="ph"
+          value="{{businessCircle}}"
+          data-field="businessCircle"
+          bindinput="onFieldInput"
+        />
       </view>
     </view>
 
-    <view class="field-label">门店名称</view>
-    <input class="input" placeholder="门店名称" value="{{storeName}}" data-field="storeName" bindinput="onFieldInput" maxlength="200" />
-
-    <view class="link-btn" bindtap="onChooseLocation">选择门店位置（自动带出区域）</view>
-    <view class="hint" wx:if="{{lng && lat}}">坐标：{{lng}}, {{lat}}</view>
-
-    <view class="grid">
-      <picker mode="selector" range="{{districts}}" value="{{districtIndex}}" bindchange="onSelectDistrict" disabled="{{!districts.length}}">
-        <view class="input input--picker">{{district || (districts.length ? '选择区域' : '区域加载失败')}}</view>
-      </picker>
-      <picker wx:if="{{businessCircles.length}}" mode="selector" range="{{businessCircles}}" value="{{businessCircleIndex}}" bindchange="onSelectBusinessCircle">
-        <view class="input input--picker">{{businessCircle || '选择商圈'}}</view>
-      </picker>
-      <input wx:else class="input" placeholder="{{district ? '该区域暂无商圈候选，可手填' : '请先选择区域'}}" value="{{businessCircle}}" data-field="businessCircle" bindinput="onFieldInput" />
+    <!-- 详细地址 -->
+    <view class="field">
+      <text class="field__label">详细地址 *</text>
+      <input
+        class="input"
+        placeholder="街道、门牌号"
+        placeholder-class="ph"
+        value="{{address}}"
+        data-field="address"
+        bindinput="onFieldInput"
+        maxlength="500"
+      />
     </view>
 
-    <view class="field-label">详细地址</view>
-    <input class="input" placeholder="详细地址" value="{{address}}" data-field="address" bindinput="onFieldInput" maxlength="500" />
+    <!-- 联系人 / 联系电话 -->
+    <view class="field-row">
+      <view class="field">
+        <text class="field__label">联系人 *</text>
+        <input class="input" placeholder="姓名" placeholder-class="ph" value="{{contactName}}" data-field="contactName" bindinput="onFieldInput" maxlength="50" />
+      </view>
+      <view class="field">
+        <text class="field__label">联系电话 *</text>
+        <input
+          class="input tnum"
+          type="number"
+          placeholder="电话号码"
+          placeholder-class="ph"
+          value="{{contactPhone}}"
+          data-field="contactPhone"
+          bindinput="onFieldInput"
+          maxlength="20"
+        />
+      </view>
+    </view>
 
-    <view class="field-label">联系人</view>
-    <input class="input" placeholder="联系人" value="{{contactName}}" data-field="contactName" bindinput="onFieldInput" maxlength="50" />
-    <view class="field-label">联系电话</view>
-    <input class="input" type="number" placeholder="联系电话" value="{{contactPhone}}" data-field="contactPhone" bindinput="onFieldInput" maxlength="20" />
-    <view class="field-label">备注</view>
-    <input class="input" placeholder="备注（可选）" value="{{remark}}" data-field="remark" bindinput="onFieldInput" maxlength="500" />
-
-    <button class="btn-primary submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit">提交审核</button>
+    <!-- 备注 -->
+    <view class="field field--last">
+      <text class="field__label">备注</text>
+      <textarea
+        class="input input--area"
+        placeholder="门店补充说明，例如营业时间、进门方式"
+        placeholder-class="ph"
+        value="{{remark}}"
+        data-field="remark"
+        bindinput="onFieldInput"
+        maxlength="500"
+      />
+    </view>
   </view>
 
-  <!-- 查重提示（REQ-M01B-002：只提示不阻断，确认新建须填理由） -->
+  <!-- 查重提示（只提示不阻断，确认新建须填理由） -->
   <view class="modal-mask" wx:if="{{duplicateOpen}}">
     <view class="modal">
       <view class="modal-title">发现疑似重复门店</view>
-      <view class="modal-sub">请确认是否就是以下门店；若不是，请填写强制新建理由</view>
-      <scroll-view scroll-y class="modal-list">
-        <view class="dup-item" wx:for="{{duplicates}}" wx:key="id" bindtap="onOpenDuplicate">
-          <view class="dup-name">{{item.store_name}}</view>
-          <view class="dup-address">{{item.address}}</view>
-          <view class="dup-meta">匹配：{{item.matchedText}}{{item.distance_m ? ' · 距离 ' + item.distance_m + 'm' : ''}}</view>
+      <view class="modal-sub">如果是同一家店，可请邀请员工在后台完成绑定；确实不是，请填写强制新建的理由</view>
+      <scroll-view scroll-y enable-flex class="modal-list dup-list">
+        <view
+          class="option"
+          wx:for="{{duplicates}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          hover-class="hoverable"
+          bindtap="onOpenDuplicate"
+        >
+          <view class="dup-info">
+            <view class="option__title">{{item.store_name}}</view>
+            <view class="option__sub">{{item.address}}</view>
+            <view class="option__sub tnum">匹配：{{item.matchedText}}{{item.distanceText ? ' · ' + item.distanceText : ''}}</view>
+          </view>
         </view>
       </scroll-view>
-      <input class="input" placeholder="强制新建理由（选择已有门店则无需填写）" value="{{forceReason}}" bindinput="onForceReason" />
+      <input class="input" placeholder="强制新建理由" placeholder-class="ph" value="{{forceReason}}" bindinput="onForceReason" />
       <view class="modal-actions">
-        <view class="mini-btn" bindtap="onCloseDuplicate">返回修改</view>
-        <view class="mini-btn mini-btn--primary" bindtap="onForceCreate">确认新建</view>
+        <view class="mbtn" hover-class="hoverable" bindtap="onCloseDuplicate">返回修改</view>
+        <view class="mbtn mbtn--ink" hover-class="hoverable" bindtap="onForceCreate">确认新建</view>
       </view>
     </view>
   </view>
+</view>
+
+<view class="foot" wx:if="{{state === 'form'}}">
+  <button
+    class="mbtn mbtn--ink mbtn--cta"
+    hover-class="hoverable"
+    loading="{{submitting}}"
+    disabled="{{submitting}}"
+    bindtap="onSubmit"
+  >提交审核</button>
 </view>

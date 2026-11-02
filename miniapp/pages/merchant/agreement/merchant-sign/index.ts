@@ -9,6 +9,9 @@
  */
 import type { components } from "../../../../types/api-types";
 import { uploadFileToServer } from "../../../../utils/image-upload";
+import { describeRequestError } from "../../../../utils/merchant-errors";
+import { agreementStatusLabel, agreementStatusTone, type StatusTone } from "../../../../utils/merchant-status";
+import { MP_ICONS } from "../../../../utils/mp-icons";
 import { request } from "../../../../utils/request";
 import { getCAccessToken } from "../../../../utils/token";
 import { resolveAssetUrl } from "../../../../utils/url";
@@ -23,8 +26,17 @@ interface CanvasInfo {
   height: number;
 }
 
-function errMessage(err: unknown): string {
-  return (err as { body?: { message?: string } }).body?.message || "操作失败，请重试";
+/** 到期时间按「年-月-日 时:分」展示，空值即长期有效（避免把后端 ISO 串直接抛给商户）. */
+function formatDate(value: string | null | undefined): string {
+  if (!value) {
+    return "长期有效";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 Page({
@@ -36,11 +48,18 @@ Page({
     signerName: "",
     signerPhone: "",
     signerPhoneMasked: "",
+    /** 协议状态档/文案（DESIGN M3 三档语义，映射集中在 utils/merchant-status.ts） */
+    statusTone: "done" as StatusTone,
+    statusLabel: "",
+    expireText: "",
     confirmed: false,
     hasStroke: false,
     submitting: false,
     done: false,
     signedFileUrl: "",
+    icons: {
+      check: MP_ICONS.check,
+    },
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -84,6 +103,9 @@ Page({
         content: view.content || "协议正文未找到，请联系门店员工补全模板。",
         signerName: view.signer_name || "",
         signerPhoneMasked: view.signer_phone_masked || "—",
+        statusTone: agreementStatusTone(view.status),
+        statusLabel: agreementStatusLabel(view.status, view.status_label),
+        expireText: formatDate(view.expire_at),
       });
       if (view.can_sign) {
         setTimeout(() => this.initCanvas(), 120);
@@ -95,11 +117,12 @@ Page({
         return;
       }
       if (statusCode === 403) {
-        // 403 表示分享码无效/缺失（身份已登录），不能再引导去登录，否则会陷入反复登录
+        // 403 表示分享码无效/缺失（身份已登录），不能再引导去登录，否则会陷入反复登录。
+        // 这里不走 describeRequestError：通用 403 文案是「没有商户拓展权限」，与本页无关。
         this.setData({ state: "error", errorText: "签署链接无效或已失效，请联系门店员工重新分享" });
         return;
       }
-      this.setData({ state: "error", errorText: errMessage(err) });
+      this.setData({ state: "error", errorText: describeRequestError(err, "协议加载失败，请稍后重试") });
     }
   },
 
@@ -270,11 +293,18 @@ Page({
         data: payload,
       });
       wx.hideLoading();
-      this.setData({ done: true, signedFileUrl: signed.file_url ? resolveAssetUrl(signed.file_url) : "" });
+      // 签署成功后本地没有重新拉取 view：状态 chip 与标题一起切到「已签署」，
+      // 避免页面标题已变而协议信息卡仍显示「待签署」。
+      this.setData({
+        done: true,
+        signedFileUrl: signed.file_url ? resolveAssetUrl(signed.file_url) : "",
+        statusTone: "done",
+        statusLabel: "已签署",
+      });
       wx.showToast({ title: "签署完成", icon: "success" });
     } catch (err) {
       wx.hideLoading();
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "签署提交失败，请重试"), icon: "none" });
     } finally {
       this.setData({ submitting: false });
     }

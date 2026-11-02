@@ -1,127 +1,48 @@
 @import "../../../../styles/merchant-theme.wxss";
 
-.page {
-  min-height: 100vh;
-  padding: 32rpx 32rpx 160rpx;
-  box-sizing: border-box;
-}
+/* 本页只剩三件版面：横向 tab 条、协议行的三段结构、卡片内标题与 chip 的对齐。
+   其余（画布/标题/四态/卡片/图标/底栏）全部来自 merchant-theme.wxss。 */
 
-.hero {
-  background: var(--pure-white);
-  color: var(--ink);
-  box-shadow: var(--merchant-shadow);
-  border-radius: var(--merchant-card-radius);
-  padding: 40rpx;
-  margin-bottom: 24rpx;
-}
-.hero__title {
-  font-size: 40rpx;
-  font-weight: 600;
-}
-.hero__sub {
-  margin-top: 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-
+/* L6：scroll-x 容器 + enable-flex，tab 不换行也不被压缩 */
 .tabs {
   display: flex;
-  gap: 12rpx;
-  overflow-x: auto;
-  white-space: nowrap;
-  margin-bottom: 24rpx;
+  gap: 16rpx;
+  margin-bottom: var(--mp-gap);
 }
-.tab {
-  padding: 12rpx 28rpx;
-  border-radius: 9999rpx;
-  background: var(--pure-white);
-  color: var(--graphite);
-  font-size: 26rpx;
-  box-shadow: none;
-  border: 1rpx solid var(--merchant-hairline);
-}
-.tab--active {
-  background: var(--ink);
-  color: var(--pure-white);
-}
+.tabs .tab { flex: 0 0 auto; }
 
-.list-head {
-  font-size: 24rpx;
-  color: var(--graphite);
-  margin-bottom: 16rpx;
-}
-.agreement-card {
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  box-shadow: var(--merchant-shadow);
-  padding: 28rpx;
-  margin-bottom: 20rpx;
-}
-.agreement-top {
+.agreement__top {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 20rpx;
-}
-.agreement-title {
-  font-size: 30rpx;
-  font-weight: 600;
-}
-.agreement-line {
-  margin-top: 12rpx;
-  font-size: 25rpx;
-  color: var(--graphite);
-}
-.agreement-meta {
-  margin-top: 16rpx;
-  display: flex;
   justify-content: space-between;
-  font-size: 24rpx;
-  color: var(--graphite);
+  gap: 16rpx;
 }
-.chevron {
-  font-size: 30rpx;
-}
-
-.state {
-  padding: 100rpx 48rpx;
-  text-align: center;
-}
-.state__title {
-  font-size: 34rpx;
-  font-weight: 500;
-  margin-bottom: 16rpx;
-}
-.state__text {
-  font-size: 26rpx;
-  color: var(--graphite);
-  line-height: 1.6;
-}
-.state__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 32rpx;
-  height: 80rpx;
-  padding: 0 24rpx;
-  border-radius: 9999rpx;
-  background: transparent;
-  color: var(--rust);
-  font-size: 28rpx;
-  font-weight: 500;
-}
-
-.footer {
-  display: flex;
-  justify-content: center;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom));
-  background: rgba(247, 247, 248, 0.94);
-}
-.footer__btn {
+.agreement__title {
   flex: 1;
-  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--mp-body);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.14px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.agreement__sub {
+  margin-top: 8rpx;
+  font-size: var(--mp-label);
+  color: var(--graphite);
+}
+.agreement__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+.agreement__meta {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--mp-caption);
+  color: var(--graphite);
 }

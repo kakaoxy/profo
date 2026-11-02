@@ -1,184 +1,259 @@
-<view class="page">
-  <view class="page-head">
-    <view class="page-title">{{mode === 'edit' ? '编辑门店' : '新增门店'}}</view>
-    <view class="page-sub">{{mode === 'edit' ? '修改门店档案，关键字段变更会留痕' : '现场建档并自动生成首条拜访记录'}}</view>
+<view class="page page--foot">
+  <view class="head">
+    <view class="head__title">{{mode === 'edit' ? '编辑门店' : '新增门店'}}</view>
+    <view class="head__sub">
+      {{mode === 'edit' ? '地址与坐标变动需要填写变更方式，提交后留痕' : '提交后门店立即进入你的门店列表，并自动生成首条拜访记录'}}
+    </view>
   </view>
 
-  <!-- 公司 -->
-  <view class="section">
-    <view class="section-title">所属公司</view>
-    <view class="selected-row" wx:if="{{selectedCompany}}">
-      <view>
-        <view class="selected-name">{{selectedCompany.company_name}}</view>
-        <view class="selected-sub">{{selectedCompany.status === 'disabled' ? '已停用' : '正常'}}</view>
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">请先登录</view>
+    <view class="state__text">查看与编辑门店档案需要登录商户账号</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onGoLogin">去登录</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中…</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'error'}}">
+    <view class="state__title">没能加载门店信息</view>
+    <view class="state__text">{{errorText}}</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onRetry">重试</view>
+  </view>
+
+  <block wx:else>
+    <!-- 所属公司 -->
+    <view class="card">
+      <view class="card__title">所属公司</view>
+      <view class="card__body">
+        <view class="rowhead" wx:if="{{selectedCompany}}">
+          <view>
+            <view class="company-name">{{selectedCompany.company_name}}</view>
+            <view class="chip {{selectedCompany.status === 'disabled' ? 'chip--void' : 'chip--done'}} company-chip">
+              {{selectedCompany.status === 'disabled' ? '已停用' : '正常'}}
+            </view>
+          </view>
+          <view class="link" hover-class="hoverable" bindtap="onClearCompany">更换</view>
+        </view>
+
+        <block wx:else>
+          <view class="search-row">
+            <input
+              class="input input--flex"
+              placeholder="输入公司名称搜索"
+              placeholder-class="ph"
+              value="{{companyKeyword}}"
+              bindinput="onCompanyKeyword"
+              bindconfirm="onSearchCompany"
+            />
+            <button class="mbtn" hover-class="hoverable" bindtap="onSearchCompany">搜索</button>
+          </view>
+
+          <view class="company-list" wx:if="{{companies.length}}">
+            <view
+              class="option"
+              wx:for="{{companies}}"
+              wx:key="id"
+              data-index="{{index}}"
+              hover-class="hoverable"
+              bindtap="onSelectCompany"
+            >
+              <view class="option__title">{{item.company_name}}</view>
+              <view class="chip {{item.status === 'disabled' ? 'chip--void' : 'chip--done'}}">
+                {{item.status === 'disabled' ? '已停用' : '正常'}}
+              </view>
+            </view>
+          </view>
+          <view class="empty" wx:elif="{{companySearched}}">没有匹配的公司，可以新建一个</view>
+
+          <view class="link-row" wx:if="{{companySearched}}">
+            <view class="link" hover-class="hoverable" bindtap="onToggleCompanyCreate">
+              <image class="icon" src="{{icons.plus}}" />
+              <text>{{showCompanyCreate ? '收起' : '新增公司'}}</text>
+            </view>
+          </view>
+
+          <view class="company-create" wx:if="{{showCompanyCreate}}">
+            <view class="field">
+              <text class="field__label">公司名称 *</text>
+              <input class="input" placeholder="与营业执照一致即可" placeholder-class="ph" value="{{newCompanyName}}" bindinput="onNewCompanyName" />
+            </view>
+            <view class="field-row">
+              <view class="field">
+                <text class="field__label">联系人</text>
+                <input class="input" placeholder="选填" placeholder-class="ph" value="{{newCompanyContact}}" bindinput="onNewCompanyContact" />
+              </view>
+              <view class="field">
+                <text class="field__label">联系电话</text>
+                <input class="input" type="number" placeholder="选填" placeholder-class="ph" value="{{newCompanyPhone}}" bindinput="onNewCompanyPhone" />
+              </view>
+            </view>
+            <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onCreateCompany">创建并选择</button>
+          </view>
+        </block>
       </view>
-      <text class="link" bindtap="onClearCompany">更换</text>
     </view>
-    <block wx:else>
-      <view class="search-row">
-        <input class="input input--flex" placeholder="输入公司名称搜索" value="{{companyKeyword}}" bindinput="onCompanyKeyword" />
-        <view class="mini-btn" bindtap="onSearchCompany">搜索</view>
-      </view>
-      <view class="company-list" wx:if="{{companies.length}}">
-        <view class="company-item" wx:for="{{companies}}" wx:key="id" data-index="{{index}}" bindtap="onSelectCompany">
-          <text>{{item.company_name}}</text>
-          <text class="company-item__status">{{item.status === 'disabled' ? '已停用' : '正常'}}</text>
+
+    <!-- 门店信息 -->
+    <view class="card">
+      <view class="card__title">门店信息</view>
+      <view class="card__body">
+        <view class="field">
+          <text class="field__label">门店名称 *</text>
+          <input class="input" placeholder="如：链家·世纪大道店" placeholder-class="ph" value="{{form.store_name}}" bindinput="onInput" data-field="store_name" />
+        </view>
+
+        <view class="field">
+          <text class="field__label">门店位置 *</text>
+          <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onChooseLocation">
+            <image class="icon" src="{{icons.pin}}" />
+            <text>{{form.lng ? '重新选点' : '选择门店位置'}}</text>
+          </button>
+          <view class="hint tnum" wx:if="{{form.lng}}">经度 {{form.lng}} · 纬度 {{form.lat}}（GCJ-02）</view>
+          <view class="hint hint--warn" wx:else>未选坐标无法提交；选点后会自动带出区域与商圈</view>
+        </view>
+
+        <view class="field-row">
+          <view class="field">
+            <text class="field__label">区域 *</text>
+            <picker mode="selector" range="{{districts}}" value="{{districtIndex}}" bindchange="onSelectDistrict" disabled="{{!districts.length}}">
+              <view class="pick {{form.district ? '' : 'pick--empty'}}">
+                <text>{{form.district || (districts.length ? '请选择区域' : '区域列表加载失败')}}</text>
+                <image class="pick__icon" src="{{icons.chevronDown}}" />
+              </view>
+            </picker>
+          </view>
+          <view class="field">
+            <text class="field__label">商圈 *</text>
+            <picker wx:if="{{businessCircles.length}}" mode="selector" range="{{businessCircles}}" value="{{businessCircleIndex}}" bindchange="onSelectBusinessCircle">
+              <view class="pick {{form.business_circle ? '' : 'pick--empty'}}">
+                <text>{{form.business_circle || '请选择商圈'}}</text>
+                <image class="pick__icon" src="{{icons.chevronDown}}" />
+              </view>
+            </picker>
+            <input
+              wx:else
+              class="input"
+              placeholder="{{form.district ? '该区域暂无候选，手动填写' : '请先选择区域'}}"
+              placeholder-class="ph"
+              value="{{form.business_circle}}"
+              bindinput="onInput"
+              data-field="business_circle"
+            />
+          </view>
+        </view>
+
+        <view class="field">
+          <text class="field__label">详细地址 *</text>
+          <input class="input" placeholder="街道、门牌号" placeholder-class="ph" value="{{form.address}}" bindinput="onInput" data-field="address" />
+        </view>
+
+        <view class="field-row">
+          <view class="field">
+            <text class="field__label">联系人 *</text>
+            <input class="input" value="{{form.contact_name}}" bindinput="onInput" data-field="contact_name" />
+          </view>
+          <view class="field">
+            <text class="field__label">联系电话 *</text>
+            <input class="input tnum" type="number" value="{{form.contact_phone}}" bindinput="onInput" data-field="contact_phone" />
+          </view>
+        </view>
+        <view class="hint">该联系人会成为门店经纪人，本人扫码认证时自动关联到本档案。</view>
+
+        <view class="field field--last">
+          <text class="field__label">合作状态</text>
+          <view class="chip-row">
+            <view
+              wx:for="{{cooperationOptions}}"
+              wx:key="code"
+              class="chip chip--tap {{form.cooperation_status === item.code ? 'chip--on' : ''}}"
+              data-code="{{item.code}}"
+              hover-class="hoverable"
+              bindtap="onSelectCooperation"
+            >{{item.label}}</view>
+          </view>
         </view>
       </view>
-      <view class="company-empty" wx:elif="{{companySearched}}">未找到，可新增公司</view>
-      <view class="link-row" wx:if="{{companySearched}}">
-        <text class="link" bindtap="onToggleCompanyCreate">{{showCompanyCreate ? '收起' : '＋ 新增公司'}}</text>
-      </view>
-      <view class="company-create" wx:if="{{showCompanyCreate}}">
-        <input class="input" placeholder="公司名称（必填）" value="{{newCompanyName}}" bindinput="onNewCompanyName" />
-        <input class="input" placeholder="联系人（选填）" value="{{newCompanyContact}}" bindinput="onNewCompanyContact" />
-        <input class="input" placeholder="联系电话（选填）" value="{{newCompanyPhone}}" bindinput="onNewCompanyPhone" />
-        <view class="mini-btn mini-btn--full" bindtap="onCreateCompany">创建并选择</view>
-      </view>
-    </block>
-  </view>
+    </view>
 
-  <!-- 门店信息 -->
-  <view class="section">
-    <view class="section-title">门店信息</view>
-    <view class="form-group">
-      <text class="form-label">门店名称 *</text>
-      <input class="input" placeholder="如：链家·世纪大道店" value="{{form.store_name}}" bindinput="onInput" data-field="store_name" />
-    </view>
-    <view class="form-group">
-      <view class="label-row">
-        <text class="form-label">地图选点 *</text>
-        <text class="link" bindtap="onChooseLocation">选择位置</text>
+    <!-- 门店照片 -->
+    <view class="card">
+      <view class="rowhead">
+        <view class="card__title">门店照片</view>
+        <view class="hint tnum">{{form.photos.length}}/20</view>
       </view>
-      <view class="coord-box {{form.lng ? 'coord-box--ok' : ''}}">
-        <block wx:if="{{form.lng}}">经度 {{form.lng}} · 纬度 {{form.lat}}（GCJ-02）</block>
-        <block wx:else>未选择坐标，保存前必须地图选点（选点后自动带出区域）</block>
-      </view>
-    </view>
-    <view class="form-row">
-      <view class="form-group form-group--flex">
-        <text class="form-label">区域 *</text>
-        <picker
-          mode="selector"
-          range="{{districts}}"
-          value="{{districtIndex}}"
-          bindchange="onSelectDistrict"
-          disabled="{{!districts.length}}"
-        >
-          <view class="input input--picker {{form.district ? '' : 'input--placeholder'}}">
-            {{form.district || (districts.length ? '请选择区域' : '区域列表加载失败')}}
+      <view class="photo-grid">
+        <view class="photo-item" wx:for="{{form.photos}}" wx:key="file_url">
+          <image class="photo-img" src="{{item.displayUrl}}" mode="aspectFill" />
+          <view class="photo-type">{{item.photo_type === 'head' ? '门头' : item.photo_type === 'interior' ? '店内' : '其他'}}</view>
+          <view class="photo-remove" data-index="{{index}}" hover-class="hoverable" bindtap="onRemovePhoto">
+            <view class="photo-remove__dot">
+              <image class="icon photo-remove__icon" src="{{icons.close}}" />
+            </view>
           </view>
-        </picker>
-      </view>
-      <view class="form-group form-group--flex">
-        <text class="form-label">商圈 *</text>
-        <picker
-          wx:if="{{businessCircles.length}}"
-          mode="selector"
-          range="{{businessCircles}}"
-          value="{{businessCircleIndex}}"
-          bindchange="onSelectBusinessCircle"
-        >
-          <view class="input input--picker {{form.business_circle ? '' : 'input--placeholder'}}">
-            {{form.business_circle || '请选择商圈'}}
-          </view>
-        </picker>
-        <input
-          wx:else
-          class="input"
-          placeholder="{{form.district ? '该区域暂无商圈候选，请手动填写' : '请先选择区域'}}"
-          value="{{form.business_circle}}"
-          bindinput="onInput"
-          data-field="business_circle"
-        />
+        </view>
+        <view class="photo-add" data-type="head" hover-class="hoverable" bindtap="onAddPhoto">
+          <image class="icon" src="{{icons.camera}}" />
+          <text class="photo-add__label">门头照</text>
+        </view>
+        <view class="photo-add" data-type="interior" hover-class="hoverable" bindtap="onAddPhoto">
+          <image class="icon" src="{{icons.camera}}" />
+          <text class="photo-add__label">店内照</text>
+        </view>
       </view>
     </view>
-    <view class="form-group">
-      <text class="form-label">详细地址 *</text>
-      <input class="input" placeholder="街道、门牌号" value="{{form.address}}" bindinput="onInput" data-field="address" />
-    </view>
-    <view class="form-row">
-      <view class="form-group form-group--flex">
-        <text class="form-label">联系人 *</text>
-        <input class="input" value="{{form.contact_name}}" bindinput="onInput" data-field="contact_name" />
-      </view>
-      <view class="form-group form-group--flex">
-        <text class="form-label">联系电话 *</text>
-        <input class="input" type="number" value="{{form.contact_phone}}" bindinput="onInput" data-field="contact_phone" />
-      </view>
-    </view>
-    <view class="form-hint">保存后该联系人会自动成为门店经纪人；其手机号扫码认证时会关联到这个档案（REQ-IT5-06）。</view>
-    <view class="form-group">
-      <text class="form-label">合作状态</text>
-      <view class="chip-row">
-        <view
-          wx:for="{{cooperationOptions}}"
-          wx:key="code"
-          class="chip chip--tap {{form.cooperation_status === item.code ? 'chip-apricot' : 'chip-fog'}}"
-          data-code="{{item.code}}"
-          bindtap="onSelectCooperation"
-        >{{item.label}}</view>
-      </view>
-    </view>
-  </view>
 
-  <!-- 门店照片 -->
-  <view class="section">
-    <view class="section-title">门店照片（选拍）</view>
-    <view class="photo-grid">
-      <view class="photo-item" wx:for="{{form.photos}}" wx:key="file_url">
-        <image class="photo-img" src="{{item.displayUrl}}" mode="aspectFill" />
-        <view class="photo-type">{{item.photo_type === 'head' ? '门头' : item.photo_type === 'interior' ? '店内' : '其他'}}</view>
-        <view class="photo-remove" data-index="{{index}}" bindtap="onRemovePhoto">×</view>
-      </view>
-      <view class="photo-add" bindtap="onAddPhoto" data-type="head">
-        <text class="photo-add__icon">＋</text>
-        <text>门头照</text>
-      </view>
-      <view class="photo-add" bindtap="onAddPhoto" data-type="interior">
-        <text class="photo-add__icon">＋</text>
-        <text>店内照</text>
+    <!-- 编辑模式：变更类型 -->
+    <view class="card" wx:if="{{mode === 'edit'}}">
+      <view class="card__title">地址变更方式</view>
+      <view class="card__body">
+        <view class="chip-row">
+          <view class="chip chip--tap {{changeType === 'edit' ? 'chip--on' : ''}}" data-type="edit" hover-class="hoverable" bindtap="onSelectChangeType">仅编辑</view>
+          <view class="chip chip--tap {{changeType === 'correct' ? 'chip--on' : ''}}" data-type="correct" hover-class="hoverable" bindtap="onSelectChangeType">地址纠错</view>
+          <view class="chip chip--tap {{changeType === 'relocate' ? 'chip--on' : ''}}" data-type="relocate" hover-class="hoverable" bindtap="onSelectChangeType">门店搬迁</view>
+        </view>
+        <view class="field field--last" wx:if="{{changeType !== 'edit'}}">
+          <text class="field__label">变更原因 *</text>
+          <input class="input" placeholder="一句话说明为什么改地址" placeholder-class="ph" value="{{changeReason}}" bindinput="onChangeReason" />
+        </view>
       </view>
     </view>
-  </view>
 
-  <!-- 编辑模式：变更类型 -->
-  <view class="section" wx:if="{{mode === 'edit'}}">
-    <view class="section-title">地址变更方式</view>
-    <view class="chip-row">
-      <view class="chip chip--tap {{changeType === 'edit' ? 'chip-apricot' : 'chip-fog'}}" data-type="edit" bindtap="onSelectChangeType">仅编辑</view>
-      <view class="chip chip--tap {{changeType === 'correct' ? 'chip-apricot' : 'chip-fog'}}" data-type="correct" bindtap="onSelectChangeType">地址纠错</view>
-      <view class="chip chip--tap {{changeType === 'relocate' ? 'chip-apricot' : 'chip-fog'}}" data-type="relocate" bindtap="onSelectChangeType">门店搬迁</view>
+    <!-- 备注 -->
+    <view class="card">
+      <view class="field field--last">
+        <text class="field__label">备注</text>
+        <textarea class="input input--area" placeholder="门店补充说明，例如营业时间、进门方式" placeholder-class="ph" value="{{form.remark}}" bindinput="onInput" data-field="remark" />
+      </view>
     </view>
-    <input class="input" wx:if="{{changeType !== 'edit'}}" placeholder="变更原因（地址纠错/搬迁必填）" value="{{changeReason}}" bindinput="onChangeReason" />
-  </view>
-
-  <view class="form-group">
-    <text class="form-label">备注</text>
-    <textarea class="input textarea" placeholder="门店补充说明" value="{{form.remark}}" bindinput="onInput" data-field="remark" />
-  </view>
-
-  <view class="footer">
-    <button class="btn-primary footer__btn" loading="{{submitting}}" bindtap="onSubmit">{{mode === 'edit' ? '保存修改' : '提交建档'}}</button>
-  </view>
+  </block>
 
   <!-- 查重提示 -->
   <view class="modal-mask" wx:if="{{duplicateOpen}}">
     <view class="modal">
       <view class="modal-title">发现疑似重复门店</view>
-      <view class="modal-sub">请确认是否就是以下门店；若不是，请填写强制新建理由</view>
+      <view class="modal-sub">如果是同一家店，直接打开已有档案；确实不是，请填写强制新建的理由</view>
       <scroll-view scroll-y class="modal-list">
-        <view class="dup-item" wx:for="{{duplicates}}" wx:key="id" data-id="{{item.id}}" bindtap="onOpenDuplicate">
-          <view class="dup-name">{{item.store_name}}</view>
-          <view class="dup-address">{{item.address}}</view>
-          <view class="dup-meta">匹配：{{item.matchedText}}{{item.distance_m ? ' · 距离 ' + item.distance_m + 'm' : ''}}</view>
+        <view class="option" wx:for="{{duplicates}}" wx:key="id" data-id="{{item.id}}" hover-class="hoverable" bindtap="onOpenDuplicate">
+          <view class="dup-info">
+            <view class="option__title">{{item.store_name}}</view>
+            <view class="option__sub">{{item.address}}</view>
+            <view class="option__sub tnum">匹配：{{item.matchedText}}{{item.distanceText ? ' · ' + item.distanceText : ''}}</view>
+          </view>
         </view>
       </scroll-view>
-      <input class="input" placeholder="强制新建理由（选择已有门店则无需填写）" value="{{forceReason}}" bindinput="onForceReason" />
+      <input class="input" placeholder="强制新建理由" placeholder-class="ph" value="{{forceReason}}" bindinput="onForceReason" />
       <view class="modal-actions">
-        <view class="mini-btn" bindtap="onCloseDuplicate">返回修改</view>
-        <view class="mini-btn mini-btn--primary" bindtap="onForceCreate">确认新建</view>
+        <view class="mbtn" hover-class="hoverable" bindtap="onCloseDuplicate">返回修改</view>
+        <view class="mbtn mbtn--ink" hover-class="hoverable" bindtap="onForceCreate">确认新建</view>
       </view>
     </view>
   </view>
+</view>
+
+<view class="foot" wx:if="{{state === 'ok'}}">
+  <button class="mbtn mbtn--ink mbtn--cta" hover-class="hoverable" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit">
+    {{mode === 'edit' ? '保存修改' : '提交建档'}}
+  </button>
 </view>

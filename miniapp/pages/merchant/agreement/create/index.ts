@@ -2,7 +2,10 @@
  * 员工发起协议（V05 REQ-M04-002）：选择门店、模板、签署人与到期时间.
  */
 import type { components } from "../../../../types/api-types";
+import { describeRequestError } from "../../../../utils/merchant-errors";
+import { MP_ICONS } from "../../../../utils/mp-icons";
 import { request } from "../../../../utils/request";
+import { getCAccessToken } from "../../../../utils/token";
 
 type StoreListResponse = components["schemas"]["MerchantStoreListResponse"];
 type StoreListItem = components["schemas"]["MerchantStoreListItem"];
@@ -24,9 +27,7 @@ interface SignerOption {
   phoneMasked: string;
 }
 
-function errMessage(err: unknown): string {
-  return (err as { body?: { message?: string } }).body?.message || "操作失败，请重试";
-}
+const ACTION_FAILED = "操作失败";
 
 /** 与后端 mask_phone 对齐：脱敏值用于判断当前手机号是否属于所选经纪人. */
 function maskPhone(phone: string): string {
@@ -39,7 +40,7 @@ function maskPhone(phone: string): string {
 
 Page({
   data: {
-    state: "loading" as "loading" | "error" | "ok",
+    state: "loading" as "loading" | "error" | "needLogin" | "ok",
     errorText: "",
     stores: [] as StoreOption[],
     storeId: "",
@@ -62,13 +63,25 @@ Page({
     newBrokerName: "",
     newBrokerPhone: "",
     brokerSaving: false,
+    icons: { chevronRight: MP_ICONS.chevronRight, plus: MP_ICONS.plus, check: MP_ICONS.check },
   },
 
   onLoad(options: Record<string, string | undefined>) {
-    this.load(options.store_id || "");
+    void this.load(options.store_id || "");
+  },
+
+  // 从登录页返回后自恢复，避免用户停在「请先登录」
+  onShow() {
+    if (this.data.state === "needLogin" && getCAccessToken()) {
+      void this.load(this.data.storeId);
+    }
   },
 
   async load(storeId: string): Promise<void> {
+    if (!getCAccessToken()) {
+      this.setData({ state: "needLogin" });
+      return;
+    }
     this.setData({ state: "loading", errorText: "" });
     try {
       const [stores, templates] = await Promise.all([
@@ -95,8 +108,17 @@ Page({
         await this.selectStore(options[0].id);
       }
     } catch (err) {
-      this.setData({ state: "error", errorText: errMessage(err) });
+      const statusCode = (err as { statusCode?: number }).statusCode;
+      if (statusCode === 401 || statusCode === 403) {
+        this.setData({ state: "needLogin" });
+        return;
+      }
+      this.setData({ state: "error", errorText: describeRequestError(err, "发起页数据加载失败") });
     }
+  },
+
+  onGoLogin() {
+    wx.navigateTo({ url: "/pages/login/index/index" });
   },
 
   onRetry() {
@@ -109,7 +131,7 @@ Page({
       this.setData({ storeId, storeName: store.store_name });
       await this.loadSigners(storeId, store);
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     }
   },
 
@@ -221,7 +243,7 @@ Page({
       }
       wx.showToast({ title: "经纪人已添加", icon: "success" });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     } finally {
       this.setData({ brokerSaving: false });
     }
@@ -309,7 +331,7 @@ Page({
       wx.showToast({ title: "已发起，请分享给商户签署", icon: "success" });
       wx.redirectTo({ url: `/pages/merchant/agreement/detail/index?id=${result.id}` });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     } finally {
       this.setData({ submitting: false });
     }

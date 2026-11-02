@@ -1,9 +1,17 @@
 /**
- * 门店详情：档案、照片、拜访时间线、合作状态时间线，以及拜访/编辑/状态/照片入口.
+ * 门店详情：档案、照片、拜访时间线、合作状态时间线，以及拜访/编辑/状态/邀请入口.
+ *
+ * 拜访时间线是本页的视觉重心（审查报告 §2 Moments ②）：一条连续竖向轨迹，
+ * 最近一次拜访用 Rust 点标「现在」，距离异常单独落在异常色 chip 上。
  */
 import type { components } from "../../../../types/api-types";
 import type { MerchantPhoto } from "../../../../utils/image-upload";
+import { describeRequestError } from "../../../../utils/merchant-errors";
+import type { StatusTone } from "../../../../utils/merchant-status";
+import { agreementStatusLabel, agreementStatusTone, storeStatusLabel, storeStatusTone } from "../../../../utils/merchant-status";
+import { MP_ICONS } from "../../../../utils/mp-icons";
 import { request } from "../../../../utils/request";
+import { getCAccessToken } from "../../../../utils/token";
 import { resolveAssetUrl } from "../../../../utils/url";
 
 type StoreResponse = components["schemas"]["MerchantStoreResponse"];
@@ -16,31 +24,16 @@ type AgreementListResponse = components["schemas"]["AgreementListResponse"];
 type Agreement = components["schemas"]["AgreementResponse"];
 type BrokerQRCode = components["schemas"]["BrokerQRCodeResponse"];
 
-/**
- * REQ-IT6-02：动作区图标使用内联 SVG（base64 data URI）而不是图标字体/远程图片，
- * 避免国内网络下拉取 iconfont/CDN 失败导致按钮变成空白方块。
- */
-const ACTION_ICONS = {
-  visit: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTIgMjFjNC00LjIgNi03LjYgNi0xMC40QTYgNiAwIDAgMCA2IDEwLjZDNiAxMy40IDggMTYuOCAxMiAyMXoiLz48cGF0aCBkPSJNOS40IDEwLjRsMS45IDEuOSAzLjMtMy40Ii8+PC9zdmc+",
-  edit: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNC41IDE5LjVoNEwxOSA5YTIuMTIgMi4xMiAwIDAgMC0zLTNMNS41IDE2djMuNXoiLz48cGF0aCBkPSJNMTQuOCA2LjJsMy41IDMuNSIvPjwvc3ZnPg==",
-  status: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMTEuNiAzLjVINUExLjUgMS41IDAgMCAwIDMuNSA1djYuNmw4LjkgOSA4LjEtOC4xLTktOXoiLz48Y2lyY2xlIGN4PSI4IiBjeT0iOCIgcj0iMS4yIi8+PC9zdmc+",
-  agreement: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNi41IDMuNWg3TDE4IDh2MTIuNUg2LjV6Ii8+PHBhdGggZD0iTTEzIDMuNVY4aDUiLz48cGF0aCBkPSJNOS4yIDEyLjVoNiIvPjxwYXRoIGQ9Ik05LjIgMTYuMmg2Ii8+PC9zdmc+",
-  commission: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNNC41IDguMkEyLjIgMi4yIDAgMCAxIDYuNyA2SDE5djMuMiIvPjxwYXRoIGQ9Ik00LjUgOC4ydjkuMUExLjcgMS43IDAgMCAwIDYuMiAxOUgxOVY5LjJINi43Ii8+PHBhdGggZD0iTTE2IDEzLjdoMi4yIi8+PC9zdmc+",
-  invite: "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMTcxOTFjIiBzdHJva2Utd2lkdGg9IjEuNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cmVjdCB4PSI0IiB5PSI0IiB3aWR0aD0iNiIgaGVpZ2h0PSI2IiByeD0iMS4yIi8+PHJlY3QgeD0iMTQiIHk9IjQiIHdpZHRoPSI2IiBoZWlnaHQ9IjYiIHJ4PSIxLjIiLz48cmVjdCB4PSI0IiB5PSIxNCIgd2lkdGg9IjYiIGhlaWdodD0iNiIgcng9IjEuMiIvPjxwYXRoIGQ9Ik0xNCAxNGgyLjZ2Mi42SDE0eiIvPjxwYXRoIGQ9Ik0xNy42IDE3LjZIMjBWMjBoLTIuNHoiLz48cGF0aCBkPSJNMTQgMjBoMi40Ii8+PC9zdmc+",
-};
+type PageState = "loading" | "error" | "needLogin" | "ok";
 
-const AGREEMENT_STATUS_LABELS: Record<string, string> = {
-  not_initiated: "未发起",
-  pending_sign: "待签署",
-  signed: "已签署",
-  expired: "已过期",
-  voided: "已作废",
-};
+/** 距离超过 500 米由后端判定为异常，前端只负责把它显眼地标出来. */
+const DISTANCE_ABNORMAL_M = 500;
 
 interface DisplayAgreement {
   id: string;
   title: string;
   statusText: string;
+  statusTone: StatusTone;
   expireText: string;
 }
 
@@ -50,14 +43,16 @@ interface DisplayPhoto extends MerchantPhoto {
 
 interface DisplayVisit {
   id: string;
-  visitedText: string;
+  dateText: string;
+  timeText: string;
   employee_name: string;
   contact_name: string;
   contact_phone: string | null;
   resultText: string;
   remark: string | null;
   is_backfill: boolean;
-  distance_m: number | null;
+  distanceText: string;
+  abnormal: boolean;
 }
 
 interface DisplayStatusLog {
@@ -73,6 +68,7 @@ interface Option {
   label: string;
 }
 
+/** Date → 「YYYY-MM-DD HH:mm」，空值返回空串（由调用方决定兜底文案）. */
 function formatDate(value: string | null | undefined): string {
   if (!value) {
     return "";
@@ -85,15 +81,24 @@ function formatDate(value: string | null | undefined): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-function errMessage(err: unknown): string {
-  return (err as { body?: { message?: string } }).body?.message || "加载失败，请重试";
+/** 距离文案统一「米 / 公里」，不裸写 m/km（审查报告 T8）. */
+function formatDistance(meters: number | null | undefined): string {
+  if (meters === null || meters === undefined) {
+    return "";
+  }
+  if (meters < 1000) {
+    return `距离 ${Math.round(meters)} 米`;
+  }
+  return `距离 ${(meters / 1000).toFixed(1)} 公里`;
 }
 
 Page({
   data: {
-    state: "loading" as "loading" | "error" | "ok",
+    state: "loading" as PageState,
     errorText: "",
     store: null as StoreResponse | null,
+    storeLabel: "",
+    storeTone: "done" as StatusTone,
     lastVisitText: "",
     photos: [] as DisplayPhoto[],
     visits: [] as DisplayVisit[],
@@ -103,19 +108,23 @@ Page({
     statusOpen: false,
     statusTarget: "",
     statusReason: "",
-    visitResultLabels: {} as Record<string, string>,
-    cooperationLabels: {} as Record<string, string>,
     agreements: [] as DisplayAgreement[],
     qrOpen: false,
     qrImage: "",
     qrExpiresText: "",
-    actionIcons: ACTION_ICONS,
+    icons: {
+      pencil: MP_ICONS.pencil,
+      tag: MP_ICONS.tag,
+      grid: MP_ICONS.grid,
+      chevronRight: MP_ICONS.chevronRight,
+      arrowRight: MP_ICONS.arrowRight,
+    },
   },
 
   onLoad(options: Record<string, string | undefined>) {
     const storeId = options.store_id || "";
     if (!storeId) {
-      this.setData({ state: "error", errorText: "缺少门店ID" });
+      this.setData({ state: "error", errorText: "门店入口不完整，请从门店列表重新进入" });
       return;
     }
     (this as unknown as { storeId: string }).storeId = storeId;
@@ -131,12 +140,20 @@ Page({
     if (!self.storeId) {
       return;
     }
+    if (!getCAccessToken()) {
+      this.setData({ state: "needLogin" });
+      return;
+    }
     void this.loadAll({ silent: Boolean(self.loadedOnce) });
     self.loadedOnce = true;
   },
 
   onPullDownRefresh() {
     void this.loadAll({ silent: this.data.state === "ok" }).finally(() => wx.stopPullDownRefresh());
+  },
+
+  onGoLogin() {
+    wx.navigateTo({ url: "/pages/login/index/index" });
   },
 
   /** @param options.silent 静默刷新：不清空已有内容，失败只提示不整页报错 */
@@ -172,19 +189,26 @@ Page({
       this.setData({
         state: "ok",
         store,
+        storeLabel: storeStatusLabel(store.review_status, store.cooperation_status_label),
+        storeTone: storeStatusTone(store.review_status, store.cooperation_status),
         lastVisitText: formatDate(store.last_visit_at) || "暂无拜访",
         photos: rawPhotos.map((photo) => ({ ...photo, displayUrl: resolveAssetUrl(photo.file_url) })),
-        visits: (visits.items || []).map((item) => ({
-          id: item.id,
-          visitedText: formatDate(item.visited_at),
-          employee_name: item.employee_name || "员工",
-          contact_name: item.contact_name,
-          contact_phone: item.contact_phone,
-          resultText: item.result ? visitResultLabels[item.result] || item.result : "未填写",
-          remark: item.remark,
-          is_backfill: item.is_backfill,
-          distance_m: item.distance_m,
-        })),
+        visits: (visits.items || []).map((item) => {
+          const formatted = formatDate(item.visited_at);
+          return {
+            id: item.id,
+            dateText: formatted.slice(0, 10),
+            timeText: formatted.slice(11),
+            employee_name: item.employee_name || "员工",
+            contact_name: item.contact_name,
+            contact_phone: item.contact_phone,
+            resultText: item.result ? visitResultLabels[item.result] || item.result : "未填结果",
+            remark: item.remark,
+            is_backfill: item.is_backfill,
+            distanceText: formatDistance(item.distance_m),
+            abnormal: item.distance_m !== null && item.distance_m > DISTANCE_ABNORMAL_M,
+          };
+        }),
         statusLogs: logs.map((log) => ({
           id: log.id,
           fromLabel: cooperationLabels[log.from_status] || log.from_status,
@@ -192,24 +216,28 @@ Page({
           createdText: formatDate(log.created_at),
           reason: log.reason,
         })),
-        cooperationLabels,
-        visitResultLabels,
         statusOptions: (statusOptions?.items || []).map((item) => ({ code: item.code, label: item.label })),
         statusHint: statusOptions?.reason || (statusOptions?.items?.length ? "" : "暂无可变更的合作状态"),
         agreements: agreements.items.map((item: Agreement) => ({
           id: item.id,
           title: item.agreement_no || item.id.slice(0, 8),
-          statusText: AGREEMENT_STATUS_LABELS[item.status] || item.status,
-          expireText: item.expire_at ? formatDate(item.expire_at).slice(0, 10) : "—",
+          statusText: agreementStatusLabel(item.status),
+          statusTone: agreementStatusTone(item.status),
+          expireText: item.expire_at ? formatDate(item.expire_at).slice(0, 10) : "长期有效",
         })),
       });
     } catch (err) {
-      if (silent && this.data.state === "ok") {
-        // 静默刷新失败：保留已有内容，只轻提示（避免用户从拜访页返回时整页报错）
-        wx.showToast({ title: errMessage(err), icon: "none" });
+      const statusCode = (err as { statusCode?: number }).statusCode;
+      if (statusCode === 401) {
+        this.setData({ state: "needLogin" });
         return;
       }
-      this.setData({ state: "error", errorText: errMessage(err) });
+      if (silent && this.data.state === "ok") {
+        // 静默刷新失败：保留已有内容，只轻提示（避免用户从拜访页返回时整页报错）
+        wx.showToast({ title: describeRequestError(err, "刷新失败"), icon: "none" });
+        return;
+      }
+      this.setData({ state: "error", errorText: describeRequestError(err, "门店档案加载失败") });
     }
   },
 
@@ -225,16 +253,6 @@ Page({
   onEdit() {
     const storeId = (this as unknown as { storeId: string }).storeId;
     wx.navigateTo({ url: `/pages/merchant/store/create/index?mode=edit&store_id=${storeId}` });
-  },
-
-  /** REQ-IT6-02：佣金结算为下一期功能，先提供入口并说明，避免员工以为功能缺失 */
-  onCommission() {
-    wx.showToast({ title: "佣金结算功能下一期开发", icon: "none" });
-  },
-
-  onOpenAgreements() {
-    const storeId = (this as unknown as { storeId: string }).storeId;
-    wx.navigateTo({ url: `/pages/merchant/agreement/list/index?store_id=${storeId}` });
   },
 
   onCreateAgreement() {
@@ -261,7 +279,7 @@ Page({
         qrExpiresText: formatDate(qr.expires_at),
       });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "二维码生成失败"), icon: "none" });
     } finally {
       wx.hideLoading();
     }
@@ -331,7 +349,7 @@ Page({
       wx.showToast({ title: "已变更", icon: "success" });
       void this.loadAll({ silent: true });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "状态变更失败"), icon: "none" });
     }
   },
 

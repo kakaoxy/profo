@@ -8,6 +8,9 @@ import type { components } from "../../../../types/api-types";
 import { pickAndUploadPhotos } from "../../../../utils/image-upload";
 import { chooseMapLocation } from "../../../../utils/location";
 import type { MerchantPhoto, MerchantPhotoType } from "../../../../utils/image-upload";
+import { describeRequestError } from "../../../../utils/merchant-errors";
+import { getCAccessToken } from "../../../../utils/token";
+import { MP_ICONS } from "../../../../utils/mp-icons";
 import { matchDistrict } from "../../../../utils/region";
 import { request } from "../../../../utils/request";
 import { resolveAssetUrl } from "../../../../utils/url";
@@ -47,9 +50,13 @@ interface Option {
 
 interface DuplicateDisplay extends DuplicateCandidate {
   matchedText: string;
+  distanceText: string;
 }
 
 interface PageData {
+  /** 页面级状态：编辑模式加载门店失败时进 error，避免空表单被误提交 */
+  state: "loading" | "error" | "needLogin" | "ok";
+  errorText: string;
   mode: "create" | "edit";
   storeId: string;
   companyKeyword: string;
@@ -78,13 +85,18 @@ const DEFAULT_COOPERATION_OPTIONS: Option[] = [
   { code: "not_cooperated", label: "未合作" },
   { code: "negotiating", label: "洽谈中" },
 ];
-function errMessage(err: unknown): string {
-  const body = (err as { body?: { message?: string } }).body;
-  if (body?.message) {
-    return body.message;
+/** 页面兜底文案：具体原因由 describeRequestError 补全（审查报告 T11）. */
+const ACTION_FAILED = "操作失败";
+
+/** 距离文案统一「米 / 公里」（审查报告 T8）. */
+function formatDistance(meters: number | null | undefined): string {
+  if (meters === null || meters === undefined) {
+    return "";
   }
-  const msg = (err as { errMsg?: string }).errMsg;
-  return msg || "操作失败，请重试";
+  if (meters < 1000) {
+    return `距离 ${Math.round(meters)} 米`;
+  }
+  return `距离 ${(meters / 1000).toFixed(1)} 公里`;
 }
 
 function toDisplayPhotos(photos: MerchantPhoto[]): DisplayPhoto[] {
@@ -93,6 +105,8 @@ function toDisplayPhotos(photos: MerchantPhoto[]): DisplayPhoto[] {
 
 Page({
   data: {
+    state: "ok" as "loading" | "error" | "needLogin" | "ok",
+    errorText: "",
     mode: "create" as "create" | "edit",
     storeId: "",
     companyKeyword: "",
@@ -127,6 +141,13 @@ Page({
     duplicateOpen: false,
     duplicates: [] as DuplicateDisplay[],
     forceReason: "",
+    icons: {
+      plus: MP_ICONS.plus,
+      close: MP_ICONS.close,
+      camera: MP_ICONS.camera,
+      pin: MP_ICONS.pin,
+      chevronDown: MP_ICONS.chevronDown,
+    },
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -169,7 +190,7 @@ Page({
   },
 
   async loadStore(storeId: string): Promise<void> {
-    wx.showLoading({ title: "加载中", mask: true });
+    this.setData({ state: "loading", errorText: "" });
     try {
       const store = await request<StoreResponse>({ url: `/public/merchant/stores/${storeId}` });
       this.setData({
@@ -197,12 +218,33 @@ Page({
           photos: toDisplayPhotos(store.photos || []),
         },
       });
-      this.setData({ districtIndex: this.data.districts.indexOf(store.district) });
+      this.setData({ state: "ok", districtIndex: this.data.districts.indexOf(store.district) });
       void this.loadBusinessCircles(store.district, store.business_circle);
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
-    } finally {
-      wx.hideLoading();
+      const statusCode = (err as { statusCode?: number }).statusCode;
+      if (statusCode === 401 || statusCode === 403) {
+        this.setData({ state: "needLogin" });
+        return;
+      }
+      // 空表单比报错更危险：加载失败就停在这里，不允许编辑/提交
+      this.setData({ state: "error", errorText: describeRequestError(err, "门店信息加载失败") });
+    }
+  },
+
+  onGoLogin() {
+    wx.navigateTo({ url: "/pages/login/index/index" });
+  },
+
+  // 从登录页返回后自恢复：只有编辑态才有需要重拉的详情
+  onShow() {
+    if (this.data.state === "needLogin" && getCAccessToken() && this.data.mode === "edit" && this.data.storeId) {
+      void this.loadStore(this.data.storeId);
+    }
+  },
+
+  onRetry() {
+    if (this.data.mode === "edit" && this.data.storeId) {
+      void this.loadStore(this.data.storeId);
     }
   },
 
@@ -228,7 +270,7 @@ Page({
       });
       this.setData({ companies: data.items, companySearched: true });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     }
   },
 
@@ -286,7 +328,7 @@ Page({
       });
       wx.showToast({ title: "公司已创建", icon: "success" });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     }
   },
 
@@ -340,7 +382,7 @@ Page({
         businessCircleIndex: current ? circles.indexOf(current) : -1,
       });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     }
   },
 
@@ -373,7 +415,7 @@ Page({
       const photos = await pickAndUploadPhotos(remaining, photoType);
       this.setData({ "form.photos": this.data.form.photos.concat(toDisplayPhotos(photos)) });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     }
   },
 
@@ -466,6 +508,7 @@ Page({
           const duplicates = check.candidates.map((item) => ({
             ...item,
             matchedText: item.matched_by.join(" / "),
+            distanceText: formatDistance(item.distance_m),
           }));
           this.setData({ duplicateOpen: true, duplicates });
           return;
@@ -536,7 +579,7 @@ Page({
         wx.redirectTo({ url: `/pages/merchant/store/detail/index?store_id=${result.store.id}` });
       }, 800);
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     } finally {
       this.setData({ submitting: false });
     }

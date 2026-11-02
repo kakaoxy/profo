@@ -1,292 +1,96 @@
 @import "../../../styles/merchant-theme.wxss";
 
-.page {
-  min-height: 100vh;
-  padding: 32rpx 32rpx 80rpx;
-  box-sizing: border-box;
-}
+/* 经纪人中心页布局。基础件（标题 / 卡片 / 状态 / 按钮 / chip / 输入 / 弹层 / 图标 / 底栏）
+ * 全部来自 shared 层 styles/merchant-theme.wxss（DESIGN.md M1–M7）；本文件只写本页独有的排布：
+ * 头部动作行、档案说明段、卡内动作区、门店主字段、记录行（绑定历史与推荐记录共用）、
+ * 弹层门店候选列。 */
 
-.hero {
-  background: var(--pure-white);
-  color: var(--ink);
-  box-shadow: var(--merchant-shadow);
-  border-radius: var(--merchant-card-radius);
-  padding: 40rpx;
-  margin-bottom: 28rpx;
-}
-.hero__top {
+/* 头部一行：状态 chip + 「编辑资料」文本动作（.link 自带 88rpx 热区） */
+.head-row {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20rpx;
-}
-.hero__title {
-  font-size: 40rpx;
-  font-weight: 600;
-}
-.hero__sub {
-  margin-top: 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-.hero__meta {
-  margin-top: 16rpx;
-  font-size: 25rpx;
-  line-height: 1.5;
-  color: var(--ash);
-}
-.hero__edit {
-  flex-shrink: 0;
-  padding: 8rpx 24rpx;
-  border: 1rpx solid var(--merchant-hairline);
-  border-radius: 9999rpx;
-  font-size: 24rpx;
-}
-
-.card {
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  box-shadow: var(--merchant-shadow);
-  padding: var(--merchant-card-padding);
-  margin-bottom: 28rpx;
-}
-.card-title {
-  font-size: 32rpx;
-  font-weight: 600;
-}
-.section-head {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-}
-.link {
-  color: var(--rust);
-  font-size: 26rpx;
-}
-.link-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 24rpx;
-  height: 76rpx;
-  font-weight: 500;
-  padding: 0 40rpx;
-  border-radius: 9999rpx;
-  background: transparent;
-  color: var(--rust);
-  font-size: 27rpx;
-}
-
-.field-label {
-  margin: 24rpx 0 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-.field-gap {
-  margin-top: 28rpx;
-}
-.input {
-  width: 100%;
-  height: 88rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid var(--merchant-hairline);
-  border-radius: 32rpx;
-  font-size: 28rpx;
-  background: var(--fog);
-  box-sizing: border-box;
-}
-.input--flex {
-  flex: 1;
-}
-/* REQ-IT4-06：`.btn-primary` 是 inline-flex，无 width 时按钮按内容收缩并贴在容器左侧；
-   表单主操作按钮统一铺满父容器，让文字在整行内居中。 */
-.submit-btn {
-  display: flex;
-  width: 100%;
-  margin-top: 32rpx;
-}
-
-.hint {
-  font-size: 25rpx;
-  line-height: 1.6;
-  color: var(--graphite);
-}
-.hint--warn {
-  color: var(--rust);
-}
-.empty-line {
-  margin-top: 20rpx;
-  color: var(--graphite);
-  font-size: 26rpx;
-}
-
-.store-name {
-  margin-top: 20rpx;
-  font-size: 34rpx;
-  font-weight: 600;
-}
-.store-line {
-  margin-top: 10rpx;
-  font-size: 25rpx;
-  color: var(--graphite);
-  line-height: 1.5;
-}
-.chips {
-  display: flex;
-  gap: 12rpx;
-  margin-top: 16rpx;
-}
-
-.actions {
-  display: flex;
+  justify-content: space-between;
   gap: 16rpx;
-  margin-top: 24rpx;
-}
-.mini-btn {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 80rpx;
-  border-radius: 9999rpx;
-  background: var(--fog);
-  color: var(--ink);
-  font-size: 27rpx;
-}
-.mini-btn--primary {
-  background: var(--ink);
-  color: var(--pure-white);
-}
-.mini-btn--danger {
-  color: var(--rust);
-}
-.mini-btn--search {
-  flex: none;
-  padding: 0 28rpx;
-  height: 88rpx;
 }
 
-.history-item,
-.lead-item {
-  padding: 24rpx 0;
-  border-bottom: 1rpx solid var(--fog);
-}
-.history-item:last-child,
-.lead-item:last-child {
-  border-bottom: none;
-}
-.history-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16rpx;
-  font-size: 28rpx;
-  font-weight: 500;
-}
-.history-meta {
-  margin-top: 10rpx;
-  font-size: 24rpx;
-  color: var(--graphite);
-  line-height: 1.5;
-}
-.followup {
-  margin-top: 16rpx;
-  padding: 16rpx 20rpx;
-  background: var(--fog);
-  border-radius: 20rpx;
-}
-.followup-top {
-  font-size: 23rpx;
-  color: var(--graphite);
-}
-.followup-content {
-  margin-top: 8rpx;
-  font-size: 25rpx;
-  line-height: 1.5;
+/* 档案备注与邀请说明：标题区之下、门店卡之上的一段说明，底部留一档间距接卡片 */
+.notes {
+  margin-bottom: var(--mp-gap);
 }
 
-.state {
-  padding: 120rpx 48rpx;
-  text-align: center;
-}
-.state__title {
-  font-size: 34rpx;
-  font-weight: 500;
-  margin-bottom: 16rpx;
-}
-.state__text {
-  font-size: 26rpx;
-  color: var(--graphite);
-  line-height: 1.6;
-}
-.state__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 32rpx;
-  height: 80rpx;
-  padding: 0 24rpx;
-  border-radius: 9999rpx;
-  background: transparent;
-  color: var(--rust);
-  font-size: 28rpx;
-  font-weight: 500;
-}
-
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(23, 25, 28, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32rpx;
-  z-index: 20;
-}
-.modal {
-  width: 100%;
-  max-height: 86vh;
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  padding: 32rpx;
-  box-sizing: border-box;
+/* 卡内动作区：按钮与行级说明纵向堆叠，只有一种间距 */
+.acts {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: var(--mp-gap);
+  margin-top: var(--mp-gap);
 }
-.modal-title {
-  font-size: 34rpx;
-  font-weight: 600;
-}
-.search-row {
-  display: flex;
-  gap: 16rpx;
-  align-items: center;
-}
-.store-list {
-  max-height: 44vh;
-}
-.option {
-  padding: 20rpx;
-  border: 1rpx solid var(--merchant-hairline);
-  border-radius: 24rpx;
-  margin-bottom: 16rpx;
-}
-.option--active {
-  border-color: var(--rust);
-  background: var(--apricot-wash);
-}
-.option-title {
-  font-size: 28rpx;
+
+/* 门店主字段（卡内首行，比键值行重一档） */
+.store-name {
+  font-size: var(--mp-body);
   font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.14px;
+  color: var(--ink);
 }
-.option-sub {
-  margin-top: 8rpx;
-  font-size: 24rpx;
-  color: var(--graphite);
-  line-height: 1.4;
+
+/* 记录行（绑定历史 / 推荐记录共用）：hairline 分隔，不用 fog 底做分隔线 */
+.entry {
+  padding: var(--mp-gap) 0;
+  border-bottom: 1rpx solid var(--mp-hairline);
 }
-.modal-actions {
+.entry:first-child {
+  padding-top: 0;
+}
+.entry:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+.entry__top {
   display: flex;
+  align-items: baseline;
   gap: 16rpx;
+  margin-bottom: 8rpx;
+}
+.entry__name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--mp-body);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.14px;
+  color: var(--ink);
+}
+/* 记录状态用文本而不是 chip：绑定 / 推荐的状态码没有 merchant-status.ts 的三档映射，
+ * 在页面里手写映射会重新长出「一色多义」，所以降级为次要文字。 */
+.entry__status {
+  flex-shrink: 0;
+  font-size: var(--mp-caption);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--graphite);
+}
+
+/* 推荐记录里的跟进：只用 .hint 语义，不再造一个圆角小卡 */
+.entry__follows {
+  margin-top: 8rpx;
+}
+.entry__follow + .entry__follow {
+  margin-top: var(--mp-gap);
+}
+/* 翻页是列表的延伸，用整宽 Fog 按钮，不与卡片标题同重 */
+.entry__more {
+  margin-top: var(--mp-gap);
+}
+
+/* 弹层门店候选：左信息列 + 选中 check */
+.option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+.option__main {
+  flex: 1;
+  min-width: 0;
 }

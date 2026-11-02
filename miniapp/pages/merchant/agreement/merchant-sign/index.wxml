@@ -1,59 +1,81 @@
-<view class="page">
+<view class="page page--foot">
   <view class="state" wx:if="{{state === 'loading'}}">
-    <view class="state__text">加载中...</view>
+    <view class="state__text">加载中…</view>
   </view>
 
   <view class="state" wx:elif="{{state === 'needLogin'}}">
     <view class="state__title">请先登录</view>
-    <view class="state__text">{{errorText || '商户需使用微信登录后才能核对并签署协议'}}</view>
-    <button class="btn-primary login-btn" bindtap="onGoLogin">微信登录</button>
+    <view class="state__text">{{errorText || '协议需用微信登录后才能核对并签署'}}</view>
+    <button class="mbtn mbtn--ink mbtn--cta state-cta" hover-class="hoverable" bindtap="onGoLogin">微信登录</button>
   </view>
 
   <view class="state" wx:elif="{{state === 'error'}}">
-    <view class="state__title">无法打开</view>
+    <view class="state__title">没能打开协议</view>
     <view class="state__text">{{errorText}}</view>
-    <view class="state__btn" bindtap="onRetry">重试</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onRetry">重试</view>
   </view>
 
   <block wx:elif="{{state === 'ok' && view}}">
-    <view class="hero" wx:if="{{!done}}">
-      <view class="hero__title">合作协议待签署</view>
-      <view class="hero__sub">请核对协议正文与商户信息，确认无误后手写签名提交</view>
+    <view class="head">
+      <view class="head__title">{{done ? '已签署' : '合作协议待签署'}}</view>
+      <view class="head__sub">
+        {{done ? '协议已提交，门店侧会看到「已签署」' : '门店员工发起了这份合作协议，核对正文与商户信息后手写签名提交，门店侧即看到「已签署」'}}
+      </view>
     </view>
 
-    <view class="card" wx:if="{{!done}}">
-      <view class="row"><text class="row-label">协议编号</text><text>{{view.agreement_no || '—'}}</text></view>
-      <view class="row"><text class="row-label">签约主体</text><text>{{view.subject_name || '—'}}</text></view>
-      <view class="row"><text class="row-label">协议模板</text><text>{{view.template_name || '—'}}</text></view>
-      <view class="row"><text class="row-label">签署人</text><text>{{view.signer_name || '—'}} · {{signerPhoneMasked}}</text></view>
-      <view class="row"><text class="row-label">到期时间</text><text>{{view.expire_at || '长期有效'}}</text></view>
+    <view class="card">
+      <view class="rowhead">
+        <view class="card__title">协议信息</view>
+        <view class="chip {{done || statusTone === 'done' ? 'chip--done' : statusTone === 'void' ? 'chip--void' : 'chip--todo'}}">{{statusLabel}}</view>
+      </view>
+      <view class="card__body">
+        <view class="row"><text class="row__label">协议编号</text><text class="row__value tnum">{{view.agreement_no || '—'}}</text></view>
+        <view class="row"><text class="row__label">签约主体</text><text class="row__value">{{view.subject_name || '—'}}</text></view>
+        <view class="row"><text class="row__label">协议模板</text><text class="row__value">{{view.template_name || '—'}}</text></view>
+        <view class="row"><text class="row__label">签署人</text><text class="row__value">{{view.signer_name || '—'}} · {{signerPhoneMasked}}</text></view>
+        <view class="row"><text class="row__label">到期时间</text><text class="row__value tnum">{{expireText}}</text></view>
+      </view>
     </view>
 
-    <view class="card" wx:if="{{!done}}">
-      <view class="card-title">协议正文</view>
+    <view class="card">
+      <view class="card__title">协议正文</view>
       <text class="content">{{content}}</text>
     </view>
 
     <block wx:if="{{!done && view.can_sign}}">
       <view class="card">
-        <view class="card-title">签署人信息</view>
-        <view class="field-label">姓名</view>
-        <input class="input" placeholder="请填写签署人姓名" value="{{signerName}}" bindinput="onSignerNameInput" maxlength="50" />
-        <view class="field-label">手机号</view>
-        <input
-          class="input"
-          type="number"
-          placeholder="请填写 11 位手机号"
-          value="{{signerPhone}}"
-          bindinput="onSignerPhoneInput"
-          maxlength="11"
-        />
+        <view class="card__title">签署人信息</view>
+        <view class="card-note">
+          <view class="field">
+            <text class="field__label">姓名</text>
+            <input
+              class="input"
+              placeholder="请填写签署人姓名"
+              placeholder-class="ph"
+              value="{{signerName}}"
+              bindinput="onSignerNameInput"
+              maxlength="50"
+            />
+          </view>
+          <view class="field">
+            <text class="field__label">手机号</text>
+            <input
+              class="input"
+              type="number"
+              placeholder="请填写 11 位手机号"
+              placeholder-class="ph"
+              value="{{signerPhone}}"
+              bindinput="onSignerPhoneInput"
+              maxlength="11"
+            />
+          </view>
+        </view>
       </view>
 
       <view class="card">
-        <view class="section-head">
-          <view class="card-title">手写签名</view>
-          <view class="link" bindtap="onClear">清空</view>
+        <view class="rowhead">
+          <view class="card__title">手写签名</view>
+          <view class="link" hover-class="hoverable" bindtap="onClear">清空</view>
         </view>
         <canvas
           type="2d"
@@ -64,32 +86,45 @@
           bindtouchmove="onTouchMove"
           bindtouchend="onTouchEnd"
         ></canvas>
-        <view class="confirm-row" bindtap="onToggleConfirmed">
-          <view class="checkbox {{confirmed ? 'checkbox--on' : ''}}">{{confirmed ? '✓' : ''}}</view>
+        <view class="confirm-row" hover-class="hoverable" bindtap="onToggleConfirmed">
+          <view class="checkbox {{confirmed ? 'checkbox--on' : ''}}">
+            <image class="icon" wx:if="{{confirmed}}" src="{{icons.check}}" />
+          </view>
           <text class="confirm-text">我已核对协议正文与商户信息，确认以格式条款签署</text>
         </view>
-        <button
-          class="btn-primary submit-btn"
-          loading="{{submitting}}"
-          disabled="{{submitting}}"
-          bindtap="onSubmit"
-        >
-          确认签署
-        </button>
       </view>
     </block>
 
     <view class="card" wx:if="{{!done && !view.can_sign}}">
-      <view class="card-title">当前不可签署</view>
-      <view class="hint">{{view.reason || '协议状态已变化，请联系门店员工确认'}}</view>
-      <view class="hint">协议状态：{{view.status_label}}</view>
+      <view class="card__title">现在还不能签署</view>
+      <view class="card-note">
+        <view class="hint">{{view.reason || '协议状态已变化，暂时无法签署'}}</view>
+        <view class="hint">当前状态「{{statusLabel}}」。如需继续签署，请联系发起这份协议的员工核实后重新分享签署链接。</view>
+      </view>
     </view>
 
     <view class="card" wx:if="{{done}}">
-      <view class="card-title">签署完成</view>
-      <view class="hint">协议已提交，门店员工侧会看到「已签署」。如需留档可复制协议文件地址。</view>
-      <view class="mini-btn" wx:if="{{signedFileUrl}}" bindtap="onCopyFileUrl">复制协议文件地址</view>
-      <button class="btn-primary submit-btn" bindtap="onBackHome">返回首页</button>
+      <view class="rowhead">
+        <view class="card__title">签署完成</view>
+        <view class="link" wx:if="{{signedFileUrl}}" hover-class="hoverable" bindtap="onCopyFileUrl">复制协议文件地址</view>
+      </view>
+      <view class="hint card-note">协议已提交并存档，门店侧状态为「已签署」。如需留档，可复制协议文件地址自行保存。</view>
     </view>
   </block>
+</view>
+
+<view class="foot" wx:if="{{state === 'ok' && view && done}}">
+  <button class="mbtn mbtn--ink mbtn--cta" hover-class="hoverable" bindtap="onBackHome">返回首页</button>
+</view>
+
+<view class="foot" wx:elif="{{state === 'ok' && view && !done && view.can_sign}}">
+  <button
+    class="mbtn mbtn--ink mbtn--cta"
+    hover-class="hoverable"
+    loading="{{submitting}}"
+    disabled="{{submitting}}"
+    bindtap="onSubmit"
+  >
+    确认签署
+  </button>
 </view>

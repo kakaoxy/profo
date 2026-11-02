@@ -1,173 +1,275 @@
-<view class="page">
+<view class="page page--foot">
   <view class="state" wx:if="{{state === 'needLogin'}}">
     <view class="state__title">请先登录</view>
     <view class="state__text">经纪人认证需要微信登录并绑定手机号</view>
-    <view class="state__btn" bindtap="onGoLogin">去登录</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onGoLogin">去登录</view>
   </view>
 
   <view class="state" wx:elif="{{state === 'loading'}}">
-    <view class="state__text">加载中...</view>
+    <view class="state__text">加载中…</view>
   </view>
 
   <view class="state" wx:elif="{{state === 'error'}}">
-    <view class="state__title">加载失败</view>
+    <view class="state__title">没能加载经纪人信息</view>
     <view class="state__text">{{errorText}}</view>
-    <view class="state__btn" bindtap="load">重试</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="load">重试</view>
   </view>
 
-  <!-- 认证 -->
+  <!-- 未认证 -->
   <block wx:elif="{{state === 'register'}}">
-    <view class="hero">
-      <view class="hero__title">经纪人认证</view>
-      <view class="hero__sub">认证后可绑定门店、推荐客户并查看推荐记录</view>
+    <view class="head">
+      <view class="head__title">经纪人认证</view>
+      <view class="head__sub">认证后可以绑定门店、推荐客户，并查看自己的推荐记录</view>
+      <view class="head__meta">
+        <view class="chip chip--todo">待认证</view>
+      </view>
     </view>
 
     <view class="card" wx:if="{{qrStoreName || qrReason}}">
-      <view class="card-title">门店邀请</view>
-      <view wx:if="{{qrStoreName}}" class="hint">扫码门店：{{qrStoreName}}，认证成功后自动绑定</view>
-      <view wx:if="{{qrReason}}" class="hint hint--warn">{{qrReason}}</view>
+      <view class="card__title">门店邀请</view>
+      <view class="card__body">
+        <view class="hint" wx:if="{{qrStoreName}}">邀请来自「{{qrStoreName}}」，认证成功后自动绑定这家门店</view>
+        <view class="hint hint--warn" wx:if="{{qrReason}}">{{qrReason}}</view>
+      </view>
     </view>
 
     <view class="card">
-      <view class="field-label">姓名</view>
-      <input class="input" placeholder="请输入真实姓名" value="{{regName}}" bindinput="onRegNameInput" maxlength="50" />
-      <view class="field-label field-gap">手机号</view>
-      <view wx:if="{{hasPhone}}" class="hint">已使用当前账号绑定手机号，认证后自动关联</view>
-      <block wx:else>
-        <view class="hint hint--warn">经纪人认证前必须先在「我的」页完善手机号</view>
-        <view class="link-btn" bindtap="onGoProfile">去完善手机号</view>
-      </block>
-      <button class="btn-primary submit-btn" loading="{{saving}}" disabled="{{saving}}" bindtap="onRegister">
-        提交认证
-      </button>
+      <view class="card__title">认证资料</view>
+      <view class="card__body">
+        <view class="field">
+          <text class="field__label">姓名</text>
+          <input
+            class="input"
+            placeholder="身份证上的真实姓名"
+            placeholder-class="ph"
+            value="{{regName}}"
+            maxlength="50"
+            bindinput="onRegNameInput"
+          />
+        </view>
+        <view class="field field--last">
+          <text class="field__label">手机号</text>
+          <view class="hint" wx:if="{{hasPhone}}">已绑定当前账号的手机号，认证后自动关联</view>
+          <view class="rowhead" wx:else>
+            <view class="hint hint--warn">认证前需要先在「我的」里完善手机号</view>
+            <view class="link" hover-class="hoverable" bindtap="onGoProfile">去完善</view>
+          </view>
+        </view>
+      </view>
     </view>
   </block>
 
   <!-- 已认证 -->
   <block wx:elif="{{state === 'profile' && broker}}">
-    <view class="hero">
-      <view class="hero__top">
-        <view>
-          <view class="hero__title">{{broker.name}}</view>
-          <view class="hero__sub">{{broker.phone_masked}} · {{bindStatusText}}</view>
-        </view>
-        <view class="hero__edit" bindtap="onOpenEdit">编辑</view>
+    <view class="head">
+      <view class="head__title">{{broker.name}}</view>
+      <view class="head__sub" wx:if="{{broker.store_name}}">已绑定「{{broker.store_name}}」· 电话 {{broker.phone_masked}}</view>
+      <view class="head__sub" wx:else>还没绑定门店 · 电话 {{broker.phone_masked}}</view>
+      <view class="head__meta head-row">
+        <view class="chip chip--{{storeTone}}">{{storeLabel}}</view>
+        <view class="link" hover-class="hoverable" bindtap="onOpenEdit">编辑资料</view>
       </view>
-      <view class="hero__meta" wx:if="{{broker.remark}}">备注：{{broker.remark}}</view>
-      <view class="hero__meta" wx:if="{{broker.inviter_employee_id}}">邀请归因已记录，推荐线索将归属邀请员工</view>
     </view>
 
+    <view class="notes" wx:if="{{broker.remark || broker.inviter_employee_id}}">
+      <view class="hint" wx:if="{{broker.remark}}">备注：{{broker.remark}}</view>
+      <view class="hint" wx:if="{{broker.inviter_employee_id}}">这份邀请来自门店分享的二维码，已记录在你的推荐里</view>
+    </view>
+
+    <!-- 我的门店 -->
     <view class="card">
-      <view class="section-head">
-        <view class="card-title">我的门店</view>
-        <view class="link" wx:if="{{myStore}}" bindtap="onOpenChange">换绑</view>
-      </view>
-      <block wx:if="{{myStore}}">
+      <view class="card__title">我的门店</view>
+      <view class="card__body" wx:if="{{myStore}}">
         <view class="store-name">{{myStore.store_name}}</view>
-        <view class="store-line">{{myStore.company_name}}</view>
-        <view class="store-line">{{myStore.district}} · {{myStore.business_circle}}</view>
-        <view class="store-line">{{myStore.address}}</view>
-        <view class="chips">
-          <text class="chip chip-fog">{{myStore.cooperation_status_label}}</text>
-          <text class="chip chip-fog">{{myStore.review_status === 'pending' ? '门店待审核' : '已转正'}}</text>
+        <view class="row">
+          <view class="row__label">所属公司</view>
+          <view class="row__value">{{myStore.company_name}}</view>
         </view>
-        <view class="actions">
-          <view class="mini-btn" bindtap="onOpenChange">申请换绑</view>
-          <view class="mini-btn mini-btn--danger" bindtap="onOpenUnbind">申请解绑</view>
+        <view class="row">
+          <view class="row__label">商圈</view>
+          <view class="row__value">{{myStore.district}}{{myStore.business_circle ? ' · ' + myStore.business_circle : ''}}</view>
         </view>
-      </block>
-      <block wx:else>
-        <view class="empty-line">暂无绑定门店，可作为独立经纪人使用</view>
-        <view class="actions">
-          <view class="mini-btn mini-btn--primary" bindtap="onOpenBind">绑定已有门店</view>
-          <view class="mini-btn" bindtap="onCreateStore">创建新门店</view>
-          <view class="mini-btn" bindtap="onSkipBind">暂不绑定</view>
+        <view class="row">
+          <view class="row__label">门店地址</view>
+          <view class="row__value">{{myStore.address}}</view>
         </view>
-        <view class="hint">创建门店后进入后台审核，并自动绑定为你的门店。</view>
-      </block>
-    </view>
-
-    <view class="card">
-      <view class="card-title">绑定历史</view>
-      <view class="empty-line" wx:if="{{!bindings.length}}">暂无绑定记录</view>
-      <view class="history-item" wx:for="{{bindings}}" wx:key="id">
-        <view class="history-top">
-          <text>{{item.store_name}}</text>
-          <text class="chip chip-fog">{{item.statusText}}</text>
+        <view class="acts">
+          <view class="mbtn-group">
+            <view class="mbtn" hover-class="hoverable" bindtap="onOpenChange">申请换绑</view>
+            <view class="mbtn" hover-class="hoverable" bindtap="onOpenUnbind">申请解绑</view>
+          </view>
         </view>
-        <view class="history-meta">{{item.timeText}}<text wx:if="{{item.reason}}"> · {{item.reason}}</text></view>
+      </view>
+      <view class="card__body" wx:elif="{{storeError}}">
+        <view class="hint hint--warn">{{storeError}}</view>
+      </view>
+      <view class="card__body" wx:else>
+        <view class="hint">还没绑定门店，绑定一家已有门店或自己建档都能开始推广</view>
+        <view class="acts">
+          <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onCreateStore">创建新门店</button>
+          <view class="rowhead">
+            <view class="hint">暂不绑定也能作为独立经纪人推荐客户</view>
+            <view class="link" hover-class="hoverable" bindtap="onSkipBind">暂不绑定</view>
+          </view>
+        </view>
       </view>
     </view>
 
+    <!-- 绑定历史 -->
     <view class="card">
-      <view class="section-head">
-        <view class="card-title">我的推荐记录</view>
-        <view class="link" wx:if="{{leads.length < leadsTotal}}" bindtap="onMoreLeads">加载更多</view>
+      <view class="rowhead">
+        <view class="card__title">绑定历史</view>
+        <text class="listhead__count tnum">{{bindings.length}} 条</text>
       </view>
-      <view class="empty-line" wx:if="{{!leads.length}}">暂无推荐记录</view>
-      <view class="lead-item" wx:for="{{leads}}" wx:key="id">
-        <view class="history-top">
-          <text>{{item.community_name}}</text>
-          <text class="chip chip-apricot">{{item.statusText}}</text>
-        </view>
-        <view class="history-meta" wx:if="{{item.infoText}}">{{item.infoText}}</view>
-        <view class="history-meta">推荐时间：{{item.createdText}}</view>
-        <view class="followup" wx:for="{{item.followUps}}" wx:for-item="fu" wx:key="id">
-          <view class="followup-top">{{fu.followedText}} · {{fu.methodText}}</view>
-          <view class="followup-content">{{fu.content}}</view>
-        </view>
+      <view class="card__body">
+        <view class="hint hint--warn" wx:if="{{bindingsError}}">{{bindingsError}}</view>
+        <view class="empty" wx:elif="{{!bindings.length}}">还没有绑定记录</view>
+        <block wx:else>
+          <view class="entry" wx:for="{{bindings}}" wx:key="id">
+            <view class="entry__top">
+              <view class="entry__name">{{item.store_name}}</view>
+              <text class="entry__status">{{item.statusText}}</text>
+            </view>
+            <view class="hint tnum">{{item.timeText}}</view>
+            <view class="hint" wx:if="{{item.reason}}">原因：{{item.reason}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <!-- 我的推荐记录 -->
+    <view class="card">
+      <view class="rowhead">
+        <view class="card__title">我的推荐记录</view>
+        <text class="listhead__count tnum">共 {{leadsTotal}} 条</text>
+      </view>
+      <view class="card__body">
+        <view class="hint hint--warn" wx:if="{{leadsError}}">{{leadsError}}</view>
+        <view class="empty" wx:elif="{{!leads.length}}">还没有推荐记录</view>
+        <block wx:else>
+          <view class="entry" wx:for="{{leads}}" wx:key="id">
+            <view class="entry__top">
+              <view class="entry__name">{{item.community_name}}</view>
+              <text class="entry__status">{{item.statusText}}</text>
+            </view>
+            <view class="hint" wx:if="{{item.infoText}}">{{item.infoText}}</view>
+            <view class="hint tnum">推荐时间 {{item.createdText}}</view>
+            <view class="entry__follows" wx:if="{{item.followUps.length}}">
+              <view class="entry__follow" wx:for="{{item.followUps}}" wx:for-item="fu" wx:key="id">
+                <view class="hint tnum">{{fu.followedText}} · {{fu.methodText}}</view>
+                <view class="hint">{{fu.content}}</view>
+              </view>
+            </view>
+          </view>
+          <view class="entry__more" wx:if="{{leads.length < leadsTotal}}">
+            <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onMoreLeads">
+              <image class="icon" src="{{icons.chevronDown}}" />
+              <text>加载更多</text>
+            </button>
+          </view>
+        </block>
       </view>
     </view>
   </block>
 </view>
 
-<!-- 门店搜索/绑定/换绑 -->
+<!-- 主 CTA：认证提交 / 未绑定门店时的绑定入口，每屏只有一个 Ink -->
+<view class="foot" wx:if="{{state === 'register'}}">
+  <button
+    class="mbtn mbtn--ink mbtn--cta"
+    hover-class="hoverable"
+    loading="{{saving}}"
+    disabled="{{saving || !hasPhone}}"
+    bindtap="onRegister"
+  >提交认证</button>
+</view>
+<view class="foot" wx:elif="{{state === 'profile' && !myStore && !storeError}}">
+  <button class="mbtn mbtn--ink mbtn--cta" hover-class="hoverable" bindtap="onOpenBind">绑定已有门店</button>
+</view>
+
+<!-- 门店搜索 / 绑定 / 换绑 -->
 <view class="modal-mask" wx:if="{{storePanelOpen}}">
   <view class="modal">
-    <view class="modal-title">{{storeAction === 'bind' ? '绑定门店' : '换绑门店'}}</view>
-    <view class="search-row">
-      <input class="input input--flex" placeholder="门店名称 / 地址" value="{{storeKeyword}}" bindinput="onStoreKeywordInput" bindconfirm="searchStores" />
-      <view class="mini-btn mini-btn--search" bindtap="searchStores">搜索</view>
+    <view class="modal-title">{{storeAction === 'bind' ? '绑定已有门店' : '申请换绑门店'}}</view>
+    <view class="modal-sub">
+      {{storeAction === 'bind' ? '选中后立即绑定，你可以随时再申请换绑或解绑' : '换绑由运营审核，通过前当前门店继续有效'}}
     </view>
-    <scroll-view scroll-y class="store-list">
-      <view class="empty-line" wx:if="{{!storeOptions.length}}">暂无可选门店</view>
-      <view
-        wx:for="{{storeOptions}}"
-        wx:key="id"
-        class="option {{selectedStoreId === item.id ? 'option--active' : ''}}"
-        data-id="{{item.id}}"
-        bindtap="onSelectStore"
-      >
-        <view class="option-title">{{item.store_name}}</view>
-        <view class="option-sub">{{item.company_name}} · {{item.district}} · {{item.business_circle}}</view>
-        <view class="option-sub">{{item.address}}</view>
+    <view class="search-row">
+      <input
+        class="input input--flex"
+        placeholder="门店名称 / 地址"
+        placeholder-class="ph"
+        value="{{storeKeyword}}"
+        confirm-type="search"
+        bindinput="onStoreKeywordInput"
+        bindconfirm="searchStores"
+      />
+      <button class="mbtn" hover-class="hoverable" bindtap="searchStores">搜索</button>
+    </view>
+    <scroll-view scroll-y class="modal-list">
+      <view class="empty" wx:if="{{!storeOptions.length}}">没有匹配的门店，换个关键词再试</view>
+      <view class="option-list" wx:else>
+        <view
+          class="option {{selectedStoreId === item.id ? 'option--active' : ''}}"
+          wx:for="{{storeOptions}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          hover-class="hoverable"
+          bindtap="onSelectStore"
+        >
+          <view class="option__main">
+            <view class="option__title">{{item.store_name}}</view>
+            <view class="option__sub">{{item.company_name}}</view>
+            <view class="option__sub">
+              {{item.district}}{{item.business_circle ? ' · ' + item.business_circle : ''}}
+            </view>
+          </view>
+          <image class="icon" wx:if="{{selectedStoreId === item.id}}" src="{{icons.check}}" />
+        </view>
       </view>
     </scroll-view>
     <input
       wx:if="{{storeAction === 'change'}}"
       class="input"
-      placeholder="换绑原因（必填）"
+      placeholder="换绑原因，会展示给审核人"
+      placeholder-class="ph"
       value="{{changeReason}}"
       bindinput="onChangeReasonInput"
     />
     <view class="modal-actions">
-      <view class="mini-btn" bindtap="onCloseStorePanel">取消</view>
-      <view class="mini-btn mini-btn--primary" bindtap="onSubmitStore">
-        {{storeAction === 'bind' ? '确认绑定' : '提交申请'}}
-      </view>
+      <view class="mbtn" hover-class="hoverable" bindtap="onCloseStorePanel">取消</view>
+      <button
+        class="mbtn mbtn--ink"
+        hover-class="hoverable"
+        loading="{{saving}}"
+        disabled="{{saving}}"
+        bindtap="onSubmitStore"
+      >{{storeAction === 'bind' ? '确认绑定' : '提交申请'}}</button>
     </view>
   </view>
 </view>
 
-<!-- 解绑 -->
+<!-- 解绑申请 -->
 <view class="modal-mask" wx:if="{{unbindOpen}}">
   <view class="modal">
     <view class="modal-title">申请解绑门店</view>
-    <view class="hint">解绑需运营审核，审核通过前当前绑定持续有效。</view>
-    <input class="input" placeholder="解绑原因（必填）" value="{{unbindReason}}" bindinput="onUnbindReasonInput" />
+    <view class="modal-sub">解绑由运营审核，通过前当前绑定继续有效</view>
+    <input
+      class="input"
+      placeholder="解绑原因，会展示给审核人"
+      placeholder-class="ph"
+      value="{{unbindReason}}"
+      bindinput="onUnbindReasonInput"
+    />
     <view class="modal-actions">
-      <view class="mini-btn" bindtap="onCloseUnbind">取消</view>
-      <view class="mini-btn mini-btn--primary" bindtap="onSubmitUnbind">提交申请</view>
+      <view class="mbtn" hover-class="hoverable" bindtap="onCloseUnbind">取消</view>
+      <button
+        class="mbtn mbtn--ink"
+        hover-class="hoverable"
+        loading="{{saving}}"
+        disabled="{{saving}}"
+        bindtap="onSubmitUnbind"
+      >提交申请</button>
     </view>
   </view>
 </view>
@@ -176,14 +278,31 @@
 <view class="modal-mask" wx:if="{{editOpen}}">
   <view class="modal">
     <view class="modal-title">编辑经纪人资料</view>
-    <view class="field-label">姓名</view>
-    <input class="input" value="{{editName}}" bindinput="onEditNameInput" maxlength="50" />
-    <view class="field-label">备注</view>
-    <input class="input" value="{{editRemark}}" bindinput="onEditRemarkInput" maxlength="500" />
-    <view class="hint">手机号需在「我的」页通过现有流程修改后自动同步。</view>
+    <view class="field field--last">
+      <text class="field__label">姓名</text>
+      <input class="input" placeholder="身份证上的真实姓名" placeholder-class="ph" value="{{editName}}" maxlength="50" bindinput="onEditNameInput" />
+    </view>
+    <view class="field field--last">
+      <text class="field__label">备注</text>
+      <input
+        class="input"
+        placeholder="给自己留个备注，例如负责的片区"
+        placeholder-class="ph"
+        value="{{editRemark}}"
+        maxlength="500"
+        bindinput="onEditRemarkInput"
+      />
+    </view>
+    <view class="hint">手机号在「我的」里改好后会自动同步到这里</view>
     <view class="modal-actions">
-      <view class="mini-btn" bindtap="onCloseEdit">取消</view>
-      <view class="mini-btn mini-btn--primary" bindtap="onSaveProfile">保存</view>
+      <view class="mbtn" hover-class="hoverable" bindtap="onCloseEdit">取消</view>
+      <button
+        class="mbtn mbtn--ink"
+        hover-class="hoverable"
+        loading="{{saving}}"
+        disabled="{{saving}}"
+        bindtap="onSaveProfile"
+      >保存</button>
     </view>
   </view>
 </view>

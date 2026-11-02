@@ -1,179 +1,77 @@
 @import "../../../../styles/merchant-theme.wxss";
 
-.page {
-  min-height: 100vh;
-  padding: 32rpx 32rpx 80rpx;
-  box-sizing: border-box;
+/* 商户签署协议页布局。基础件（页面骨架/标题/卡片/状态四态/按钮/输入/chip/底栏）
+ * 全部来自共享层 styles/merchant-theme.wxss；本文件只写本页独有的排布、
+ * 协议正文阅读块、手写签名画布与勾选确认行。 */
+
+/* 登录按钮与状态说明之间留一档间距（共享层 `.state` 不假设内部有按钮） */
+.state-cta {
+  margin-top: var(--mp-gap-lg);
 }
-.hero {
-  background: var(--pure-white);
-  color: var(--ink);
-  box-shadow: var(--merchant-shadow);
-  border-radius: var(--merchant-card-radius);
-  padding: 40rpx;
-  margin-bottom: 28rpx;
+
+/* 卡内标题与下方内容的间距（共享层只对 `.rowhead + .card__body` 给出该间距） */
+.card-note {
+  margin-top: var(--mp-gap);
 }
-.hero__title {
-  font-size: 38rpx;
-  font-weight: 600;
-}
-.hero__sub {
-  margin-top: 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-.card {
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  box-shadow: var(--merchant-shadow);
-  padding: var(--merchant-card-padding);
-  margin-bottom: 28rpx;
-}
-.card-title {
-  font-size: 32rpx;
-  font-weight: 600;
-}
+
+/* 协议正文属长文阅读，行高 1.7（DESIGN.md:470 唯一例外），其余说明文字统一 1.5 */
 .content {
   display: block;
-  margin-top: 20rpx;
-  font-size: 26rpx;
-  line-height: 1.8;
+  margin-top: var(--mp-gap);
+  font-size: var(--mp-label);
+  font-weight: 400;
+  line-height: 1.7;
+  letter-spacing: -0.13px;
   color: var(--ash);
   white-space: pre-wrap;
 }
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.link {
-  color: var(--rust);
-  font-size: 26rpx;
-}
-.field-label {
-  margin: 24rpx 0 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-.input {
-  width: 100%;
-  height: 88rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid var(--merchant-hairline);
-  border-radius: 32rpx;
-  font-size: 28rpx;
-  background: var(--fog);
-  box-sizing: border-box;
-}
+
+/* 手写签名画布：虚线边框只作为「可书写区」的提示，不是装饰卡 */
 .signature-canvas {
   width: 100%;
   height: 360rpx;
-  margin-top: 20rpx;
-  border-radius: 24rpx;
+  margin-top: var(--mp-gap);
   background: var(--pure-white);
   border: 2rpx dashed var(--dove);
+  border-radius: var(--mp-radius-inner);
   box-sizing: border-box;
 }
-.hint {
-  margin-top: 16rpx;
-  font-size: 24rpx;
-  line-height: 1.6;
-  color: var(--graphite);
-}
-/* REQ-IT4-06：`.btn-primary` 是 inline-flex，无 width 时按钮按内容收缩并贴在容器左侧；
-   表单主操作按钮统一铺满父容器，让文字在整行内居中。 */
-.submit-btn {
-  display: flex;
-  width: 100%;
-  margin-top: 28rpx;
-}
-.row {
-  display: flex;
-  justify-content: space-between;
-  gap: 24rpx;
-  padding: 16rpx 0;
-  font-size: 27rpx;
-  color: var(--ink);
-  border-bottom: 2rpx solid var(--fog);
-}
-.row:last-child {
-  border-bottom: none;
-}
-.row-label {
-  color: var(--graphite);
-  flex-shrink: 0;
-}
-/* REQ-IT5-03：商户确认勾选（原生 checkbox 与自绘风格不统一，用 view 自绘） */
+
+/* 勾选确认行：整行（方框 + 文案）是一个热区，热区高度不低于 88rpx */
 .confirm-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 16rpx;
-  margin-top: 24rpx;
+  min-height: 88rpx;
+  margin-top: var(--mp-gap);
+  box-sizing: border-box;
 }
+
+/* 圆形勾选框：未选 = 白底 + hairline 描边；选中 = 白底 + Ink 描边 + 单色勾
+ * （40rpx 外框减 2rpx 描边后内框恰为 36rpx，等于图标原尺寸，无需缩放） */
 .checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   width: 40rpx;
   height: 40rpx;
-  border-radius: 12rpx;
-  border: 2rpx solid var(--dove);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26rpx;
-  color: var(--pure-white);
-  line-height: 1;
+  background: var(--pure-white);
+  border: 2rpx solid var(--mp-hairline);
+  border-radius: 9999rpx;
   box-sizing: border-box;
 }
 .checkbox--on {
-  background: var(--ink);
   border-color: var(--ink);
 }
+
+/* 确认文案：随方框排布，所以单独给 flex 与文字档，不复用 `.hint`（`.hint` 无 flex） */
 .confirm-text {
-  font-size: 25rpx;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--mp-label);
+  font-weight: 400;
   line-height: 1.5;
-  color: var(--ash);
-}
-.mini-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 76rpx;
-  padding: 0 28rpx;
-  margin-top: 20rpx;
-  border-radius: 9999rpx;
-  background: var(--fog);
-  color: var(--ink);
-  font-size: 26rpx;
-}
-.login-btn {
-  display: flex;
-  width: 100%;
-  margin-top: 32rpx;
-}
-.state {
-  padding: 100rpx 48rpx;
-  text-align: center;
-}
-.state__title {
-  font-size: 34rpx;
-  font-weight: 500;
-  margin-bottom: 16rpx;
-}
-.state__text {
-  font-size: 26rpx;
+  letter-spacing: -0.13px;
   color: var(--graphite);
-  line-height: 1.6;
-}
-.state__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 32rpx;
-  height: 80rpx;
-  padding: 0 24rpx;
-  border-radius: 9999rpx;
-  background: transparent;
-  color: var(--rust);
-  font-size: 28rpx;
-  font-weight: 500;
 }

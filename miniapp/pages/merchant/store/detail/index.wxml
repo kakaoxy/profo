@@ -1,156 +1,196 @@
-<view class="page">
+<view class="page page--foot">
   <view class="state" wx:if="{{state === 'loading'}}">
-    <view class="state__text">加载中...</view>
+    <view class="state__text">加载中…</view>
+  </view>
+
+  <view class="state" wx:elif="{{state === 'needLogin'}}">
+    <view class="state__title">登录后查看门店档案</view>
+    <view class="state__text">门店档案与拜访记录只对商户拓展员工开放</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onGoLogin">去登录</view>
   </view>
 
   <view class="state" wx:elif="{{state === 'error'}}">
-    <view class="state__title">加载失败</view>
+    <view class="state__title">没能打开这家门店</view>
     <view class="state__text">{{errorText}}</view>
-    <view class="state__btn" bindtap="onRetry">重试</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onRetry">重试</view>
   </view>
 
   <block wx:elif="{{store}}">
-    <view class="hero">
-      <view class="hero__top">
-        <view class="hero__name">{{store.store_name}}</view>
-        <view class="chip {{store.review_status === 'pending' ? 'chip-apricot' : 'chip-sky'}}">
-          {{store.review_status === 'pending' ? '待审核' : store.cooperation_status_label}}
+    <view class="head">
+      <view class="head__title">{{store.store_name}}</view>
+      <view class="head__sub">{{store.company_name}}</view>
+      <view class="head__meta">
+        <view class="chip chip--{{storeTone}}">{{storeLabel}}</view>
+      </view>
+    </view>
+
+    <!-- 档案：地址单独成行（长文本右对齐会难读），其余键值行 -->
+    <view class="card">
+      <view class="card__body">
+        <view class="addr">{{store.district}} · {{store.business_circle}}</view>
+        <view class="addr addr--detail">{{store.address}}</view>
+        <view class="row row--first">
+          <text class="row__label">联系人</text>
+          <text class="row__value">{{store.contact_name}} · {{store.contact_phone}}</text>
+        </view>
+        <view class="row">
+          <text class="row__label">最近拜访</text>
+          <text class="row__value tnum">{{lastVisitText}}</text>
+        </view>
+        <view class="row" wx:if="{{store.review_status === 'pending'}}">
+          <text class="row__label">建档来源</text>
+          <text class="row__value">经纪人自助创建，等待审核</text>
         </view>
       </view>
-      <view class="hero__company">{{store.company_name}}</view>
-      <view class="hero__address">{{store.district}} · {{store.business_circle}} · {{store.address}}</view>
-      <view class="hero__meta">
-        <text>联系人：{{store.contact_name}}</text>
-        <text>电话：{{store.contact_phone}}</text>
+    </view>
+
+    <!-- 次要动作：图标 + 文案，不套圆形底也不套卡片 -->
+    <view class="ops">
+      <view class="ops__item" hover-class="hoverable" bindtap="onEdit">
+        <image class="icon" src="{{icons.pencil}}" />
+        <text>编辑门店</text>
       </view>
-      <view class="hero__meta">
-        <text>最近拜访：{{lastVisitText}}</text>
-        <text wx:if="{{store.review_status === 'pending'}}">来源：经纪人创建（待审核）</text>
+      <view class="ops__item" hover-class="hoverable" bindtap="onChangeStatus">
+        <image class="icon" src="{{icons.tag}}" />
+        <text>合作状态</text>
+      </view>
+      <view class="ops__item" hover-class="hoverable" bindtap="onInviteBroker">
+        <image class="icon" src="{{icons.grid}}" />
+        <text>邀请经纪人</text>
       </view>
     </view>
 
-    <!-- REQ-IT6-02：动作区改为内置 SVG 图标；「补录照片」换成「佣金结算」并与「合作协议」换位 -->
-    <view class="action-grid">
-      <view class="action" bindtap="onVisit">
-        <view class="action__icon"><image class="action__glyph" src="{{actionIcons.visit}}" mode="aspectFit" /></view>
-        <text class="action__label">拜访登记</text>
+    <!-- 拜访时间线：本页视觉重心 -->
+    <view class="card">
+      <view class="rowhead">
+        <view class="card__title">拜访时间线</view>
+        <view class="link" hover-class="hoverable" bindtap="onVisit">登记拜访</view>
       </view>
-      <view class="action" bindtap="onEdit">
-        <view class="action__icon"><image class="action__glyph" src="{{actionIcons.edit}}" mode="aspectFit" /></view>
-        <text class="action__label">编辑门店</text>
-      </view>
-      <view class="action" bindtap="onChangeStatus">
-        <view class="action__icon"><image class="action__glyph" src="{{actionIcons.status}}" mode="aspectFit" /></view>
-        <text class="action__label">合作状态</text>
-      </view>
-      <view class="action" bindtap="onOpenAgreements">
-        <view class="action__icon"><image class="action__glyph" src="{{actionIcons.agreement}}" mode="aspectFit" /></view>
-        <text class="action__label">合作协议</text>
-      </view>
-      <view class="action" bindtap="onCommission">
-        <view class="action__icon"><image class="action__glyph" src="{{actionIcons.commission}}" mode="aspectFit" /></view>
-        <text class="action__label">佣金结算</text>
-      </view>
-      <view class="action" bindtap="onInviteBroker">
-        <view class="action__icon"><image class="action__glyph" src="{{actionIcons.invite}}" mode="aspectFit" /></view>
-        <text class="action__label">邀请经纪人</text>
-      </view>
-    </view>
-
-    <view class="section">
-      <view class="section-head">
-        <view class="section-title">合作协议</view>
-        <text class="link" bindtap="onCreateAgreement">＋ 发起协议</text>
-      </view>
-      <view class="empty-line" wx:if="{{!agreements.length}}">暂无协议</view>
-      <view class="agreement-row" wx:for="{{agreements}}" wx:key="id" data-id="{{item.id}}" bindtap="onAgreementTap">
-        <view class="agreement-top">
-          <text class="agreement-title">{{item.title}}</text>
-          <text class="chip chip-fog">{{item.statusText}}</text>
+      <view class="empty" wx:if="{{!visits.length}}">还没有拜访记录，第一次拜访会出现在这里</view>
+      <view class="card__body tl" wx:else>
+        <view class="tl__item" wx:for="{{visits}}" wx:key="id">
+          <view class="tl__dot {{index === 0 ? 'tl__dot--now' : ''}}"></view>
+          <view class="tl__body">
+            <view class="tl__top">
+              <text class="tl__date tnum">{{item.dateText}}</text>
+              <text class="tl__clock tnum">{{item.timeText}}</text>
+              <text class="tl__who">{{item.employee_name}}</text>
+            </view>
+            <view class="tl__line">{{item.contact_name}} · {{item.resultText}}</view>
+            <view class="tl__remark" wx:if="{{item.remark}}">{{item.remark}}</view>
+            <view class="tl__tags">
+              <view class="chip chip--done" wx:if="{{item.is_backfill}}">补录</view>
+              <view class="chip chip--void" wx:if="{{item.abnormal}}">距离异常</view>
+              <text class="tl__dist tnum" wx:elif="{{item.distanceText}}">{{item.distanceText}}</text>
+            </view>
+          </view>
         </view>
-        <view class="agreement-meta">到期：{{item.expireText}} <text class="chevron">›</text></view>
       </view>
     </view>
 
-    <view class="section">
-      <view class="section-head">
-        <view class="section-title">门店照片</view>
+    <!-- 合作协议 -->
+    <view class="card">
+      <view class="rowhead">
+        <view class="card__title">合作协议</view>
+        <view class="link" hover-class="hoverable" bindtap="onCreateAgreement">新建协议</view>
+      </view>
+      <view class="empty" wx:if="{{!agreements.length}}">还没有协议，签署后佣金才有依据</view>
+      <view class="card__body" wx:else>
+        <view
+          class="agreement"
+          wx:for="{{agreements}}"
+          wx:key="id"
+          data-id="{{item.id}}"
+          hover-class="hoverable"
+          bindtap="onAgreementTap"
+        >
+          <view class="agreement__main">
+            <view class="agreement__title">{{item.title}}</view>
+            <view class="agreement__meta tnum">到期 {{item.expireText}}</view>
+          </view>
+          <view class="chip chip--{{item.statusTone}}">{{item.statusText}}</view>
+          <image class="icon agreement__chevron" src="{{icons.chevronRight}}" />
+        </view>
+      </view>
+    </view>
+
+    <!-- 门店照片 -->
+    <view class="card">
+      <view class="rowhead">
+        <view class="card__title">门店照片</view>
+        <view class="hint tnum">{{photos.length}} 张</view>
       </view>
       <scroll-view scroll-x class="photo-scroll" wx:if="{{photos.length}}">
-        <view class="photo-item" wx:for="{{photos}}" wx:key="file_url">
-          <image class="photo-img" src="{{item.displayUrl}}" mode="aspectFill" data-url="{{item.displayUrl}}" bindtap="onPreviewPhoto" />
-        </view>
+        <image
+          class="photo-thumb"
+          hover-class="hoverable"
+          wx:for="{{photos}}"
+          wx:key="file_url"
+          src="{{item.displayUrl}}"
+          mode="aspectFill"
+          data-url="{{item.displayUrl}}"
+          bindtap="onPreviewPhoto"
+        />
       </scroll-view>
-      <view class="empty-line" wx:else>暂无门店照片，可在「编辑门店」中补充</view>
+      <view class="empty" wx:else>暂无照片，可在「编辑门店」里补门头照</view>
     </view>
 
-    <view class="section">
-      <view class="section-head">
-        <view class="section-title">拜访时间线</view>
-        <text class="link" bindtap="onVisit">＋ 登记拜访</text>
-      </view>
-      <view class="empty-line" wx:if="{{!visits.length}}">暂无拜访记录</view>
-      <view class="timeline-item" wx:for="{{visits}}" wx:key="id">
-        <view class="timeline-dot"></view>
-        <view class="timeline-body">
-          <view class="timeline-top">
-            <text class="timeline-time">{{item.visitedText}}</text>
-            <text class="timeline-employee">{{item.employee_name || '员工'}}</text>
+    <!-- 合作状态变更 -->
+    <view class="card">
+      <view class="card__title">合作状态变更</view>
+      <view class="empty" wx:if="{{!statusLogs.length}}">暂无变更记录</view>
+      <view class="card__body" wx:else>
+        <view class="log" wx:for="{{statusLogs}}" wx:key="id">
+          <view class="log__head">
+            <text class="log__from">{{item.fromLabel}}</text>
+            <image class="log__arrow" src="{{icons.arrowRight}}" />
+            <text class="log__to">{{item.toLabel}}</text>
           </view>
-          <view class="timeline-row">联系人：{{item.contact_name}} · 结果：{{item.resultText}}</view>
-          <view class="timeline-row" wx:if="{{item.contact_phone}}">电话：{{item.contact_phone}}</view>
-          <view class="timeline-row" wx:if="{{item.remark}}">备注：{{item.remark}}</view>
-          <view class="timeline-tags">
-            <text class="chip chip-fog" wx:if="{{item.is_backfill}}">补录</text>
-            <text class="chip chip-fog" wx:if="{{item.distance_m}}">距离 {{item.distance_m}}m</text>
-            <text class="chip chip-apricot" wx:if="{{item.distance_m && item.distance_m > 500}}">距离异常</text>
-          </view>
+          <view class="log__meta tnum">{{item.createdText}} · {{item.reason}}</view>
         </view>
-      </view>
-    </view>
-
-    <view class="section">
-      <view class="section-title">合作状态变更</view>
-      <view class="empty-line" wx:if="{{!statusLogs.length}}">暂无变更记录</view>
-      <view class="status-row" wx:for="{{statusLogs}}" wx:key="id">
-        <view class="status-change">{{item.fromLabel}} → {{item.toLabel}}</view>
-        <view class="status-meta">{{item.createdText}} · {{item.reason}}</view>
       </view>
     </view>
   </block>
+</view>
 
-  <view class="modal-mask" wx:if="{{qrOpen}}">
-    <view class="modal">
-      <view class="modal-title">门店经纪人邀请</view>
-      <view class="qr-wrap">
-        <image class="qr-image" mode="widthFix" src="data:image/png;base64,{{qrImage}}" />
-      </view>
-      <view class="hint">经纪人扫码后完成认证并自动绑定本门店；有效期至 {{qrExpiresText}}。</view>
-      <view class="modal-actions">
-        <view class="mini-btn" bindtap="onCloseQr">关闭</view>
-        <view class="mini-btn mini-btn--primary" bindtap="onSaveQr">保存到相册</view>
-      </view>
+<view class="foot" wx:if="{{state === 'ok' && store}}">
+  <button class="mbtn mbtn--ink mbtn--cta" hover-class="hoverable" bindtap="onVisit">拜访登记</button>
+</view>
+
+<view class="modal-mask" wx:if="{{qrOpen}}">
+  <view class="modal">
+    <view class="modal-title">邀请经纪人</view>
+    <view class="modal-sub">经纪人扫码后完成认证，自动绑定这家门店</view>
+    <view class="qr-wrap">
+      <image class="qr-image" mode="widthFix" src="data:image/png;base64,{{qrImage}}" />
+    </view>
+    <view class="hint tnum">二维码有效期至 {{qrExpiresText}}</view>
+    <view class="modal-actions">
+      <view class="mbtn" hover-class="hoverable" bindtap="onCloseQr">关闭</view>
+      <view class="mbtn mbtn--ink" hover-class="hoverable" bindtap="onSaveQr">保存到相册</view>
     </view>
   </view>
+</view>
 
-  <view class="modal-mask" wx:if="{{statusOpen}}">
-    <view class="modal">
-      <view class="modal-title">变更合作状态</view>
-      <view class="chip-row">
-        <view
-          wx:for="{{statusOptions}}"
-          wx:key="code"
-          class="chip chip--tap {{statusTarget === item.code ? 'chip-apricot' : 'chip-fog'}}"
-          data-code="{{item.code}}"
-          bindtap="onSelectStatus"
-        >{{item.label}}</view>
-      </view>
-      <view class="hint" wx:if="{{statusHint}}">{{statusHint}}</view>
-      <input class="input" placeholder="变更原因（必填）" value="{{statusReason}}" bindinput="onStatusReason" />
-      <view class="modal-actions">
-        <view class="mini-btn" bindtap="onCloseStatus">取消</view>
-        <view class="mini-btn mini-btn--primary" bindtap="onSubmitStatus">确认变更</view>
-      </view>
+<view class="modal-mask" wx:if="{{statusOpen}}">
+  <view class="modal">
+    <view class="modal-title">变更合作状态</view>
+    <view class="modal-sub">每次变更都会留痕，门店列表会同步显示新状态</view>
+    <view class="chip-row">
+      <view
+        wx:for="{{statusOptions}}"
+        wx:key="code"
+        class="chip chip--tap {{statusTarget === item.code ? 'chip--on' : ''}}"
+        data-code="{{item.code}}"
+        hover-class="hoverable"
+        bindtap="onSelectStatus"
+      >{{item.label}}</view>
+    </view>
+    <view class="hint" wx:if="{{statusHint}}">{{statusHint}}</view>
+    <input class="input" placeholder="变更原因（必填）" placeholder-class="ph" value="{{statusReason}}" bindinput="onStatusReason" />
+    <view class="modal-actions">
+      <view class="mbtn" hover-class="hoverable" bindtap="onCloseStatus">取消</view>
+      <view class="mbtn mbtn--ink" hover-class="hoverable" bindtap="onSubmitStatus">确认变更</view>
     </view>
   </view>
 </view>

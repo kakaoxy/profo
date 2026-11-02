@@ -1,171 +1,34 @@
 @import "../../../../styles/merchant-theme.wxss";
 
-.page {
-  min-height: 100vh;
-  padding: 32rpx 32rpx 80rpx;
-  box-sizing: border-box;
-}
-.hero {
-  background: var(--pure-white);
-  color: var(--ink);
-  box-shadow: var(--merchant-shadow);
-  border-radius: var(--merchant-card-radius);
-  padding: 40rpx;
-  margin-bottom: 28rpx;
-}
-.hero__title {
-  font-size: 40rpx;
-  font-weight: 600;
-}
-.hero__sub {
-  margin-top: 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-.card {
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  box-shadow: var(--merchant-shadow);
-  padding: var(--merchant-card-padding);
-}
-.field-label {
-  margin: 24rpx 0 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-.input {
-  width: 100%;
-  height: 88rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid var(--merchant-hairline);
-  border-radius: 32rpx;
-  font-size: 28rpx;
-  background: var(--fog);
-  box-sizing: border-box;
-}
-.input--flex {
-  flex: 1;
-}
-.input--picker {
-  display: flex;
-  align-items: center;
-  height: 88rpx;
-  line-height: 88rpx;
-  color: var(--ink);
-}
-.grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16rpx;
-}
-.search-row {
-  display: flex;
-  gap: 16rpx;
-}
-.option-list {
-  margin-top: 16rpx;
-}
-.option {
-  padding: 20rpx;
-  border: 1rpx solid var(--merchant-hairline);
-  border-radius: 20rpx;
-  margin-bottom: 12rpx;
-  font-size: 27rpx;
-}
-.mini-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 88rpx;
-  padding: 0 32rpx;
-  border-radius: 9999rpx;
-  background: var(--fog);
-  color: var(--ink);
-  font-size: 27rpx;
-}
-.link-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 16rpx;
-  height: 72rpx;
-  padding: 0 36rpx;
-  border-radius: 9999rpx;
-  background: var(--fog);
-  color: var(--ink);
-  font-size: 26rpx;
-}
-.hint {
-  margin-top: 12rpx;
-  font-size: 25rpx;
-  line-height: 1.6;
-  color: var(--graphite);
-}
-/* REQ-IT4-06：`.btn-primary` 是 inline-flex，无 width 时按钮按内容收缩并贴在容器左侧；
-   表单主操作按钮统一铺满父容器，让文字在整行内居中。 */
-.submit-btn {
-  display: flex;
-  width: 100%;
-  margin-top: 36rpx;
-}
+/* 经纪人建店页独有布局。标题/卡片/表单/按钮/弹层/状态/底栏全部来自 shared 层
+ * styles/merchant-theme.wxss；本文件只写本页独有的排布（公司结果列表、已选提示、
+ * 查重行）。 */
 
-/* 查重弹层（与门店建档页保持一致） */
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(23, 25, 28, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32rpx;
-  z-index: 20;
-}
-.modal {
-  width: 100%;
-  max-height: 80vh;
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  padding: 32rpx;
-  box-sizing: border-box;
+/* 公司搜索结果：与搜索行留一档间距（shared 层只给了单个选项本身） */
+.company-list {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
+  gap: 16rpx;
+  margin-top: var(--mp-gap);
 }
-.modal-title {
-  font-size: 34rpx;
-  font-weight: 500;
+/* 选项文字块可收缩，避免长公司名把图标挤出卡片 */
+.company-opt {
+  flex: 1;
+  min-width: 0;
 }
-.modal-sub {
-  font-size: 26rpx;
-  color: var(--graphite);
+
+/* 「已选择」提示与上方公司结果列表留一档间距（shared 层只在 .mbtn 后给 8rpx） */
+.picked-hint {
+  margin-top: 16rpx;
 }
-.modal-list {
-  max-height: 40vh;
-}
-.dup-item {
-  padding: 20rpx;
-  border-radius: 24rpx;
-  background: var(--fog);
-  margin-bottom: 12rpx;
-}
-.dup-name {
-  font-size: 28rpx;
-  font-weight: 500;
-}
-.dup-address {
-  margin-top: 4rpx;
-  font-size: 24rpx;
-  color: var(--graphite);
-}
-.dup-meta {
-  margin-top: 8rpx;
-  font-size: 22rpx;
-  color: var(--rust);
-}
-.modal-actions {
+
+/* 查重弹层：候选行纵向排列，行间 16rpx（配合 scroll-view enable-flex） */
+.dup-list {
   display: flex;
+  flex-direction: column;
   gap: 16rpx;
 }
-.modal-actions .mini-btn {
+.dup-info {
   flex: 1;
+  min-width: 0;
 }

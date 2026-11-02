@@ -4,8 +4,14 @@
  * - 未认证：展示认证表单（手机号必须已在 C 端账号绑定）
  * - 已认证：展示档案、当前门店、操作入口与只读历史
  * - 扫码进入（?code=）：解析门店邀请码，认证后自动绑定（D3-A 免审）
+ *
+ * 状态文案与色档统一走 utils/merchant-status.ts（M3 三档），
+ * 请求错误文案统一走 utils/merchant-errors.ts，避免各页再各写一份兜底文案。
  */
 import type { components } from "../../../types/api-types";
+import { describeRequestError } from "../../../utils/merchant-errors";
+import { storeStatusLabel, storeStatusTone, type StatusTone } from "../../../utils/merchant-status";
+import { MP_ICONS } from "../../../utils/mp-icons";
 import { request } from "../../../utils/request";
 import { getCAccessToken } from "../../../utils/token";
 
@@ -40,14 +46,6 @@ interface DisplayLead {
   followUps: { id: string; methodText: string; content: string; followedText: string }[];
 }
 
-const BIND_STATUS_LABELS: Record<string, string> = {
-  unbound: "未绑定",
-  bound: "已绑定",
-  unbound_after: "已解绑",
-  disabled: "已停用",
-  pending: "待审核",
-};
-
 const BINDING_STATUS_LABELS: Record<string, string> = {
   active: "已生效",
   pending: "待审核",
@@ -79,10 +77,6 @@ function formatDate(value: string | null | undefined): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-function errMessage(err: unknown): string {
-  return (err as { body?: { message?: string } }).body?.message || "操作失败，请重试";
-}
-
 function statusCodeOf(err: unknown): number | undefined {
   return (err as { statusCode?: number }).statusCode;
 }
@@ -91,7 +85,6 @@ Page({
   data: {
     state: "loading" as PageState,
     errorText: "",
-    phoneReady: false,
     hasPhone: false,
     // 注册
     regName: "",
@@ -102,11 +95,15 @@ Page({
     referrer: "",
     // 档案
     broker: null as Broker | null,
-    bindStatusText: "",
     // 门店
     myStore: null as MyStore | null,
+    storeTone: "todo" as StatusTone,
+    storeLabel: "还没绑定门店",
+    storeError: "",
     bindings: [] as DisplayBinding[],
+    bindingsError: "",
     leads: [] as DisplayLead[],
+    leadsError: "",
     leadsTotal: 0,
     leadsPage: 1,
     // 门店搜索/绑定
@@ -123,6 +120,10 @@ Page({
     editName: "",
     editRemark: "",
     saving: false,
+    icons: {
+      check: MP_ICONS.check,
+      chevronDown: MP_ICONS.chevronDown,
+    },
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -149,18 +150,13 @@ Page({
     this.setData({ state: "loading", errorText: "" });
     try {
       const me = await request<PublicUserInfo>({ url: "/public/auth/me" });
-      const hasPhone = Boolean(me.phone);
-      this.setData({ hasPhone, phoneReady: hasPhone });
+      this.setData({ hasPhone: Boolean(me.phone) });
       if (this.data.qrCode) {
         await this.resolveQRCode(this.data.qrCode);
       }
       try {
         const broker = await request<Broker>({ url: "/public/merchant/brokers/me" });
-        this.setData({
-          state: "profile",
-          broker,
-          bindStatusText: BIND_STATUS_LABELS[broker.bind_status] || broker.bind_status,
-        });
+        this.setData({ state: "profile", broker });
         await Promise.all([this.loadStore(), this.loadBindings(), this.loadLeads(1)]);
       } catch (err) {
         if (statusCodeOf(err) === 404) {
@@ -170,7 +166,7 @@ Page({
         throw err;
       }
     } catch (err) {
-      this.setData({ state: "error", errorText: errMessage(err) });
+      this.setData({ state: "error", errorText: describeRequestError(err, "经纪人信息没加载出来") });
     }
   },
 
@@ -189,12 +185,23 @@ Page({
     }
   },
 
+  /** 门店是二级信息：失败不打断整页，只在门店卡内提示，避免把「已绑定」误显示成「未绑定」 */
   async loadStore(): Promise<void> {
     try {
       const store = await request<MyStore | null>({ url: "/public/merchant/brokers/me/store" });
-      this.setData({ myStore: store || null });
-    } catch {
-      this.setData({ myStore: null });
+      this.setData({
+        myStore: store || null,
+        storeTone: store ? storeStatusTone(store.review_status, store.cooperation_status) : "todo",
+        storeLabel: store ? storeStatusLabel(store.review_status, store.cooperation_status_label) : "还没绑定门店",
+        storeError: "",
+      });
+    } catch (err) {
+      this.setData({
+        myStore: null,
+        storeTone: "todo",
+        storeLabel: "门店状态未知",
+        storeError: describeRequestError(err, "门店信息没加载出来"),
+      });
     }
   },
 
@@ -209,9 +216,10 @@ Page({
           timeText: formatDate(row.applied_at),
           reason: row.reason || "",
         })),
+        bindingsError: "",
       });
-    } catch {
-      this.setData({ bindings: [] });
+    } catch (err) {
+      this.setData({ bindings: [], bindingsError: describeRequestError(err, "绑定记录没加载出来") });
     }
   },
 
@@ -240,9 +248,15 @@ Page({
         leads: page === 1 ? mapped : this.data.leads.concat(mapped),
         leadsTotal: data.total,
         leadsPage: page,
+        leadsError: "",
       });
-    } catch {
-      if (page === 1) this.setData({ leads: [], leadsTotal: 0 });
+    } catch (err) {
+      const message = describeRequestError(err, "推荐记录没加载出来");
+      if (page === 1) {
+        this.setData({ leads: [], leadsTotal: 0, leadsError: message });
+      } else {
+        wx.showToast({ title: message, icon: "none" });
+      }
     }
   },
 
@@ -293,7 +307,7 @@ Page({
       }
       await this.load();
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "认证没提交成功"), icon: "none" });
     } finally {
       this.setData({ saving: false });
     }
@@ -334,7 +348,7 @@ Page({
       wx.showToast({ title: "已保存", icon: "success" });
       await this.load();
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "资料没保存成功"), icon: "none" });
     } finally {
       this.setData({ saving: false });
     }
@@ -389,7 +403,7 @@ Page({
       });
       this.setData({ storeOptions: data.items });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "门店没搜出来"), icon: "none" });
     }
   },
 
@@ -411,27 +425,28 @@ Page({
       wx.showToast({ title: "请填写换绑原因", icon: "none" });
       return;
     }
+    const isChange = this.data.storeAction === "change";
     this.setData({ saving: true });
     try {
-      if (this.data.storeAction === "bind") {
-        await request<Broker>({
-          url: "/public/merchant/brokers/me/bind",
-          method: "POST",
-          data: { store_id: storeId },
-        });
-        wx.showToast({ title: "绑定成功", icon: "success" });
-      } else {
+      if (isChange) {
         await request<Binding>({
           url: "/public/merchant/brokers/me/change",
           method: "POST",
           data: { store_id: storeId, reason: this.data.changeReason.trim() },
         });
         wx.showToast({ title: "换绑申请已提交", icon: "success" });
+      } else {
+        await request<Broker>({
+          url: "/public/merchant/brokers/me/bind",
+          method: "POST",
+          data: { store_id: storeId },
+        });
+        wx.showToast({ title: "绑定成功", icon: "success" });
       }
       this.setData({ storePanelOpen: false });
       await this.load();
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, isChange ? "换绑申请没提交成功" : "绑定没成功"), icon: "none" });
     } finally {
       this.setData({ saving: false });
     }
@@ -466,7 +481,7 @@ Page({
       wx.showToast({ title: "解绑申请已提交", icon: "success" });
       await this.load();
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "解绑申请没提交成功"), icon: "none" });
     } finally {
       this.setData({ saving: false });
     }

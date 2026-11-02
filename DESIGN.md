@@ -445,3 +445,93 @@ The Signifier/Sohne pairing is the brand's most identifiable decision. Signifier
   --shadow-subtle: rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px;
 }
 ```
+
+---
+
+## 小程序（WeChat Mini Program）移动端补充条款
+
+> **来源**：`docs/design/2026-11-02-小程序商户模块-UI审查报告.md` 第 8 节列出的 7 项契约缺项（移动端比例尺缺失、中文替代未定义、微字重不可用、Dove/Graphite 对比度、移动端组件缺席、状态色语义未定义、触控未定义）。本节是这些缺项的裁决结果，**自本节起对 `miniapp/**` 生效**。
+> **冲突处理**：上文 Web 契约（Signifier 不得低于 40px、430/450/480 微字重、三层阴影等）在 `miniapp/**` 内不适用，以本节为准；Web 仍以上文为准。
+> **单位约定**：设计基准 375pt，`750rpx = 375px`，即 `1px = 2rpx`。本节同时标注 px 与 rpx。
+
+### M1 · 移动端字号 ramp（补 §8.1）
+
+DESIGN 的 14 / 22 / 26 / 44 / 64 / 90 在 375pt 上缺中间档，且 Signifier 不得低于 40px → 移动端原本没有合法的标题字号。移动端只允许以下五档，**不得出现第六档**：
+
+| Token | px | rpx | line-height | letter-spacing | 用途 |
+|---|---|---|---|---|---|
+| `--mp-title` | 22 | 44 | 1.25 | -0.2px | 页面标题，每页唯一 |
+| `--mp-heading` | 18 | 36 | 1.3 | -0.16px | 卡片/区块标题 |
+| `--mp-body` | 16 | 32 | 1.5 | -0.14px | 正文、列表主字段 |
+| `--mp-label` | 14 | 28 | 1.45 | -0.13px | label、当前状态、按钮文字、次要字段 |
+| `--mp-caption` | 12 | 24 | 1.4 | -0.1px | 角标、时间、单位（下限，不得更小） |
+
+- 标题不得继承 `page` 的 `line-height: 1.4`，必须显式给行高。
+- 说明文字行高统一 `1.5`，只有协议正文允许 `1.7`。
+
+### M2 · 中文字体与字重降级（补 §8.2、§8.3）
+
+- 字体栈固定为 `-apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Source Han Sans SC", sans-serif`。小程序内**不使用 Signifier（衬线）**，标题也不降级为衬线。
+- iOS/Android 中文字族只暴露 400/500/600，DESIGN 的 430/450/480 无法实现 → 移动端**只允许 `font-weight: 400` 与 `500`**。层级靠字号、颜色、间距分层，不靠字重；`600` 及以上一律视为违规。
+- 不使用 `bold` 关键字与 `<text>` 内联 `font-weight`。
+- 所有文本 `letter-spacing: -0.009em` 的等价移动端写法已在 M1 表内按档给值，不再单独设置。
+
+### M3 · 状态色语义映射（补 §8.6）
+
+状态只有三种语义，同一颜色不得表示两种含义：
+
+| 语义 | 底色 | 文字色 | 适用 |
+|---|---|---|---|
+| 待处理 | Apricot Wash `#fbe1d1` | Rust `#5d2a1a` | 待审核、待签署、待补录 |
+| 已落定 | Fog `#f7f7f8` | Graphite `#676b76` | 正常、已合作、已签署、已绑定 |
+| 异常/已失效 | Pure White `#ffffff` + `1rpx` hairline 描边 | Rust `#5d2a1a` | 已作废、已过期、距离异常、已解绑 |
+
+- **停用**：Sky Wash `#d3e3fc`、`#d1f2e8`（mint）、`#1f6b52`、`#2a5ca0` 在 UI chrome 中不得出现（仅允许作数据卡底色，当前商户模块无数据卡）。
+- 状态不得只靠颜色区分，必须带文字标签。
+- Rust 只承担两件事：文本动作（link）与「印/异常」。不用于大面积填充、不做选中底色。
+
+### M4 · 卡片 / 按钮 / 输入（补 §8.5）
+
+**卡片**：内边距 `20px/40rpx`，卡间距 `12px/24rpx`，圆角 `24px/48rpx`，行内小块最小 `12px/24rpx`。阴影降为单层 hairline + 一层柔和投影：`0 0 0 1rpx rgba(23,25,28,0.06), 0 8rpx 16rpx -8rpx rgba(0,0,0,0.08)`。**页面标题不进卡片**，直接落在 Fog 画布上。
+
+**按钮三档**（高度 / 字号 / 内边距）：
+
+| 档位 | 高度 | 字号 | 内边距 | 用途 |
+|---|---|---|---|---|
+| 行内小 | 30px / 60rpx | 14px / 28rpx | 0 12px / 0 24rpx | 列表行内动作 |
+| 标准次要 | 40px / 80rpx | 14px / 28rpx | 0 16px / 0 32rpx | 弹层、卡内次要动作 |
+| 主 CTA | 48px / 96rpx | 14px / 28rpx | 0 16px / 0 32rpx | 每屏唯一 |
+
+- 每屏最多一个 Ink 填充按钮。次要动作用 Rust 文本链接或 Fog 面胶囊，不用二阶描边按钮。
+- tab / 筛选项 / 下拉选项的激活态 = **白面 + `2rpx` Ink 描边 + Ink 文字**，不用 Ink 填充、不用 Apricot 底。
+- 主 CTA 必须是 `<button>`（有 `loading`/`disabled`）；次要动作用 `<view bindtap>` 时必须带 `hover-class` 且不可重复触发。
+
+**输入**：高 `44px/88rpx`、Fog 底色、`2rpx` `--mp-hairline` 边框、聚焦边框换 Rust、圆角 `16px/32rpx`、占位色 Graphite（**不用 Dove**）。多行输入高 `75px/150rpx`。
+
+### M5 · 间距与对齐
+
+- 4px 网格：8 / 12 / 16 / 20 / 24px（16 / 24 / 32 / 40 / 48rpx）。禁止 6/18/22/28rpx 这类非网格值。
+- 一屏内所有内容左缘只有一条：页面级 `16px/32rpx`，卡片内部再内缩 `20px/40rpx`。
+- 禁止负 margin 修间距。
+
+### M6 · 图标、触控与动效（补 §8.7）
+
+- **图标**：一律内联 SVG（base64 data URI，避免 CDN/iconfont 失败），统一 `viewBox="0 0 24 24"`、`fill="none"`、`stroke-width="2.4"`、`stroke-linecap/linejoin="round"`、单色 Ash `#4c4c4c`，渲染 `18px/36rpx` → 视觉描边 **1.8px**（落进 DESIGN 的 1.5–2px 区间）。禁止用字符当图标（`＋ › × ✓ →` 全部禁止），不套圆形底座。chevron 用旋转后的路径，不用 `transform: rotate()` 转字符。
+- **触控**：可点区域 ≥ `44×44px`（88rpx）。视觉元素小于该尺寸时（chip、删除按钮、chevron），必须用透明内边距把热区撑到 88rpx。
+- **按压态**：所有 `bindtap` 的 `<view>`/`<text>` 必须带 `hover-class="hoverable"`（见 M7 样式）；按压只改背景/透明度，不改尺寸。
+- **禁用态**：`opacity: 0.4` 且不可触发；`<button>` 用原生 `disabled`。
+- **动效**：只允许 `background-color / color / border-color / transform / opacity` 的 `transition`，时长 `120–180ms`，缓动 `ease-out`。禁止 `transition-all`、禁止循环动画、禁止位移类入场。
+
+### M7 · 安全区与固定底栏
+
+- 固定底栏高度 `68px/136rpx` + `env(safe-area-inset-bottom)`；底栏背景为不透明 Fog + 顶部 `1rpx` hairline（不用渐变遮罩）。
+- 页面滚动容器底部留白必须为 `calc(136rpx + env(safe-area-inset-bottom) + 24rpx)`，不得写死 160/180/200rpx。
+- 登录 / 加载 / 错误 / 空 四态统一：`padding: 60px/120rpx 24px/48rpx`，标题 `--mp-heading`，说明 `--mp-label` Graphite，动作 Rust 文本链接。
+
+### M8 · 已知未收敛项（⚠️ 显式登记）
+
+| 项 | 现状 | 处理 |
+|---|---|---|
+| Graphite 对比度 | 上文 token `#777b86` 白底约 4.2:1，低于 AA 4.5:1；小程序 `miniapp/app.wxss:10` 已加深为 `#676b76`（白底 5.3:1） | 小程序侧确认 `#676b76` 为权威值；Web `frontend/src/app/globals.css:148 --color-graphite` 仍为 `#777b86`，需单独评审后再同步 |
+| Dove 用途 | `#a3a6af` 约 2.4:1 | 仅装饰：分隔线、禁用态、图标；**永不作正文与占位色** |
+| 真机观感 | 阴影强度、`switch` 颜色、横向 tab 滚动、刘海屏留白依赖真机 | 见审查报告第 9 节 U1–U6，需微信开发者工具确认 |

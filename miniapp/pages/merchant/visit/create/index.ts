@@ -6,8 +6,13 @@
  */
 import type { components } from "../../../../types/api-types";
 import { pickAndUploadPhotos } from "../../../../utils/image-upload";
+import { describeRequestError } from "../../../../utils/merchant-errors";
+import { MP_ICONS } from "../../../../utils/mp-icons";
+import type { StatusTone } from "../../../../utils/merchant-status";
+import { storeStatusLabel, storeStatusTone } from "../../../../utils/merchant-status";
 import type { MerchantPhoto } from "../../../../utils/image-upload";
 import { request } from "../../../../utils/request";
+import { getCAccessToken } from "../../../../utils/token";
 import { resolveAssetUrl } from "../../../../utils/url";
 
 type StoreResponse = components["schemas"]["MerchantStoreResponse"];
@@ -42,9 +47,10 @@ interface BrokerOption {
   phone_masked: string;
 }
 
-function errMessage(err: unknown): string {
-  return (err as { body?: { message?: string } }).body?.message || "操作失败，请重试";
-}
+/** 页面兜底文案：具体原因由 describeRequestError 补全（审查报告 T11）. */
+const ACTION_FAILED = "操作失败";
+
+type PageState = "loading" | "error" | "needLogin" | "ok";
 
 function newClientRequestId(): string {
   return `visit-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
@@ -58,7 +64,11 @@ function todayStr(): string {
 
 Page({
   data: {
+    state: "loading" as PageState,
+    errorText: "",
     store: null as StoreResponse | null,
+    storeLabel: "",
+    storeTone: "done" as StatusTone,
     form: {
       contact_name: "",
       contact_phone: "",
@@ -87,27 +97,66 @@ Page({
     submitting: false,
     storeId: "",
     clientRequestId: "",
+    icons: {
+      chevronDown: MP_ICONS.chevronDown,
+      pin: MP_ICONS.pin,
+      close: MP_ICONS.close,
+      camera: MP_ICONS.camera,
+    },
   },
 
   onLoad(options: Record<string, string | undefined>) {
     const storeId = options.store_id || "";
     if (!storeId) {
-      wx.showToast({ title: "缺少门店ID", icon: "none" });
+      this.setData({ state: "error", errorText: "拜访入口不完整，请从门店详情重新进入" });
       return;
     }
     this.setData({ storeId, clientRequestId: newClientRequestId() });
-    this.loadStore(storeId);
-    this.loadResults();
-    this.loadBrokers(storeId);
+    void this.bootstrap(storeId);
+  },
+
+  /**
+   * 先取门店再取经纪人：经纪人不可用时拜访人回退到门店联系人，
+   * 这个回退依赖 store 已就绪，所以两次请求是数据依赖关系，不能并发。
+   */
+  async bootstrap(storeId: string): Promise<void> {
+    await this.loadStore(storeId);
+    if (this.data.state === "error") {
+      return;
+    }
+    await Promise.all([this.loadResults(), this.loadBrokers(storeId)]);
+  },
+
+  onRetry() {
+    if (!this.data.storeId) {
+      return;
+    }
+    this.setData({ state: "loading", errorText: "" });
+    void this.bootstrap(this.data.storeId);
   },
 
   async loadStore(storeId: string): Promise<void> {
     try {
       const store = await request<StoreResponse>({ url: `/public/merchant/stores/${storeId}` });
-      this.setData({ store, "form.contact_phone": store.contact_phone });
+      this.setData({
+        state: "ok",
+        store,
+        storeLabel: storeStatusLabel(store.review_status, store.cooperation_status_label),
+        storeTone: storeStatusTone(store.review_status, store.cooperation_status),
+        "form.contact_phone": store.contact_phone,
+      });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      const statusCode = (err as { statusCode?: number }).statusCode;
+      if (statusCode === 401 || statusCode === 403) {
+        this.setData({ state: "needLogin" });
+        return;
+      }
+      this.setData({ state: "error", errorText: describeRequestError(err, "门店信息加载失败") });
     }
+  },
+
+  onGoLogin() {
+    wx.navigateTo({ url: "/pages/login/index/index" });
   },
 
   async loadResults(): Promise<void> {
@@ -253,12 +302,16 @@ Page({
   },
 
   async onAddPhoto(): Promise<void> {
+    if (this.data.photos.length >= 20) {
+      wx.showToast({ title: "最多上传 20 张照片", icon: "none" });
+      return;
+    }
     try {
       const picked = await pickAndUploadPhotos(20 - this.data.photos.length, "other");
       const display = picked.map((photo) => ({ ...photo, displayUrl: resolveAssetUrl(photo.file_url) }));
       this.setData({ photos: this.data.photos.concat(display) });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     }
   },
 
@@ -346,7 +399,7 @@ Page({
       wx.showToast({ title: "拜访已提交", icon: "success" });
       setTimeout(() => wx.navigateBack(), 800);
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, ACTION_FAILED), icon: "none" });
     } finally {
       this.setData({ submitting: false });
     }

@@ -1,16 +1,488 @@
-/* 商户分包主题 · 对齐 DESIGN.md Tokens / Surfaces / Elevation（REQ-IT6-03）
- *
- * 仅被 miniapp/pages/merchant/** 的页面样式 @import，不改变 app.wxss 的全局 token，
- * 避免影响 C 端页面。约定：
- *  - 内容卡片一律用 --merchant-shadow（DESIGN 三层阴影：1rpx 内描边 + 两层投影）
- *  - 分隔线一律用 --merchant-hairline（1rpx 半透明墨色，替代淡灰实线）
- *  - 页面 hero 使用白底 + 墨色文字（DESIGN：深墨填充只留给主 CTA，不做大块底色）
+/**
+ * 商户模块共享样式层（11 个页面共用，均以 @import 引入）。
+ * 契约来源：DESIGN.md「小程序（WeChat Mini Program）移动端补充条款」M1–M7。
+ * 本文件是商户模块唯一可定义字号、字重、颜色、间距、圆角、按钮、卡片、输入、弹层、
+ * 状态 chip、图标尺寸、底栏的地方；页面 index.wxss 只写该页独有布局。
+ * 单文件不拆：WXSS @import 编译期内联，多层嵌套失败表现为样式静默缺失，
+ * 且本仓库无微信开发者工具的可编程校验（审查报告 §9 U1–U6）；单文件 + 单一 import 面最稳。
  */
 page {
-  --merchant-shadow: 0 0 0 1rpx rgba(23, 25, 28, 0.06), 0 40rpx 50rpx -10rpx rgba(0, 0, 0, 0.08),
-    0 16rpx 20rpx -12rpx rgba(0, 0, 0, 0.08);
-  --merchant-hairline: rgba(23, 25, 28, 0.08);
-  --merchant-card-radius: 48rpx;
-  --merchant-card-padding: 40rpx;
+  /* 字号五档（M1） */
+  --mp-title: 44rpx;
+  --mp-heading: 36rpx;
+  --mp-body: 32rpx;
+  --mp-label: 28rpx;
+  --mp-caption: 24rpx;
+  /* 间距（M5：4px 网格 8/12/16/20/24px = 16/24/32/40/48rpx） */
+  --mp-gutter: 32rpx;
+  --mp-gap: 24rpx;
+  --mp-gap-lg: 32rpx;
+  --mp-card-padding: 40rpx;
+  /* 形状（M4） */
+  --mp-radius-card: 48rpx;
+  --mp-radius-inner: 24rpx;
+  --mp-radius-input: 32rpx;
+  --mp-hairline: rgba(23, 25, 28, 0.08);
+  --mp-shadow: 0 0 0 1rpx rgba(23, 25, 28, 0.06), 0 8rpx 16rpx -8rpx rgba(0, 0, 0, 0.08);
+  /* 动效（M6） */
+  --mp-ease: 150ms ease-out;
 }
-
+/* ===== 1. 画布与页面骨架 ===== */
+.page {
+  min-height: 100vh;
+  padding: 32rpx var(--mp-gutter) 48rpx;
+  box-sizing: border-box;
+}
+/* 有固定底栏时：底栏 136rpx + 安全区 + 24rpx（M7） */
+.page--foot { padding-bottom: calc(136rpx + env(safe-area-inset-bottom) + 24rpx); }
+/* 页面标题落在 Fog 画布上，不套白卡（M4） */
+.head { margin-bottom: var(--mp-gap-lg); }
+.head__title {
+  font-size: var(--mp-title);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.2px;
+  color: var(--ink);
+}
+.head__sub {
+  margin-top: 16rpx;
+  font-size: var(--mp-label);
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: -0.13px;
+  color: var(--graphite);
+}
+/* 标题下的状态 chip 行（门店状态/合作状态唯一落点） */
+.head__meta { margin-top: 16rpx; }
+/* ===== 2. 登录 / 加载 / 错误 / 空 四态（M7） ===== */
+.state { padding: 120rpx 48rpx; text-align: center; }
+.state__title {
+  font-size: var(--mp-heading);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.16px;
+}
+.state__text {
+  margin-top: 16rpx;
+  font-size: var(--mp-label);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--graphite);
+}
+.state__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  padding: 0 24rpx;
+  font-size: var(--mp-label);
+  font-weight: 500;
+  color: var(--rust);
+}
+/* ===== 3. 卡片与区块 ===== */
+.card {
+  padding: var(--mp-card-padding);
+  margin-bottom: var(--mp-gap);
+  background: var(--pure-white);
+  border-radius: var(--mp-radius-card);
+  box-shadow: var(--mp-shadow);
+  box-sizing: border-box;
+}
+.card:last-child { margin-bottom: 0; }
+.card--tap { transition: opacity var(--mp-ease); }
+.card__title {
+  font-size: var(--mp-heading);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.16px;
+  color: var(--ink);
+}
+/* 卡片头：左标题 + 右文本动作 */
+.rowhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.rowhead + .card__body,
+.rowhead + .empty { margin-top: var(--mp-gap); }
+/* 卡片标题下接内容（本模块固定 24rpx，M4 卡片内间距只有一种） */
+.card__title + .card__body { margin-top: var(--mp-gap); }
+/* 可点 chip 一行排布 */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+/* 文本动作 = Rust 链接，热区 88rpx（M4/M6） */
+.link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 88rpx;
+  min-height: 88rpx;
+  padding: 0 0 0 24rpx;
+  box-sizing: border-box;
+  font-size: var(--mp-label);
+  font-weight: 500;
+  color: var(--rust);
+  transition: opacity var(--mp-ease);
+}
+.empty {
+  font-size: var(--mp-label);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--graphite);
+}
+/* ===== 4. 键值行 ===== */
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--mp-gap);
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid var(--mp-hairline);
+}
+.row:first-child { padding-top: 0; }
+.row:last-child { padding-bottom: 0; border-bottom: none; }
+.row__label {
+  flex-shrink: 0;
+  font-size: var(--mp-label);
+  line-height: 1.5;
+  color: var(--graphite);
+}
+.row__value {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--mp-label);
+  line-height: 1.5;
+  color: var(--ink);
+  text-align: right;
+  word-break: break-all;
+}
+/* ===== 5. 说明文字 ===== */
+.hint {
+  font-size: var(--mp-label);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--graphite);
+}
+.hint--warn { color: var(--rust); }
+.hint + .hint { margin-top: 8rpx; }
+/* 按钮/说明/字段三类相邻关系的唯一间距，避免各页自己写 */
+.mbtn + .hint { margin-top: 8rpx; }
+.hint + .field { margin-top: var(--mp-gap); }
+.field-row + .hint { margin-top: 8rpx; }
+.tnum { font-variant-numeric: tabular-nums; }
+/* ===== 6. 按钮三档（M4） ===== */
+.mbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  box-sizing: border-box;
+  height: 80rpx;
+  padding: 0 32rpx;
+  margin: 0;
+  border: none;
+  border-radius: 9999rpx;
+  background: var(--fog);
+  color: var(--ink);
+  font-size: var(--mp-label);
+  font-weight: 500;
+  line-height: 1;
+  transition: opacity var(--mp-ease), background-color var(--mp-ease);
+}
+/* <button> 的默认边框由 ::after 绘制 */
+.mbtn::after { border: none; }
+.mbtn--ink { background: var(--ink); color: var(--pure-white); }
+.mbtn--sm { height: 60rpx; padding: 0 24rpx; }
+.mbtn--cta { height: 96rpx; width: 100%; }
+.mbtn--block { width: 100%; }
+.mbtn[disabled] { opacity: 0.4; }
+/* 按钮组等宽平分，只有一种对齐（D7） */
+.mbtn-group { display: flex; gap: 16rpx; }
+.mbtn-group .mbtn { flex: 1; }
+/* 按压态（M6）：只改透明度，不改尺寸 */
+.hoverable { opacity: 0.68; }
+/* ===== 7. 状态 chip 三档语义（M3） ===== */
+.chip {
+  padding: 8rpx 24rpx;
+  font-size: var(--mp-caption);
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: -0.1px;
+  transition: background-color var(--mp-ease), border-color var(--mp-ease);
+}
+/* 待处理：待审核 / 待签署 / 待补录 */
+.chip--todo { background: var(--apricot-wash); color: var(--rust); }
+/* 已落定：正常 / 已合作 / 已签署 / 已绑定 */
+.chip--done { background: var(--fog); color: var(--graphite); }
+/* 异常 / 已失效：作废 / 过期 / 距离异常 / 已解绑 */
+.chip--void {
+  background: var(--pure-white);
+  border: 1rpx solid var(--mp-hairline);
+  color: var(--rust);
+}
+/* 可点 chip：热区 88rpx（M6） */
+.chip--tap {
+  min-height: 88rpx;
+  padding: 0 32rpx;
+  align-items: center;
+  background: var(--pure-white);
+  border: 2rpx solid var(--mp-hairline);
+  box-sizing: border-box;
+  font-size: var(--mp-label);
+  color: var(--graphite);
+}
+.chip--tap.chip--todo {
+  background: var(--apricot-wash);
+  border-color: transparent;
+  color: var(--rust);
+}
+.chip--tap.chip--done {
+  background: var(--fog);
+  border-color: transparent;
+  color: var(--graphite);
+}
+/* 选中态（M4：白面 + Ink 描边），用于 chip 单选 */
+.chip--tap.chip--on {
+  background: var(--pure-white);
+  border-color: var(--ink);
+  color: var(--ink);
+}
+/* ===== 8. 表单与输入（M4） ===== */
+.field { margin-bottom: var(--mp-gap); }
+/* 卡片内最后一个字段不留底部间距，由卡片 padding 决定 */
+.field--last,
+.field:last-child { margin-bottom: 0; }
+.field__label {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: var(--mp-label);
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: -0.13px;
+  color: var(--graphite);
+}
+.field-row { display: flex; gap: 16rpx; }
+.field-row .field { flex: 1; min-width: 0; }
+.input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: var(--fog);
+  border: 2rpx solid var(--mp-hairline);
+  border-radius: var(--mp-radius-input);
+  box-sizing: border-box;
+  font-size: var(--mp-label);
+  color: var(--ink);
+  transition: border-color var(--mp-ease);
+}
+.input:focus { border-color: var(--rust); }
+.input--flex { flex: 1; min-width: 0; }
+.input--area {
+  height: 150rpx;
+  padding: 24rpx;
+  line-height: 1.5;
+}
+/* 占位色 Graphite（M4）；WXSS 无 ::placeholder，由 placeholder-class="ph" 施加 */
+.ph { font-size: var(--mp-label); color: var(--graphite); }
+/* picker 行：值 + chevron SVG（不用 ::after 的 › 字符，M6） */
+.pick {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  height: 88rpx;
+  padding: 0 24rpx;
+  background: var(--fog);
+  border: 2rpx solid var(--mp-hairline);
+  border-radius: var(--mp-radius-input);
+  box-sizing: border-box;
+  font-size: var(--mp-label);
+  color: var(--ink);
+}
+.pick--empty { color: var(--graphite); }
+.pick__icon {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
+}
+.search-row { display: flex; gap: 16rpx; }
+.search-row .mbtn { flex-shrink: 0; }
+/* ===== 9. 列表头 ===== */
+.listhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-height: 88rpx;
+}
+.listhead__count { font-size: var(--mp-label); color: var(--graphite); }
+/* ===== 10. tab（激活态 = 白面 + Ink 描边，M4） ===== */
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 88rpx;
+  padding: 0 32rpx;
+  background: var(--pure-white);
+  border: 2rpx solid var(--mp-hairline);
+  border-radius: 9999rpx;
+  box-sizing: border-box;
+  font-size: var(--mp-label);
+  color: var(--graphite);
+  transition: color var(--mp-ease), border-color var(--mp-ease);
+}
+.tab--active { color: var(--ink); border-color: var(--ink); }
+/* ===== 11. 弹层（统一一套，D7） ===== */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32rpx;
+  background: rgba(23, 25, 28, 0.45);
+}
+.modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mp-gap);
+  width: 100%;
+  max-height: 84vh;
+  padding: var(--mp-card-padding);
+  background: var(--pure-white);
+  border-radius: var(--mp-radius-card);
+  box-sizing: border-box;
+}
+.modal-title {
+  font-size: var(--mp-heading);
+  font-weight: 500;
+  line-height: 1.3;
+  letter-spacing: -0.16px;
+}
+.modal-sub {
+  font-size: var(--mp-label);
+  line-height: 1.5;
+  color: var(--graphite);
+}
+.modal-list { max-height: 44vh; }
+.modal-actions { display: flex; gap: 16rpx; }
+.modal-actions .mbtn { flex: 1; }
+/* 弹层可选行（激活态 = 白面 + Ink 描边，M4） */
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  min-height: 88rpx;
+  padding: 16rpx 24rpx;
+  background: var(--pure-white);
+  border: 2rpx solid var(--mp-hairline);
+  border-radius: var(--mp-radius-inner);
+  box-sizing: border-box;
+  transition: border-color var(--mp-ease);
+}
+.option--active { border-color: var(--ink); }
+.option__title {
+  font-size: var(--mp-label);
+  font-weight: 500;
+  line-height: 1.45;
+  color: var(--ink);
+}
+.option__sub {
+  margin-top: 4rpx;
+  font-size: var(--mp-caption);
+  line-height: 1.4;
+  color: var(--graphite);
+}
+/* ===== 12. 图标（M6：24 viewBox / stroke 2.4 源 → 36rpx 渲染 = 1.8px） ===== */
+.icon {
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
+}
+/* 图标热区：视觉 36rpx，热区 88rpx */
+.iconbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  height: 88rpx;
+  flex-shrink: 0;
+}
+/* ===== 14. 照片网格（门店建档 / 拜访登记共用） ===== */
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+.photo-item,
+.photo-add {
+  position: relative;
+  width: calc((100% - 32rpx) / 3);
+  height: 180rpx;
+  border-radius: var(--mp-radius-inner);
+  box-sizing: border-box;
+}
+.photo-img {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--mp-radius-inner);
+  background: var(--fog);
+}
+/* 删除热区 88rpx，视觉是一个 44rpx 白点（M6 触控下限） */
+.photo-remove {
+  position: absolute;
+  top: -32rpx;
+  right: -32rpx;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  width: 88rpx;
+  height: 88rpx;
+}
+.photo-remove__dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 9999rpx;
+  background: var(--pure-white);
+  box-shadow: 0 0 0 1rpx var(--mp-hairline);
+}
+.photo-remove__icon { width: 24rpx; height: 24rpx; }
+.photo-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  border: 2rpx dashed var(--mp-hairline);
+  background: var(--pure-white);
+}
+.photo-add__label {
+  font-size: var(--mp-caption);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--graphite);
+}
+/* ===== 13. 固定底栏（M7） ===== */
+.foot {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  padding: 20rpx var(--mp-gutter) calc(20rpx + env(safe-area-inset-bottom));
+  background: var(--fog);
+  border-top: 1rpx solid var(--mp-hairline);
+  box-sizing: border-box;
+}

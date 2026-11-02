@@ -1,79 +1,197 @@
-<view class="page">
-  <view class="state" wx:if="{{state === 'loading'}}">
-    <view class="state__text">加载中...</view>
+<view class="page page--foot">
+  <!-- 四态（D5）：needLogin / loading / error / ok -->
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">登录后查看协议详情</view>
+    <view class="state__text">协议正文与签署记录只对商户拓展员工开放</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onGoLogin">去登录</view>
   </view>
+
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中…</view>
+  </view>
+
   <view class="state" wx:elif="{{state === 'error'}}">
-    <view class="state__title">加载失败</view>
+    <view class="state__title">没能打开这份协议</view>
     <view class="state__text">{{errorText}}</view>
-    <view class="state__btn" bindtap="onRetry">重试</view>
+    <view class="state__btn" hover-class="hoverable" bindtap="onRetry">重试</view>
   </view>
 
   <block wx:elif="{{state === 'ok' && agreement}}">
-    <view class="hero">
-      <view class="hero__top">
-        <view class="hero__title">{{agreement.agreement_no || '合作协议'}}</view>
-        <text class="chip {{agreement.status === 'signed' ? 'chip-sky' : 'chip-apricot'}}">{{statusText}}</text>
+    <!-- P0-5：标题回 Fog 画布，状态 chip 落在 head__meta，不再套白卡 -->
+    <view class="head">
+      <view class="head__title">{{agreement.agreement_no || '合作协议'}}</view>
+      <view class="head__sub">{{agreement.template_name || '协议模板'}} · {{agreement.subject_type === 'store' ? '门店主体' : '公司主体'}}</view>
+      <view class="head__meta">
+        <text class="chip chip--{{statusTone}}">{{statusLabel}}</text>
       </view>
-      <view class="hero__sub">{{agreement.template_name || '协议模板'}} · {{agreement.subject_type === 'store' ? '门店主体' : '公司主体'}}</view>
     </view>
 
+    <!-- 键值行：分隔线由共享 .row 的 hairline 负责，日期值用等宽数字 -->
     <view class="card">
-      <view class="row"><text class="row-label">签约主体</text><text>{{agreement.subject_name || '—'}}</text></view>
-      <view class="row"><text class="row-label">签署人</text><text>{{agreement.signer_name || '—'}} · {{signerPhoneMasked}}</text></view>
-      <view class="row"><text class="row-label">签署时间</text><text>{{signedAtText}}</text></view>
-      <view class="row"><text class="row-label">到期时间</text><text>{{expireAtText}}</text></view>
-      <view class="row"><text class="row-label">创建时间</text><text>{{createdAtText}}</text></view>
-      <view class="row" wx:if="{{agreement.void_reason}}"><text class="row-label">作废原因</text><text>{{agreement.void_reason}}</text></view>
-      <view class="row" wx:if="{{agreement.remark}}"><text class="row-label">备注</text><text>{{agreement.remark}}</text></view>
+      <view class="card__title">协议信息</view>
+      <view class="card__body">
+        <view class="row">
+          <text class="row__label">签约主体</text>
+          <text class="row__value">{{agreement.subject_name || '—'}}</text>
+        </view>
+        <view class="row">
+          <text class="row__label">签署人</text>
+          <text class="row__value">{{signerText}}</text>
+        </view>
+        <view class="row">
+          <text class="row__label">签署时间</text>
+          <text class="row__value tnum">{{signedAtText}}</text>
+        </view>
+        <view class="row">
+          <text class="row__label">到期时间</text>
+          <text class="row__value tnum">{{expireAtText}}</text>
+        </view>
+        <view class="row">
+          <text class="row__label">创建时间</text>
+          <text class="row__value tnum">{{createdAtText}}</text>
+        </view>
+        <!-- 作废原因 / 备注：有值才占一行 -->
+        <view class="row" wx:if="{{agreement.void_reason}}">
+          <text class="row__label">作废原因</text>
+          <text class="row__value">{{agreement.void_reason}}</text>
+        </view>
+        <view class="row" wx:if="{{agreement.remark}}">
+          <text class="row__label">备注</text>
+          <text class="row__value">{{agreement.remark}}</text>
+        </view>
+      </view>
     </view>
 
-    <view class="card">
-      <view class="actions">
-        <button class="mini-btn mini-btn--primary share-btn" wx:if="{{shareReady}}" open-type="share">分享给商户签署</button>
-        <view class="mini-btn" wx:if="{{shareReady}}" bindtap="onCopySignLink">复制签署路径</view>
-        <view class="mini-btn" wx:if="{{fileDisplayUrl}}" bindtap="onOpenFile">查看协议文件</view>
-        <view class="mini-btn mini-btn--primary" wx:if="{{agreement.status === 'pending_sign'}}" bindtap="onSign">去签署</view>
-        <view class="mini-btn" wx:if="{{agreement.status !== 'voided' && agreement.status !== 'expired' && agreement.status !== 'signed'}}" bindtap="onOpenScan">上传盖章扫描件</view>
-        <view class="mini-btn" wx:if="{{agreement.status !== 'voided'}}" bindtap="onOpenSupplement">新增补充协议</view>
+    <!-- P0-4 / L4：其余动作降级为 Rust 文本动作（每行一个 .link，热区 88rpx） -->
+    <view class="card" wx:if="{{shareReady || fileAsLink || canScan || canSupplement}}">
+      <view class="card__title">更多操作</view>
+      <view class="card__body">
+        <view class="row act" wx:if="{{shareReady}}">
+          <text class="row__label">分享给商户签署</text>
+          <view class="row__value">
+            <button class="link share-btn" open-type="share" hover-class="hoverable">分享</button>
+          </view>
+        </view>
+        <view class="row act" wx:if="{{shareReady}}">
+          <text class="row__label">复制签署链接</text>
+          <view class="row__value">
+            <text class="link" hover-class="hoverable" bindtap="onCopySignLink">复制</text>
+          </view>
+        </view>
+        <view class="row act" wx:if="{{fileAsLink}}">
+          <text class="row__label">协议文件</text>
+          <view class="row__value">
+            <text class="link" hover-class="hoverable" bindtap="onOpenFile">查看</text>
+          </view>
+        </view>
+        <view class="row act" wx:if="{{canScan}}">
+          <text class="row__label">盖章扫描件</text>
+          <view class="row__value">
+            <text class="link" hover-class="hoverable" bindtap="onOpenScan">上传</text>
+          </view>
+        </view>
+        <view class="row act" wx:if="{{canSupplement}}">
+          <text class="row__label">补充协议</text>
+          <view class="row__value">
+            <text class="link" hover-class="hoverable" bindtap="onOpenSupplement">新增</text>
+          </view>
+        </view>
+        <view class="hint" wx:if="{{shareReady}}">商户用微信登录打开签署链接，核对信息后即可自助签署</view>
       </view>
-      <view class="hint" wx:if="{{agreement.status === 'pending_sign'}}">
-        发起后即待签署：点「分享给商户签署」把协议发给商户，商户微信登录后核对信息即可自助签署。
-      </view>
-      <view class="hint" wx:if="{{agreement.status === 'signed'}}">门店主体协议签署完成后，门店合作状态将联动为「已合作」。</view>
     </view>
   </block>
 </view>
 
+<!-- 主操作只有一个：待签署时去签署，否则查看协议文件（M4 每屏一个 Ink） -->
+<view class="foot" wx:if="{{state === 'ok' && agreement && footLabel}}">
+  <button
+    class="mbtn mbtn--ink mbtn--cta"
+    hover-class="hoverable"
+    loading="{{openingFile}}"
+    disabled="{{openingFile}}"
+    bindtap="onFootAction"
+  >{{footLabel}}</button>
+</view>
+
+<!-- D7 弹层一：新增补充协议 -->
 <view class="modal-mask" wx:if="{{supplementOpen}}">
   <view class="modal">
     <view class="modal-title">新增补充协议</view>
-    <view class="hint">补充协议独立归档并关联原协议，可上传盖章件或补充说明附件。</view>
-    <view class="mini-btn" bindtap="onChooseSupplementFile">{{supplementFileUrl ? '重新选择文件' : '选择文件'}}</view>
-    <view class="hint" wx:if="{{supplementFileName}}">已上传：{{supplementFileName}}</view>
-    <input class="input" placeholder="补充说明（可空）" value="{{supplementRemark}}" bindinput="onSupplementRemarkInput" maxlength="500" />
+    <view class="modal-sub">补充协议独立归档并关联原协议</view>
+    <button
+      class="mbtn mbtn--block"
+      hover-class="hoverable"
+      loading="{{supplementUploading}}"
+      disabled="{{supplementUploading}}"
+      bindtap="onChooseSupplementFile"
+    >{{supplementFileUrl ? '重新选择文件' : '选择文件'}}</button>
+    <view class="hint" wx:if="{{supplementFileName}}">已选择：{{supplementFileName}}</view>
+    <input
+      class="input"
+      placeholder="补充说明（可空）"
+      placeholder-class="ph"
+      value="{{supplementRemark}}"
+      bindinput="onSupplementRemarkInput"
+      maxlength="500"
+    />
     <view class="modal-actions">
-      <view class="mini-btn" bindtap="onCloseSupplement">取消</view>
-      <view class="mini-btn mini-btn--primary" bindtap="onSubmitSupplement">保存</view>
+      <button class="mbtn" hover-class="hoverable" bindtap="onCloseSupplement">取消</button>
+      <button
+        class="mbtn mbtn--ink"
+        hover-class="hoverable"
+        loading="{{supplementSaving}}"
+        disabled="{{supplementSaving}}"
+        bindtap="onSubmitSupplement"
+      >保存</button>
     </view>
   </view>
 </view>
 
+<!-- D7 弹层二：上传盖章扫描件 -->
 <view class="modal-mask" wx:if="{{scanOpen}}">
   <view class="modal">
     <view class="modal-title">上传盖章扫描件</view>
-    <view class="hint">上传线下盖章后的 PDF 或图片，提交后协议状态变为已签署。</view>
-    <view class="mini-btn" bindtap="onChooseScanFile">{{scanFileUrl ? '重新选择文件' : '选择文件'}}</view>
-    <view class="hint" wx:if="{{scanFileName}}">已上传：{{scanFileName}}</view>
-    <input class="input" placeholder="签署人姓名" value="{{scanSignerName}}" bindinput="onScanSignerNameInput" maxlength="50" />
-    <input class="input" type="number" placeholder="签署人手机号" value="{{scanSignerPhone}}" bindinput="onScanSignerPhoneInput" maxlength="20" />
+    <view class="modal-sub">上传线下盖章后的 PDF 或图片，提交后协议变为已签署</view>
+    <button
+      class="mbtn mbtn--block"
+      hover-class="hoverable"
+      loading="{{uploading}}"
+      disabled="{{uploading}}"
+      bindtap="onChooseScanFile"
+    >{{scanFileUrl ? '重新选择文件' : '选择文件'}}</button>
+    <view class="hint" wx:if="{{scanFileName}}">已选择：{{scanFileName}}</view>
+    <input
+      class="input"
+      placeholder="签署人姓名"
+      placeholder-class="ph"
+      value="{{scanSignerName}}"
+      bindinput="onScanSignerNameInput"
+      maxlength="50"
+    />
+    <input
+      class="input"
+      type="number"
+      placeholder="签署人手机号"
+      placeholder-class="ph"
+      value="{{scanSignerPhone}}"
+      bindinput="onScanSignerPhoneInput"
+      maxlength="20"
+    />
     <picker mode="date" value="{{scanSignedDate}}" bindchange="onScanSignedDateChange">
-      <view class="input picker-row">
-        <text class="{{scanSignedDate ? '' : 'placeholder'}}">{{scanSignedDate || '签署日期（可选）'}}</text>
+      <view class="pick {{scanSignedDate ? '' : 'pick--empty'}}" hover-class="hoverable">
+        <text>{{scanSignedDate || '签署日期（可选）'}}</text>
+        <image class="pick__icon" src="{{icons.chevronDown}}" />
       </view>
     </picker>
     <view class="modal-actions">
-      <view class="mini-btn" bindtap="onCloseScan">取消</view>
-      <view class="mini-btn mini-btn--primary" bindtap="onSubmitScan">提交归档</view>
+      <button class="mbtn" hover-class="hoverable" bindtap="onCloseScan">取消</button>
+      <button
+        class="mbtn mbtn--ink"
+        hover-class="hoverable"
+        loading="{{submitting}}"
+        disabled="{{submitting}}"
+        bindtap="onSubmitScan"
+      >提交归档</button>
     </view>
   </view>
 </view>

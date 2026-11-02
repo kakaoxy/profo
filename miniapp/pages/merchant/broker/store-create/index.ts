@@ -1,10 +1,16 @@
 /**
  * 经纪人注册建店（V04 REQ-M05-006 / V02）：创建后 review_status=pending，自动绑定创建人.
+ *
+ * 页面级状态：进页面先确认登录并加载区域字典（区域只能从系统字典选），
+ * 失败可重试；表单区在 state==='form' 时才渲染，避免半残表单被提交。
  */
 import type { components } from "../../../../types/api-types";
-import { request } from "../../../../utils/request";
 import { chooseMapLocation } from "../../../../utils/location";
+import { describeRequestError } from "../../../../utils/merchant-errors";
+import { MP_ICONS } from "../../../../utils/mp-icons";
 import { matchDistrict } from "../../../../utils/region";
+import { request } from "../../../../utils/request";
+import { getCAccessToken } from "../../../../utils/token";
 
 type CompanyOption = components["schemas"]["BrokerCompanyOption"];
 type CompanyList = components["schemas"]["BrokerCompanyOptionListResponse"];
@@ -12,12 +18,49 @@ type StoreCreateResult = components["schemas"]["MerchantStoreCreateResult"];
 type StoreCreatePayload = components["schemas"]["MerchantStoreCreate"];
 type DuplicateCheck = components["schemas"]["MerchantDuplicateCheckResponse"];
 
-function errMessage(err: unknown): string {
-  return (err as { body?: { message?: string } }).body?.message || "操作失败，请重试";
+type PageState = "loading" | "error" | "needLogin" | "form";
+
+/** 查重候选的展示态：匹配维度翻成中文，距离按「米 / 公里」出文案. */
+interface DuplicateDisplay {
+  id: string;
+  store_name: string;
+  address: string;
+  matchedText: string;
+  distanceText: string;
+}
+
+/** 查重命中维度（后端 matched_by 传的是 name/address/phone/distance 这类代码）.
+ *  distance 不翻成文字，改由 distanceText 用「距离 350 米」表达，避免同句重复. */
+const MATCH_LABELS: Record<string, string> = {
+  name: "名称",
+  address: "地址",
+  phone: "电话",
+};
+
+function formatMatchedBy(codes: string[]): string {
+  const labels = codes.map((code) => MATCH_LABELS[code]).filter(Boolean);
+  return labels.length ? labels.join("、") : "信息相近";
+}
+
+/** 距离文案统一用「米 / 公里」，不再裸写 m/km. */
+function formatDistance(meters: number | null | undefined): string {
+  if (meters === null || meters === undefined) {
+    return "";
+  }
+  if (meters < 1000) {
+    return `距离 ${Math.round(meters)} 米`;
+  }
+  return `距离 ${(meters / 1000).toFixed(1)} 公里`;
 }
 
 Page({
   data: {
+    state: "loading" as PageState,
+    errorText: "",
+    icons: {
+      chevronDown: MP_ICONS.chevronDown,
+      check: MP_ICONS.check,
+    },
     companyKeyword: "",
     companies: [] as CompanyOption[],
     companyId: "",
@@ -37,57 +80,49 @@ Page({
     remark: "",
     submitting: false,
     duplicateOpen: false,
-    duplicates: [] as Array<{ id: string; store_name: string; address: string; matchedText: string; distance_m?: number | null }>,
+    duplicates: [] as DuplicateDisplay[],
     forceReason: "",
+  },
+
+  onLoad() {
+    void this.loadPage();
+  },
+
+  /** 进页面：登录检查 + 区域字典（字典失败可重试，不让人对着空选择器填表）. */
+  async loadPage(): Promise<void> {
+    if (!getCAccessToken()) {
+      this.setData({ state: "needLogin" });
+      return;
+    }
+    this.setData({ state: "loading" });
+    try {
+      const data = await request<{ items: string[] }>({ url: "/public/merchant/districts" });
+      const districts = data.items || [];
+      if (!districts.length) {
+        this.setData({ state: "error", errorText: "区域列表暂时为空，请稍后重试" });
+        return;
+      }
+      this.setData({ districts, errorText: "", state: "form" });
+    } catch (err) {
+      const statusCode = (err as { statusCode?: number }).statusCode;
+      if (statusCode === 401 || statusCode === 403) {
+        this.setData({ state: "needLogin" });
+        return;
+      }
+      this.setData({ state: "error", errorText: describeRequestError(err, "区域列表加载失败") });
+    }
+  },
+
+  onRetry() {
+    void this.loadPage();
+  },
+
+  onGoLogin() {
+    wx.navigateTo({ url: "/pages/login/index/index" });
   },
 
   onCompanyKeywordInput(e: WechatMiniprogram.Input) {
     this.setData({ companyKeyword: e.detail.value });
-  },
-
-  onLoad() {
-    void this.loadDistricts();
-  },
-
-  /** 区域字典（REQ-IT1-04：只能从系统区域列表选择） */
-  async loadDistricts(): Promise<void> {
-    try {
-      const data = await request<{ items: string[] }>({ url: "/public/merchant/districts" });
-      this.setData({ districts: data.items || [] });
-    } catch {
-      // 字典不可用不阻断建店，选择器提示加载失败
-    }
-  },
-
-  async loadBusinessCircles(district: string): Promise<void> {
-    if (!district) {
-      this.setData({ businessCircles: [], businessCircleIndex: -1 });
-      return;
-    }
-    try {
-      const data = await request<{ items: string[] }>({
-        url: "/public/merchant/business-circles",
-        data: { district },
-      });
-      this.setData({ businessCircles: data.items || [], businessCircleIndex: -1 });
-    } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
-    }
-  },
-
-  onSelectDistrict(e: WechatMiniprogram.PickerChange) {
-    const index = Number(e.detail.value);
-    const district = this.data.districts[index] || "";
-    this.setData({ district, districtIndex: index, businessCircle: "", businessCircles: [], businessCircleIndex: -1 });
-    void this.loadBusinessCircles(district);
-  },
-
-  onSelectBusinessCircle(e: WechatMiniprogram.PickerChange) {
-    const index = Number(e.detail.value);
-    this.setData({
-      businessCircle: this.data.businessCircles[index] || "",
-      businessCircleIndex: index,
-    });
   },
 
   async searchCompanies(): Promise<void> {
@@ -98,7 +133,7 @@ Page({
       });
       this.setData({ companies: data.items });
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "公司搜索失败"), icon: "none" });
     }
   },
 
@@ -106,7 +141,8 @@ Page({
     const id = e.currentTarget.dataset.id as string;
     const company = this.data.companies.find((item) => item.id === id);
     if (company) {
-      this.setData({ companyId: company.id, companyName: company.company_name, companies: [] });
+      // 结果列表保留，用激活态标出当前选择，方便随时换一家
+      this.setData({ companyId: company.id, companyName: company.company_name });
     }
   },
 
@@ -131,9 +167,41 @@ Page({
     });
     if (district) {
       void this.loadBusinessCircles(district);
-    } else if (this.data.districts.length) {
+    } else {
       wx.showToast({ title: "未识别到区域，请手动选择", icon: "none" });
     }
+  },
+
+  /** 商圈候选（只能从列表选择；该区域无候选时退回手填，避免建不了店）. */
+  async loadBusinessCircles(district: string): Promise<void> {
+    if (!district) {
+      this.setData({ businessCircles: [], businessCircleIndex: -1 });
+      return;
+    }
+    try {
+      const data = await request<{ items: string[] }>({
+        url: "/public/merchant/business-circles",
+        data: { district },
+      });
+      this.setData({ businessCircles: data.items || [], businessCircleIndex: -1 });
+    } catch (err) {
+      wx.showToast({ title: describeRequestError(err, "商圈加载失败"), icon: "none" });
+    }
+  },
+
+  onSelectDistrict(e: WechatMiniprogram.PickerChange) {
+    const index = Number(e.detail.value);
+    const district = this.data.districts[index] || "";
+    this.setData({ district, districtIndex: index, businessCircle: "", businessCircles: [], businessCircleIndex: -1 });
+    void this.loadBusinessCircles(district);
+  },
+
+  onSelectBusinessCircle(e: WechatMiniprogram.PickerChange) {
+    const index = Number(e.detail.value);
+    this.setData({
+      businessCircle: this.data.businessCircles[index] || "",
+      businessCircleIndex: index,
+    });
   },
 
   onForceReason(e: WechatMiniprogram.Input) {
@@ -206,14 +274,14 @@ Page({
               id: item.id,
               store_name: item.store_name,
               address: item.address,
-              matchedText: item.matched_by.join(" / "),
-              distance_m: item.distance_m,
+              matchedText: formatMatchedBy(item.matched_by),
+              distanceText: formatDistance(item.distance_m),
             })),
           });
           return;
         }
       } catch {
-        // 查重服务异常不阻断建店（REQ-M01B-002 分支 4：记录「查重未完成」由后端复核）
+        // 查重服务异常不阻断建店（查重未完成由后端复核）
       }
     }
 
@@ -241,7 +309,7 @@ Page({
       wx.showToast({ title: "门店已提交审核", icon: "success" });
       setTimeout(() => wx.navigateBack(), 800);
     } catch (err) {
-      wx.showToast({ title: errMessage(err), icon: "none" });
+      wx.showToast({ title: describeRequestError(err, "门店提交失败"), icon: "none" });
     } finally {
       this.setData({ submitting: false });
     }

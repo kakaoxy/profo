@@ -7,6 +7,9 @@
  */
 import type { components } from "../../../types/api-types";
 import { getCurrentLocation } from "../../../utils/location";
+import { describeRequestError } from "../../../utils/merchant-errors";
+import { type StatusTone, storeStatusLabel, storeStatusTone } from "../../../utils/merchant-status";
+import { MP_ICONS } from "../../../utils/mp-icons";
 import { request } from "../../../utils/request";
 import { getCAccessToken } from "../../../utils/token";
 
@@ -25,20 +28,21 @@ interface DisplayStore {
   district: string;
   business_circle: string;
   address: string;
-  cooperation_status_label: string;
-  review_status: string;
+  statusLabel: string;
+  statusTone: StatusTone;
   lastVisitText: string;
   distanceText: string;
 }
 
+/** 距离文案统一用「米 / 公里」，不再裸写 m/km（审查报告 T8）. */
 function formatDistance(meters: number | null | undefined): string {
   if (meters === null || meters === undefined) {
     return "";
   }
   if (meters < 1000) {
-    return `${Math.round(meters)}m`;
+    return `距离 ${Math.round(meters)} 米`;
   }
-  return `${(meters / 1000).toFixed(1)}km`;
+  return `距离 ${(meters / 1000).toFixed(1)} 公里`;
 }
 
 function formatDate(value: string | null | undefined): string {
@@ -61,8 +65,8 @@ function toDisplay(item: StoreItem): DisplayStore {
     district: item.district,
     business_circle: item.business_circle,
     address: item.address,
-    cooperation_status_label: item.cooperation_status_label,
-    review_status: item.review_status,
+    statusLabel: storeStatusLabel(item.review_status, item.cooperation_status_label),
+    statusTone: storeStatusTone(item.review_status, item.cooperation_status),
     lastVisitText: formatDate(item.last_visit_at),
     distanceText: formatDistance(item.distance_m),
   };
@@ -85,9 +89,14 @@ function parseSceneCode(scene: string): string {
 Page({
   data: {
     state: "loading" as PageState,
+    errorText: "",
     keyword: "",
     stores: [] as DisplayStore[],
     total: 0,
+    icons: {
+      chevronRight: MP_ICONS.chevronRight,
+      plus: MP_ICONS.plus,
+    },
   },
 
   /**
@@ -148,11 +157,16 @@ Page({
       this.setData({
         stores,
         total: data.total,
+        errorText: "",
         state: stores.length ? "items" : "empty",
       });
     } catch (err) {
       const statusCode = (err as { statusCode?: number }).statusCode;
-      this.setData({ state: statusCode === 401 || statusCode === 403 ? "needLogin" : "error" });
+      if (statusCode === 401 || statusCode === 403) {
+        this.setData({ state: "needLogin" });
+        return;
+      }
+      this.setData({ state: "error", errorText: describeRequestError(err, "门店列表加载失败") });
     }
   },
 

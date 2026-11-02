@@ -1,83 +1,159 @@
-<view class="page">
-  <view class="hero">
-    <view class="hero__title">发起合作协议</view>
-    <view class="hero__sub">发起即生成商户签署链接，商户微信登录核对后自助签署</view>
+<view class="page page--foot">
+  <view class="head">
+    <view class="head__title">发起合作协议</view>
+    <view class="head__sub">发起后生成商户签署链接，商户微信登录核对后自助签署</view>
   </view>
 
-  <view class="state" wx:if="{{state === 'loading'}}">
-    <view class="state__text">加载中...</view>
+  <view class="state" wx:if="{{state === 'needLogin'}}">
+    <view class="state__title">请先登录</view>
+    <view class="state__text">发起协议仅对具备商户协议权限的员工开放</view>
+    <view class="state__btn" bindtap="onGoLogin" hover-class="hoverable">去登录</view>
+  </view>
+  <view class="state" wx:elif="{{state === 'loading'}}">
+    <view class="state__text">加载中…</view>
   </view>
   <view class="state" wx:elif="{{state === 'error'}}">
-    <view class="state__title">加载失败</view>
+    <view class="state__title">没能加载发起所需的数据</view>
     <view class="state__text">{{errorText}}</view>
-    <view class="state__btn" bindtap="onRetry">重试</view>
+    <view class="state__btn" bindtap="onRetry" hover-class="hoverable">重试</view>
   </view>
 
   <block wx:elif="{{state === 'ok'}}">
+    <!-- 一屏一条左缘：签约对象 / 签署人 / 编号与期限 各一张卡 -->
     <view class="card">
-      <view class="field-label">签约门店</view>
-      <view class="select-row" bindtap="onOpenStorePicker">
-        <text class="{{storeName ? '' : 'placeholder'}}">{{storeName || '请选择门店'}}</text>
-        <text class="chevron">›</text>
+      <view class="card__title">签约对象</view>
+      <view class="card__body">
+        <view class="field">
+          <view class="field__label">签约门店 *</view>
+          <view
+            class="pick {{storeName ? '' : 'pick--empty'}}"
+            bindtap="onOpenStorePicker"
+            hover-class="hoverable"
+          >
+            <text>{{storeName || '请选择门店'}}</text>
+            <image class="pick__icon" src="{{icons.chevronRight}}" />
+          </view>
+        </view>
+        <view class="field field--last">
+          <view class="field__label">协议模板 *</view>
+          <picker
+            mode="selector"
+            range="{{templates}}"
+            range-key="template_name"
+            value="{{templateIndex}}"
+            bindchange="onTemplateChange"
+          >
+            <view class="pick {{templateName ? '' : 'pick--empty'}}" hover-class="hoverable">
+              <text>{{templateName || '请选择模板'}}</text>
+              <image class="pick__icon" src="{{icons.chevronRight}}" />
+            </view>
+          </picker>
+        </view>
       </view>
+    </view>
 
-      <view class="field-label">协议模板</view>
-      <picker range="{{templates}}" range-key="template_name" value="{{templateIndex}}" bindchange="onTemplateChange">
-        <view class="select-row">
-          <text class="{{templateName ? '' : 'placeholder'}}">{{templateName || '请选择模板'}}</text>
-          <text class="chevron">›</text>
+    <view class="card">
+      <view class="card__title">签署人</view>
+      <view class="card__body">
+        <!-- 签署人优先从门店经纪人中选；门店暂无经纪人时退回手填 -->
+        <view class="field">
+          <view class="field__label">签署人 *</view>
+          <picker
+            wx:if="{{signers.length}}"
+            mode="selector"
+            range="{{signerLabels}}"
+            value="{{signerIndex}}"
+            bindchange="onSelectSigner"
+          >
+            <view class="pick {{signerName ? '' : 'pick--empty'}}" hover-class="hoverable">
+              <text>{{signerName || '请选择门店经纪人'}}</text>
+              <image class="pick__icon" src="{{icons.chevronRight}}" />
+            </view>
+          </picker>
+          <input
+            wx:else
+            class="input"
+            placeholder="门店暂无经纪人，可填写签署人"
+            placeholder-class="ph"
+            value="{{signerName}}"
+            bindinput="onSignerNameInput"
+            maxlength="50"
+          />
+          <view class="hint" wx:if="{{signerHint}}">{{signerHint}}</view>
         </view>
-      </picker>
 
-      <view class="field-label">签署人 *</view>
-      <!-- REQ-IT5-04：签署人优先从门店经纪人中选；门店暂无经纪人时退回手填 -->
-      <picker
-        wx:if="{{signers.length}}"
-        mode="selector"
-        range="{{signerLabels}}"
-        value="{{signerIndex}}"
-        bindchange="onSelectSigner"
-      >
-        <view class="select-row">
-          <text class="{{signerName ? '' : 'placeholder'}}">{{signerName || '请选择门店经纪人'}}</text>
-          <text class="chevron">›</text>
+        <!-- 门店没有经纪人时在发起页直接补录，避免流程中断 -->
+        <view
+          wx:if="{{storeId && !signers.length}}"
+          class="link add-broker"
+          bindtap="onOpenBrokerModal"
+          hover-class="hoverable"
+        >
+          <image class="icon" src="{{icons.plus}}" />
+          <text>新增门店经纪人</text>
         </view>
-      </picker>
-      <input
-        wx:else
-        class="input"
-        placeholder="门店暂无经纪人，可填写签署人"
-        value="{{signerName}}"
-        bindinput="onSignerNameInput"
-        maxlength="50"
-      />
-      <view class="hint" wx:if="{{signerHint}}">{{signerHint}}</view>
-      <!-- REQ-IT5-05：门店没有经纪人时，在发起页直接补录并绑定，避免流程中断 -->
-      <button class="mini-btn add-broker-btn" wx:if="{{storeId && !signers.length}}" bindtap="onOpenBrokerModal">
-        ＋ 新增门店经纪人
-      </button>
 
-      <view class="field-label">签署人手机号 *</view>
-      <input class="input" type="number" value="{{signerPhone}}" bindinput="onSignerPhoneInput" maxlength="20" />
-      <view class="hint" wx:if="{{signers.length}}">经纪人手机号仅展示脱敏值，请填写用于签署的真实手机号</view>
-
-      <view class="field-label">协议编号（可空）</view>
-      <input class="input" value="{{agreementNo}}" bindinput="onAgreementNoInput" maxlength="100" />
-
-      <view class="field-label">到期日期（可选）</view>
-      <picker mode="date" value="{{expireDate}}" bindchange="onExpireChange">
-        <view class="select-row">
-          <text class="{{expireDate ? '' : 'placeholder'}}">{{expireDate || '选择到期日期'}}</text>
-          <text class="chevron">›</text>
+        <view class="field field--last">
+          <view class="field__label">签署人手机号 *</view>
+          <input
+            class="input tnum"
+            type="number"
+            placeholder="用于接收签署链接的手机号"
+            placeholder-class="ph"
+            value="{{signerPhone}}"
+            bindinput="onSignerPhoneInput"
+            maxlength="20"
+          />
+          <view class="hint" wx:if="{{signers.length}}">经纪人号码在这里只显示脱敏值，请填写能接收短信的真实号码</view>
         </view>
-      </picker>
+      </view>
+    </view>
 
-      <view class="field-label">备注</view>
-      <input class="input" value="{{remark}}" bindinput="onRemarkInput" maxlength="500" />
+    <view class="card">
+      <view class="card__title">编号与期限</view>
+      <view class="card__body">
+        <view class="field">
+          <view class="field__label">协议编号</view>
+          <input
+            class="input"
+            placeholder="可留空，留空按系统编号"
+            placeholder-class="ph"
+            value="{{agreementNo}}"
+            bindinput="onAgreementNoInput"
+            maxlength="100"
+          />
+        </view>
+        <view class="field">
+          <view class="field__label">到期日期</view>
+          <picker mode="date" value="{{expireDate}}" bindchange="onExpireChange">
+            <view class="pick {{expireDate ? '' : 'pick--empty'}}" hover-class="hoverable">
+              <text>{{expireDate || '不设置则长期有效'}}</text>
+              <image class="pick__icon" src="{{icons.chevronRight}}" />
+            </view>
+          </picker>
+        </view>
+        <view class="field field--last">
+          <view class="field__label">备注</view>
+          <input
+            class="input"
+            placeholder="留给商户看的说明，可留空"
+            placeholder-class="ph"
+            value="{{remark}}"
+            bindinput="onRemarkInput"
+            maxlength="500"
+          />
+        </view>
+      </view>
+    </view>
 
-      <button class="btn-primary submit-btn" loading="{{submitting}}" disabled="{{submitting}}" bindtap="onSubmit">
-        发起并生成签署链接
-      </button>
+    <view class="foot">
+      <button
+        class="mbtn mbtn--ink mbtn--cta"
+        hover-class="hoverable"
+        loading="{{submitting}}"
+        disabled="{{submitting}}"
+        bindtap="onSubmit"
+      >发起并生成签署链接</button>
     </view>
   </block>
 </view>
@@ -85,22 +161,27 @@
 <view class="modal-mask" wx:if="{{storePickerOpen}}">
   <view class="modal">
     <view class="modal-title">选择门店</view>
-    <scroll-view scroll-y class="store-list">
-      <view class="empty-line" wx:if="{{!stores.length}}">暂无可选门店</view>
+    <view class="modal-sub">按门店名称或公司名判断，同名的注意看地址</view>
+    <scroll-view scroll-y enable-flex class="modal-list">
+      <view class="empty" wx:if="{{!stores.length}}">暂无可选门店，请先创建门店</view>
       <view
         wx:for="{{stores}}"
         wx:key="id"
         class="option {{storeId === item.id ? 'option--active' : ''}}"
         data-id="{{item.id}}"
         bindtap="onPickStore"
+        hover-class="hoverable"
       >
-        <view class="option-title">{{item.name}}</view>
-        <view class="option-sub">{{item.company_name}}</view>
-        <view class="option-sub">{{item.address}}</view>
+        <view class="opt">
+          <view class="option__title">{{item.name}}</view>
+          <view class="option__sub">{{item.company_name}}</view>
+          <view class="option__sub">{{item.address}}</view>
+        </view>
+        <image wx:if="{{storeId === item.id}}" class="icon" src="{{icons.check}}" />
       </view>
     </scroll-view>
     <view class="modal-actions">
-      <view class="mini-btn" bindtap="onCloseStorePicker">取消</view>
+      <view class="mbtn" bindtap="onCloseStorePicker" hover-class="hoverable">取消</view>
     </view>
   </view>
 </view>
@@ -108,27 +189,34 @@
 <view class="modal-mask" wx:if="{{brokerModalOpen}}">
   <view class="modal">
     <view class="modal-title">新增门店经纪人</view>
-    <view class="field-label">经纪人姓名 *</view>
-    <input
-      class="input"
-      placeholder="请输入经纪人姓名"
-      value="{{newBrokerName}}"
-      bindinput="onNewBrokerNameInput"
-      maxlength="50"
-    />
-    <view class="field-label">手机号 *</view>
-    <input
-      class="input"
-      type="number"
-      placeholder="请输入 11 位手机号"
-      value="{{newBrokerPhone}}"
-      bindinput="onNewBrokerPhoneInput"
-      maxlength="11"
-    />
-    <view class="hint">新增后立即绑定到当前门店，并作为本次协议的签署人；手机号重复时会提示换绑流程。</view>
+    <view class="modal-sub">新增后立即绑定到当前门店，并作为本次协议的签署人</view>
+    <view class="field">
+      <view class="field__label">经纪人姓名 *</view>
+      <input
+        class="input"
+        placeholder="请输入经纪人姓名"
+        placeholder-class="ph"
+        value="{{newBrokerName}}"
+        bindinput="onNewBrokerNameInput"
+        maxlength="50"
+      />
+    </view>
+    <view class="field">
+      <view class="field__label">手机号 *</view>
+      <input
+        class="input tnum"
+        type="number"
+        placeholder="请输入 11 位手机号"
+        placeholder-class="ph"
+        value="{{newBrokerPhone}}"
+        bindinput="onNewBrokerPhoneInput"
+        maxlength="11"
+      />
+      <view class="hint">号码已存在时会提示走换绑流程，不会重复建档</view>
+    </view>
     <view class="modal-actions">
-      <view class="mini-btn" bindtap="onCloseBrokerModal">取消</view>
-      <view class="mini-btn mini-btn--primary" bindtap="onSaveBroker">{{brokerSaving ? '保存中…' : '保存'}}</view>
+      <view class="mbtn" bindtap="onCloseBrokerModal" hover-class="hoverable">取消</view>
+      <view class="mbtn mbtn--ink" bindtap="onSaveBroker" hover-class="hoverable">{{brokerSaving ? '保存中…' : '保存'}}</view>
     </view>
   </view>
 </view>

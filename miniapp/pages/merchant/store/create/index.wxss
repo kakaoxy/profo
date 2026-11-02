@@ -1,334 +1,114 @@
 @import "../../../../styles/merchant-theme.wxss";
 
-.page {
-  min-height: 100vh;
-  padding: 32rpx 32rpx 200rpx;
-  box-sizing: border-box;
-}
+/* 门店建档 / 编辑页独有布局。基础件全部来自 shared 层，本文件只放：
+ * 公司结果行、新增公司块、照片网格、查重行。 */
 
-.page-head {
-  padding: 8rpx 8rpx 28rpx;
+/* 已选公司：左名称 + 右侧「更换」 */
+.company-name {
+  font-size: var(--mp-body);
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: -0.14px;
+  color: var(--ink);
 }
-.page-title {
-  font-size: 44rpx;
-  font-weight: 600;
-}
-.page-sub {
+.company-chip {
   margin-top: 8rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
 }
-
-.section {
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  box-shadow: var(--merchant-shadow);
-  padding: var(--merchant-card-padding);
-  margin-bottom: 28rpx;
-  box-sizing: border-box;
-}
-.section-title {
-  font-size: 32rpx;
-  font-weight: 600;
-  margin-bottom: 24rpx;
-}
-
-.form-group {
-  margin-bottom: 24rpx;
-}
-.form-group--flex {
-  flex: 1;
-  min-width: 0;
-}
-.form-row {
-  display: flex;
-  gap: 20rpx;
-}
-.label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.link {
-  color: var(--rust);
-  font-size: 26rpx;
-  font-weight: 500;
-}
-.link-row {
-  margin-top: 16rpx;
-}
-.input {
-  width: 100%;
-  height: 88rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid var(--merchant-hairline);
-  border-radius: 32rpx;
-  font-size: 28rpx;
-  background: var(--fog);
-  color: var(--ink);
-  box-sizing: border-box;
-}
-.input--flex {
-  flex: 1;
-}
-.input--picker {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-.input--picker::after {
-  content: "›";
-  color: var(--graphite);
-  font-size: 32rpx;
-  transform: rotate(90deg);
-}
-.input--placeholder {
-  color: var(--graphite);
-}
-.textarea {
-  height: 160rpx;
-  padding: 20rpx 24rpx;
-}
-
-.search-row {
-  display: flex;
-  gap: 16rpx;
-  align-items: center;
-}
-.mini-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  height: 80rpx;
-  padding: 0 32rpx;
-  border-radius: 9999rpx;
-  background: var(--fog);
-  color: var(--ink);
-  font-size: 28rpx;
-  box-sizing: border-box; /* REQ-IT1-02：缺省 content-box 会让 --full 按钮宽度溢出容器 */
-  flex-shrink: 0;
-}
-.mini-btn--full {
-  width: 100%;
-  margin-top: 16rpx;
-}
-.mini-btn--primary {
-  background: var(--ink);
-  color: var(--pure-white);
-}
-
-.selected-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24rpx;
-  background: var(--fog);
-  border-radius: 24rpx;
-}
-.selected-name {
-  font-size: 30rpx;
-  font-weight: 500;
-}
-.selected-sub {
-  margin-top: 4rpx;
-  font-size: 24rpx;
-  color: var(--graphite);
-}
-
 .company-list {
-  margin-top: 16rpx;
-  border: 1rpx solid var(--merchant-hairline);
-  border-radius: 24rpx;
-  overflow: hidden;
-}
-.company-item {
-  display: flex;
-  justify-content: space-between;
-  padding: 24rpx;
-  font-size: 28rpx;
-  border-bottom: 1rpx solid var(--fog);
-}
-.company-item:last-child {
-  border-bottom: none;
-}
-.company-item__status {
-  color: var(--graphite);
-  font-size: 24rpx;
-}
-.company-empty {
-  margin-top: 16rpx;
-  color: var(--graphite);
-  font-size: 26rpx;
-}
-.company-create {
-  margin-top: 16rpx;
   display: flex;
   flex-direction: column;
   gap: 16rpx;
+  margin-top: var(--mp-gap);
 }
-.company-create .mini-btn--full {
-  margin-top: 0; /* gap 已提供间距，避免叠加 */
-}
-
-.coord-box {
-  padding: 24rpx;
-  background: var(--apricot-wash);
-  color: var(--rust);
-  border-radius: 24rpx;
-  font-size: 26rpx;
-}
-.coord-box--ok {
-  background: var(--mint);
-  color: #1f6b52;
-}
-
-.chip-row {
+/* 「新增公司」入口独占一行，热区由 .link 保证 88rpx */
+.link-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-  margin-top: 12rpx;
+  margin-top: 16rpx;
 }
-.chip--tap {
-  border: 2rpx solid transparent;
+.company-create {
+  margin-top: var(--mp-gap);
+  padding-top: var(--mp-gap);
+  border-top: 1rpx solid var(--mp-hairline);
 }
 
+/* ---- 照片网格：三列等宽，间距 16rpx ---- */
 .photo-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 20rpx;
+  gap: 16rpx;
+  margin-top: var(--mp-gap);
 }
-.photo-item {
+.photo-item,
+.photo-add {
   position: relative;
-  width: 180rpx;
+  width: calc((100% - 32rpx) / 3);
   height: 180rpx;
-  border-radius: 24rpx;
-  overflow: hidden;
-  background: var(--fog);
+  border-radius: var(--mp-radius-inner);
+  overflow: visible;
+  box-sizing: border-box;
 }
 .photo-img {
   width: 100%;
   height: 100%;
+  border-radius: var(--mp-radius-inner);
+  background: var(--fog);
 }
+/* 角标：可读下限 24rpx（审查报告 D13） */
 .photo-type {
   position: absolute;
   left: 8rpx;
   bottom: 8rpx;
-  padding: 4rpx 12rpx;
+  padding: 2rpx 12rpx;
   border-radius: 9999rpx;
-  background: rgba(23, 25, 28, 0.7);
-  color: var(--pure-white);
-  font-size: 20rpx;
+  background: rgba(255, 255, 255, 0.92);
+  font-size: var(--mp-caption);
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--ink);
 }
+/* 删除热区 88rpx（M6），视觉是一个 44rpx 白点 */
 .photo-remove {
   position: absolute;
-  right: 8rpx;
-  top: 8rpx;
-  width: 40rpx;
-  height: 40rpx;
-  border-radius: 50%;
-  background: rgba(23, 25, 28, 0.7);
-  color: var(--pure-white);
-  text-align: center;
-  line-height: 40rpx;
-  font-size: 28rpx;
+  top: -32rpx;
+  right: -32rpx;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  width: 88rpx;
+  height: 88rpx;
+}
+.photo-remove__dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 9999rpx;
+  background: var(--pure-white);
+  box-shadow: 0 0 0 1rpx var(--mp-hairline);
+}
+.photo-remove__icon {
+  width: 24rpx;
+  height: 24rpx;
 }
 .photo-add {
-  width: 180rpx;
-  height: 180rpx;
-  border-radius: 24rpx;
-  border: 2rpx dashed var(--dove);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 8rpx;
-  color: var(--graphite);
-  font-size: 24rpx;
-}
-.photo-add__icon {
-  font-size: 44rpx;
-  color: var(--dove);
-}
-
-.footer {
-  display: flex;
-  justify-content: center;
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 20rpx 32rpx calc(20rpx + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(247, 247, 248, 0), var(--fog) 30%);
-}
-.footer__btn {
-  flex: 1;
-  width: 100%;
-}
-
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(23, 25, 28, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32rpx;
-  z-index: 20;
-}
-.modal {
-  width: 100%;
-  max-height: 80vh;
+  border: 2rpx dashed var(--mp-hairline);
   background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  padding: 32rpx;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 20rpx;
 }
-.modal-title {
-  font-size: 34rpx;
-  font-weight: 600;
-}
-.modal-sub {
-  font-size: 26rpx;
+.photo-add__label {
+  font-size: var(--mp-caption);
+  font-weight: 400;
+  line-height: 1.4;
   color: var(--graphite);
-}
-.modal-list {
-  max-height: 40vh;
-}
-.dup-item {
-  padding: 20rpx;
-  border-radius: 24rpx;
-  background: var(--fog);
-  margin-bottom: 12rpx;
-}
-.dup-name {
-  font-size: 28rpx;
-  font-weight: 500;
-}
-.dup-address {
-  margin-top: 4rpx;
-  font-size: 24rpx;
-  color: var(--graphite);
-}
-.dup-meta {
-  margin-top: 8rpx;
-  font-size: 22rpx;
-  color: var(--rust);
-}
-.modal-actions {
-  display: flex;
-  gap: 16rpx;
-}
-.modal-actions .mini-btn {
-  flex: 1;
 }
 
-/* REQ-IT5-06：联系人自动建档为门店经纪人的说明文案 */
-.form-hint {
-  margin: -8rpx 0 24rpx;
-  font-size: 25rpx;
-  line-height: 1.6;
-  color: var(--graphite);
+/* ---- 查重弹层行 ---- */
+.dup-info {
+  flex: 1;
+  min-width: 0;
 }

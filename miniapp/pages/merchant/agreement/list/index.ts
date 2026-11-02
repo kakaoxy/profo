@@ -2,24 +2,20 @@
  * 员工协议列表（V05）：按门店筛选、状态筛选、发起协议入口.
  */
 import type { components } from "../../../../types/api-types";
+import { describeRequestError } from "../../../../utils/merchant-errors";
+import { agreementStatusLabel, agreementStatusTone } from "../../../../utils/merchant-status";
+import { MP_ICONS } from "../../../../utils/mp-icons";
 import { request } from "../../../../utils/request";
 
 type AgreementListResponse = components["schemas"]["AgreementListResponse"];
 type Agreement = components["schemas"]["AgreementResponse"];
-
-const STATUS_LABELS: Record<string, string> = {
-  not_initiated: "未发起",
-  pending_sign: "待签署",
-  signed: "已签署",
-  expired: "已过期",
-  voided: "已作废",
-};
 
 interface DisplayAgreement {
   id: string;
   title: string;
   subject_name: string;
   statusText: string;
+  statusTone: string;
   expireText: string;
   signerText: string;
 }
@@ -30,10 +26,6 @@ function formatDate(value: string | null | undefined): string {
   if (Number.isNaN(date.getTime())) return value;
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-function errMessage(err: unknown): string {
-  return (err as { body?: { message?: string } }).body?.message || "加载失败，请重试";
 }
 
 Page({
@@ -51,6 +43,8 @@ Page({
     ],
     items: [] as DisplayAgreement[],
     total: 0,
+    statusLabel: "",
+    icons: { chevronRight: MP_ICONS.chevronRight },
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -95,8 +89,9 @@ Page({
         id: item.id,
         title: item.agreement_no || item.id.slice(0, 8),
         subject_name: item.subject_name || "—",
-        statusText: STATUS_LABELS[item.status] || item.status,
-        expireText: formatDate(item.expire_at),
+        statusText: agreementStatusLabel(item.status),
+        statusTone: agreementStatusTone(item.status),
+        expireText: item.expire_at ? formatDate(item.expire_at) : "长期有效",
         signerText: item.signer_name || "—",
       }));
       this.setData({ items, total: data.total, state: items.length ? "items" : "empty" });
@@ -107,10 +102,10 @@ Page({
         return;
       }
       if (options.silent && this.data.state === "items") {
-        wx.showToast({ title: errMessage(err), icon: "none" });
+        wx.showToast({ title: describeRequestError(err, "协议列表刷新失败"), icon: "none" });
         return;
       }
-      this.setData({ state: "error", errorText: errMessage(err) });
+      this.setData({ state: "error", errorText: describeRequestError(err, "协议列表加载失败") });
     }
   },
 
@@ -123,7 +118,10 @@ Page({
   },
 
   onSelectTab(e: WechatMiniprogram.BaseEvent) {
-    this.setData({ status: e.currentTarget.dataset.code as string });
+    // 空态里的「查看全部协议」也走这里（data-code="all"）
+    const code = e.currentTarget.dataset.code as string;
+    const tab = this.data.tabs.find((item) => item.code === code);
+    this.setData({ status: code, statusLabel: tab ? tab.label : "" });
     this.load();
   },
 

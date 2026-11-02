@@ -1,162 +1,25 @@
 @import "../../../../styles/merchant-theme.wxss";
 
-.page {
-  min-height: 100vh;
-  padding: 32rpx 32rpx 80rpx;
-  box-sizing: border-box;
-}
-.hero {
-  background: var(--pure-white);
-  color: var(--ink);
-  box-shadow: var(--merchant-shadow);
-  border-radius: var(--merchant-card-radius);
-  padding: 40rpx;
-  margin-bottom: 28rpx;
-}
-.hero__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 20rpx;
-}
-.hero__title {
-  font-size: 38rpx;
-  font-weight: 600;
-}
-.hero__sub {
-  margin-top: 12rpx;
-  font-size: 26rpx;
-  color: var(--graphite);
-}
-.card {
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  box-shadow: var(--merchant-shadow);
-  padding: var(--merchant-card-padding);
-  margin-bottom: 28rpx;
-}
-.row {
-  display: flex;
-  justify-content: space-between;
-  gap: 24rpx;
-  padding: 18rpx 0;
-  border-bottom: 1rpx solid var(--fog);
-  font-size: 26rpx;
-}
-.row:last-child {
-  border-bottom: none;
-}
-.row-label {
-  flex-shrink: 0;
-  color: var(--graphite);
-}
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16rpx;
-}
-.mini-btn {
-  flex: 1;
-  display: inline-flex;
+/* 协议详情页布局。
+ * 基础件（页面标题 / 卡片 / 键值行 / 状态 chip / 文本动作 / 四态 / 弹层 / 底栏）
+ * 全部来自 shared 层 styles/merchant-theme.wxss，本文件只留本页独有的两处：
+ * 操作行的垂直对齐，以及 <button open-type="share"> 的原生样式复位。 */
+
+/* 操作行：共享 .row 用 align-items: flex-start 是为了长值换行，
+ * 本页每行右侧是 88rpx 热区的文本动作，需要与 label 垂直居中。 */
+.act {
   align-items: center;
-  justify-content: center;
-  min-width: 200rpx;
-  height: 80rpx;
-  padding: 0 24rpx;
-  border-radius: 9999rpx;
-  background: var(--fog);
-  color: var(--ink);
-  font-size: 26rpx;
 }
-.mini-btn--primary {
-  background: var(--ink);
-  color: var(--pure-white);
-}
-/* REQ-IT5-03：<button open-type="share"> 需清掉原生 button 的默认边框/背景/行高 */
+
+/* <button open-type="share"> 是微信唯一可用的分享触发方式，只能用 button。
+ * 这里只做原生样式复位（背景/外边距/行高/边框），字号、字重、颜色、热区
+ * 仍由共享层 .link 决定；内边距由同一行的共享 .row 决定，故不复位 padding。 */
 .share-btn {
+  background: transparent;
   margin: 0;
-  line-height: 1;
+  line-height: inherit;
   border: none;
-  font-weight: 500;
 }
 .share-btn::after {
   border: none;
-}
-.hint {
-  margin-top: 20rpx;
-  font-size: 25rpx;
-  line-height: 1.6;
-  color: var(--graphite);
-}
-.state {
-  padding: 100rpx 48rpx;
-  text-align: center;
-}
-.state__title {
-  font-size: 34rpx;
-  font-weight: 500;
-  margin-bottom: 16rpx;
-}
-.state__text {
-  font-size: 26rpx;
-  color: var(--graphite);
-  line-height: 1.6;
-}
-.state__btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-top: 32rpx;
-  height: 80rpx;
-  padding: 0 24rpx;
-  border-radius: 9999rpx;
-  background: transparent;
-  color: var(--rust);
-  font-size: 28rpx;
-  font-weight: 500;
-}
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(23, 25, 28, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 32rpx;
-  z-index: 20;
-}
-.modal {
-  width: 100%;
-  background: var(--pure-white);
-  border-radius: var(--merchant-card-radius);
-  padding: 32rpx;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: 18rpx;
-}
-.modal-title {
-  font-size: 34rpx;
-  font-weight: 600;
-}
-.input {
-  width: 100%;
-  height: 88rpx;
-  padding: 0 24rpx;
-  border: 2rpx solid var(--merchant-hairline);
-  border-radius: 32rpx;
-  font-size: 28rpx;
-  background: var(--fog);
-  box-sizing: border-box;
-}
-.picker-row {
-  display: flex;
-  align-items: center;
-}
-.placeholder {
-  color: var(--dove);
-}
-.modal-actions {
-  display: flex;
-  gap: 16rpx;
 }
