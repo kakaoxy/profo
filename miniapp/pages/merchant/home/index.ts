@@ -162,7 +162,7 @@ Page({
       });
     } catch (err) {
       const statusCode = (err as { statusCode?: number }).statusCode;
-      if (statusCode === 401 || statusCode === 403) {
+      if (statusCode === 401) {
         this.setData({ state: "needLogin" });
         return;
       }
@@ -188,7 +188,7 @@ Page({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index?from=merchant" });
   },
 
   onCreate() {

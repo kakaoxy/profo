@@ -215,6 +215,8 @@ export default function MerchantBrokersPage() {
                   keyword: keyword || undefined,
                   store_id: storeFilter === "all" ? undefined : storeFilter,
                   bind_status: tab === "all" || tab === "pending" ? undefined : tab,
+                  source: sourceFilter === "all" ? undefined : sourceFilter,
+                  pending_only: tab === "pending" ? "true" : undefined,
                 })}`}
                 className="inline-flex items-center gap-1.5 text-sm text-ink underline-offset-4 hover:underline"
               >
@@ -458,7 +460,7 @@ export default function MerchantBrokersPage() {
             ? "解绑后经纪人不再归属当前门店，绑定历史会保留。"
             : actionTarget?.kind === "enable"
               ? "启用后经纪人可重新登录并接受门店绑定。"
-              : "停用后经纪人不可登录、不可被新绑定，已有绑定不受影响。"
+              : "停用后经纪人不可登录、不可被新绑定，当前门店绑定会解除。"
         }
         confirmLabel={
           actionTarget?.kind === "unbind" ? "确认解绑" : actionTarget?.kind === "enable" ? "确认启用" : "确认停用"

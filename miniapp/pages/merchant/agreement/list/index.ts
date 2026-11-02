@@ -6,6 +6,7 @@ import { describeRequestError } from "../../../../utils/merchant-errors";
 import { agreementStatusLabel, agreementStatusTone } from "../../../../utils/merchant-status";
 import { MP_ICONS } from "../../../../utils/mp-icons";
 import { request } from "../../../../utils/request";
+import { getCAccessToken } from "../../../../utils/token";
 
 type AgreementListResponse = components["schemas"]["AgreementListResponse"];
 type Agreement = components["schemas"]["AgreementResponse"];
@@ -62,6 +63,7 @@ Page({
       return;
     }
     if (this.data.state === "needLogin") {
+      if (getCAccessToken()) void this.load();
       return;
     }
     void this.load({ silent: this.data.state === "items" || this.data.state === "empty" });
@@ -72,6 +74,9 @@ Page({
   },
 
   async load(options: { silent?: boolean } = {}): Promise<void> {
+    const holder = this as unknown as { loadSeq?: number };
+    const seq = (holder.loadSeq || 0) + 1;
+    holder.loadSeq = seq;
     if (!options.silent) {
       this.setData({ state: "loading", errorText: "" });
     }
@@ -85,6 +90,7 @@ Page({
           status: this.data.status === "all" ? undefined : this.data.status,
         },
       });
+      if (seq !== holder.loadSeq) return;
       const items = data.items.map((item: Agreement) => ({
         id: item.id,
         title: item.agreement_no || item.id.slice(0, 8),
@@ -96,8 +102,9 @@ Page({
       }));
       this.setData({ items, total: data.total, state: items.length ? "items" : "empty" });
     } catch (err) {
+      if (seq !== holder.loadSeq) return;
       const statusCode = (err as { statusCode?: number }).statusCode;
-      if (statusCode === 401 || statusCode === 403) {
+      if (statusCode === 401) {
         this.setData({ state: "needLogin" });
         return;
       }
@@ -110,7 +117,7 @@ Page({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index?from=merchant" });
   },
 
   onRetry() {

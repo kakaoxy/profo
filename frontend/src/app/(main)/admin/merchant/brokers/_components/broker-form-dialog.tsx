@@ -126,7 +126,7 @@ export function BrokerFormDialog({
           <DialogDescription>
             {editing
               ? "手机号留空表示不修改；绑定门店请在详情抽屉中换绑。"
-              : "手机号用于绑定唯一档案；创建后可在详情抽屉里分配门店。"}
+              : "手机号用于绑定唯一档案；创建时可选门店，也可稍后在详情抽屉里分配。"}
           </DialogDescription>
         </DialogHeader>
         {loading ? (

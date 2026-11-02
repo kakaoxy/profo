@@ -240,19 +240,19 @@ test("Q4 后台门店列表移除省/市筛选控件，区县/商圈筛选保留
 
 test("REQ-IT1-01/02/04 小程序源码断言：新增公司入口需先搜索、按钮不超宽、区域商圈为选择器", async () => {
   const createWxml = fs.readFileSync(path.resolve(MINIAPP, "pages/merchant/store/create/index.wxml"), "utf8");
-  const createWxss = fs.readFileSync(path.resolve(MINIAPP, "pages/merchant/store/create/index.wxss"), "utf8");
+  const themeWxss = fs.readFileSync(path.resolve(MINIAPP, "styles/merchant-theme.wxss"), "utf8");
   const brokerWxml = fs.readFileSync(path.resolve(MINIAPP, "pages/merchant/broker/store-create/index.wxml"), "utf8");
 
   // REQ-IT1-01：入口由 companySearched 控制
   expect(createWxml).toMatch(/<view class="link-row" wx:if="\{\{companySearched\}\}">/);
 
-  // REQ-IT1-02：按钮/容器 border-box，避免 padding 撑破 100% 宽度
-  expect(createWxss).toMatch(/\.mini-btn\s*\{[^}]*box-sizing:\s*border-box/);
-  expect(createWxss).toMatch(/\.section\s*\{[^}]*box-sizing:\s*border-box/);
+  // REQ-IT1-02：按钮/容器 border-box，避免 padding 撑破 100% 宽度（样式已收敛到共享主题）
+  expect(themeWxss).toMatch(/\.mbtn\s*\{[^}]*box-sizing:\s*border-box/);
+  expect(themeWxss).toMatch(/\.page\s*\{[^}]*box-sizing:\s*border-box/);
 
   // REQ-IT1-04：字段顺序 门店名称 → 地图选点 → 区域/商圈
   const nameIndex = createWxml.indexOf("门店名称");
-  const mapIndex = createWxml.indexOf("地图选点");
+  const mapIndex = createWxml.indexOf("门店位置 *");
   const districtIndex = createWxml.indexOf("区域 *");
   expect(nameIndex).toBeGreaterThan(-1);
   expect(mapIndex).toBeGreaterThan(nameIndex);

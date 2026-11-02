@@ -66,6 +66,8 @@ export function BrokerDetailDrawer({
     let cancelled = false;
     setLoading(true);
     setError("");
+    setBroker(null);
+    setBindings(null);
     Promise.all([
       merchantApi<Broker>(`/admin/merchant/brokers/${brokerId}`),
       merchantApi<BindingList>(`/admin/merchant/brokers/${brokerId}/bindings?page=1&page_size=20`),

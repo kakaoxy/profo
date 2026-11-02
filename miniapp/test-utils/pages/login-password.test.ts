@@ -81,7 +81,7 @@ describe("登录成功回跳链路", () => {
   }, 10_000);
 
   // 本迭代修复：订阅提醒两个来源须与列表页/详情页跳登录带的 from 值一致
-  it.each(["subscribe", "subscribe-project"])(
+  it.each(["subscribe", "subscribe-project", "merchant"])(
     "from=%s（订阅提醒拦截链）登录成功回退两层，不 switchTab 到 profile",
     async (from) => {
       const ctx = createPageHarness({});

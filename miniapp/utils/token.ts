@@ -113,7 +113,8 @@ function base64UrlToBinary(b64: string): string {
   let bits = 0;
   for (const ch of b64) {
     if (ch === "=") break;
-    const val = chars.indexOf(ch);
+    const normalized = ch === "-" ? "+" : ch === "_" ? "/" : ch;
+    const val = chars.indexOf(normalized);
     if (val === -1) continue;
     buffer = (buffer << 6) | val;
     bits += 6;

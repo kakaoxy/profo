@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PencilLine } from "lucide-react";
 
 import { Field } from "@/app/(main)/admin/_components/field";
@@ -56,7 +56,7 @@ const toForm = (store: StoreDetail): EditForm => ({
   contact_name: store.contact_name,
   // 管理端详情接口返回明文手机号，可安全回填编辑
   contact_phone: store.contact_phone,
-  owner_employee_id: store.owner_employee_id ?? "",
+  owner_employee_id: store.owner_employee_id ?? "__none__",
 });
 
 /**
@@ -87,23 +87,30 @@ export function StoreDrawer({
   const [districts, setDistricts] = useState<string[]>([]);
   const [circles, setCircles] = useState<string[]>([]);
   const [employees, setEmployees] = useState<UserSimple[]>([]);
+  const loadIdRef = useRef(0);
 
   const loadStore = useCallback(async (id: string) => {
+    const loadId = ++loadIdRef.current;
     setLoading(true);
     setError("");
     try {
       const detail = await merchantApi<StoreDetail>(`/admin/merchant/stores/${id}`);
+      if (loadId !== loadIdRef.current) return;
       setStore(detail);
       setForm(toForm(detail));
     } catch (err) {
+      if (loadId !== loadIdRef.current) return;
       setError(err instanceof Error ? err.message : "加载门店详情失败");
     } finally {
-      setLoading(false);
+      if (loadId === loadIdRef.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (!open || !storeId) return;
+    if (!open || !storeId) {
+      loadIdRef.current += 1;
+      return;
+    }
     setEditing(false);
     setStore(null);
     setForm(null);
@@ -158,6 +165,8 @@ export function StoreDrawer({
     setSaving(true);
     setError("");
     try {
+      const locationChanged =
+        form.address.trim() !== store.address || form.business_circle !== store.business_circle;
       await merchantApi(`/admin/merchant/stores/${store.id}`, {
         method: "PUT",
         body: JSON.stringify({
@@ -167,8 +176,9 @@ export function StoreDrawer({
           business_circle: form.business_circle,
           contact_name: form.contact_name.trim(),
           contact_phone: form.contact_phone.trim(),
-          owner_employee_id: form.owner_employee_id || null,
-          change_type: "edit",
+          owner_employee_id: form.owner_employee_id === "__none__" ? null : form.owner_employee_id,
+          change_type: locationChanged ? "correct" : "edit",
+          change_reason: locationChanged ? "后台修正门店地址/商圈" : null,
           expected_updated_at: store.updated_at,
         }),
       });
@@ -235,9 +245,10 @@ export function StoreDrawer({
                       onChange={(event) => setForm({ ...form, address: event.target.value })}
                     />
                   </Field>
-                  <Field label="区域" required>
+                  <Field label="区域" required hint="跨区域变更请走门店搬迁">
                     <Select
                       value={form.district}
+                      disabled
                       onValueChange={(value) =>
                         setForm({ ...form, district: value, business_circle: "" })
                       }
@@ -295,6 +306,7 @@ export function StoreDrawer({
                         <SelectValue placeholder="未指定" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="__none__">未指定</SelectItem>
                         {employees.map((employee) => (
                           <SelectItem key={employee.id} value={employee.id}>
                             {employee.nickname || employee.username}

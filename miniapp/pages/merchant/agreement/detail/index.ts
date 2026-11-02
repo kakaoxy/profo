@@ -101,6 +101,7 @@ Page({
     scanFileUrl: "",
     scanFileName: "",
     scanSignedDate: "",
+    scanReason: "",
     uploading: false,
     submitting: false,
     supplementOpen: false,
@@ -178,7 +179,7 @@ Page({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index?from=merchant" });
   },
 
   /** 底栏唯一主操作。 */
@@ -264,6 +265,7 @@ Page({
       scanFileUrl: "",
       scanFileName: "",
       scanSignedDate: "",
+      scanReason: "",
     });
   },
 
@@ -281,6 +283,10 @@ Page({
 
   onScanSignedDateChange(e: WechatMiniprogram.PickerChange) {
     this.setData({ scanSignedDate: e.detail.value as string });
+  },
+
+  onScanReasonInput(e: WechatMiniprogram.Input) {
+    this.setData({ scanReason: e.detail.value });
   },
 
   onChooseScanFile() {
@@ -311,6 +317,7 @@ Page({
       signed_at: this.data.scanSignedDate
         ? new Date(`${this.data.scanSignedDate}T12:00:00+08:00`).toISOString()
         : null,
+      reason: this.data.scanReason.trim() || undefined,
     };
     this.setData({ submitting: true });
     try {
@@ -361,6 +368,10 @@ Page({
       wx.showToast({ title: "请先上传补充协议文件", icon: "none" });
       return;
     }
+    if (!this.data.supplementRemark.trim()) {
+      wx.showToast({ title: "请填写补充说明", icon: "none" });
+      return;
+    }
     this.setData({ supplementSaving: true });
     try {
       await request<Agreement>({
@@ -368,7 +379,7 @@ Page({
         method: "POST",
         data: {
           file_url: this.data.supplementFileUrl,
-          remark: this.data.supplementRemark.trim() || undefined,
+          remark: this.data.supplementRemark.trim(),
         },
       });
       this.setData({ supplementOpen: false });

@@ -121,10 +121,17 @@ Page({
    */
   async bootstrap(storeId: string): Promise<void> {
     await this.loadStore(storeId);
-    if (this.data.state === "error") {
+    if (this.data.state !== "ok") {
       return;
     }
     await Promise.all([this.loadResults(), this.loadBrokers(storeId)]);
+  },
+
+  onShow() {
+    if (this.data.state === "needLogin" && getCAccessToken() && this.data.storeId) {
+      this.setData({ state: "loading", errorText: "" });
+      void this.bootstrap(this.data.storeId);
+    }
   },
 
   onRetry() {
@@ -147,7 +154,7 @@ Page({
       });
     } catch (err) {
       const statusCode = (err as { statusCode?: number }).statusCode;
-      if (statusCode === 401 || statusCode === 403) {
+      if (statusCode === 401) {
         this.setData({ state: "needLogin" });
         return;
       }
@@ -156,7 +163,7 @@ Page({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index?from=merchant" });
   },
 
   async loadResults(): Promise<void> {
@@ -185,11 +192,18 @@ Page({
         brokerLabels: list.map((item) => item.name),
         brokerIndex: list.length ? 0 : -1,
       });
-      // 拜访人默认选第一位经纪人；无经纪人时退回门店联系人
-      this.setData({ "form.contact_name": list.length ? list[0].name : (this.data.store?.contact_name ?? "") });
+      // 拜访人默认选第一位经纪人；用户已手动填写时不覆盖
+      const currentName = this.data.form.contact_name.trim();
+      const storeContact = (this.data.store?.contact_name ?? "").trim();
+      if (!currentName || currentName === storeContact) {
+        this.setData({ "form.contact_name": list.length ? list[0].name : storeContact });
+      }
     } catch {
       // 经纪人列表不可用时不阻断拜访登记，退回手填联系人
       this.setData({ brokers: [], brokerLabels: [], brokerIndex: -1 });
+      if (!this.data.form.contact_name.trim()) {
+        this.setData({ "form.contact_name": this.data.store?.contact_name ?? "" });
+      }
     }
   },
 

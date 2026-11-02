@@ -88,6 +88,13 @@ Page({
     void this.loadPage();
   },
 
+  // 从登录页返回后自恢复，避免用户停在「请先登录」
+  onShow() {
+    if (this.data.state === "needLogin" && getCAccessToken()) {
+      void this.loadPage();
+    }
+  },
+
   /** 进页面：登录检查 + 区域字典（字典失败可重试，不让人对着空选择器填表）. */
   async loadPage(): Promise<void> {
     if (!getCAccessToken()) {
@@ -105,7 +112,7 @@ Page({
       this.setData({ districts, errorText: "", state: "form" });
     } catch (err) {
       const statusCode = (err as { statusCode?: number }).statusCode;
-      if (statusCode === 401 || statusCode === 403) {
+      if (statusCode === 401) {
         this.setData({ state: "needLogin" });
         return;
       }
@@ -118,7 +125,7 @@ Page({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index?from=merchant" });
   },
 
   onCompanyKeywordInput(e: WechatMiniprogram.Input) {
@@ -235,6 +242,9 @@ Page({
   },
 
   async submit(force: boolean): Promise<void> {
+    if (this.data.submitting) {
+      return;
+    }
     if (!this.data.companyId) {
       wx.showToast({ title: "请选择公司", icon: "none" });
       return;
@@ -254,53 +264,53 @@ Page({
       wx.showToast({ title: "请选择门店位置", icon: "none" });
       return;
     }
-    if (!force && !this.data.forceReason.trim()) {
-      try {
-        const check = await request<DuplicateCheck>({
-          url: "/public/merchant/stores/check-duplicates",
-          method: "POST",
-          data: {
-            store_name: this.data.storeName.trim(),
-            address: this.data.address.trim(),
-            lng: Number(this.data.lng),
-            lat: Number(this.data.lat),
-            contact_phone: this.data.contactPhone.trim(),
-          },
-        });
-        if (check.candidates && check.candidates.length) {
-          this.setData({
-            duplicateOpen: true,
-            duplicates: check.candidates.map((item) => ({
-              id: item.id,
-              store_name: item.store_name,
-              address: item.address,
-              matchedText: formatMatchedBy(item.matched_by),
-              distanceText: formatDistance(item.distance_m),
-            })),
-          });
-          return;
-        }
-      } catch {
-        // 查重服务异常不阻断建店（查重未完成由后端复核）
-      }
-    }
-
-    const payload: StoreCreatePayload = {
-      company_id: this.data.companyId,
-      store_name: this.data.storeName.trim(),
-      district: this.data.district.trim(),
-      business_circle: this.data.businessCircle.trim(),
-      address: this.data.address.trim(),
-      lng: Number(this.data.lng),
-      lat: Number(this.data.lat),
-      contact_name: this.data.contactName.trim(),
-      contact_phone: this.data.contactPhone.trim(),
-      cooperation_status: "not_cooperated",
-      remark: this.data.remark.trim() || undefined,
-      force_create_reason: this.data.forceReason.trim() || null,
-    };
     this.setData({ submitting: true });
     try {
+      if (!force && !this.data.forceReason.trim()) {
+        try {
+          const check = await request<DuplicateCheck>({
+            url: "/public/merchant/stores/check-duplicates",
+            method: "POST",
+            data: {
+              store_name: this.data.storeName.trim(),
+              address: this.data.address.trim(),
+              lng: Number(this.data.lng),
+              lat: Number(this.data.lat),
+              contact_phone: this.data.contactPhone.trim(),
+            },
+          });
+          if (check.candidates && check.candidates.length) {
+            this.setData({
+              duplicateOpen: true,
+              duplicates: check.candidates.map((item) => ({
+                id: item.id,
+                store_name: item.store_name,
+                address: item.address,
+                matchedText: formatMatchedBy(item.matched_by),
+                distanceText: formatDistance(item.distance_m),
+              })),
+            });
+            return;
+          }
+        } catch {
+          // 查重服务异常不阻断建店（查重未完成由后端复核）
+        }
+      }
+
+      const payload: StoreCreatePayload = {
+        company_id: this.data.companyId,
+        store_name: this.data.storeName.trim(),
+        district: this.data.district.trim(),
+        business_circle: this.data.businessCircle.trim(),
+        address: this.data.address.trim(),
+        lng: Number(this.data.lng),
+        lat: Number(this.data.lat),
+        contact_name: this.data.contactName.trim(),
+        contact_phone: this.data.contactPhone.trim(),
+        cooperation_status: "not_cooperated",
+        remark: this.data.remark.trim() || undefined,
+        force_create_reason: this.data.forceReason.trim() || null,
+      };
       await request<StoreCreateResult>({
         url: "/public/merchant/brokers/me/store",
         method: "POST",
@@ -314,4 +324,5 @@ Page({
       this.setData({ submitting: false });
     }
   },
+
 });

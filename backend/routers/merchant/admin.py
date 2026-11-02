@@ -10,6 +10,7 @@ from constants.merchant import MERCHANT_STORE_SOURCE_LABELS
 from dependencies.auth import (
     DbSessionDep,
     MerchantBrokerPermDep,
+    MerchantCompanyManagePermDep,
     MerchantMergePermDep,
     MerchantReadPermDep,
     MerchantStoreManagePermDep,
@@ -98,7 +99,7 @@ def create_company(
     request: Request,
     body: MerchantCompanyCreate,
     db: DbSessionDep,
-    current_user: MerchantWritePermDep,
+    current_user: MerchantCompanyManagePermDep,
 ) -> MerchantCompanyResponse:
     """后台新建公司（同名提示不阻断，R-V02-02）."""
     company = MerchantCompanyService(db).create(body, operator_id=str(current_user.id), request=request)
@@ -112,7 +113,7 @@ def update_company(
     company_id: Annotated[str, Path(description="公司ID")],
     body: MerchantCompanyUpdate,
     db: DbSessionDep,
-    current_user: MerchantWritePermDep,
+    current_user: MerchantCompanyManagePermDep,
 ) -> MerchantCompanyResponse:
     """编辑公司；停用后不可再被新建门店选择."""
     company = MerchantCompanyService(db).update(
@@ -131,7 +132,7 @@ def delete_company(
     company_id: Annotated[str, Path(description="公司ID")],
     body: MerchantCompanyDeleteRequest,
     db: DbSessionDep,
-    current_user: MerchantWritePermDep,
+    current_user: MerchantCompanyManagePermDep,
 ) -> dict[str, bool]:
     """公司下仍有未删除门店时拒绝删除（REQ-IT7-02）."""
     MerchantCompanyService(db).soft_delete(
@@ -340,6 +341,8 @@ def export_brokers(
     keyword: Annotated[str | None, Query(description="姓名/手机号关键词")] = None,
     store_id: str | None = None,
     bind_status: str | None = None,
+    source: str | None = None,
+    pending_only: bool = False,
 ) -> StreamingResponse:
     """按当前筛选导出经纪人列表（手机号脱敏）."""
     result = MerchantBrokerService(db).list_admin(
@@ -348,6 +351,8 @@ def export_brokers(
         keyword=keyword,
         store_id=store_id,
         bind_status=bind_status,
+        source=source,
+        pending_only=pending_only,
         user=current_user,
     )
     if result.total > EXPORT_MAX_ROWS:
@@ -376,6 +381,8 @@ def export_brokers(
                 "keyword": keyword,
                 "store_id": store_id,
                 "bind_status": bind_status,
+                "source": source,
+                "pending_only": pending_only,
             },
             "count": len(rows),
         },

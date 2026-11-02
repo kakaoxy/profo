@@ -73,7 +73,11 @@ class MerchantCompanyDeleteRequest(BaseModel):
     @field_validator("reason")
     @classmethod
     def _strip_reason(cls, value: str) -> str:
-        return value.strip()
+        stripped = value.strip()
+        if not stripped:
+            msg = "删除原因不能为空"
+            raise ValueError(msg)
+        return stripped
 
 
 class MerchantCompanyListResponse(BaseModel):
@@ -276,6 +280,15 @@ class MerchantStoreDeleteRequest(BaseModel):
     """门店软删除请求."""
 
     reason: str = Field(min_length=1, max_length=500, description="删除原因")
+
+    @field_validator("reason")
+    @classmethod
+    def _strip_reason(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            msg = "删除原因不能为空"
+            raise ValueError(msg)
+        return stripped
 
 
 class MerchantStoreMergeRequest(BaseModel):

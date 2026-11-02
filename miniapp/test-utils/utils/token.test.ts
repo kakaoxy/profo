@@ -146,6 +146,13 @@ describe("JWT payload 解析（getTokenAud / getUserIdFromAccessToken）", () =>
     expect(getUserIdFromAccessToken()).toBe("张三");
   });
 
+  it("base64url 的 -/_ 字符按 +/ 还原后正常解析", () => {
+    const token = makeToken({ aud: "admin", pad: "~~~???+++" });
+    expect(token).toContain("-");
+    expect(token).toContain("_");
+    expect(getTokenAud(token)).toBe("admin");
+  });
+
   it("getUserIdFromAccessToken 无令牌返回空串", () => {
     storage.clear();
     expect(getUserIdFromAccessToken()).toBe("");

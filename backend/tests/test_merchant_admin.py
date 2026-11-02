@@ -874,3 +874,65 @@ def test_company_soft_delete_rejected_when_has_store(
     # 未被软删，仍能在列表里看到
     listed = admin_client.get(f"{API}/admin/merchant/companies?page=1&page_size=100&include_disabled=true")
     assert any(item["id"] == company["id"] for item in listed.json()["items"])
+
+
+def test_company_mutation_requires_admin_or_operator(
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """公司主数据维护再限 admin/operator：role=user 持有 merchant:write 也不能新增/编辑/删除公司."""
+    company = _create_company(admin_client)
+    employee_client = _client(seeded_db["session"], employee, c_side=False)
+    create_resp = employee_client.post(
+        f"{API}/admin/merchant/companies",
+        json={"company_name": f"越权公司-{uuid.uuid4().hex[:6]}", "contact_phone": "13800001111"},
+    )
+    assert create_resp.status_code == 403, create_resp.text
+    update_resp = employee_client.put(
+        f"{API}/admin/merchant/companies/{company['id']}",
+        json={"company_name": "越权改名"},
+    )
+    assert update_resp.status_code == 403, update_resp.text
+    delete_resp = employee_client.post(
+        f"{API}/admin/merchant/companies/{company['id']}/delete",
+        json={"reason": "越权删除"},
+    )
+    assert delete_resp.status_code == 403, delete_resp.text
+
+
+def test_company_delete_rejects_blank_reason(admin_client: TestClient) -> None:
+    """删除原因去除空白后不得为空."""
+    company = _create_company(admin_client)
+    resp = admin_client.post(
+        f"{API}/admin/merchant/companies/{company['id']}/delete",
+        json={"reason": "   "},
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_store_delete_rejects_blank_reason(admin_client: TestClient, employee: User) -> None:
+    """门店删除原因去除空白后不得为空."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    resp = admin_client.post(
+        f"{API}/admin/merchant/stores/{store['id']}/delete",
+        json={"reason": "   "},
+    )
+    assert resp.status_code == 422, resp.text
+
+
+def test_store_owner_can_be_cleared(admin_client: TestClient, employee: User) -> None:
+    """门店编辑显式传 null 时应清除负责人（而不是按“未传”处理）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    resp = admin_client.put(
+        f"{API}/admin/merchant/stores/{store['id']}",
+        json={
+            "change_type": "edit",
+            "owner_employee_id": None,
+            "expected_updated_at": store["updated_at"],
+        },
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["owner_employee_id"] is None

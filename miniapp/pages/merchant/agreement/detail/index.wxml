@@ -128,7 +128,7 @@
     <view class="hint" wx:if="{{supplementFileName}}">已选择：{{supplementFileName}}</view>
     <input
       class="input"
-      placeholder="补充说明（可空）"
+      placeholder="补充说明（必填）"
       placeholder-class="ph"
       value="{{supplementRemark}}"
       bindinput="onSupplementRemarkInput"
@@ -176,6 +176,14 @@
       value="{{scanSignerPhone}}"
       bindinput="onScanSignerPhoneInput"
       maxlength="20"
+    />
+    <input
+      class="input"
+      placeholder="代签原因（签署人与原协议不一致时必填）"
+      placeholder-class="ph"
+      value="{{scanReason}}"
+      bindinput="onScanReasonInput"
+      maxlength="500"
     />
     <picker mode="date" value="{{scanSignedDate}}" bindchange="onScanSignedDateChange">
       <view class="pick {{scanSignedDate ? '' : 'pick--empty'}}" hover-class="hoverable">

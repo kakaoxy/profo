@@ -18,8 +18,9 @@
  * 协议同意标记：通过 agreed 校验后（发起登录前）写入 c_protocol_agreed=true，
  * 作为 App.onLaunch 静默续登的前置条件（openid 收集的用户知情依据）。
  *
- * 来源参数 from：=valuation/=recruit/=booking/=subscribe 时登录成功 navigateBack 返回对应来源页
- * （保留已填表单/预约/订阅上下文）；其他入口登录成功 switchTab 到 profile。
+ * 来源参数 from：=valuation/=recruit/=booking/=subscribe/=subscribe-project/=merchant 时
+ * 登录成功 navigateBack 返回对应来源页（保留已填表单/预约/订阅/商户上下文）；
+ * 其他入口登录成功 switchTab 到 profile。
  */
 
 import { setProtocolAgreed } from "../../../utils/token";
@@ -96,7 +97,8 @@ Page<PageData, PageCustom>({
             this.data.from === "recruit" ||
             this.data.from === "booking" ||
             this.data.from === "subscribe" ||
-            this.data.from === "subscribe-project"
+            this.data.from === "subscribe-project" ||
+            this.data.from === "merchant"
           ) {
             // 从估价/招募/房源预约/订阅提醒进入登录：navigateBack 返回来源页，保留上下文；
             // 分享卡片直接进入登录页时页面栈为空，navigateBack 失败则回退到「我的」tab

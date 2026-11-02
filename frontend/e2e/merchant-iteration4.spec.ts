@@ -208,22 +208,20 @@ test("REQ-IT4-03 照片补录上传走本地存储并可访问", async () => {
   }
 });
 
-test("REQ-IT4-01 底部主按钮居中：按钮类补 box-sizing，footer 用 flex 居中（源码断言）", () => {
+test("REQ-IT4-01 底部主按钮撑满：按钮类补 box-sizing，footer 用 flex 分配宽度（源码断言）", () => {
   const appWxss = fs.readFileSync(path.resolve(MINIAPP, "app.wxss"), "utf8");
   const btnPrimary = appWxss.slice(appWxss.indexOf(".btn-primary {"), appWxss.indexOf(".btn-primary::after"));
   expect(btnPrimary).toContain("box-sizing: border-box");
   const btnSecondary = appWxss.slice(appWxss.indexOf(".btn-secondary {"), appWxss.indexOf(".btn-secondary::after"));
   expect(btnSecondary).toContain("box-sizing: border-box");
 
-  const pages = ["home", "agreement/list", "visit/create", "store/create"];
-  for (const page of pages) {
-    const wxss = fs.readFileSync(path.resolve(MINIAPP, `pages/merchant/${page}/index.wxss`), "utf8");
-    const footer = wxss.slice(wxss.indexOf(".footer {"), wxss.indexOf(".footer__btn {"));
-    expect(footer, `${page} 的 .footer 未居中`).toContain("display: flex");
-    expect(footer).toContain("justify-content: center");
-    const footerBtn = wxss.slice(wxss.indexOf(".footer__btn {"));
-    expect(footerBtn.slice(0, footerBtn.indexOf("}")), `${page} 的 .footer__btn 未撑满`).toContain("flex: 1");
-  }
+  // 底栏与按钮样式已收敛到共享主题：.foot 为 flex，.foot .mbtn 由父级分配宽度
+  const themeWxss = fs.readFileSync(path.resolve(MINIAPP, "styles/merchant-theme.wxss"), "utf8");
+  const footer = themeWxss.slice(themeWxss.indexOf(".foot {"), themeWxss.indexOf(".foot .mbtn"));
+  expect(footer, "共享主题的 .foot 未使用 flex").toContain("display: flex");
+  expect(footer).toContain("align-items: center");
+  const footerBtn = themeWxss.slice(themeWxss.indexOf(".foot .mbtn {"));
+  expect(footerBtn.slice(0, footerBtn.indexOf("}")), "共享主题的底栏按钮未撑满").toContain("flex: 1");
 });
 
 test("REQ-IT4-02 小程序首页：进入/刷新重新定位并带原点请求（源码断言）", () => {
@@ -235,7 +233,7 @@ test("REQ-IT4-02 小程序首页：进入/刷新重新定位并带原点请求�
   expect(homeTs).toMatch(/origin_lng: origin\?\.lng/);
   expect(homeTs).toMatch(/onShow\(\) \{\s*void this\.refreshLocationAndLoad\(\)/);
   expect(homeWxml).toMatch(/bindtap="onRefresh"/);
-  expect(homeWxml).toContain("store-card__distance");
+  expect(homeWxml).toContain("store__distance");
 });
 
 test("REQ-IT4-04/05 小程序门店详情：onShow 静默刷新 + 消费 status-options（源码断言）", () => {
@@ -251,48 +249,18 @@ test("REQ-IT4-04/05 小程序门店详情：onShow 静默刷新 + 消费 status-
   expect(detailWxml).toContain("statusHint");
 });
 
-test("REQ-IT4-06 表单主操作按钮不贴左：submit-btn 铺满父容器或由父容器居中（全仓扫描）", () => {
-  // `.btn-primary` 是 inline-flex，不设 width 时按内容收缩并贴在容器左侧（表现为按钮偏左）。
-  // 这里扫描全仓小程序页面，凡是 wxml 里出现 `btn-primary submit-btn` 的，其 wxss 必须满足其一：
-  //   1) .submit-btn 声明 width: 100%（铺满）
-  //   2) .submit-btn 用 margin auto 居中
-  //   3) 外层容器（.submit-wrap 等）为 flex + justify-content: center
-  const pagesDir = path.resolve(MINIAPP, "pages");
-  const offenders: string[] = [];
+test("REQ-IT4-06 表单主操作按钮铺满父容器：共享主题 .mbtn--cta 宽度 100%（全仓回归）", () => {
+  // 按钮体系已收敛到 styles/merchant-theme.wxss：主操作统一 .mbtn--cta，
+  // 底栏 .foot 为 flex，按钮不应再依赖各页 `.submit-btn` 样式。
+  const theme = fs.readFileSync(path.resolve(MINIAPP, "styles/merchant-theme.wxss"), "utf8");
+  const ctaStart = theme.indexOf(".mbtn--cta {");
+  expect(ctaStart, "共享主题缺少 .mbtn--cta").toBeGreaterThanOrEqual(0);
+  const ctaBlock = theme.slice(ctaStart, theme.indexOf("}", ctaStart));
+  expect(ctaBlock).toContain("width: 100% !important");
 
-  const walk = (dir: string): string[] =>
-    fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-      const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) return walk(full);
-      return entry.name === "index.wxml" ? [full] : [];
-    });
-
-  for (const wxmlPath of walk(pagesDir)) {
-    const wxml = fs.readFileSync(wxmlPath, "utf8");
-    if (!/class="[^"]*\bbtn-primary\b[^"]*\bsubmit-btn\b/.test(wxml)) continue;
-
-    const wxssPath = wxmlPath.replace(/\.wxml$/, ".wxss");
-    const wxss = fs.existsSync(wxssPath) ? fs.readFileSync(wxssPath, "utf8") : "";
-    const start = wxss.indexOf(".submit-btn {");
-    const block = start >= 0 ? wxss.slice(start, wxss.indexOf("}", start)) : "";
-
-    const fullWidth = /width:\s*100%/.test(block);
-    const autoCentered = /margin:[^;]*\bauto\b/.test(block);
-    const wrapperCentered = /\.(submit-wrap|footer|actions)\s*\{[^}]*justify-content:\s*center/.test(wxss);
-
-    if (!fullWidth && !autoCentered && !wrapperCentered) {
-      offenders.push(path.relative(MINIAPP, wxmlPath));
-    }
-  }
-
-  expect(offenders, `以下页面的提交按钮会贴左：${offenders.join(", ")}`).toEqual([]);
-
-  // 商户端四个表单页必须是铺满（回归用户报告的「提交审核」偏左）
+  // 商户端四个表单页的主操作必须使用 .mbtn--cta（宽度由主题保证，不再贴左）
   for (const page of ["agreement/create", "agreement/sign", "broker", "broker/store-create"]) {
-    const wxss = fs.readFileSync(path.resolve(MINIAPP, `pages/merchant/${page}/index.wxss`), "utf8");
-    const start = wxss.indexOf(".submit-btn {");
-    const block = start >= 0 ? wxss.slice(start, wxss.indexOf("}", start)) : "";
-    expect(block, `${page} 的 .submit-btn 未铺满`).toContain("width: 100%");
-    expect(block).toContain("display: flex");
+    const wxml = fs.readFileSync(path.resolve(MINIAPP, `pages/merchant/${page}/index.wxml`), "utf8");
+    expect(wxml, `${page} 的主操作未使用 .mbtn--cta`).toContain("mbtn--cta");
   }
 });

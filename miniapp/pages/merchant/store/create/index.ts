@@ -222,7 +222,7 @@ Page({
       void this.loadBusinessCircles(store.district, store.business_circle);
     } catch (err) {
       const statusCode = (err as { statusCode?: number }).statusCode;
-      if (statusCode === 401 || statusCode === 403) {
+      if (statusCode === 401) {
         this.setData({ state: "needLogin" });
         return;
       }
@@ -232,7 +232,7 @@ Page({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index?from=merchant" });
   },
 
   // 从登录页返回后自恢复：只有编辑态才有需要重拉的详情
@@ -338,11 +338,13 @@ Page({
       return;
     }
     const district = matchDistrict(picked.address, picked.name, this.data.districts);
+    const districtChanged = Boolean(district && district !== this.data.form.district);
     this.setData({
       "form.address": picked.address || this.data.form.address,
       "form.lng": picked.longitude,
       "form.lat": picked.latitude,
       "form.district": district || this.data.form.district,
+      "form.business_circle": districtChanged ? "" : this.data.form.business_circle,
       districtIndex: district ? this.data.districts.indexOf(district) : this.data.districtIndex,
     });
     if (district) {
@@ -491,41 +493,41 @@ Page({
       return;
     }
 
-    if (mode === "create" && !force && !this.data.forceReason.trim()) {
-      try {
-        const check = await request<DuplicateCheck>({
-          url: "/public/merchant/stores/check-duplicates",
-          method: "POST",
-          data: {
-            store_name: form.store_name,
-            address: form.address,
-            lng: form.lng,
-            lat: form.lat,
-            contact_phone: form.contact_phone,
-          },
-        });
-        if (check.candidates && check.candidates.length) {
-          const duplicates = check.candidates.map((item) => ({
-            ...item,
-            matchedText: item.matched_by.join(" / "),
-            distanceText: formatDistance(item.distance_m),
-          }));
-          this.setData({ duplicateOpen: true, duplicates });
-          return;
-        }
-      } catch {
-        // 查重失败不阻断保存（后端会二次校验并记录）
-      }
-    }
-
-    if (mode !== "create" && changeType !== "edit" && !changeReason.trim()) {
-      wx.showToast({ title: "请填写变更原因", icon: "none" });
-      return;
-    }
-
-    const photos = form.photos.map(({ displayUrl: _displayUrl, ...photo }) => photo);
     this.setData({ submitting: true });
     try {
+      if (mode === "create" && !force && !this.data.forceReason.trim()) {
+        try {
+          const check = await request<DuplicateCheck>({
+            url: "/public/merchant/stores/check-duplicates",
+            method: "POST",
+            data: {
+              store_name: form.store_name,
+              address: form.address,
+              lng: form.lng,
+              lat: form.lat,
+              contact_phone: form.contact_phone,
+            },
+          });
+          if (check.candidates && check.candidates.length) {
+            const duplicates = check.candidates.map((item) => ({
+              ...item,
+              matchedText: item.matched_by.join(" / "),
+              distanceText: formatDistance(item.distance_m),
+            }));
+            this.setData({ duplicateOpen: true, duplicates });
+            return;
+          }
+        } catch {
+          // 查重失败不阻断保存（后端会二次校验并记录）
+        }
+      }
+
+      if (mode !== "create" && changeType !== "edit" && !changeReason.trim()) {
+        wx.showToast({ title: "请填写变更原因", icon: "none" });
+        return;
+      }
+
+      const photos = form.photos.map(({ displayUrl: _displayUrl, ...photo }) => photo);
       if (mode === "edit") {
         const result = await request<StoreUpdateResult>({
           url: `/public/merchant/stores/${storeId}`,
@@ -584,4 +586,5 @@ Page({
       this.setData({ submitting: false });
     }
   },
+
 });

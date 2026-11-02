@@ -742,3 +742,58 @@ def test_scan_upload_proxy_requires_reason(
     )
     assert log is not None
     assert log.after["sign_reason"] == "店长出差，运营代为盖章"
+
+
+def test_company_soft_delete_blocks_pending_company_agreement(
+    admin_client: TestClient,
+) -> None:
+    """公司软删除须拦截待签署的公司主体协议，避免协议悬空."""
+    company = _create_company(admin_client)
+    template = _create_template(admin_client)
+    created = admin_client.post(
+        f"{API}/admin/merchant/agreements",
+        json={
+            "subject_type": "company",
+            "company_id": company["id"],
+            "template_id": template["id"],
+            "signer_name": "公司联系人",
+            "signer_phone": "13800001111",
+            "expire_at": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat(),
+        },
+    )
+    assert created.status_code == 201, created.text
+    assert created.json()["status"] == "pending_sign"
+
+    resp = admin_client.post(
+        f"{API}/admin/merchant/companies/{company['id']}/delete",
+        json={"reason": "尝试删除公司"},
+    )
+    assert resp.status_code == 409, resp.text
+    assert "协议" in resp.json()["message"]
+
+
+def test_company_subject_agreement_rejects_deleted_company(
+    admin_client: TestClient,
+) -> None:
+    """已软删除的公司不能再发起公司主体协议."""
+    company = _create_company(admin_client)
+    template = _create_template(admin_client)
+    deleted = admin_client.post(
+        f"{API}/admin/merchant/companies/{company['id']}/delete",
+        json={"reason": "清理公司"},
+    )
+    assert deleted.status_code == 200, deleted.text
+
+    resp = admin_client.post(
+        f"{API}/admin/merchant/agreements",
+        json={
+            "subject_type": "company",
+            "company_id": company["id"],
+            "template_id": template["id"],
+            "signer_name": "公司联系人",
+            "signer_phone": "13800001111",
+            "expire_at": (datetime.now(timezone.utc) + timedelta(days=365)).isoformat(),
+        },
+    )
+    assert resp.status_code == 404, resp.text
+    assert "公司不存在" in resp.json()["message"]

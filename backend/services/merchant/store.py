@@ -616,11 +616,11 @@ class MerchantStoreService:
             store.contact_phone = phone
             store.contact_phone_hash = hash_phone(phone)
             updated = True
-        if req.owner_employee_id is not None:
+        if "owner_employee_id" in req.model_fields_set:
             if not ensure_scope_role(user):
                 msg = "仅管理员/运营可调整门店负责人"
                 raise PermissionDeniedError(msg)
-            store.owner_employee_id = req.owner_employee_id
+            store.owner_employee_id = req.owner_employee_id or None
             updated = True
         if req.photos is not None:
             store.photos = _photo_json(req.photos)
@@ -1360,7 +1360,8 @@ class MerchantStoreService:
         return store
 
     def _active_company(self, company_id: str) -> MerchantCompany:
-        company = self.db.query(MerchantCompany).filter(MerchantCompany.id == company_id).first()
+        # 与公司软删除互斥：删除流程也锁公司行，避免「删公司」与「建门店」并发同时通过校验
+        company = self.db.query(MerchantCompany).filter(MerchantCompany.id == company_id).with_for_update().first()
         if company is None or company.deleted_at is not None:
             msg = "公司不存在"
             raise ResourceNotFoundError(msg)

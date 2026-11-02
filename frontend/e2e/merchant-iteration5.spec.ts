@@ -635,7 +635,7 @@ test("REQ-IT5-06 建店联系人自动建档为门店经纪人，重复手机号
     path.resolve(MINIAPP, "pages/merchant/store/create/index.wxml"),
     "utf8",
   );
-  expect(createWxml).toContain("保存后该联系人会自动成为门店经纪人");
+  expect(createWxml).toContain("该联系人会成为门店经纪人");
 
   const adminForm = fs.readFileSync(
     path.resolve(__dirname, "../src/app/(main)/admin/merchant/stores/new/page.tsx"),

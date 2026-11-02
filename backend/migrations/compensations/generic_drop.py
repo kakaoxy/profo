@@ -191,6 +191,11 @@ DROP_SPECS: dict[int, DropSpec] = {
         columns=(("lead_followups", "conclusion"),),
         notes="删列即丢弃已录入的跟进结论；如需保留数据请用 restore",
     ),
+    117: DropSpec(
+        columns=(("merchant_companies", "deleted_at"), ("merchant_companies", "deleted_by")),
+        indexes=("idx_merchant_companies_deleted",),
+        notes="删列会丢失公司软删除状态与删除人；如需保留数据请用 restore",
+    ),
 }
 
 

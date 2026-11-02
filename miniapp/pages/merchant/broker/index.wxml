@@ -64,6 +64,7 @@
     <view class="head">
       <view class="head__title">{{broker.name}}</view>
       <view class="head__sub" wx:if="{{broker.store_name}}">已绑定「{{broker.store_name}}」· 电话 {{broker.phone_masked}}</view>
+      <view class="head__sub" wx:elif="{{storeLoading}}">门店信息加载中… · 电话 {{broker.phone_masked}}</view>
       <view class="head__sub" wx:else>还没绑定门店 · 电话 {{broker.phone_masked}}</view>
       <view class="head__meta head-row">
         <view class="chip chip--{{storeTone}}">{{storeLabel}}</view>
@@ -79,7 +80,10 @@
     <!-- 我的门店 -->
     <view class="card">
       <view class="card__title">我的门店</view>
-      <view class="card__body" wx:if="{{myStore}}">
+      <view class="card__body" wx:if="{{storeLoading}}">
+        <view class="hint">门店信息加载中…</view>
+      </view>
+      <view class="card__body" wx:elif="{{myStore}}">
         <view class="store-name">{{myStore.store_name}}</view>
         <view class="row">
           <view class="row__label">所属公司</view>
@@ -122,7 +126,8 @@
         <text class="listhead__count tnum">{{bindings.length}} 条</text>
       </view>
       <view class="card__body">
-        <view class="hint hint--warn" wx:if="{{bindingsError}}">{{bindingsError}}</view>
+        <view class="hint" wx:if="{{bindingsLoading}}">绑定记录加载中…</view>
+        <view class="hint hint--warn" wx:elif="{{bindingsError}}">{{bindingsError}}</view>
         <view class="empty" wx:elif="{{!bindings.length}}">还没有绑定记录</view>
         <block wx:else>
           <view class="entry" wx:for="{{bindings}}" wx:key="id">
@@ -144,7 +149,8 @@
         <text class="listhead__count tnum">共 {{leadsTotal}} 条</text>
       </view>
       <view class="card__body">
-        <view class="hint hint--warn" wx:if="{{leadsError}}">{{leadsError}}</view>
+        <view class="hint" wx:if="{{leadsLoading && !leads.length}}">推荐记录加载中…</view>
+        <view class="hint hint--warn" wx:elif="{{leadsError}}">{{leadsError}}</view>
         <view class="empty" wx:elif="{{!leads.length}}">还没有推荐记录</view>
         <block wx:else>
           <view class="entry" wx:for="{{leads}}" wx:key="id">
@@ -183,7 +189,7 @@
     bindtap="onRegister"
   >提交认证</button>
 </view>
-<view class="foot" wx:elif="{{state === 'profile' && !myStore && !storeError}}">
+<view class="foot" wx:elif="{{state === 'profile' && !storeLoading && !myStore && !storeError}}">
   <button class="mbtn mbtn--ink mbtn--cta" hover-class="hoverable" bindtap="onOpenBind">绑定已有门店</button>
 </view>
 

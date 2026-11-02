@@ -543,7 +543,10 @@ class MerchantBrokerService:
         limit: int = 20,
     ) -> BrokerCompanyOptionListResponse:
         """经纪人注册建店可选公司（仅正常公司，只返回 id/名称）."""
-        query = self.db.query(MerchantCompany).filter(MerchantCompany.status == "normal")
+        query = self.db.query(MerchantCompany).filter(
+            MerchantCompany.status == "normal",
+            MerchantCompany.deleted_at.is_(None),
+        )
         keyword = (keyword or "").strip()
         if keyword:
             query = query.filter(MerchantCompany.company_name.ilike(f"%{keyword}%"))

@@ -14,7 +14,7 @@
  * 双令牌：内部员工登录后同时获取 admin 令牌（access_token，访问 /projects/* 等后台接口）
  * 与 C 端令牌（c_access_token，访问 /public/* 接口）；C 端用户两者相同。
  *
- * 来源参数 from：=valuation/=recruit/=booking 时登录成功 navigateBack 返回对应来源页
+ * 来源参数 from：=valuation/=recruit/=booking/=subscribe/=merchant 时登录成功 navigateBack 返回对应来源页
  * （保留已填表单/预约上下文）；其他入口登录成功 switchTab 到 profile。
  *
  * 依赖：仅本目录 + app.json pages 中对应条目 + utils/request + utils/token + types/api-types.d.ts。
@@ -216,7 +216,8 @@ Page<PageData, PageCustom>({
         this.data.from === "recruit" ||
         this.data.from === "booking" ||
         this.data.from === "subscribe" ||
-        this.data.from === "subscribe-project"
+        this.data.from === "subscribe-project" ||
+        this.data.from === "merchant"
       ) {
         // 由估价提交页/招募页/房源详情页（想看房、调价提醒）拦截而来：本页经 login/index 中转进入，
         // 导航栈为「来源页→login/index→本页」，需回退两层直达来源页，其页面实例仍在

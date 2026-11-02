@@ -39062,6 +39062,8 @@ export interface operations {
                 keyword?: string | null;
                 store_id?: string | null;
                 bind_status?: string | null;
+                source?: string | null;
+                pending_only?: boolean;
             };
             header?: never;
             path?: never;

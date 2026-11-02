@@ -79,6 +79,13 @@ describe("login/index 微信登录成功回跳来源", () => {
     expect(wxStubs.switchTab).not.toHaveBeenCalled();
   });
 
+  it("from=merchant（商户模块登录失效）→ navigateBack 保留页面栈", async () => {
+    await loginWith("merchant");
+
+    expect(wxStubs.navigateBack).toHaveBeenCalled();
+    expect(wxStubs.switchTab).not.toHaveBeenCalled();
+  });
+
   it("无 from（profile 入口）→ switchTab 到 profile，不 navigateBack", async () => {
     await loginWith();
 

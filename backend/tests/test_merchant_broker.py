@@ -221,6 +221,31 @@ def test_register_and_recruit_match(broker_client: TestClient, customer_user: Us
     assert row.recruit_lead_id == recruit.id
 
 
+def test_broker_can_load_store_dictionaries_and_duplicate_check(broker_client: TestClient) -> None:
+    """外部经纪人建店：区域/商圈字典可直接读取，查重需先完成经纪人认证."""
+    draft = broker_client.post(
+        f"{API}/public/merchant/stores/check-duplicates",
+        json={"store_name": "测试门店", "address": "测试地址"},
+    )
+    assert draft.status_code == 403, draft.text
+
+    _register(broker_client)
+
+    districts = broker_client.get(f"{API}/public/merchant/districts")
+    assert districts.status_code == 200, districts.text
+    assert isinstance(districts.json()["items"], list)
+
+    circles = broker_client.get(f"{API}/public/merchant/business-circles")
+    assert circles.status_code == 200, circles.text
+
+    checked = broker_client.post(
+        f"{API}/public/merchant/stores/check-duplicates",
+        json={"store_name": "测试门店", "address": "测试地址"},
+    )
+    assert checked.status_code == 200, checked.text
+    assert "candidates" in checked.json()
+
+
 def test_register_duplicate_phone_conflict(broker_client: TestClient, customer_user: User, seeded_db: dict) -> None:
     """同一手机号已被其他账号认证 → 409."""
     session: Session = seeded_db["session"]
@@ -484,6 +509,23 @@ def test_admin_broker_summary_and_source_filter(
     contact = admin_client.get(f"{API}/admin/merchant/brokers", params={"source": "store_contact"})
     assert contact.status_code == 200
     assert contact.json()["total"] == 1
+
+    # 导出必须沿用来源筛选（不能导出全量）
+    exported = admin_client.get(f"{API}/admin/merchant/brokers/export", params={"source": "backoffice"})
+    assert exported.status_code == 200, exported.text
+    lines = exported.content.decode("utf-8-sig").strip().splitlines()
+    assert len(lines) == 2, lines
+    assert "来源筛选经纪人" in lines[1]
+
+    log = (
+        seeded_db["session"]
+        .query(OperationLog)
+        .filter(OperationLog.resource_type == "merchant_broker", OperationLog.action == "export")
+        .order_by(OperationLog.id.desc())
+        .first()
+    )
+    assert log is not None
+    assert log.after["filters"]["source"] == "backoffice"
 
 
 def test_admin_force_change_keeps_history(

@@ -195,7 +195,13 @@
       <input class="input" placeholder="强制新建理由" placeholder-class="ph" value="{{forceReason}}" bindinput="onForceReason" />
       <view class="modal-actions">
         <view class="mbtn" hover-class="hoverable" bindtap="onCloseDuplicate">返回修改</view>
-        <view class="mbtn mbtn--ink" hover-class="hoverable" bindtap="onForceCreate">确认新建</view>
+        <button
+          class="mbtn mbtn--ink"
+          hover-class="hoverable"
+          loading="{{submitting}}"
+          disabled="{{submitting}}"
+          bindtap="onForceCreate"
+        >确认新建</button>
       </view>
     </view>
   </view>

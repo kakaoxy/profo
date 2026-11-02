@@ -15,6 +15,7 @@ export const BROKER_SOURCE_LABELS: Record<string, string> = {
   broker: "经纪人推荐",
   import: "批量导入",
   store_contact: "门店联系人",
+  store_employee: "门店员工",
 };
 
 export const BINDING_RECORD_LABELS: Record<string, string> = {
@@ -31,6 +32,7 @@ export const BROKER_SOURCE_OPTIONS = [
   { value: "backoffice", label: "后台新增" },
   { value: "broker", label: "经纪人推荐" },
   { value: "store_contact", label: "门店联系人" },
+  { value: "store_employee", label: "门店员工" },
   { value: "import", label: "批量导入" },
 ] as const;
 

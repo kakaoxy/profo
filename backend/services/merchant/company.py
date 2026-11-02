@@ -194,11 +194,12 @@ class MerchantCompanyService:
     ) -> None:
         """公司软删除（REQ-IT7-02）.
 
-        公司下有未删除门店时拒绝删除，避免门店指向已删公司；重复删除幂等。
+        公司下有未删除门店或待签署公司主体协议时拒绝删除，避免产生悬空引用；重复删除幂等。
         """
-        from models.merchant import MerchantStore
+        from models.merchant import MerchantAgreement, MerchantStore
+        from services.merchant.agreement import STATUS_PENDING_SIGN
 
-        company = self.db.query(MerchantCompany).filter(MerchantCompany.id == company_id).first()
+        company = self.db.query(MerchantCompany).filter(MerchantCompany.id == company_id).with_for_update().first()
         if company is None:
             msg = "公司不存在"
             raise ResourceNotFoundError(msg)
@@ -211,6 +212,17 @@ class MerchantCompanyService:
         )
         if store_count > 0:
             msg = f"公司下仍有 {store_count} 家门店，不能删除，请先处理门店或改用停用"
+            raise ConflictError(msg)
+        pending_agreement_count = (
+            self.db.query(MerchantAgreement.id)
+            .filter(
+                MerchantAgreement.company_id == company.id,
+                MerchantAgreement.status == STATUS_PENDING_SIGN,
+            )
+            .count()
+        )
+        if pending_agreement_count > 0:
+            msg = f"公司下仍有 {pending_agreement_count} 份待签署协议，不能删除，请先处理协议或改用停用"
             raise ConflictError(msg)
 
         before = self._snapshot(company)

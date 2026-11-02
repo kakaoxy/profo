@@ -100,10 +100,13 @@ Page({
     storeTone: "todo" as StatusTone,
     storeLabel: "还没绑定门店",
     storeError: "",
+    storeLoading: false,
     bindings: [] as DisplayBinding[],
     bindingsError: "",
+    bindingsLoading: false,
     leads: [] as DisplayLead[],
     leadsError: "",
+    leadsLoading: false,
     leadsTotal: 0,
     leadsPage: 1,
     // 门店搜索/绑定
@@ -133,7 +136,11 @@ Page({
   },
 
   onShow() {
-    if (this.data.state === "profile" || this.data.state === "register") {
+    if ((this.data.state === "profile" || this.data.state === "register") && getCAccessToken()) {
+      this.load();
+      return;
+    }
+    if (this.data.state === "needLogin" && getCAccessToken()) {
       this.load();
     }
   },
@@ -166,6 +173,10 @@ Page({
         throw err;
       }
     } catch (err) {
+      if (statusCodeOf(err) === 401) {
+        this.setData({ state: "needLogin" });
+        return;
+      }
       this.setData({ state: "error", errorText: describeRequestError(err, "经纪人信息没加载出来") });
     }
   },
@@ -187,6 +198,7 @@ Page({
 
   /** 门店是二级信息：失败不打断整页，只在门店卡内提示，避免把「已绑定」误显示成「未绑定」 */
   async loadStore(): Promise<void> {
+    this.setData({ storeLoading: true });
     try {
       const store = await request<MyStore | null>({ url: "/public/merchant/brokers/me/store" });
       this.setData({
@@ -194,6 +206,7 @@ Page({
         storeTone: store ? storeStatusTone(store.review_status, store.cooperation_status) : "todo",
         storeLabel: store ? storeStatusLabel(store.review_status, store.cooperation_status_label) : "还没绑定门店",
         storeError: "",
+        storeLoading: false,
       });
     } catch (err) {
       this.setData({
@@ -201,11 +214,13 @@ Page({
         storeTone: "todo",
         storeLabel: "门店状态未知",
         storeError: describeRequestError(err, "门店信息没加载出来"),
+        storeLoading: false,
       });
     }
   },
 
   async loadBindings(): Promise<void> {
+    this.setData({ bindingsLoading: true });
     try {
       const rows = await request<Binding[]>({ url: "/public/merchant/brokers/me/bindings" });
       this.setData({
@@ -217,13 +232,19 @@ Page({
           reason: row.reason || "",
         })),
         bindingsError: "",
+        bindingsLoading: false,
       });
     } catch (err) {
-      this.setData({ bindings: [], bindingsError: describeRequestError(err, "绑定记录没加载出来") });
+      this.setData({
+        bindings: [],
+        bindingsError: describeRequestError(err, "绑定记录没加载出来"),
+        bindingsLoading: false,
+      });
     }
   },
 
   async loadLeads(page: number): Promise<void> {
+    this.setData({ leadsLoading: true });
     try {
       const data = await request<BrokerLeadListResponse>({
         url: "/public/merchant/brokers/me/leads",
@@ -249,24 +270,26 @@ Page({
         leadsTotal: data.total,
         leadsPage: page,
         leadsError: "",
+        leadsLoading: false,
       });
     } catch (err) {
       const message = describeRequestError(err, "推荐记录没加载出来");
       if (page === 1) {
-        this.setData({ leads: [], leadsTotal: 0, leadsError: message });
+        this.setData({ leads: [], leadsTotal: 0, leadsError: message, leadsLoading: false });
       } else {
+        this.setData({ leadsLoading: false });
         wx.showToast({ title: message, icon: "none" });
       }
     }
   },
 
   onMoreLeads() {
-    if (this.data.leads.length >= this.data.leadsTotal) return;
-    this.loadLeads(this.data.leadsPage + 1);
+    if (this.data.leadsLoading || this.data.leads.length >= this.data.leadsTotal) return;
+    void this.loadLeads(this.data.leadsPage + 1);
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index?from=merchant" });
   },
 
   onGoProfile() {
@@ -396,11 +419,15 @@ Page({
   },
 
   async searchStores(): Promise<void> {
+    const holder = this as unknown as { storeSearchSeq?: number };
+    const seq = (holder.storeSearchSeq || 0) + 1;
+    holder.storeSearchSeq = seq;
     try {
       const data = await request<BrokerStoreOptionListResponse>({
         url: "/public/merchant/broker-stores",
         data: { page: 1, page_size: 50, keyword: this.data.storeKeyword.trim() || undefined },
       });
+      if (seq !== holder.storeSearchSeq) return;
       this.setData({ storeOptions: data.items });
     } catch (err) {
       wx.showToast({ title: describeRequestError(err, "门店没搜出来"), icon: "none" });

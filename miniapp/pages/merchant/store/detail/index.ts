@@ -108,6 +108,7 @@ Page({
     statusOpen: false,
     statusTarget: "",
     statusReason: "",
+    statusSubmitting: false,
     agreements: [] as DisplayAgreement[],
     qrOpen: false,
     qrImage: "",
@@ -153,7 +154,7 @@ Page({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index?from=merchant" });
   },
 
   /** @param options.silent 静默刷新：不清空已有内容，失败只提示不整页报错 */
@@ -330,6 +331,9 @@ Page({
   },
 
   async onSubmitStatus(): Promise<void> {
+    if (this.data.statusSubmitting) {
+      return;
+    }
     if (!this.data.statusTarget) {
       wx.showToast({ title: "请选择目标状态", icon: "none" });
       return;
@@ -339,6 +343,7 @@ Page({
       return;
     }
     const storeId = (this as unknown as { storeId: string }).storeId;
+    this.setData({ statusSubmitting: true });
     try {
       await request<StoreResponse>({
         url: `/public/merchant/stores/${storeId}/status`,
@@ -350,6 +355,8 @@ Page({
       void this.loadAll({ silent: true });
     } catch (err) {
       wx.showToast({ title: describeRequestError(err, "状态变更失败"), icon: "none" });
+    } finally {
+      this.setData({ statusSubmitting: false });
     }
   },
 

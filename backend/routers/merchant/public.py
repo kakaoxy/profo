@@ -11,6 +11,8 @@ from routers.merchant.deps import (
     MerchantCVisitDep,
     MerchantCWriteDep,
     MerchantCWriteVisitDep,
+    MerchantDirectoryReadDep,
+    MerchantDuplicateReadDep,
 )
 from schemas.merchant import (
     BrokerBindingResponse,
@@ -140,7 +142,7 @@ def check_store_duplicates(
     request: Request,
     body: MerchantDuplicateCheckRequest,
     db: DbSessionDep,
-    _current_user: MerchantCReadDep,
+    _current_user: MerchantDuplicateReadDep,
 ) -> MerchantDuplicateCheckResponse:
     """门店查重提示（只提示不阻断）."""
     return MerchantStoreService(db).check_duplicates(body)
@@ -251,7 +253,7 @@ def update_store_photos(
 def districts(
     request: Request,
     db: DbSessionDep,
-    _current_user: MerchantCReadDep,
+    _current_user: MerchantDirectoryReadDep,
 ) -> MerchantDistrictListResponse:
     """区域候选（REQ-IT1-04：门店建档从列表选择，避免手填错误）."""
     return MerchantDistrictListResponse(items=MerchantStoreService(db).districts())
@@ -262,7 +264,7 @@ def districts(
 def business_circles(
     request: Request,
     db: DbSessionDep,
-    _current_user: MerchantCReadDep,
+    _current_user: MerchantDirectoryReadDep,
     district: Annotated[str | None, Query(description="区县")] = None,
 ) -> MerchantBusinessCircleResponse:
     """商圈候选."""

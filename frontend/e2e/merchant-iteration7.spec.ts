@@ -20,7 +20,7 @@ import { createApiContext, loginPage } from "./helpers/auth";
 test.describe.configure({ mode: "serial", timeout: 120_000 });
 
 const BACKEND = path.resolve(__dirname, "../../backend");
-const DESIGN = path.resolve(__dirname, "../../designs/admin-merchant-brokers");
+const DESIGN = path.resolve(__dirname, "../../docs/design/admin-merchant-brokers");
 const MARK = `E2EIT7${Date.now()}`;
 const PHONE = `138${MARK.slice(-8)}`;
 

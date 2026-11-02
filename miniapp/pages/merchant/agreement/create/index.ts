@@ -67,7 +67,9 @@ Page({
   },
 
   onLoad(options: Record<string, string | undefined>) {
-    void this.load(options.store_id || "");
+    const storeId = options.store_id || "";
+    this.setData({ storeId });
+    void this.load(storeId);
   },
 
   // 从登录页返回后自恢复，避免用户停在「请先登录」
@@ -109,7 +111,7 @@ Page({
       }
     } catch (err) {
       const statusCode = (err as { statusCode?: number }).statusCode;
-      if (statusCode === 401 || statusCode === 403) {
+      if (statusCode === 401) {
         this.setData({ state: "needLogin" });
         return;
       }
@@ -118,7 +120,7 @@ Page({
   },
 
   onGoLogin() {
-    wx.navigateTo({ url: "/pages/login/index/index" });
+    wx.navigateTo({ url: "/pages/login/index/index?from=merchant" });
   },
 
   onRetry() {

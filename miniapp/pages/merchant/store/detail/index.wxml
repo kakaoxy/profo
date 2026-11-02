@@ -190,7 +190,13 @@
     <input class="input" placeholder="变更原因（必填）" placeholder-class="ph" value="{{statusReason}}" bindinput="onStatusReason" />
     <view class="modal-actions">
       <view class="mbtn" hover-class="hoverable" bindtap="onCloseStatus">取消</view>
-      <view class="mbtn mbtn--ink" hover-class="hoverable" bindtap="onSubmitStatus">确认变更</view>
+      <button
+        class="mbtn mbtn--ink"
+        hover-class="hoverable"
+        loading="{{statusSubmitting}}"
+        disabled="{{statusSubmitting}}"
+        bindtap="onSubmitStatus"
+      >确认变更</button>
     </view>
   </view>
 </view>

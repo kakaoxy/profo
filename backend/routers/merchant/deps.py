@@ -7,9 +7,11 @@ from fastapi import Depends
 
 from dependencies.auth import (
     CurrentCEmployeeUserDep,
+    CurrentUserDep,
     DbSessionDep,
     has_permission,
 )
+from models.merchant.broker import MerchantBroker
 from models.user.user import User
 from services.system.exceptions import PermissionDeniedError
 
@@ -39,6 +41,24 @@ def _two_permission_checker(first: str, second: str) -> Callable[..., User]:
     return checker
 
 
+def _directory_reader(user: CurrentUserDep) -> User:
+    """区域/商圈等公开字典：任意已登录 C 端用户可读（经纪人建店也需要）."""
+    return user
+
+
+def _duplicate_reader(user: CurrentUserDep, db: DbSessionDep) -> User:
+    """门店查重：员工需 merchant:read，已认证经纪人也可使用（仅用于建店前风险提示）."""
+    if has_permission(user, "merchant:read", db):
+        return user
+    broker = db.query(MerchantBroker.id).filter(MerchantBroker.user_id == str(user.id)).first()
+    if broker is None:
+        msg = "仅门店员工或已认证经纪人可使用门店查重"
+        raise PermissionDeniedError(msg)
+    return user
+
+
+MerchantDirectoryReadDep = Annotated[User, Depends(_directory_reader)]
+MerchantDuplicateReadDep = Annotated[User, Depends(_duplicate_reader)]
 MerchantCReadDep = Annotated[User, Depends(_checker("merchant:read"))]
 MerchantCWriteDep = Annotated[User, Depends(_checker("merchant:write"))]
 MerchantCVisitDep = Annotated[User, Depends(_checker("merchant:visit"))]
@@ -51,4 +71,6 @@ __all__ = [
     "MerchantCVisitDep",
     "MerchantCWriteDep",
     "MerchantCWriteVisitDep",
+    "MerchantDirectoryReadDep",
+    "MerchantDuplicateReadDep",
 ]

@@ -175,12 +175,21 @@ class MerchantAgreementService:
                 privileged=privileged,
             )
             subject_name = store.store_name
-            company = self.db.query(MerchantCompany).filter(MerchantCompany.id == store.company_id).first()
+            company = (
+                self.db.query(MerchantCompany)
+                .filter(MerchantCompany.id == store.company_id, MerchantCompany.deleted_at.is_(None))
+                .first()
+            )
         else:
             if not privileged:
                 msg = "仅管理员/运营可发起公司主体协议"
                 raise PermissionDeniedError(msg)
-            company = self.db.query(MerchantCompany).filter(MerchantCompany.id == req.company_id).first()
+            company = (
+                self.db.query(MerchantCompany)
+                .filter(MerchantCompany.id == req.company_id, MerchantCompany.deleted_at.is_(None))
+                .with_for_update()
+                .first()
+            )
             if company is None:
                 msg = "公司不存在"
                 raise ResourceNotFoundError(msg)
@@ -450,6 +459,16 @@ class MerchantAgreementService:
         if parent.status == STATUS_VOIDED:
             msg = "原协议已作废，不能新增补充协议"
             raise ValidationError(msg)
+        if parent.company_id:
+            company = (
+                self.db.query(MerchantCompany)
+                .filter(MerchantCompany.id == parent.company_id, MerchantCompany.deleted_at.is_(None))
+                .with_for_update()
+                .first()
+            )
+            if company is None:
+                msg = "公司已删除，不能新增补充协议"
+                raise ValidationError(msg)
         self._ensure_visible(user, parent)
         child = MerchantAgreement(
             store_id=parent.store_id,
