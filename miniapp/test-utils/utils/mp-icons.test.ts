@@ -5,8 +5,24 @@ import { MP_ICONS } from "../../utils/mp-icons";
 const DATA_URI = /^data:image\/svg\+xml;base64,/;
 
 function decode(value: string): string {
-  // 图标 SVG 全是 ASCII，atob 足够；不引 @types/node
-  return atob(value.replace(DATA_URI, ""));
+  // 与 utils/token.ts 保持一致：小程序运行时没有 atob/btoa，手写 base64 解码（图标 SVG 全是 ASCII）
+  const b64 = value.replace(DATA_URI, "");
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  let binary = "";
+  let buffer = 0;
+  let bits = 0;
+  for (const ch of b64) {
+    if (ch === "=") break;
+    const val = chars.indexOf(ch);
+    if (val === -1) continue;
+    buffer = (buffer << 6) | val;
+    bits += 6;
+    if (bits >= 8) {
+      bits -= 8;
+      binary += String.fromCharCode((buffer >> bits) & 0xff);
+    }
+  }
+  return binary;
 }
 
 /**
