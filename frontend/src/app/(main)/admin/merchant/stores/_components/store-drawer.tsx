@@ -148,9 +148,10 @@ export function StoreDrawer({
 
   const ownerName = useMemo(() => {
     if (!store?.owner_employee_id) return "—";
+    if (store.owner_employee_name) return store.owner_employee_name;
     const employee = employees.find((item) => item.id === store.owner_employee_id);
     return employee ? employee.nickname || employee.username : store.owner_employee_id;
-  }, [store?.owner_employee_id, employees]);
+  }, [store?.owner_employee_id, store?.owner_employee_name, employees]);
 
   const save = async () => {
     if (!store || !form) return;

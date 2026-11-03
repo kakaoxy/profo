@@ -313,11 +313,16 @@ class MerchantBrokerService:
         store = self.db.query(MerchantStore).filter(MerchantStore.id == broker.store_id).first()
         if store is None or store.is_deleted:
             return None
+        owner = (
+            self.db.query(User).filter(User.id == store.owner_employee_id).first() if store.owner_employee_id else None
+        )
         return broker_my_store(
             store,
             cooperation_label_map(self.db),
             bind_status=broker.bind_status,
             bound_at=broker.bound_at,
+            owner_employee_name=(owner.nickname or owner.username) if owner is not None else None,
+            owner_employee_phone=owner.phone if owner is not None else None,
         )
 
     def bind_initial(
@@ -831,8 +836,12 @@ class MerchantBrokerService:
         total = query.count()
         rows = query.order_by(MerchantBroker.updated_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
         store_rows = {
-            row.id: row.store_name
-            for row in self.db.query(MerchantStore.id, MerchantStore.store_name)
+            row.id: (row.store_name, row.owner_employee_id)
+            for row in self.db.query(
+                MerchantStore.id,
+                MerchantStore.store_name,
+                MerchantStore.owner_employee_id,
+            )
             .filter(MerchantStore.id.in_([b.store_id for b in rows if b.store_id]))
             .all()
         }
@@ -851,15 +860,19 @@ class MerchantBrokerService:
             .all()
         }
         inviter_id_by_broker = {b.id: b.inviter_employee_id or binding_inviter_ids.get(b.id) for b in rows}
-        inviter_names = self._user_display_names([user_id for user_id in inviter_id_by_broker.values() if user_id])
+        owner_id_by_broker = {b.id: store_rows.get(b.store_id, (None, None))[1] if b.store_id else None for b in rows}
+        user_names = self._user_display_names(
+            [user_id for user_id in list(inviter_id_by_broker.values()) + list(owner_id_by_broker.values()) if user_id]
+        )
         lead_counts = self._recommendation_counts([b.id for b in rows])
         return BrokerListResponse(
             items=[
                 broker_list_item(
                     broker,
-                    store_name=store_rows.get(broker.store_id) if broker.store_id else None,
+                    store_name=store_rows.get(broker.store_id, (None, None))[0] if broker.store_id else None,
                     recommendation_count=lead_counts.get(broker.id, 0),
-                    inviter_name=inviter_names.get(inviter_id_by_broker.get(broker.id) or ""),
+                    inviter_name=user_names.get(inviter_id_by_broker.get(broker.id) or ""),
+                    owner_employee_name=user_names.get(owner_id_by_broker.get(broker.id) or ""),
                 )
                 for broker in rows
             ],
@@ -1315,9 +1328,14 @@ class MerchantBrokerService:
 
     def _response(self, broker: MerchantBroker) -> BrokerResponse:
         store_name = None
+        owner_employee_name = None
         if broker.store_id:
             store = self.db.query(MerchantStore).filter(MerchantStore.id == broker.store_id).first()
             store_name = store.store_name if store is not None else None
+            if store is not None and store.owner_employee_id:
+                owner = self.db.query(User).filter(User.id == store.owner_employee_id).first()
+                if owner is not None:
+                    owner_employee_name = owner.nickname or owner.username
         inviter_id = broker.inviter_employee_id
         if not inviter_id:
             binding = (
@@ -1335,7 +1353,12 @@ class MerchantBrokerService:
             inviter = self.db.query(User).filter(User.id == inviter_id).first()
             if inviter is not None:
                 inviter_name = inviter.nickname or inviter.username
-        return broker_response(broker, store_name=store_name, inviter_name=inviter_name)
+        return broker_response(
+            broker,
+            store_name=store_name,
+            inviter_name=inviter_name,
+            owner_employee_name=owner_employee_name,
+        )
 
     def _user_display_names(self, user_ids: list[str]) -> dict[str, str]:
         """批量取用户展示名（昵称优先，回退用户名），用于经纪人邀请人展示."""

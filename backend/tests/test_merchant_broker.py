@@ -336,6 +336,53 @@ def test_bind_by_scanned_qrcode_records_qrcode_source(
     assert me.json()["inviter_employee_name"] == (employee.nickname or employee.username)
 
 
+def test_my_store_exposes_owner_contact_phone(
+    admin_client: TestClient,
+    broker_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """经纪人「我的门店」返回对接人姓名与电话，供直接拨打（REQ-IT7-14）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    _register(broker_client, name=f"对接电话经纪人{uuid.uuid4().hex[:4]}")
+    broker_client.post(f"{API}/public/merchant/brokers/me/bind", json={"store_id": store["id"]})
+
+    resp = broker_client.get(f"{API}/public/merchant/brokers/me/store")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["owner_employee_name"] == (employee.nickname or employee.username)
+    assert body["owner_employee_phone"] == employee.phone
+
+
+def test_broker_list_and_store_detail_show_owner_employee(
+    admin_client: TestClient,
+    broker_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """经纪人列表/详情与门店详情展示对接人（门店负责人）姓名（REQ-IT7-13）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], owner_employee_id=employee.id)
+    name = f"对接人经纪人{uuid.uuid4().hex[:4]}"
+    _register(broker_client, name=name)
+    broker_client.post(f"{API}/public/merchant/brokers/me/bind", json={"store_id": store["id"]})
+
+    expected = employee.nickname or employee.username
+    listed = admin_client.get(f"{API}/admin/merchant/brokers", params={"keyword": name})
+    assert listed.status_code == 200, listed.text
+    item = listed.json()["items"][0]
+    assert item["owner_employee_name"] == expected
+
+    detail = admin_client.get(f"{API}/admin/merchant/brokers/{item['id']}")
+    assert detail.status_code == 200
+    assert detail.json()["owner_employee_name"] == expected
+
+    store_detail = admin_client.get(f"{API}/admin/merchant/stores/{store['id']}")
+    assert store_detail.status_code == 200
+    assert store_detail.json()["owner_employee_name"] == expected
+
+
 def test_change_binding_requires_approval(
     broker_client: TestClient,
     admin_client: TestClient,

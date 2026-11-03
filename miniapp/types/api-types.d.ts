@@ -10517,6 +10517,8 @@ export interface components {
             store_id: string | null;
             /** Store Name */
             store_name: string | null;
+            /** Owner Employee Name */
+            owner_employee_name?: string | null;
             /** Bind Status */
             bind_status: string;
             /** Source */
@@ -10582,6 +10584,13 @@ export interface components {
             bind_status: string;
             /** Bound At */
             bound_at: string | null;
+            /** Owner Employee Name */
+            owner_employee_name?: string | null;
+            /**
+             * Owner Employee Phone
+             * @description 对接人（门店负责人）联系电话，供经纪人在经纪人中心直接拨打
+             */
+            owner_employee_phone?: string | null;
         };
         /**
          * BrokerOption
@@ -10695,6 +10704,8 @@ export interface components {
             store_id: string | null;
             /** Store Name */
             store_name: string | null;
+            /** Owner Employee Name */
+            owner_employee_name?: string | null;
             /** Bind Status */
             bind_status: string;
             /** Source */
@@ -17399,6 +17410,8 @@ export interface components {
             source: string;
             /** Owner Employee Id */
             owner_employee_id: string | null;
+            /** Owner Employee Name */
+            owner_employee_name?: string | null;
             /** Last Visit At */
             last_visit_at: string | null;
             /** Status */

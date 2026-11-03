@@ -17,6 +17,8 @@ import { createApiContext, loginPage } from "./helpers/auth";
  * - REQ-IT7-10 经纪人推荐记录：点击跳转评估详情
  * - REQ-IT7-11 经纪人来源展示：source=self_apply 时按 bind_source 展示扫码/分享绑定
  * - REQ-IT7-12 经纪人邀请人展示：列表/抽屉展示邀请人姓名，串起 经纪人 → 门店 → 内部员工
+ * - REQ-IT7-13 对接人展示：经纪人/门店的列表与抽屉展示绑定门店的负责人（内部员工）
+ * - REQ-IT7-14 经纪人中心：移除绑定历史，底部展示对接人并支持一键拨号
  *
  * 串行执行：afterAll 按 MARK 清理本文件造的数据，并行会互相删除。
  */
@@ -618,6 +620,58 @@ test("REQ-IT7-11 经纪人列表来源正确展示扫码/分享绑定渠道", as
     "utf8",
   );
   expect(brokerIndexTs).toContain("qrcode_code: code");
+});
+
+test("REQ-IT7-13 经纪人列表/抽屉与门店列表/抽屉展示对接人（内部员工）", async () => {
+  const brokersDir = path.resolve(__dirname, "../src/app/(main)/admin/merchant/brokers");
+  const storePage = fs.readFileSync(
+    path.resolve(__dirname, "../src/app/(main)/admin/merchant/stores/page.tsx"),
+    "utf8",
+  );
+  const storeDrawer = fs.readFileSync(
+    path.resolve(__dirname, "../src/app/(main)/admin/merchant/stores/_components/store-drawer.tsx"),
+    "utf8",
+  );
+  const brokerPage = fs.readFileSync(path.join(brokersDir, "page.tsx"), "utf8");
+  const brokerDrawer = fs.readFileSync(
+    path.join(brokersDir, "_components/broker-detail-drawer.tsx"),
+    "utf8",
+  );
+
+  // 经纪人列表/抽屉：绑定门店的负责人即对接人
+  expect(brokerPage).toContain(">对接人<");
+  expect(brokerPage).toContain("item.owner_employee_name");
+  expect(brokerDrawer).toContain('对接人：{broker.owner_employee_name || "—"}');
+  // 门店列表/抽屉：负责人列与抽屉展示（优先使用接口返回的姓名）
+  expect(storePage).toContain("item.owner_employee_name");
+  expect(storeDrawer).toContain("store.owner_employee_name");
+});
+
+test("REQ-IT7-14 经纪人中心移除绑定历史，底部展示联系对接人并可拨号", async () => {
+  const pageDir = path.resolve(__dirname, "../../miniapp/pages/merchant/broker");
+  const pageTs = fs.readFileSync(path.join(pageDir, "index.ts"), "utf8");
+  const pageWxml = fs.readFileSync(path.join(pageDir, "index.wxml"), "utf8");
+
+  // 绑定历史整块移除
+  expect(pageWxml).not.toContain("绑定历史");
+  expect(pageTs).not.toContain("loadBindings");
+  expect(pageTs).not.toContain("BINDING_STATUS_LABELS");
+
+  // 推荐记录在前，联系对接人在页面最底部
+  const leadsIndex = pageWxml.indexOf("<!-- 我的推荐记录 -->");
+  const contactIndex = pageWxml.indexOf("<!-- 联系对接人");
+  expect(leadsIndex).toBeGreaterThan(-1);
+  expect(contactIndex).toBeGreaterThan(leadsIndex);
+  expect(pageWxml.trimEnd().split("</block>").length).toBeGreaterThan(1);
+
+  // 对接人姓名 + 电话 + 直接拨号
+  expect(pageWxml).toContain("联系对接人");
+  expect(pageWxml).toContain("{{myStore.owner_employee_name}}");
+  expect(pageWxml).toContain("{{myStore.owner_employee_phone}}");
+  expect(pageWxml).toContain('bindtap="onCallContact"');
+  expect(pageTs).toContain("onCallContact()");
+  expect(pageTs).toContain("wx.makePhoneCall({");
+  expect(pageTs).toContain("owner_employee_phone");
 });
 
 test.afterAll(() => {

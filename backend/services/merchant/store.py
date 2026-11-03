@@ -470,7 +470,12 @@ class MerchantStoreService:
         """门店详情（越权返回 403，不泄露是否存在）."""
         store = self._get_store(store_id)
         ensure_store_visible(self.db, user, store)
-        return store_response(store, cooperation_label_map(self.db))
+        owner_name = self._owner_employee_name(store.owner_employee_id)
+        return store_response(
+            store,
+            cooperation_label_map(self.db),
+            owner_employee_name=owner_name,
+        )
 
     def status_logs(self, user: User, store_id: str) -> list[MerchantStoreStatusLogResponse]:
         """门店合作状态变更时间线（倒序）."""
@@ -1068,7 +1073,11 @@ class MerchantStoreService:
             .count()
         )
         return MerchantStoreDetailResponse(
-            store=store_response(store, cooperation_label_map(self.db)),
+            store=store_response(
+                store,
+                cooperation_label_map(self.db),
+                owner_employee_name=owner_employee_name,
+            ),
             created_by_broker_name=created_by_broker_name,
             inviter_employee_name=inviter_employee_name,
             merged_to_store_name=merged_to_store_name,
@@ -1352,6 +1361,13 @@ class MerchantStoreService:
         return deduped[:30]
 
     # -------------------- 内部辅助 --------------------
+    def _owner_employee_name(self, owner_employee_id: str | None) -> str | None:
+        """取负责员工展示名（昵称优先，回退用户名）."""
+        if not owner_employee_id:
+            return None
+        owner = self.db.query(User).filter(User.id == owner_employee_id).first()
+        return (owner.nickname or owner.username) if owner is not None else None
+
     def _get_store(self, store_id: str) -> MerchantStore:
         store = self.db.query(MerchantStore).filter(MerchantStore.id == store_id).first()
         if store is None or store.is_deleted:

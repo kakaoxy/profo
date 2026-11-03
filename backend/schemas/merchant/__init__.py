@@ -187,6 +187,7 @@ class MerchantStoreResponse(BaseModel):
     cooperation_status_label: str
     source: str
     owner_employee_id: str | None
+    owner_employee_name: str | None = None
     last_visit_at: datetime | None
     status: str
     review_status: str

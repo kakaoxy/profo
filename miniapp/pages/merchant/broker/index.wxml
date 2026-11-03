@@ -139,29 +139,6 @@
       </view>
     </view>
 
-    <!-- 绑定历史 -->
-    <view class="card">
-      <view class="rowhead">
-        <view class="card__title">绑定历史</view>
-        <text class="listhead__count tnum">{{bindings.length}} 条</text>
-      </view>
-      <view class="card__body">
-        <view class="hint" wx:if="{{bindingsLoading}}">绑定记录加载中…</view>
-        <view class="hint hint--warn" wx:elif="{{bindingsError}}">{{bindingsError}}</view>
-        <view class="empty" wx:elif="{{!bindings.length}}">还没有绑定记录</view>
-        <block wx:else>
-          <view class="entry" wx:for="{{bindings}}" wx:key="id">
-            <view class="entry__top">
-              <view class="entry__name">{{item.store_name}}</view>
-              <text class="entry__status">{{item.statusText}}</text>
-            </view>
-            <view class="hint tnum">{{item.timeText}}</view>
-            <view class="hint" wx:if="{{item.reason}}">原因：{{item.reason}}</view>
-          </view>
-        </block>
-      </view>
-    </view>
-
     <!-- 我的推荐记录 -->
     <view class="card">
       <view class="rowhead">
@@ -202,6 +179,26 @@
             </button>
           </view>
         </block>
+      </view>
+    </view>
+
+    <!-- 联系对接人（REQ-IT7-14，页面最底部） -->
+    <view class="card">
+      <view class="rowhead">
+        <view class="card__title">联系对接人</view>
+      </view>
+      <view class="card__body">
+        <view class="row" wx:if="{{myStore && myStore.owner_employee_name}}">
+          <view class="row__label">对接人</view>
+          <view class="row__value">{{myStore.owner_employee_name}}</view>
+        </view>
+        <view class="hint" wx:elif="{{myStore}}">该门店暂未分配对接人，请联系门店员工。</view>
+        <view class="hint" wx:else>绑定门店后，这里会显示你的对接人，可直接拨打电话。</view>
+        <view class="acts" wx:if="{{myStore && myStore.owner_employee_phone}}">
+          <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onCallContact">
+            拨打电话 {{myStore.owner_employee_phone}}
+          </button>
+        </view>
       </view>
     </view>
   </block>

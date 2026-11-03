@@ -61,7 +61,12 @@ def company_response(company: MerchantCompany) -> MerchantCompanyResponse:
     )
 
 
-def store_response(store: MerchantStore, labels: dict[str, str]) -> MerchantStoreResponse:
+def store_response(
+    store: MerchantStore,
+    labels: dict[str, str],
+    *,
+    owner_employee_name: str | None = None,
+) -> MerchantStoreResponse:
     """门店详情响应."""
     return MerchantStoreResponse(
         id=str(store.id),
@@ -82,6 +87,7 @@ def store_response(store: MerchantStore, labels: dict[str, str]) -> MerchantStor
         cooperation_status_label=labels.get(store.cooperation_status, store.cooperation_status),
         source=store.source,
         owner_employee_id=store.owner_employee_id,
+        owner_employee_name=owner_employee_name,
         last_visit_at=store.last_visit_at,
         status=store.status,
         review_status=store.review_status,
@@ -169,6 +175,7 @@ def broker_response(
     *,
     store_name: str | None = None,
     inviter_name: str | None = None,
+    owner_employee_name: str | None = None,
 ) -> BrokerResponse:
     """经纪人档案响应（手机号脱敏）."""
     return BrokerResponse(
@@ -178,6 +185,7 @@ def broker_response(
         phone_masked=mask_phone(broker.phone) or "",
         store_id=str(broker.store_id) if broker.store_id else None,
         store_name=store_name,
+        owner_employee_name=owner_employee_name,
         bind_status=broker.bind_status,
         source=broker.source,
         bind_source=broker.bind_source,
@@ -216,6 +224,8 @@ def broker_my_store(
     *,
     bind_status: str,
     bound_at: datetime | None,
+    owner_employee_name: str | None = None,
+    owner_employee_phone: str | None = None,
 ) -> BrokerMyStoreResponse:
     """经纪人“我的门店”响应（不暴露内部联系人/电话/拜访信息）."""
     return BrokerMyStoreResponse(
@@ -231,6 +241,8 @@ def broker_my_store(
         photos=store.photos or [],
         bind_status=bind_status,
         bound_at=bound_at,
+        owner_employee_name=owner_employee_name,
+        owner_employee_phone=owner_employee_phone,
     )
 
 
@@ -240,6 +252,7 @@ def broker_list_item(
     store_name: str | None,
     recommendation_count: int,
     inviter_name: str | None = None,
+    owner_employee_name: str | None = None,
 ) -> BrokerListItem:
     """后台经纪人列表项."""
     return BrokerListItem(
@@ -248,6 +261,7 @@ def broker_list_item(
         phone_masked=mask_phone(broker.phone) or "",
         store_id=str(broker.store_id) if broker.store_id else None,
         store_name=store_name,
+        owner_employee_name=owner_employee_name,
         bind_status=broker.bind_status,
         source=broker.source,
         bind_source=broker.bind_source,

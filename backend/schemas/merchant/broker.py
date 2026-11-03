@@ -103,6 +103,7 @@ class BrokerResponse(BaseModel):
     phone_masked: str
     store_id: str | None
     store_name: str | None
+    owner_employee_name: str | None = None
     bind_status: str
     source: str
     inviter_employee_id: str | None
@@ -131,6 +132,11 @@ class BrokerMyStoreResponse(BaseModel):
     photos: list[dict] = Field(default_factory=list)
     bind_status: str
     bound_at: datetime | None
+    owner_employee_name: str | None = None
+    owner_employee_phone: str | None = Field(
+        default=None,
+        description="对接人（门店负责人）联系电话，供经纪人在经纪人中心直接拨打",
+    )
 
 
 class BrokerCompanyOption(BaseModel):
@@ -240,6 +246,7 @@ class BrokerListItem(BaseModel):
     phone_masked: str
     store_id: str | None
     store_name: str | None
+    owner_employee_name: str | None = None
     bind_status: str
     source: str
     bind_source: str

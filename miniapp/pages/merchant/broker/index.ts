@@ -1,5 +1,5 @@
 /**
- * 经纪人中心（V04）：认证、我的门店、绑定/换绑/解绑、绑定历史、推荐记录.
+ * 经纪人中心（V04）：认证、我的门店、绑定/换绑/解绑、推荐记录、联系对接人.
  *
  * - 未认证：展示认证表单（手机号必须已在 C 端账号绑定）
  * - 已认证：展示档案、当前门店、操作入口与只读历史
@@ -8,7 +8,7 @@
  * 状态文案与色档统一走 utils/merchant-status.ts（M3 三档），
  * 请求错误文案统一走 utils/merchant-errors.ts，避免各页再各写一份兜底文案。
  *
- * 说明：本页同时承载「认证 / 我的门店 / 绑定与换绑 / 绑定历史 / 推荐记录」五块状态，
+ * 说明：本页同时承载「认证 / 我的门店 / 绑定与换绑 / 推荐记录 / 联系对接人」五块状态，
  * data 与方法都在同一 Page 对象内共享；拆成多文件会把页内状态变成跨文件隐式契约，
  * 维护成本高于单文件长度收益，故超过 500 行（REQ-IT7-08 时约 590 行）。
  */
@@ -34,14 +34,6 @@ type PublicUserInfo = components["schemas"]["PublicUserInfo"];
 type PageState = "loading" | "needLogin" | "register" | "profile" | "error";
 type StoreAction = "bind" | "change";
 
-interface DisplayBinding {
-  id: string;
-  store_name: string;
-  statusText: string;
-  timeText: string;
-  reason: string;
-}
-
 interface DisplayLead {
   id: string;
   community_name: string;
@@ -50,13 +42,6 @@ interface DisplayLead {
   createdText: string;
   followUps: { id: string; methodText: string; content: string; followedText: string }[];
 }
-
-const BINDING_STATUS_LABELS: Record<string, string> = {
-  active: "已生效",
-  pending: "待审核",
-  rejected: "已驳回",
-  unbound: "已解绑",
-};
 
 const LEAD_STATUS_LABELS: Record<string, string> = {
   pending_assessment: "待评估",
@@ -125,9 +110,6 @@ Page({
     storeLabel: "还没绑定门店",
     storeError: "",
     storeLoading: false,
-    bindings: [] as DisplayBinding[],
-    bindingsError: "",
-    bindingsLoading: false,
     leads: [] as DisplayLead[],
     leadsError: "",
     leadsLoading: false,
@@ -193,7 +175,7 @@ Page({
       try {
         const broker = await request<Broker>({ url: "/public/merchant/brokers/me" });
         this.setData({ state: "profile", broker });
-        await Promise.all([this.loadStore(), this.loadBindings(), this.loadLeads(1)]);
+        await Promise.all([this.loadStore(), this.loadLeads(1)]);
       } catch (err) {
         if (statusCodeOf(err) === 404) {
           this.setData({ state: "register" });
@@ -248,30 +230,6 @@ Page({
     }
   },
 
-  async loadBindings(): Promise<void> {
-    this.setData({ bindingsLoading: true });
-    try {
-      const rows = await request<Binding[]>({ url: "/public/merchant/brokers/me/bindings" });
-      this.setData({
-        bindings: rows.map((row) => ({
-          id: row.id,
-          store_name: row.store_name,
-          statusText: BINDING_STATUS_LABELS[row.status] || row.status,
-          timeText: formatDate(row.applied_at),
-          reason: row.reason || "",
-        })),
-        bindingsError: "",
-        bindingsLoading: false,
-      });
-    } catch (err) {
-      this.setData({
-        bindings: [],
-        bindingsError: describeRequestError(err, "绑定记录没加载出来"),
-        bindingsLoading: false,
-      });
-    }
-  },
-
   async loadLeads(page: number): Promise<void> {
     this.setData({ leadsLoading: true });
     try {
@@ -310,6 +268,21 @@ Page({
         wx.showToast({ title: message, icon: "none" });
       }
     }
+  },
+
+  /** 直接拨打对接人（门店负责人）电话（REQ-IT7-14）。 */
+  onCallContact() {
+    const phone = this.data.myStore?.owner_employee_phone || "";
+    if (!phone) {
+      wx.showToast({ title: "暂无对接人电话，请联系门店员工", icon: "none" });
+      return;
+    }
+    wx.makePhoneCall({
+      phoneNumber: phone,
+      fail: () => {
+        wx.showToast({ title: "拨号未完成，请稍后重试", icon: "none" });
+      },
+    });
   },
 
   /** 打开推荐线索的评估详情（REQ-IT7-10）。 */

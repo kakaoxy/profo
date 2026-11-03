@@ -138,6 +138,25 @@ cd backend && .venv/bin/ruff check services/merchant routers/merchant schemas/me
 | 权限边界 | 非创建人且非该线索归属经纪人的用户仍抛 `PermissionDeniedError("无权查看该线索")`（`LeadService.get_lead_detail`） | 通过（代码路径） |
 | 回归 | `npx playwright test e2e/merchant-iteration7.spec.ts` → **11 passed (12.4s)**；`cd miniapp && npx tsc --noEmit` 零错；`ruff check` 全绿 | 通过 |
 
+### 2.10d REQ-IT7-14 经纪人中心联系对接人验证（2026-11-03，m06615）
+
+| 项 | 命令/断言 | 结果 |
+|---|---|---|
+| 接口字段 | `BrokerMyStoreResponse` 增加 `owner_employee_name`/`owner_employee_phone`；`pytest tests/test_merchant_broker.py::test_my_store_exposes_owner_contact_phone` 断言与门店负责人一致 | **28 passed** |
+| 页面结构 | 经纪人中心 wxml 不再含「绑定历史」；`<!-- 我的推荐记录 -->` 位于 `<!-- 联系对接人` 之前；联系卡在页面最底部 | E2E 用例 14 源码断言 |
+| 拨号 | wxml 含 `{{myStore.owner_employee_name}}`/`{{myStore.owner_employee_phone}}`/`bindtap="onCallContact"`；ts 含 `wx.makePhoneCall({` 与无电话提示 | E2E 用例 14 源码断言 |
+| 回归 | `npx playwright test e2e/merchant-iteration7.spec.ts` → **14 passed (12.6s)**；`tsc --noEmit` 零错；`ruff check` 全绿 | 通过 |
+
+### 2.10c REQ-IT7-13 经纪人与门店对接人展示验证（2026-11-03，m06520）
+
+| 项 | 命令/断言 | 结果 |
+|---|---|---|
+| 接口字段 | `BrokerListItem`/`BrokerResponse`/`MerchantStoreResponse` 增加 `owner_employee_name`；`pytest tests/test_merchant_broker.py::test_broker_list_and_store_detail_show_owner_employee` 断言经纪人列表/详情与门店详情均返回负责员工姓名 | **27 passed** |
+| 经纪人 UI | `brokers/page.tsx` 新增「对接人」列（`item.owner_employee_name`）；`broker-detail-drawer.tsx` 绑定信息卡展示「对接人：{name}」 | E2E 用例 13 源码断言 |
+| 门店 UI | `stores/page.tsx` 负责人列使用 `item.owner_employee_name`；`store-drawer.tsx` 优先使用 `store.owner_employee_name`，回退员工列表匹配 | E2E 用例 13 源码断言 |
+| 导出 | 经纪人 CSV 增加「对接人」列 | 代码审查 |
+| 回归 | `npx playwright test e2e/merchant-iteration7.spec.ts` → **13 passed (11.6s)**；`tsc --noEmit` 零错；`ruff check` 全绿 | 通过 |
+
 ### 2.10b REQ-IT7-12 经纪人邀请人全链路展示验证（2026-11-03，m06394）
 
 | 项 | 命令/断言 | 结果 |
