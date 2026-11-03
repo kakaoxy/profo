@@ -482,6 +482,8 @@ test("REQ-IT7-09 门店邀请二维码：主包落地页 + 冷/热启动都能�
   // 二维码落地页在主包，避免分包页面冷启动 scene 丢失
   expect(qrService).toContain('QR_PAGE = "pages/merchant-invite/index"');
   expect(qrService).toContain("env_version=env_version");
+  // scene 必须是 code= 前缀，落地页 parseSceneCode 才能识别（裸码兼容见下方单测）
+  expect(qrService).toContain('f"code={token.code}"');
 
   // REQ-IT7-09：按当前运行版本生成小程序码（develop/trial/release），
   // 否则开发/体验阶段扫码会打开正式版，正式版没有新落地页时「没有任何反应」
@@ -504,7 +506,7 @@ test("REQ-IT7-09 门店邀请二维码：主包落地页 + 冷/热启动都能�
   expect(homeTs).toMatch(/onShow\(\)[\s\S]{0,400}getEnterOptionsSync/);
 
   // 经纪人页也可直接接收 scene（分享路径 / 未来改 page 不影响）
-  expect(brokerTs).toContain("parseSceneCode");
+  expect(brokerTs).toContain("extractStoreQrCode");
   expect(brokerTs).toContain("options.scene");
 
   // 接口契约：生成的小程序码指向主包落地页，短码可解析回同一门店

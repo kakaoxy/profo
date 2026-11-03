@@ -227,7 +227,7 @@ def broker_my_store(
     owner_employee_name: str | None = None,
     owner_employee_phone: str | None = None,
 ) -> BrokerMyStoreResponse:
-    """经纪人“我的门店”响应（不暴露内部联系人/电话/拜访信息）."""
+    """经纪人“我的门店”响应（含对接人姓名/电话，不含拜访等内部信息）."""
     return BrokerMyStoreResponse(
         id=str(store.id),
         store_name=store.store_name,

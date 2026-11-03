@@ -82,8 +82,8 @@ function parseSceneCode(scene: string): string {
   if (pair) {
     return pair.slice("code=".length);
   }
-  // 裸短码：无 "=" 且不含路径分隔符
-  return scene.includes("=") || scene.includes("/") ? "" : scene;
+  // 裸短码：门店邀请码为 8-64 位 URL-safe 字符串，避免把其他 scene 误判为邀请码
+  return /^[A-Za-z0-9_-]{8,64}$/.test(scene) ? scene : "";
 }
 
 /** 已处理过的扫码短码：避免 onShow 反复跳转同一张码（REQ-IT7-09）. */

@@ -785,6 +785,14 @@ def test_my_recommended_leads_with_followups(
     assert detail.status_code == 200, detail.text
     assert detail.json()["community_name"] == "经纪人推荐小区"
 
+    # 安全回归：停用后即使仍是该线索的 broker_id，也不得继续读取详情
+    session.query(MerchantBroker).filter(MerchantBroker.id == broker["id"]).update(
+        {"bind_status": MerchantBindStatus.DISABLED.value}
+    )
+    session.commit()
+    denied = broker_client.get(f"{API}/public/leads/{lead.id}")
+    assert denied.status_code == 403, denied.text
+
 
 pytestmark = pytest.mark.usefixtures("seeded_db")
 

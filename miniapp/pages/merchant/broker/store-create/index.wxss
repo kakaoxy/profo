@@ -14,7 +14,7 @@
 /* REQ-IT7-07：搜索状态行（加载中 / 错误 / 无结果），文字随表单次要信息层级 */
 .company-status {
   margin-top: 16rpx;
-  font-size: 25rpx;
+  font-size: var(--mp-caption);
   line-height: 1.6;
   color: var(--graphite);
 }

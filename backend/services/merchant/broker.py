@@ -1269,7 +1269,7 @@ class MerchantBrokerService:
             msg = "门店不存在"
             raise ResourceNotFoundError(msg)
         ensure_store_visible(self.db, user, store)
-        return [self._response(row) for row in self.effective_brokers_for_store(store_id)]
+        return self._response_many(self.effective_brokers_for_store(store_id))
 
     def search_active_brokers(self, keyword: str, *, limit: int = 20) -> list[BrokerResponse]:
         """按姓名/手机号哈希搜索启用经纪人（未选门店时的线索归属入口）."""
@@ -1289,7 +1289,7 @@ class MerchantBrokerService:
             .limit(limit)
             .all()
         )
-        return [self._response(row) for row in rows]
+        return self._response_many(rows)
 
     def effective_brokers_for_store(self, store_id: str) -> list[MerchantBroker]:
         """门店当前有效绑定且未停用的经纪人（V06/V07/V08 消费）."""
@@ -1359,6 +1359,55 @@ class MerchantBrokerService:
             inviter_name=inviter_name,
             owner_employee_name=owner_employee_name,
         )
+
+    def _response_many(self, brokers: list[MerchantBroker]) -> list[BrokerResponse]:
+        """批量构造经纪人响应，避免列表循环内逐条查门店/用户（N+1）."""
+        if not brokers:
+            return []
+        store_ids = {broker.store_id for broker in brokers if broker.store_id}
+        store_map: dict[str, tuple[str, str | None]] = {}
+        if store_ids:
+            store_rows = (
+                self.db.query(MerchantStore.id, MerchantStore.store_name, MerchantStore.owner_employee_id)
+                .filter(MerchantStore.id.in_(store_ids))
+                .all()
+            )
+            store_map = {row.id: (row.store_name, row.owner_employee_id) for row in store_rows}
+
+        binding_inviter: dict[str, str] = {}
+        broker_ids = [broker.id for broker in brokers if not broker.inviter_employee_id]
+        if broker_ids:
+            binding_rows = (
+                self.db.query(MerchantBrokerBinding.broker_id, MerchantBrokerBinding.inviter_employee_id)
+                .filter(
+                    MerchantBrokerBinding.broker_id.in_(broker_ids),
+                    MerchantBrokerBinding.status == MerchantBindingRecordStatus.ACTIVE.value,
+                )
+                .order_by(MerchantBrokerBinding.applied_at.desc())
+                .all()
+            )
+            for row in binding_rows:
+                if row.inviter_employee_id:
+                    binding_inviter.setdefault(row.broker_id, row.inviter_employee_id)
+
+        inviter_ids = {broker.inviter_employee_id for broker in brokers if broker.inviter_employee_id}
+        inviter_ids.update(binding_inviter.values())
+        owner_ids = {owner_id for _, owner_id in store_map.values() if owner_id}
+        display_names = self._user_display_names(list(inviter_ids | owner_ids))
+
+        responses: list[BrokerResponse] = []
+        for broker in brokers:
+            store_name, owner_employee_id = store_map.get(broker.store_id, (None, None))
+            inviter_id = broker.inviter_employee_id or binding_inviter.get(broker.id)
+            responses.append(
+                broker_response(
+                    broker,
+                    store_name=store_name,
+                    inviter_name=display_names.get(inviter_id) if inviter_id else None,
+                    owner_employee_name=display_names.get(owner_employee_id) if owner_employee_id else None,
+                )
+            )
+        return responses
 
     def _user_display_names(self, user_ids: list[str]) -> dict[str, str]:
         """批量取用户展示名（昵称优先，回退用户名），用于经纪人邀请人展示."""

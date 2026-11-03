@@ -197,17 +197,24 @@ export function buildShareEventPayload(
 /**
  * 从 getwxacodeunlimit 的 scene 场景值中提取短码.
  *
- * 后端生成 scene 为键值对格式 `code=xxxxxxxx`（见 services/recruit/qrcode.py），
- * 微信扫码进入时 onLoad 收到的 options.scene 为其 URL 编码形式，解码后不能直接当短码使用。
+ * 兼容两种后端写法：
+ * - 键值对格式 `code=xxxxxxxx`（见 services/recruit/qrcode.py）
+ * - 裸短码（见 services/merchant/broker_qr.py 的门店邀请码）
+ * 微信扫码进入时 onLoad 收到的 options.scene 为 URL 编码形式，解码后再解析：
+ * 招聘分享为 `code=xxxxxxxx` 键值对，门店邀请码为裸短码。
  * 兼容带路径前缀的形态（如 `pages/xxx?code=xxx`）。小程序环境不支持 URL 构造器，用 split 解析。
  *
  * @param scene decodeURIComponent 之后的场景值
- * @returns 短码；无 code 键时返回空串
+ * @returns 短码；既无 code 键也不是合法裸码时返回空串
  */
 export function parseSceneCode(scene: string): string {
   const query = scene.includes("?") ? scene.slice(scene.indexOf("?") + 1) : scene;
   const pair = query.split("&").find((p) => p.startsWith("code="));
-  return pair ? pair.slice("code=".length) : "";
+  if (pair) {
+    return pair.slice("code=".length);
+  }
+  // 门店邀请码直接把裸短码作为 scene（无 code= 前缀），此处保持兼容。
+  return /^[A-Za-z0-9_-]{8,64}$/.test(scene) ? scene : "";
 }
 
 /**

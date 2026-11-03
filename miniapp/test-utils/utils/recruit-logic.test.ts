@@ -190,6 +190,10 @@ describe("parseSceneCode", () => {
     expect(parseSceneCode("pages/recruit/detail/index?code=ab12cd34")).toBe("ab12cd34");
   });
 
+  it("兼容门店邀请码的裸短码 scene", () => {
+    expect(parseSceneCode("Ab12cd34_xy-Z")).toBe("Ab12cd34_xy-Z");
+  });
+
   it("无 code 键时返回空串", () => {
     expect(parseSceneCode("ch=print")).toBe("");
     expect(parseSceneCode("")).toBe("");

@@ -8,13 +8,13 @@
  */
 import { parseSceneCode } from "../../utils/recruit-logic";
 
-/** 已处理的短码：onLoad 与 onShow 都会执行，避免重复跳转同一条码. */
-let lastHandledCode = "";
-
 Page({
   data: {
     state: "loading" as "loading" | "error",
     errorText: "",
+    // 页面实例内去重：避免 onLoad/onShow 对同一短码重复跳转；
+    // 不能用模块级变量，否则退出后再次扫同一张码会永远停在 loading。
+    handledCode: "",
   },
 
   onLoad(options: Record<string, string | undefined>) {
@@ -37,11 +37,20 @@ Page({
       });
       return;
     }
-    if (code === lastHandledCode) {
+    if (code === this.data.handledCode) {
       return;
     }
-    lastHandledCode = code;
+    this.setData({ handledCode: code });
     const referrer = options.referrer ? `&referrer=${encodeURIComponent(options.referrer)}` : "";
-    wx.redirectTo({ url: `/pages/merchant/broker/index?code=${encodeURIComponent(code)}${referrer}` });
+    wx.redirectTo({
+      url: `/pages/merchant/broker/index?code=${encodeURIComponent(code)}${referrer}`,
+      fail: () => {
+        this.setData({
+          handledCode: "",
+          state: "error",
+          errorText: "打开门店邀请失败，请重新扫码",
+        });
+      },
+    });
   },
 });

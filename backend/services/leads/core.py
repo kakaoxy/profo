@@ -666,11 +666,16 @@ class LeadService:
         if not broker_id:
             return False
         # 局部导入避免 leads 与 merchant 域模块在启动期互相加载
+        from constants.merchant import MerchantBindStatus
         from models.merchant import MerchantBroker
 
         return (
             self.db.query(MerchantBroker.id)
-            .filter(MerchantBroker.id == broker_id, MerchantBroker.user_id == user_id)
+            .filter(
+                MerchantBroker.id == broker_id,
+                MerchantBroker.user_id == user_id,
+                MerchantBroker.bind_status != MerchantBindStatus.DISABLED.value,
+            )
             .first()
             is not None
         )
@@ -1182,7 +1187,7 @@ class LeadService:
 
         Raises:
             ResourceNotFoundError: 线索不存在/已软删除，或无任何评估记录
-            PermissionDeniedError: 既非创建人也非内部员工
+            PermissionDeniedError: 既非创建人、内部员工，也非该线索归属经纪人
             BusinessLogicError: 评估人未登记手机号
 
         """
@@ -1190,7 +1195,15 @@ class LeadService:
         if lead is None:
             msg = "线索不存在"
             raise ResourceNotFoundError(msg)
-        self._ensure_lead_visible_to(lead, user)
+        # 与详情接口保持一致：线索创建人、内部员工、线索归属经纪人可读取评估人联系方式；
+        # 仅单独放行该只读端点，不扩宽 _ensure_lead_visible_to（避免连带放开跟进写入）。
+        if (
+            lead.creator_id != user.id
+            and not self._has_internal_role(user)
+            and not self._is_lead_broker(lead.broker_id, user.id)
+        ):
+            msg = "无权访问该线索"
+            raise PermissionDeniedError(msg)
 
         rec = (
             self.db.query(LeadEvalHistory)

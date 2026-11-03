@@ -60,11 +60,17 @@ class MerchantBrokerQRCodeService:
 
         expires_at = datetime.now(timezone.utc) + timedelta(days=QR_EXPIRE_DAYS)
         token = self._create_token(store, str(user.id), expires_at)
-        image = WeChatAuthService.fetch_miniapp_unlimited_qrcode(
-            token.code,
-            page=QR_PAGE,
-            env_version=env_version,
-        )
+        try:
+            image = WeChatAuthService.fetch_miniapp_unlimited_qrcode(
+                f"code={token.code}",
+                page=QR_PAGE,
+                env_version=env_version,
+            )
+        except Exception:
+            # 微信调用失败时回滚已落库的 token，避免留下 7 天有效的孤儿二维码。
+            self.db.delete(token)
+            self.db.commit()
+            raise
         return BrokerQRCodeResponse(
             code=token.code,
             image_base64=base64.b64encode(image).decode("ascii"),

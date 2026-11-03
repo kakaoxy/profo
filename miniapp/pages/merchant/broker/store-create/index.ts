@@ -98,6 +98,13 @@ Page({
     }
   },
 
+  onUnload() {
+    const holder = this as unknown as { companyTimer?: number };
+    if (holder.companyTimer) {
+      clearTimeout(holder.companyTimer);
+    }
+  },
+
   /** 进页面：登录检查 + 区域字典（字典失败可重试，不让人对着空选择器填表）. */
   async loadPage(): Promise<void> {
     if (!getCAccessToken()) {

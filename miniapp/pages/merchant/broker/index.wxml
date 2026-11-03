@@ -161,7 +161,7 @@
             <view class="entry__top">
               <view class="entry__name">{{item.community_name}}</view>
               <text class="entry__status">{{item.statusText}}</text>
-              <text class="entry__arrow">›</text>
+              <image class="entry__arrow" src="{{icons.chevronRight}}" />
             </view>
             <view class="hint" wx:if="{{item.infoText}}">{{item.infoText}}</view>
             <view class="hint tnum">推荐时间 {{item.createdText}}</view>

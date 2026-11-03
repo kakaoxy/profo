@@ -16,7 +16,6 @@ import type { components } from "../../../types/api-types";
 import { describeRequestError } from "../../../utils/merchant-errors";
 import { storeStatusLabel, storeStatusTone, type StatusTone } from "../../../utils/merchant-status";
 import { MP_ICONS } from "../../../utils/mp-icons";
-import { parseSceneCode } from "../../../utils/recruit-logic";
 import { request } from "../../../utils/request";
 import { getCAccessToken } from "../../../utils/token";
 
@@ -71,11 +70,11 @@ function statusCodeOf(err: unknown): number | undefined {
   return (err as { statusCode?: number }).statusCode;
 }
 
-/** 从扫到的二维码内容里取出门店邀请短码（兼容纯短码、`path?code=xxx`、`path?scene=xxx` 与带参数的 URL）. */
+/** 从扫到的二维码内容里取出门店邀请短码（兼容纯短码、`code=xxx`、`path?code=xxx`、`path?scene=xxx` 与带参数的 URL）. */
 function extractStoreQrCode(raw: string): string {
   const text = (raw || "").trim();
   if (!text) return "";
-  const codeMatch = text.match(/[?&]code=([^&#]+)/);
+  const codeMatch = text.match(/(?:^|[?&])code=([^&#]+)/);
   if (codeMatch) return decodeURIComponent(codeMatch[1]);
   const sceneMatch = text.match(/[?&]scene=([^&#]+)/);
   if (sceneMatch) {
@@ -134,14 +133,14 @@ Page({
     icons: {
       check: MP_ICONS.check,
       chevronDown: MP_ICONS.chevronDown,
+      chevronRight: MP_ICONS.chevronRight,
     },
   },
 
   onLoad(options: Record<string, string | undefined>) {
     // 兼容两种进入方式：?code= 直接参数，或小程序码 scene（REQ-IT7-09）
     const rawScene = options.scene ? decodeURIComponent(options.scene) : "";
-    const code = options.code || parseSceneCode(rawScene);
-    (this as unknown as { qrCode: string }).qrCode = code;
+    const code = options.code || extractStoreQrCode(rawScene);
     this.setData({ qrCode: code, referrer: options.referrer || "" });
     this.load();
   },

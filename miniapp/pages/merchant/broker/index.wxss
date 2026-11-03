@@ -76,10 +76,10 @@
   cursor: pointer;
 }
 .entry__arrow {
+  width: 28rpx;
+  height: 28rpx;
   flex-shrink: 0;
-  font-size: 28rpx;
-  line-height: 1.2;
-  color: var(--dove);
+  align-self: center;
 }
 
 /* 推荐记录里的跟进：只用 .hint 语义，不再造一个圆角小卡 */
