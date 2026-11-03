@@ -17,12 +17,13 @@
 | REQ-IT7-06 换绑 / 新建门店关键词搜索 | 同文件 › REQ-IT7-05 换绑门店改为关键词搜索选择 | E2E（UI + 接口回读） |
 | REQ-IT7-07 经纪人建店页公司搜索反馈 | 同文件 › REQ-IT7-07 经纪人建店页公司搜索有可见反馈且接口可查 | E2E（源码三态断言 + C 端接口） |
 | REQ-IT7-08 经纪人绑定门店（扫码 / 搜索双路径） | 同文件 › REQ-IT7-08 经纪人绑定门店：扫码 + 搜索两条路径，搜索无结果可创建 | E2E（源码断言）+ 既有后端绑定用例 |
+| REQ-IT7-09 门店邀请二维码扫码无反应（主包落地页 + 冷/热启动） | 同文件 › REQ-IT7-09 门店邀请二维码：主包落地页 + 冷/热启动都能解析 scene | E2E（源码断言 + 生成/解析接口契约）+ 反向验证 |
 
 ## 2. 自动化命令与实测结果
 
 ```bash
 cd frontend && npx playwright test e2e/merchant-iteration7.spec.ts --reporter=list
-# 9 passed (11.6s)
+# 10 passed (12.2s)
 
 cd backend && .venv/bin/pytest tests/test_merchant_broker.py -q --no-cov
 # 24 passed
@@ -100,7 +101,7 @@ cd backend && .venv/bin/ruff check services/merchant routers/merchant schemas/me
 | 接口命中/空结果（REQ-IT7-07） | C 端令牌按 `${MARK}搜索目标` 查到新建公司；按 `${MARK}不存在的公司` 返回 `items: []` | 通过 |
 | 逻辑仿真（REQ-IT7-07） | Node 模拟 `wx.request`：`loadPage()` 后 `state=form`、`companies=1`、`companiesSearched=true`；请求失败时 `companiesLoading=false`、`companiesError` 写入具体网络原因 | 通过 |
 | 类型检查 | `cd miniapp && npx tsc --noEmit` | 零错 |
-| E2E 全量（本文件） | `npx playwright test e2e/merchant-iteration7.spec.ts --reporter=line` | **9 passed (11.5s)**（含 REQ-IT7-08） |
+| E2E 全量（本文件） | `npx playwright test e2e/merchant-iteration7.spec.ts --reporter=line` | **10 passed (12.2s)**（含 REQ-IT7-08/09） |
 
 ### 2.7 REQ-IT7-08 经纪人绑定门店双路径验证（2026-11-03，m05520）
 
@@ -111,7 +112,21 @@ cd backend && .venv/bin/ruff check services/merchant routers/merchant schemas/me
 | 扫码实现 | `index.ts` 含 `wx.scanCode`、`extractStoreQrCode`（兼容 `?scene=`/`?code=`/纯短码）、`/public/merchant/brokers/me/bind` | 通过 |
 | 认证页选店 / 扫码 | `index.wxml` 含「搜索门店（认证后绑定）」「扫码识别门店」；`onSubmitStore` 在 `state=register` 时写 `pendingStoreId/pendingStoreName`，`onRegister` 成功后调 `/brokers/me/bind`；`bindByQrCode` 在 `state=register` 时写 `qrCode/qrStoreName`，认证后由 `register` 自动绑定 | 通过（源码 + 既有 register / bind 用例） |
 | 类型检查 | `cd miniapp && npx tsc --noEmit` | 零错 |
-| E2E | `npx playwright test e2e/merchant-iteration7.spec.ts --reporter=line` | **9 passed (11.6s)** |
+| E2E | `npx playwright test e2e/merchant-iteration7.spec.ts --reporter=line` | **10 passed (12.2s)** |
+
+### 2.8 REQ-IT7-09 门店邀请二维码落地补修验证（2026-11-03，m05723）
+
+| 项 | 命令/断言 | 结果 |
+|---|---|---|
+| 后端生成/解析实测 | admin C 令牌 `POST /api/v1/public/merchant/stores/c10a8215-04f2-4020-97f7-e0ce463eea1a/broker-qrcode?env_version=develop` → 200，`page=pages/merchant-invite/index`、`env_version=develop`、`image_base64` 长度 117144；`GET /api/v1/public/merchant/broker-qrcodes/{code}` → `valid: true`、`store_id` 一致 | 通过 |
+| 主包落地页 | `miniapp/app.json` 主包 `pages` 含 `pages/merchant-invite/index`（且不在 `pages/merchant` 分包）；落地页 `onLoad` + `onShow` 均调用 `handleOptions`，用 `getEnterOptionsSync` 取 `scene/query` | 通过 |
+| 旧码兼容 / 直达解析 | `miniapp/pages/merchant/home/index.ts` 含 `extractSceneCode`、`lastHandledSceneCode`，`onShow` 内读 `getEnterOptionsSync`；`miniapp/pages/merchant/broker/index.ts` 含 `parseSceneCode` 与 `options.scene` | 通过 |
+| 真机扫码限制（m05978） | `miniapp/pages/merchant/broker/index.ts` 的 `wx.scanCode` **不传 `scanType`**（指定 `scanType:["qrCode"]` 时微信真机不识别小程序码；开发者工具相册上传不受限）；`onlyFromCamera:false` 保留相册能力 | 通过（源码断言；真机已能拉起扫码） |
+| 小程序码解析（m06044） | 扫本小程序小程序码时 `res.result` 为空或 `"*"`，scene 只在 `res.path`；回调改为 `for (const candidate of [res.path, res.result])` 逐个 `extractStoreQrCode`，两者兼容 | 通过（源码断言 + 真机待复测绑定） |
+| 版本兼容（env_version） | `backend/services/system/wechat.py` 的 `fetch_miniapp_unlimited_qrcode` 写入 `env_version` payload；`broker_qr.generate()` 透传；`POST /broker-qrcode` 支持 `env_version=release|trial|develop`；`miniapp/pages/merchant/store/detail/index.ts` 用 `wx.getAccountInfoSync().miniProgram.envVersion` 请求 | 通过（三种版本实测均 200） |
+| E2E 用例 10 | `npx playwright test e2e/merchant-iteration7.spec.ts` | **10 passed (11.9s)**（用例 10 含 `env_version=develop` 契约、主包落地页、旧码兼容、scanCode 无 scanType 断言） |
+| 反向验证 | 临时移除落地页 `onShow` → 用例 10 **1 failed**（`expect(inviteTs).toContain("getEnterOptionsSync")`）；恢复后通过 | 通过 |
+| 后端回归 | `cd backend && .venv/bin/pytest tests/test_merchant_broker.py tests/test_recruit.py tests/test_property_sheet.py -q --no-cov`；`ruff check .`；`cd miniapp && npx tsc --noEmit` | **129 passed**；All checks passed；零错 |
 
 ## 3. 设计稿验证（REQ-IT7-03）
 

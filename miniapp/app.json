@@ -24,7 +24,8 @@
     "pages/customers/mine/index",
     "pages/customers/detail/index",
     "pages/customers/rules/index",
-    "pages/key-share/index"
+    "pages/key-share/index",
+    "pages/merchant-invite/index"
   ],
   "subPackages": [
     {

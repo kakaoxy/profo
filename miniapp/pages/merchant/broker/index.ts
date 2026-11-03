@@ -16,6 +16,7 @@ import type { components } from "../../../types/api-types";
 import { describeRequestError } from "../../../utils/merchant-errors";
 import { storeStatusLabel, storeStatusTone, type StatusTone } from "../../../utils/merchant-status";
 import { MP_ICONS } from "../../../utils/mp-icons";
+import { parseSceneCode } from "../../../utils/recruit-logic";
 import { request } from "../../../utils/request";
 import { getCAccessToken } from "../../../utils/token";
 
@@ -155,8 +156,11 @@ Page({
   },
 
   onLoad(options: Record<string, string | undefined>) {
-    (this as unknown as { qrCode: string }).qrCode = options.code || "";
-    this.setData({ qrCode: options.code || "", referrer: options.referrer || "" });
+    // 兼容两种进入方式：?code= 直接参数，或小程序码 scene（REQ-IT7-09）
+    const rawScene = options.scene ? decodeURIComponent(options.scene) : "";
+    const code = options.code || parseSceneCode(rawScene);
+    (this as unknown as { qrCode: string }).qrCode = code;
+    this.setData({ qrCode: code, referrer: options.referrer || "" });
     this.load();
   },
 
@@ -491,11 +495,19 @@ Page({
 
   /** 扫码绑定：内部员工提供的门店二维码 → 解析门店 → 首次绑定免审生效（REQ-IT7-08）. */
   onScanBind(): void {
+    // REQ-IT7-09：不要传 scanType——指定 scanType 后微信不会识别「小程序码」，
+    // 真机相机对着邀请二维码会一直没有反应（开发者工具相册上传不受此限制）。
     wx.scanCode({
       onlyFromCamera: false,
-      scanType: ["qrCode"],
       success: (res) => {
-        const code = extractStoreQrCode(res.result || res.path || "");
+        // 扫「本小程序」的小程序码时微信只回传 path（如 pages/merchant-invite/index?scene=CODE），
+        // result 为空或固定为 "*"；普通二维码/相册上传时内容才在 result 里。两个字段都尝试解析。
+        let code = "";
+        for (const candidate of [res.path, res.result]) {
+          if (!candidate) continue;
+          code = extractStoreQrCode(candidate);
+          if (code) break;
+        }
         if (!code) {
           wx.showToast({ title: "这不是门店邀请二维码", icon: "none" });
           return;

@@ -20,7 +20,8 @@ from services.system.wechat import WeChatAuthService
 
 logger = logging.getLogger(__name__)
 
-QR_PAGE = "pages/merchant/home/index"
+# REQ-IT7-09：小程序码落地页放在主包，避免分包页面冷启动时 scene 透传丢失
+QR_PAGE = "pages/merchant-invite/index"
 QR_EXPIRE_DAYS = 7
 _CODE_BYTES = 8  # token_urlsafe(8) ≈ 11 字符，满足 scene ≤32
 
@@ -31,8 +32,18 @@ class MerchantBrokerQRCodeService:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def generate(self, user: User, store_id: str) -> BrokerQRCodeResponse:
-        """门店归属员工生成二维码（邀请经纪人扫码注册自动绑定）."""
+    def generate(
+        self,
+        user: User,
+        store_id: str,
+        *,
+        env_version: str = "release",
+    ) -> BrokerQRCodeResponse:
+        """门店归属员工生成二维码（邀请经纪人扫码注册自动绑定）.
+
+        env_version 决定扫码打开小程序哪个版本：开发/体验阶段应传 develop/trial，
+        否则默认 release 会打开正式版；正式版尚未发布新落地页时扫码会「无反应」。
+        """
         store = self.db.query(MerchantStore).filter(MerchantStore.id == store_id).first()
         if store is None or store.is_deleted:
             msg = "门店不存在"
@@ -49,12 +60,17 @@ class MerchantBrokerQRCodeService:
 
         expires_at = datetime.now(timezone.utc) + timedelta(days=QR_EXPIRE_DAYS)
         token = self._create_token(store, str(user.id), expires_at)
-        image = WeChatAuthService.fetch_miniapp_unlimited_qrcode(token.code, page=QR_PAGE)
+        image = WeChatAuthService.fetch_miniapp_unlimited_qrcode(
+            token.code,
+            page=QR_PAGE,
+            env_version=env_version,
+        )
         return BrokerQRCodeResponse(
             code=token.code,
             image_base64=base64.b64encode(image).decode("ascii"),
             expires_at=expires_at,
             page=QR_PAGE,
+            env_version=env_version,
         )
 
     def resolve(self, code: str) -> BrokerQRCodeResolveResponse:

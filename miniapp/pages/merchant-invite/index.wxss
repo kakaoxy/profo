@@ -1,0 +1,29 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  box-sizing: border-box;
+}
+
+.card {
+  width: 100%;
+  padding: 48rpx 40rpx;
+  border-radius: 48rpx;
+  background: var(--pure-white);
+  box-shadow: 0 0 0 1rpx rgba(23, 25, 28, 0.06), 0 40rpx 50rpx -10rpx rgba(0, 0, 0, 0.08);
+}
+
+.title {
+  font-size: 34rpx;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.hint {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  line-height: 1.6;
+  color: var(--graphite);
+}

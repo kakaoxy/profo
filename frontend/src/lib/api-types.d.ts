@@ -7688,6 +7688,9 @@ export interface paths {
         /**
          * 生成门店邀请二维码
          * @description 门店归属员工生成二维码，经纪人扫码注册后自动绑定.
+         *
+         *     REQ-IT7-09：开发/体验阶段必须传 env_version=develop/trial，否则扫码会打开
+         *     正式版，正式版尚无新落地页时表现为「没有任何反应」。
          */
         post: operations["generate_broker_qrcode_api_v1_public_merchant_stores__store_id__broker_qrcode_post"];
         delete?: never;
@@ -10627,6 +10630,8 @@ export interface components {
             expires_at: string;
             /** Page */
             page: string;
+            /** Env Version */
+            env_version: string;
         };
         /**
          * BrokerRegisterRequest
@@ -40433,7 +40438,10 @@ export interface operations {
     };
     generate_broker_qrcode_api_v1_public_merchant_stores__store_id__broker_qrcode_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description 扫码打开的小程序版本：release/trial/develop */
+                env_version?: "release" | "trial" | "develop";
+            };
             header?: never;
             path: {
                 /** @description 门店ID */

@@ -268,10 +268,18 @@ Page({
 
   async onInviteBroker(): Promise<void> {
     const storeId = (this as unknown as { storeId: string }).storeId;
+    // REQ-IT7-09：开发/体验阶段按当前运行版本生成小程序码；默认 release 会打开正式版，
+    // 正式版尚未发布新落地页时扫码会「没有任何反应」。
+    let envVersion = "release";
+    try {
+      envVersion = wx.getAccountInfoSync().miniProgram.envVersion || "release";
+    } catch (err) {
+      console.warn("获取小程序版本失败，按正式版生成二维码", err);
+    }
     wx.showLoading({ title: "生成中", mask: true });
     try {
       const qr = await request<BrokerQRCode>({
-        url: `/public/merchant/stores/${storeId}/broker-qrcode`,
+        url: `/public/merchant/stores/${storeId}/broker-qrcode?env_version=${envVersion}`,
         method: "POST",
       });
       this.setData({

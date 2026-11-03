@@ -86,6 +86,25 @@ function parseSceneCode(scene: string): string {
   return scene.includes("=") || scene.includes("/") ? "" : scene;
 }
 
+/** 已处理过的扫码短码：避免 onShow 反复跳转同一张码（REQ-IT7-09）. */
+let lastHandledSceneCode = "";
+
+/** 从页面 query / 小程序进入参数中提取邀请短码（REQ-IT7-09）. */
+function extractSceneCode(query: Record<string, string | undefined>): string {
+  const rawScene = query.scene ? decodeURIComponent(query.scene) : "";
+  return query.code || parseSceneCode(rawScene);
+}
+
+/** 跳转经纪人中心完成认证 / 绑定（REQ-M06-006 / REQ-IT7-09）. */
+function goBrokerBind(code: string, referrer?: string): void {
+  if (!code || code === lastHandledSceneCode) {
+    return;
+  }
+  lastHandledSceneCode = code;
+  const referrerQuery = referrer ? `&referrer=${encodeURIComponent(referrer)}` : "";
+  wx.redirectTo({ url: `/pages/merchant/broker/index?code=${encodeURIComponent(code)}${referrerQuery}` });
+}
+
 Page({
   data: {
     state: "loading" as PageState,
@@ -100,23 +119,23 @@ Page({
   },
 
   /**
-   * 扫码进入：门店邀请二维码的落地页就是本页（见后端 QR_PAGE）。
+   * 扫码进入：兼容旧版门店邀请二维码（旧版 QR_PAGE 指向本页）。
    *
-   * 小程序码把短码放在 scene（URL 编码，兼容 "code=xxx" 键值对形态），
-   * 解析到后直接转到经纪人中心完成认证 + 自动绑定（REQ-M06-006）。
+   * 新版二维码统一走主包落地页 pages/merchant-invite/index（REQ-IT7-09），
+   * 本页保留 scene 解析以兼容已打印/已保存的旧码：解析到短码后转到经纪人中心
+   * 完成认证 + 自动绑定（REQ-M06-006）。
    */
   onLoad(options: Record<string, string | undefined>) {
-    const rawScene = options.scene ? decodeURIComponent(options.scene) : "";
-    const code = options.code || parseSceneCode(rawScene);
-    if (!code) {
-      return;
-    }
-    // referrer（员工分享）随二维码一起透传，注册时用于归属（AC-024）
-    const referrer = options.referrer ? `&referrer=${encodeURIComponent(options.referrer)}` : "";
-    wx.redirectTo({ url: `/pages/merchant/broker/index?code=${encodeURIComponent(code)}${referrer}` });
+    // 冷启动扫码：scene 在页面 query 上（referrer 用于注册归属 AC-024）
+    goBrokerBind(extractSceneCode(options), options.referrer);
   },
 
   onShow() {
+    // 小程序已在运行时扫码只会触发 onShow，不会重新执行 onLoad（REQ-IT7-09）。
+    // getEnterOptionsSync 返回最近一次进入时的 scene/query，冷启动与热启动都可用。
+    const enter = wx.getEnterOptionsSync ? wx.getEnterOptionsSync() : wx.getLaunchOptionsSync();
+    const query = (enter.query || {}) as Record<string, string | undefined>;
+    goBrokerBind(extractSceneCode(query), query.referrer);
     void this.refreshLocationAndLoad();
   },
 

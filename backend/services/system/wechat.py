@@ -478,7 +478,11 @@ class WeChatAuthService:
         return dict(data.get("phone_info", {}))
 
     @staticmethod
-    def fetch_miniapp_unlimited_qrcode(scene: str, page: str | None = None) -> bytes:
+    def fetch_miniapp_unlimited_qrcode(
+        scene: str,
+        page: str | None = None,
+        env_version: str | None = None,
+    ) -> bytes:
         """生成小程序码（getwxacodeunlimit）.
 
         调用 wxa/getwxacodeunlimit 接口，需先获取小程序全局 access_token。
@@ -487,6 +491,7 @@ class WeChatAuthService:
         Args:
             scene: 场景值（≤32 字符，含短码 code）
             page: 小程序页面路径（可选，不传时默认跳转招募详情页）
+            env_version: 扫码打开的版本（release/trial/develop）；不传由微信默认 release
 
         Returns:
             图片 bytes（直接返回微信接口的二进制响应体）
@@ -503,6 +508,8 @@ class WeChatAuthService:
         }
         if page:
             payload["page"] = page
+        if env_version:
+            payload["env_version"] = env_version
         with httpx.Client(trust_env=False, timeout=_WECHAT_HTTP_TIMEOUT) as client:
             try:
                 response = client.post(settings.wechat_miniapp_qrcode_url, params=params, json=payload)

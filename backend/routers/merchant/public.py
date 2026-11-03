@@ -1,6 +1,6 @@
 """小程序员工侧商户路由（前缀 /public/merchant，C 端令牌 + 后台身份）."""
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Path, Query, Request, status
 
@@ -290,9 +290,21 @@ def generate_broker_qrcode(
     store_id: Annotated[str, Path(description="门店ID")],
     db: DbSessionDep,
     current_user: MerchantCWriteDep,
+    env_version: Annotated[
+        Literal["release", "trial", "develop"],
+        Query(description="扫码打开的小程序版本：release/trial/develop"),
+    ] = "release",
 ) -> BrokerQRCodeResponse:
-    """门店归属员工生成二维码，经纪人扫码注册后自动绑定."""
-    return MerchantBrokerQRCodeService(db).generate(current_user, store_id)
+    """门店归属员工生成二维码，经纪人扫码注册后自动绑定.
+
+    REQ-IT7-09：开发/体验阶段必须传 env_version=develop/trial，否则扫码会打开
+    正式版，正式版尚无新落地页时表现为「没有任何反应」。
+    """
+    return MerchantBrokerQRCodeService(db).generate(
+        current_user,
+        store_id,
+        env_version=env_version,
+    )
 
 
 @router.post("/brokers/register", summary="经纪人认证建档")

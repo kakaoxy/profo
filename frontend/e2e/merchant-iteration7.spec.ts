@@ -434,6 +434,11 @@ test("REQ-IT7-08 经纪人绑定门店：扫码 + 搜索两条路径，搜索无
   expect(wxml).toContain("搜索门店（认证后绑定）");
   expect(wxml).toContain('bindtap="onOpenBindForRegister"');
   expect(ts).toContain("onOpenBindForRegister");
+  // REQ-IT7-09：wx.scanCode 不能传 scanType，否则真机相机无法识别小程序码
+  expect(ts).toContain("wx.scanCode({");
+  expect(ts).not.toMatch(/scanType:\s*\[/);
+  // 扫本小程序小程序码时 result 为空或 "*"，path 才有 scene；两个字段都尝试解析
+  expect(ts).toContain("for (const candidate of [res.path, res.result])");
   expect(ts).toContain("pendingStoreId");
 
   // 搜索弹层：加载中 / 无结果 + 创建入口
@@ -451,6 +456,102 @@ test("REQ-IT7-08 经纪人绑定门店：扫码 + 搜索两条路径，搜索无
   expect(ts).toContain("storeSearched");
 });
 
+test("REQ-IT7-09 门店邀请二维码：主包落地页 + 冷/热启动都能解析 scene", async () => {
+  const miniappDir = path.resolve(__dirname, "../../miniapp");
+  const homeTs = fs.readFileSync(path.join(miniappDir, "pages/merchant/home/index.ts"), "utf8");
+  const brokerTs = fs.readFileSync(path.join(miniappDir, "pages/merchant/broker/index.ts"), "utf8");
+  const inviteTs = fs.readFileSync(path.join(miniappDir, "pages/merchant-invite/index.ts"), "utf8");
+  const storeDetailTs = fs.readFileSync(
+    path.join(miniappDir, "pages/merchant/store/detail/index.ts"),
+    "utf8",
+  );
+  const appJson = JSON.parse(fs.readFileSync(path.join(miniappDir, "app.json"), "utf8")) as {
+    pages: string[];
+    subPackages?: { root: string; pages: string[] }[];
+  };
+  const qrService = fs.readFileSync(
+    path.resolve(BACKEND, "services/merchant/broker_qr.py"),
+    "utf8",
+  );
+
+  // 二维码落地页在主包，避免分包页面冷启动 scene 丢失
+  expect(qrService).toContain('QR_PAGE = "pages/merchant-invite/index"');
+  expect(qrService).toContain("env_version=env_version");
+
+  // REQ-IT7-09：按当前运行版本生成小程序码（develop/trial/release），
+  // 否则开发/体验阶段扫码会打开正式版，正式版没有新落地页时「没有任何反应」
+  expect(storeDetailTs).toContain("getAccountInfoSync");
+  expect(storeDetailTs).toContain("miniProgram.envVersion");
+  expect(storeDetailTs).toContain("broker-qrcode?env_version=${envVersion}");
+  expect(appJson.pages).toContain("pages/merchant-invite/index");
+  const merchantSub = appJson.subPackages?.find((item) => item.root === "pages/merchant");
+  expect(merchantSub?.pages ?? []).not.toContain("merchant-invite/index");
+
+  // 落地页：冷启动 onLoad + 热启动 onShow 都解析 scene，并跳经纪人中心
+  expect(inviteTs).toContain("getEnterOptionsSync");
+  expect(inviteTs).toContain("parseSceneCode");
+  expect(inviteTs).toContain("pages/merchant/broker/index?code=");
+  expect(inviteTs).toContain("邀请链接无效");
+
+  // 旧码兼容：首页 onShow 也处理 scene，且同一短码不重复跳转
+  expect(homeTs).toContain("extractSceneCode");
+  expect(homeTs).toContain("lastHandledSceneCode");
+  expect(homeTs).toMatch(/onShow\(\)[\s\S]{0,400}getEnterOptionsSync/);
+
+  // 经纪人页也可直接接收 scene（分享路径 / 未来改 page 不影响）
+  expect(brokerTs).toContain("parseSceneCode");
+  expect(brokerTs).toContain("options.scene");
+
+  // 接口契约：生成的小程序码指向主包落地页，短码可解析回同一门店
+  const tokenCtx = await playwrightRequest.newContext();
+  let cToken = "";
+  try {
+    const res = await tokenCtx.post(
+      `${process.env.E2E_API_BASE ?? "http://127.0.0.1:8000"}/api/v1/public/auth/token`,
+      {
+        form: {
+          username: process.env.E2E_ADMIN_USER ?? "",
+          password: process.env.E2E_ADMIN_PASSWORD ?? "",
+        },
+      },
+    );
+    expect(res.ok(), `C 端令牌获取失败 HTTP ${res.status()}`).toBeTruthy();
+    cToken = ((await res.json()) as { access_token: string }).access_token;
+  } finally {
+    await tokenCtx.dispose();
+  }
+
+  const cCtx = await playwrightRequest.newContext({
+    baseURL: process.env.E2E_API_BASE ?? "http://127.0.0.1:8000",
+    extraHTTPHeaders: { Authorization: `Bearer ${cToken}` },
+  });
+  try {
+    const gen = await cCtx.post(
+      `/api/v1/public/merchant/stores/${storeForDrawer}/broker-qrcode?env_version=develop`,
+    );
+    expect(gen.ok(), await gen.text()).toBeTruthy();
+    const qr = (await gen.json()) as {
+      code: string;
+      page: string;
+      image_base64: string;
+      env_version: string;
+    };
+    expect(qr.page).toBe("pages/merchant-invite/index");
+    expect(qr.env_version).toBe("develop");
+    expect(qr.image_base64.length).toBeGreaterThan(1000);
+
+    const resolved = await cCtx.get(
+      `/api/v1/public/merchant/broker-qrcodes/${encodeURIComponent(qr.code)}`,
+    );
+    expect(resolved.ok()).toBeTruthy();
+    const resolvedBody = (await resolved.json()) as { valid: boolean; store_id: string };
+    expect(resolvedBody.valid).toBe(true);
+    expect(resolvedBody.store_id).toBe(storeForDrawer);
+  } finally {
+    await cCtx.dispose();
+  }
+});
+
 test.afterAll(() => {
   execFileSync(
     path.resolve(BACKEND, ".venv/bin/python"),
@@ -466,6 +567,7 @@ from models import (
     MerchantBrokerBinding,
     MerchantCompany,
     MerchantStore,
+    MerchantStoreQRCode,
 )
 mark = os.environ["E2E_MARK"]
 db = SessionLocal()
@@ -489,6 +591,10 @@ try:
         ).delete(synchronize_session=False)
     if broker_ids:
         db.query(MerchantBroker).filter(MerchantBroker.id.in_(broker_ids)).delete(
+            synchronize_session=False
+        )
+    if store_ids:
+        db.query(MerchantStoreQRCode).filter(MerchantStoreQRCode.store_id.in_(store_ids)).delete(
             synchronize_session=False
         )
     db.query(MerchantStore).filter(MerchantStore.store_name.like(f"%{mark}%")).delete(

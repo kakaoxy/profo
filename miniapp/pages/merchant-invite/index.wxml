@@ -1,0 +1,6 @@
+<view class="page">
+  <view class="card">
+    <view class="title">门店邀请</view>
+    <view class="hint">{{state === 'error' ? errorText : '正在打开门店邀请…'}}</view>
+  </view>
+</view>

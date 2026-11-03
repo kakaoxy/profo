@@ -212,6 +212,7 @@ class BrokerQRCodeResponse(BaseModel):
     image_base64: str
     expires_at: datetime
     page: str
+    env_version: str
 
 
 class BrokerQRCodeResolveResponse(BaseModel):
