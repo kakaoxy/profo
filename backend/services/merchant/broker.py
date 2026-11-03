@@ -836,6 +836,22 @@ class MerchantBrokerService:
             .filter(MerchantStore.id.in_([b.store_id for b in rows if b.store_id]))
             .all()
         }
+        # 邀请人优先取档案字段；历史档案未回填时回退到当前生效绑定记录的邀请人
+        binding_inviter_ids = {
+            row.broker_id: row.inviter_employee_id
+            for row in self.db.query(
+                MerchantBrokerBinding.broker_id,
+                MerchantBrokerBinding.inviter_employee_id,
+            )
+            .filter(
+                MerchantBrokerBinding.broker_id.in_([b.id for b in rows]),
+                MerchantBrokerBinding.status == MerchantBindingRecordStatus.ACTIVE.value,
+                MerchantBrokerBinding.inviter_employee_id.isnot(None),
+            )
+            .all()
+        }
+        inviter_id_by_broker = {b.id: b.inviter_employee_id or binding_inviter_ids.get(b.id) for b in rows}
+        inviter_names = self._user_display_names([user_id for user_id in inviter_id_by_broker.values() if user_id])
         lead_counts = self._recommendation_counts([b.id for b in rows])
         return BrokerListResponse(
             items=[
@@ -843,6 +859,7 @@ class MerchantBrokerService:
                     broker,
                     store_name=store_rows.get(broker.store_id) if broker.store_id else None,
                     recommendation_count=lead_counts.get(broker.id, 0),
+                    inviter_name=inviter_names.get(inviter_id_by_broker.get(broker.id) or ""),
                 )
                 for broker in rows
             ],
@@ -1301,7 +1318,31 @@ class MerchantBrokerService:
         if broker.store_id:
             store = self.db.query(MerchantStore).filter(MerchantStore.id == broker.store_id).first()
             store_name = store.store_name if store is not None else None
-        return broker_response(broker, store_name=store_name)
+        inviter_id = broker.inviter_employee_id
+        if not inviter_id:
+            binding = (
+                self.db.query(MerchantBrokerBinding)
+                .filter(
+                    MerchantBrokerBinding.broker_id == broker.id,
+                    MerchantBrokerBinding.status == MerchantBindingRecordStatus.ACTIVE.value,
+                )
+                .order_by(MerchantBrokerBinding.applied_at.desc())
+                .first()
+            )
+            inviter_id = binding.inviter_employee_id if binding is not None else None
+        inviter_name = None
+        if inviter_id:
+            inviter = self.db.query(User).filter(User.id == inviter_id).first()
+            if inviter is not None:
+                inviter_name = inviter.nickname or inviter.username
+        return broker_response(broker, store_name=store_name, inviter_name=inviter_name)
+
+    def _user_display_names(self, user_ids: list[str]) -> dict[str, str]:
+        """批量取用户展示名（昵称优先，回退用户名），用于经纪人邀请人展示."""
+        if not user_ids:
+            return {}
+        rows = self.db.query(User.id, User.nickname, User.username).filter(User.id.in_(set(user_ids))).all()
+        return {row.id: row.nickname or row.username for row in rows}
 
     def _selectable_store(self, store_id: str, *, allow_pending: bool) -> MerchantStore:
         store = self.db.query(MerchantStore).filter(MerchantStore.id == store_id).first()

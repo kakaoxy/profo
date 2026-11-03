@@ -328,11 +328,12 @@ export default function MerchantBrokersPage() {
           </div>
 
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full min-w-[940px] text-sm">
+            <table className="w-full min-w-[1040px] text-sm">
               <thead className="bg-fog text-left text-[11px] uppercase tracking-wide text-graphite">
                 <tr>
                   <th className="px-5 py-2.5 font-medium">经纪人</th>
                   <th className="px-4 py-2.5 font-medium">绑定门店</th>
+                  <th className="px-4 py-2.5 font-medium">邀请人</th>
                   <th className="px-4 py-2.5 font-medium">状态</th>
                   <th className="px-4 py-2.5 font-medium">来源</th>
                   <th className="px-4 py-2.5 font-medium">最近变更</th>
@@ -342,7 +343,7 @@ export default function MerchantBrokersPage() {
               <tbody>
                 {loading && !data ? (
                   <tr>
-                    <td colSpan={6} className="px-5 py-16 text-center text-sm text-graphite">
+                    <td colSpan={7} className="px-5 py-16 text-center text-sm text-graphite">
                       加载中…
                     </td>
                   </tr>
@@ -372,6 +373,9 @@ export default function MerchantBrokersPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-[13px] text-ink">{item.store_name || "未分配"}</td>
+                      <td className="px-4 py-3 text-[13px] text-ink">
+                        {item.inviter_employee_name || "—"}
+                      </td>
                       <td className="px-4 py-3">
                         <StatusBadge tone={brokerStatusTone(item.bind_status)}>
                           {BROKER_STATUS_LABELS[item.bind_status] || item.bind_status}
@@ -388,7 +392,7 @@ export default function MerchantBrokersPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-5 py-16 text-center text-sm text-graphite">
+                    <td colSpan={7} className="px-5 py-16 text-center text-sm text-graphite">
                       没有符合条件的经纪人
                     </td>
                   </tr>

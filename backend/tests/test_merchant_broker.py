@@ -325,9 +325,15 @@ def test_bind_by_scanned_qrcode_records_qrcode_source(
     assert bind.status_code == 200, bind.text
     assert bind.json()["bind_source"] == "qrcode"
     assert bind.json()["inviter_employee_id"] == employee.id
+    # REQ-IT7-12：返回邀请人名称，后台可展示 经纪人 → 门店 → 内部员工 全链路
+    assert bind.json()["inviter_employee_name"] == (employee.nickname or employee.username)
 
     history = broker_client.get(f"{API}/public/merchant/brokers/me/bindings").json()
     assert history[0]["bind_source"] == "qrcode"
+
+    me = broker_client.get(f"{API}/public/merchant/brokers/me")
+    assert me.status_code == 200
+    assert me.json()["inviter_employee_name"] == (employee.nickname or employee.username)
 
 
 def test_change_binding_requires_approval(
@@ -547,6 +553,8 @@ def test_admin_broker_summary_and_source_filter(
     contact = admin_client.get(f"{API}/admin/merchant/brokers", params={"source": "store_contact"})
     assert contact.status_code == 200
     assert contact.json()["total"] == 1
+    # REQ-IT7-12：档案未回填邀请人时回退当前生效绑定记录，列表仍能展示邀请人姓名
+    assert contact.json()["items"][0]["inviter_employee_name"]
 
     # 导出必须沿用来源筛选（不能导出全量）
     exported = admin_client.get(f"{API}/admin/merchant/brokers/export", params={"source": "backoffice"})

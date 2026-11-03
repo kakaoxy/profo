@@ -164,7 +164,12 @@ def visit_response(
     )
 
 
-def broker_response(broker: MerchantBroker, *, store_name: str | None = None) -> BrokerResponse:
+def broker_response(
+    broker: MerchantBroker,
+    *,
+    store_name: str | None = None,
+    inviter_name: str | None = None,
+) -> BrokerResponse:
     """经纪人档案响应（手机号脱敏）."""
     return BrokerResponse(
         id=str(broker.id),
@@ -177,6 +182,7 @@ def broker_response(broker: MerchantBroker, *, store_name: str | None = None) ->
         source=broker.source,
         bind_source=broker.bind_source,
         inviter_employee_id=str(broker.inviter_employee_id) if broker.inviter_employee_id else None,
+        inviter_employee_name=inviter_name,
         bound_at=broker.bound_at,
         unbound_at=broker.unbound_at,
         remark=broker.remark,
@@ -233,6 +239,7 @@ def broker_list_item(
     *,
     store_name: str | None,
     recommendation_count: int,
+    inviter_name: str | None = None,
 ) -> BrokerListItem:
     """后台经纪人列表项."""
     return BrokerListItem(
@@ -245,6 +252,7 @@ def broker_list_item(
         source=broker.source,
         bind_source=broker.bind_source,
         inviter_employee_id=str(broker.inviter_employee_id) if broker.inviter_employee_id else None,
+        inviter_employee_name=inviter_name,
         recruit_lead_id=str(broker.recruit_lead_id) if broker.recruit_lead_id else None,
         recommendation_count=recommendation_count,
         updated_at=broker.updated_at,

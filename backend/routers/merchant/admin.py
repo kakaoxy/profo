@@ -363,6 +363,7 @@ def export_brokers(
             item.name,
             item.phone_masked,
             item.store_name or "",
+            item.inviter_employee_name or "",
             item.bind_status,
             item.source,
             item.recommendation_count,
@@ -390,7 +391,7 @@ def export_brokers(
     )
     db.commit()
     return generate_csv_response(
-        ["姓名", "手机号", "所属门店", "绑定状态", "来源", "推荐线索数"],
+        ["姓名", "手机号", "所属门店", "邀请人", "绑定状态", "来源", "推荐线索数"],
         rows,
         "merchant_brokers_export",
     )

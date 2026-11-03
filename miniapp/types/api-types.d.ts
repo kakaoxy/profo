@@ -10525,6 +10525,8 @@ export interface components {
             bind_source: string;
             /** Inviter Employee Id */
             inviter_employee_id: string | null;
+            /** Inviter Employee Name */
+            inviter_employee_name?: string | null;
             /** Recruit Lead Id */
             recruit_lead_id?: string | null;
             /** Recommendation Count */
@@ -10699,6 +10701,8 @@ export interface components {
             source: string;
             /** Inviter Employee Id */
             inviter_employee_id: string | null;
+            /** Inviter Employee Name */
+            inviter_employee_name?: string | null;
             /** Bind Source */
             bind_source: string;
             /** Bound At */

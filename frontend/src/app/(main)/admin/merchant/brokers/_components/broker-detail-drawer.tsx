@@ -140,6 +140,9 @@ export function BrokerDetailDrawer({
                         : "原绑定门店已删除，可换绑到其他门店"
                       : "可在下方「换绑」选择门店，或由经纪人扫码绑定"}
                   </p>
+                  <p className="mt-0.5 text-xs text-graphite">
+                    邀请人：{broker.inviter_employee_name || "—"}
+                  </p>
                 </div>
                 {broker.store_id && !disabled ? (
                   <button

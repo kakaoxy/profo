@@ -16,6 +16,7 @@ import { createApiContext, loginPage } from "./helpers/auth";
  * - REQ-IT7-08 经纪人绑定门店：扫码 / 搜索两条路径，搜索无结果可创建新门店
  * - REQ-IT7-10 经纪人推荐记录：点击跳转评估详情
  * - REQ-IT7-11 经纪人来源展示：source=self_apply 时按 bind_source 展示扫码/分享绑定
+ * - REQ-IT7-12 经纪人邀请人展示：列表/抽屉展示邀请人姓名，串起 经纪人 → 门店 → 内部员工
  *
  * 串行执行：afterAll 按 MARK 清理本文件造的数据，并行会互相删除。
  */
@@ -604,6 +605,10 @@ test("REQ-IT7-11 经纪人列表来源正确展示扫码/分享绑定渠道", as
   expect(labels).toContain('share: "分享绑定"');
   expect(labels).toContain("export function brokerSourceLabel(source: string, bindSource?: string | null)");
   expect(pageTs).toContain("brokerSourceLabel(item.source, item.bind_source)");
+  // REQ-IT7-12：列表与抽屉展示邀请人（经纪人 → 门店 → 内部员工 全链路）
+  expect(pageTs).toContain("邀请人");
+  expect(pageTs).toContain("item.inviter_employee_name");
+  expect(drawerTs).toContain('邀请人：{broker.inviter_employee_name || "—"}');
   expect(drawerTs).toContain("brokerSourceLabel(broker.source, broker.bind_source)");
   expect(pageTs).not.toContain("BROKER_SOURCE_LABELS[item.source] || item.source");
 

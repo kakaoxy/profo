@@ -138,6 +138,16 @@ cd backend && .venv/bin/ruff check services/merchant routers/merchant schemas/me
 | 权限边界 | 非创建人且非该线索归属经纪人的用户仍抛 `PermissionDeniedError("无权查看该线索")`（`LeadService.get_lead_detail`） | 通过（代码路径） |
 | 回归 | `npx playwright test e2e/merchant-iteration7.spec.ts` → **11 passed (12.4s)**；`cd miniapp && npx tsc --noEmit` 零错；`ruff check` 全绿 | 通过 |
 
+### 2.10b REQ-IT7-12 经纪人邀请人全链路展示验证（2026-11-03，m06394）
+
+| 项 | 命令/断言 | 结果 |
+|---|---|---|
+| 接口字段 | `BrokerListItem`/`BrokerResponse` 增加 `inviter_employee_name`；`pytest tests/test_merchant_broker.py::test_bind_by_scanned_qrcode_records_qrcode_source` 断言扫码绑定响应与 `/brokers/me` 的邀请人姓名等于发码员工展示名 | **26 passed** |
+| 列表展示 | `brokers/page.tsx` 新增「邀请人」列，读取 `item.inviter_employee_name`，空值显示「—」 | E2E 用例 12 源码断言 |
+| 抽屉展示 | `broker-detail-drawer.tsx` 绑定信息卡新增「邀请人：{name}」 | E2E 用例 12 源码断言 |
+| 导出 | `GET /admin/merchant/brokers/export` CSV 表头增加「邀请人」列 | ruff / 代码审查 |
+| 回归 | `npx playwright test e2e/merchant-iteration7.spec.ts` → **12 passed (12.4s)**；`tsc --noEmit` 零错 | 通过 |
+
 ### 2.10 REQ-IT7-11 经纪人来源展示修正验证（2026-11-03，m06244）
 
 | 项 | 命令/断言 | 结果 |

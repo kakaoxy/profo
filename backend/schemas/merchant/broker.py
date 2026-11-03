@@ -106,6 +106,7 @@ class BrokerResponse(BaseModel):
     bind_status: str
     source: str
     inviter_employee_id: str | None
+    inviter_employee_name: str | None = None
     bind_source: str
     bound_at: datetime | None
     unbound_at: datetime | None
@@ -243,6 +244,7 @@ class BrokerListItem(BaseModel):
     source: str
     bind_source: str
     inviter_employee_id: str | None
+    inviter_employee_name: str | None = None
     recruit_lead_id: str | None = None
     recommendation_count: int
     updated_at: datetime
