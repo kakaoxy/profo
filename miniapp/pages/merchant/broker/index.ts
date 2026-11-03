@@ -7,6 +7,10 @@
  *
  * 状态文案与色档统一走 utils/merchant-status.ts（M3 三档），
  * 请求错误文案统一走 utils/merchant-errors.ts，避免各页再各写一份兜底文案。
+ *
+ * 说明：本页同时承载「认证 / 我的门店 / 绑定与换绑 / 绑定历史 / 推荐记录」五块状态，
+ * data 与方法都在同一 Page 对象内共享；拆成多文件会把页内状态变成跨文件隐式契约，
+ * 维护成本高于单文件长度收益，故超过 500 行（REQ-IT7-08 时约 590 行）。
  */
 import type { components } from "../../../types/api-types";
 import { describeRequestError } from "../../../utils/merchant-errors";
@@ -81,6 +85,22 @@ function statusCodeOf(err: unknown): number | undefined {
   return (err as { statusCode?: number }).statusCode;
 }
 
+/** 从扫到的二维码内容里取出门店邀请短码（兼容纯短码、`path?code=xxx`、`path?scene=xxx` 与带参数的 URL）. */
+function extractStoreQrCode(raw: string): string {
+  const text = (raw || "").trim();
+  if (!text) return "";
+  const codeMatch = text.match(/[?&]code=([^&#]+)/);
+  if (codeMatch) return decodeURIComponent(codeMatch[1]);
+  const sceneMatch = text.match(/[?&]scene=([^&#]+)/);
+  if (sceneMatch) {
+    const scene = decodeURIComponent(sceneMatch[1]);
+    const inner = scene.match(/[?&]?code=([^&#]+)/);
+    if (inner) return decodeURIComponent(inner[1]);
+    return /^[A-Za-z0-9_-]{8,64}$/.test(scene) ? scene : "";
+  }
+  return /^[A-Za-z0-9_-]{8,64}$/.test(text) ? text : "";
+}
+
 Page({
   data: {
     state: "loading" as PageState,
@@ -91,6 +111,9 @@ Page({
     qrCode: "",
     qrStoreName: "",
     qrReason: "",
+    // 认证前先搜索选定的门店，认证成功后自动绑定（REQ-IT7-08）
+    pendingStoreId: "",
+    pendingStoreName: "",
     // 分享归属（AC-024）
     referrer: "",
     // 档案
@@ -114,6 +137,8 @@ Page({
     storeAction: "bind" as StoreAction,
     storeKeyword: "",
     storeOptions: [] as BrokerStoreOption[],
+    storeSearching: false,
+    storeSearched: false,
     selectedStoreId: "",
     changeReason: "",
     // 解绑/编辑
@@ -321,6 +346,18 @@ Page({
           referrer: this.data.referrer || undefined,
         },
       });
+      if (this.data.pendingStoreId) {
+        try {
+          await request<Broker>({
+            url: "/public/merchant/brokers/me/bind",
+            method: "POST",
+            data: { store_id: this.data.pendingStoreId },
+          });
+          this.setData({ pendingStoreId: "", pendingStoreName: "" });
+        } catch (err) {
+          wx.showToast({ title: describeRequestError(err, "门店绑定没成功，可在门店卡内重试"), icon: "none" });
+        }
+      }
       wx.showToast({
         title: result.auto_bound ? "认证成功，已绑定门店" : "认证成功",
         icon: "success",
@@ -392,10 +429,17 @@ Page({
       storeAction: "bind",
       storeKeyword: "",
       storeOptions: [],
+      storeSearching: false,
+      storeSearched: false,
       selectedStoreId: "",
       changeReason: "",
     });
     this.searchStores();
+  },
+
+  /** 认证页先搜索选门店：认证成功后自动绑定（REQ-IT7-08）. */
+  onOpenBindForRegister() {
+    this.onOpenBind();
   },
 
   onOpenChange() {
@@ -404,6 +448,8 @@ Page({
       storeAction: "change",
       storeKeyword: "",
       storeOptions: [],
+      storeSearching: false,
+      storeSearched: false,
       selectedStoreId: "",
       changeReason: "",
     });
@@ -422,15 +468,76 @@ Page({
     const holder = this as unknown as { storeSearchSeq?: number };
     const seq = (holder.storeSearchSeq || 0) + 1;
     holder.storeSearchSeq = seq;
+    this.setData({ storeSearching: true, storeSearched: false });
     try {
       const data = await request<BrokerStoreOptionListResponse>({
         url: "/public/merchant/broker-stores",
         data: { page: 1, page_size: 50, keyword: this.data.storeKeyword.trim() || undefined },
       });
       if (seq !== holder.storeSearchSeq) return;
-      this.setData({ storeOptions: data.items });
+      this.setData({ storeOptions: data.items, storeSearching: false, storeSearched: true });
     } catch (err) {
+      if (seq !== holder.storeSearchSeq) return;
+      this.setData({ storeSearching: false, storeSearched: true });
       wx.showToast({ title: describeRequestError(err, "门店没搜出来"), icon: "none" });
+    }
+  },
+
+  /** 搜索不到自己的门店时，直接从搜索弹层跳到建店页（REQ-IT7-08）. */
+  onCreateStoreFromPanel() {
+    this.setData({ storePanelOpen: false });
+    this.onCreateStore();
+  },
+
+  /** 扫码绑定：内部员工提供的门店二维码 → 解析门店 → 首次绑定免审生效（REQ-IT7-08）. */
+  onScanBind(): void {
+    wx.scanCode({
+      onlyFromCamera: false,
+      scanType: ["qrCode"],
+      success: (res) => {
+        const code = extractStoreQrCode(res.result || res.path || "");
+        if (!code) {
+          wx.showToast({ title: "这不是门店邀请二维码", icon: "none" });
+          return;
+        }
+        void this.bindByQrCode(code);
+      },
+      fail: () => {
+        wx.showToast({ title: "未完成扫码", icon: "none" });
+      },
+    });
+  },
+
+  async bindByQrCode(code: string): Promise<void> {
+    try {
+      const resolved = await request<QRResolve>({
+        url: `/public/merchant/broker-qrcodes/${encodeURIComponent(code)}`,
+        skipAuth: true,
+      });
+      if (!resolved.valid || !resolved.store_id) {
+        wx.showToast({ title: resolved.reason || "二维码无效或已过期", icon: "none" });
+        return;
+      }
+      if (this.data.state === "register") {
+        this.setData({
+          qrCode: code,
+          qrStoreName: resolved.store_name || "",
+          qrReason: "",
+          pendingStoreId: "",
+          pendingStoreName: "",
+        });
+        wx.showToast({ title: "已识别门店，提交认证后自动绑定", icon: "none" });
+        return;
+      }
+      await request<Broker>({
+        url: "/public/merchant/brokers/me/bind",
+        method: "POST",
+        data: { store_id: resolved.store_id },
+      });
+      wx.showToast({ title: "绑定成功", icon: "success" });
+      await this.load();
+    } catch (err) {
+      wx.showToast({ title: describeRequestError(err, "扫码绑定没成功"), icon: "none" });
     }
   },
 
@@ -450,6 +557,16 @@ Page({
     }
     if (this.data.storeAction === "change" && !this.data.changeReason.trim()) {
       wx.showToast({ title: "请填写换绑原因", icon: "none" });
+      return;
+    }
+    if (this.data.state === "register") {
+      const selected = this.data.storeOptions.find((item) => item.id === storeId);
+      this.setData({
+        pendingStoreId: storeId,
+        pendingStoreName: selected ? selected.store_name : "",
+        storePanelOpen: false,
+      });
+      wx.showToast({ title: "已选择门店，提交认证后自动绑定", icon: "none" });
       return;
     }
     const isChange = this.data.storeAction === "change";

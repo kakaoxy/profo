@@ -15,12 +15,14 @@
 | REQ-IT7-04 经纪人模块设计稿落代码 | 同文件 › REQ-IT7-03 经纪人管理页：KPI / 分段筛选 / 新建弹层 / 详情抽屉 / 编辑资料 | E2E（UI + 接口回读） |
 | REQ-IT7-05 详情抽屉样式补齐 | 同文件 › REQ-IT7-03 经纪人管理页（抽屉步骤）+ 计算样式断言 | E2E + 浏览器实测 |
 | REQ-IT7-06 换绑 / 新建门店关键词搜索 | 同文件 › REQ-IT7-05 换绑门店改为关键词搜索选择 | E2E（UI + 接口回读） |
+| REQ-IT7-07 经纪人建店页公司搜索反馈 | 同文件 › REQ-IT7-07 经纪人建店页公司搜索有可见反馈且接口可查 | E2E（源码三态断言 + C 端接口） |
+| REQ-IT7-08 经纪人绑定门店（扫码 / 搜索双路径） | 同文件 › REQ-IT7-08 经纪人绑定门店：扫码 + 搜索两条路径，搜索无结果可创建 | E2E（源码断言）+ 既有后端绑定用例 |
 
 ## 2. 自动化命令与实测结果
 
 ```bash
 cd frontend && npx playwright test e2e/merchant-iteration7.spec.ts --reporter=list
-# 7 passed (10.6s)
+# 9 passed (11.6s)
 
 cd backend && .venv/bin/pytest tests/test_merchant_broker.py -q --no-cov
 # 24 passed
@@ -89,6 +91,28 @@ cd backend && .venv/bin/ruff check services/merchant routers/merchant schemas/me
 | 类型/格式 | `npx tsc --noEmit`、`npx eslint "src/app/(main)/admin/merchant/brokers"` | 零错 / 无告警 |
 | 回归 | `merchant-iteration7.spec.ts` + `merchant-admin-forms.spec.ts` `--workers=1` | **12 passed (22.2s)**（admin-forms 的经纪人编辑用例已改为「行 → 抽屉 → 编辑资料」） |
 
+### 2.6 REQ-IT7-07 经纪人建店页公司搜索补修验证（2026-11-03，m05050）
+
+| 项 | 命令/断言 | 结果 |
+|---|---|---|
+| 后端接口（前置核对） | broker C 令牌 `GET /api/v1/public/merchant/broker-companies?keyword=公司`；`/public/merchant/districts` | 均 200，返回公司 5 条 → 确认不是后端问题 |
+| 前端源码三态（REQ-IT7-07） | E2E 用例 8：`index.ts` 含 `companiesLoading/companiesSearched/companiesError/companyTimer/companySeq`、`loadPage` 内 `void this.searchCompanies()`；`index.wxml` 含「正在搜索公司」「没有找到匹配的公司」「company-status」；`index.wxss` 含 `.company-status` | 通过 |
+| 接口命中/空结果（REQ-IT7-07） | C 端令牌按 `${MARK}搜索目标` 查到新建公司；按 `${MARK}不存在的公司` 返回 `items: []` | 通过 |
+| 逻辑仿真（REQ-IT7-07） | Node 模拟 `wx.request`：`loadPage()` 后 `state=form`、`companies=1`、`companiesSearched=true`；请求失败时 `companiesLoading=false`、`companiesError` 写入具体网络原因 | 通过 |
+| 类型检查 | `cd miniapp && npx tsc --noEmit` | 零错 |
+| E2E 全量（本文件） | `npx playwright test e2e/merchant-iteration7.spec.ts --reporter=line` | **9 passed (11.5s)**（含 REQ-IT7-08） |
+
+### 2.7 REQ-IT7-08 经纪人绑定门店双路径验证（2026-11-03，m05520）
+
+| 项 | 命令/断言 | 结果 |
+|---|---|---|
+| 未绑定卡双入口 | E2E 用例 9：`index.wxml` 含「搜索绑定门店」（`bindtap="onOpenBind"`）、「扫码绑定门店」（`bindtap="onScanBind"`）、「找不到自己的门店」；认证页含「搜索门店（认证后绑定）」「扫码识别门店」 | 通过 |
+| 搜索弹层空态 | `index.wxml` 含「门店搜索中」「找不到？创建新门店」与 `bindtap="onCreateStoreFromPanel"`；`index.ts` 含 `storeSearching/storeSearched` | 通过 |
+| 扫码实现 | `index.ts` 含 `wx.scanCode`、`extractStoreQrCode`（兼容 `?scene=`/`?code=`/纯短码）、`/public/merchant/brokers/me/bind` | 通过 |
+| 认证页选店 / 扫码 | `index.wxml` 含「搜索门店（认证后绑定）」「扫码识别门店」；`onSubmitStore` 在 `state=register` 时写 `pendingStoreId/pendingStoreName`，`onRegister` 成功后调 `/brokers/me/bind`；`bindByQrCode` 在 `state=register` 时写 `qrCode/qrStoreName`，认证后由 `register` 自动绑定 | 通过（源码 + 既有 register / bind 用例） |
+| 类型检查 | `cd miniapp && npx tsc --noEmit` | 零错 |
+| E2E | `npx playwright test e2e/merchant-iteration7.spec.ts --reporter=line` | **9 passed (11.6s)** |
+
 ## 3. 设计稿验证（REQ-IT7-03）
 
 ```bash
@@ -147,6 +171,7 @@ cd frontend && npx playwright test e2e/merchant-iteration1.spec.ts ... e2e/build
 4. 公司删除：无门店公司可删除；有门店公司提示先处理门店；删除后新建门店的公司下拉不再出现。
 5. 设计稿：`designs/admin-merchant-brokers/index.html` 在目标浏览器 1440×900 下无横向滚动、抽屉/弹层无遮挡。
 6. 经纪人管理页：4 张 KPI 数字与列表数据一致；分段 tabs 与搜索/门店/来源组合筛选；点击整行打开详情抽屉；新建/编辑资料弹层保存后列表与抽屉同步；解绑/停用需填原因。
+7. 经纪人未绑定门店：卡内可见「搜索绑定门店」与「扫码绑定门店」两个按钮；搜索无结果出现「找不到？创建新门店」；认证页可先「搜索门店（认证后绑定）」再提交认证；扫内部员工门店二维码可识别并直接绑定（已认证）或认证后自动绑定（未认证）。
 
 ## 7. 已知偏差 / 限制
 
@@ -159,3 +184,4 @@ cd frontend && npx playwright test e2e/merchant-iteration1.spec.ts ... e2e/build
 4. 抽屉编辑未覆盖合作状态、照片、协议；这些仍走各自入口。
 5. 6 条小程序源码断言用例为既有基线失败（`1f536ce3` 样式合并导致），本次未修复，建议由小程序侧维护者更新断言。
 6. 设计稿交互为原型级（toast 模拟保存/审批），不代表最终接口行为。
+7. 经纪人扫码绑定依赖微信客户端相机/扫码能力，E2E 仅覆盖源码与接口契约，需真机验证扫码与相机权限。

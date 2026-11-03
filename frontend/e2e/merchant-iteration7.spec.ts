@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { test, expect } from "@playwright/test";
+import { test, expect, request as playwrightRequest } from "@playwright/test";
 import { createApiContext, loginPage } from "./helpers/auth";
 
 /**
@@ -13,6 +13,7 @@ import { createApiContext, loginPage } from "./helpers/auth";
  * - REQ-IT7-01 门店详情抽屉：整行/详情按钮打开抽屉 → 编辑 → 保存修改 → 接口回读
  * - REQ-IT7-03 经纪人模块设计稿：文件存在且包含 Steep 设计要素、无外部资源依赖
  * - REQ-IT7-03 经纪人管理页：KPI / 分段筛选 / 新建弹层 / 详情抽屉 / 编辑资料（设计稿落代码）
+ * - REQ-IT7-08 经纪人绑定门店：扫码 / 搜索两条路径，搜索无结果可创建新门店
  *
  * 串行执行：afterAll 按 MARK 清理本文件造的数据，并行会互相删除。
  */
@@ -344,6 +345,110 @@ test("REQ-IT7-03 经纪人模块设计稿存在且遵循 Steep 规范", () => {
   expect(meta.type).toBe("design");
   expect(meta.assets["经纪人管理"]?.versions[0]?.path).toBe("index.html");
   expect(meta.assets["经纪人管理"]?.versions[0]?.status).toBe("needs-review");
+});
+
+test("REQ-IT7-07 经纪人建店页公司搜索有可见反馈且接口可查", async () => {
+  const pageDir = path.resolve(__dirname, "../../miniapp/pages/merchant/broker/store-create");
+  const pageTs = fs.readFileSync(path.join(pageDir, "index.ts"), "utf8");
+  const pageWxml = fs.readFileSync(path.join(pageDir, "index.wxml"), "utf8");
+  const pageWxss = fs.readFileSync(path.join(pageDir, "index.wxss"), "utf8");
+
+  // 进页面自动带出候选 + 输入防抖自动搜索：不依赖用户点按钮才发现「没反应」
+  expect(pageTs).toMatch(/void this\.searchCompanies\(\);/);
+  expect(pageTs).toContain("companyTimer");
+  expect(pageTs).toContain("setTimeout");
+  // 三种可见反馈缺一不可
+  expect(pageTs).toContain("companiesLoading");
+  expect(pageTs).toContain("companiesSearched");
+  expect(pageTs).toContain("companiesError");
+  expect(pageWxml).toContain("正在搜索公司");
+  expect(pageWxml).toContain("没有找到匹配的公司");
+  expect(pageWxml).toContain("company-status");
+  expect(pageWxss).toContain(".company-status");
+
+  // 接口连通性：C 端令牌按关键词能查到新建公司，查不到时返回空数组
+  const { ctx: adminCtx, dispose } = await createApiContext();
+  const companyName = `${MARK}搜索目标公司`;
+  try {
+    const created = await adminCtx.post("/api/v1/admin/merchant/companies", {
+      data: { company_name: companyName },
+    });
+    expect(created.ok(), `建公司失败 HTTP ${created.status()}`).toBeTruthy();
+  } finally {
+    await dispose();
+  }
+
+  const tokenCtx = await playwrightRequest.newContext();
+  let cToken = "";
+  try {
+    const res = await tokenCtx.post(`${process.env.E2E_API_BASE ?? "http://127.0.0.1:8000"}/api/v1/public/auth/token`, {
+      form: {
+        username: process.env.E2E_ADMIN_USER ?? "",
+        password: process.env.E2E_ADMIN_PASSWORD ?? "",
+      },
+    });
+    expect(res.ok(), `C 端令牌获取失败 HTTP ${res.status()}`).toBeTruthy();
+    cToken = ((await res.json()) as { access_token: string }).access_token;
+  } finally {
+    await tokenCtx.dispose();
+  }
+
+  const cCtx = await playwrightRequest.newContext({
+    baseURL: process.env.E2E_API_BASE ?? "http://127.0.0.1:8000",
+    extraHTTPHeaders: { Authorization: `Bearer ${cToken}` },
+  });
+  try {
+    const matched = await cCtx.get(
+      `/api/v1/public/merchant/broker-companies?keyword=${encodeURIComponent(`${MARK}搜索目标`)}`,
+    );
+    expect(matched.ok(), `公司搜索失败 HTTP ${matched.status()}`).toBeTruthy();
+    const matchedBody = (await matched.json()) as { items: { company_name: string }[] };
+    expect(matchedBody.items.map((item) => item.company_name)).toContain(companyName);
+
+    const empty = await cCtx.get(
+      `/api/v1/public/merchant/broker-companies?keyword=${encodeURIComponent(`${MARK}不存在的公司`)}`,
+    );
+    expect(empty.ok()).toBeTruthy();
+    const emptyBody = (await empty.json()) as { items: unknown[] };
+    expect(emptyBody.items).toHaveLength(0);
+  } finally {
+    await cCtx.dispose();
+  }
+});
+
+test("REQ-IT7-08 经纪人绑定门店：扫码 + 搜索两条路径，搜索无结果可创建", () => {
+  const pageDir = path.resolve(__dirname, "../../miniapp/pages/merchant/broker");
+  const ts = fs.readFileSync(path.join(pageDir, "index.ts"), "utf8");
+  const wxml = fs.readFileSync(path.join(pageDir, "index.wxml"), "utf8");
+
+  // 未绑定卡：扫码 + 搜索（页脚主 CTA）+ 创建 / 暂不绑定兜底，不能只剩「创建新门店」
+  expect(wxml).toContain("扫码绑定门店");
+  expect(wxml).toContain('bindtap="onScanBind"');
+  expect(wxml).toContain("搜索绑定门店");
+  expect(wxml).toContain('bindtap="onOpenBind"');
+  expect(wxml).toContain("找不到自己的门店");
+  expect(wxml).toContain('bindtap="onCreateStore"');
+
+  // 认证页也能扫码识别门店，并可先搜索门店（认证后自动绑定）
+  expect(wxml).toContain("扫码识别门店");
+  expect(wxml).toContain("搜索门店（认证后绑定）");
+  expect(wxml).toContain('bindtap="onOpenBindForRegister"');
+  expect(ts).toContain("onOpenBindForRegister");
+  expect(ts).toContain("pendingStoreId");
+
+  // 搜索弹层：加载中 / 无结果 + 创建入口
+  expect(wxml).toContain("门店搜索中");
+  expect(wxml).toContain("找不到？创建新门店");
+  expect(wxml).toContain('bindtap="onCreateStoreFromPanel"');
+
+  // 扫码实现：解析小程序码 scene 短码 → 已认证直接绑定
+  expect(ts).toContain("wx.scanCode");
+  expect(ts).toContain("extractStoreQrCode");
+  expect(ts).toMatch(/\[\?&\]scene=/);
+  expect(ts).toContain("/public/merchant/brokers/me/bind");
+  expect(ts).toContain("onCreateStoreFromPanel");
+  expect(ts).toContain("storeSearching");
+  expect(ts).toContain("storeSearched");
 });
 
 test.afterAll(() => {

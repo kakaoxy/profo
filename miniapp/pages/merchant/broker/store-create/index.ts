@@ -63,6 +63,9 @@ Page({
     },
     companyKeyword: "",
     companies: [] as CompanyOption[],
+    companiesLoading: false,
+    companiesSearched: false,
+    companiesError: "",
     companyId: "",
     companyName: "",
     storeName: "",
@@ -110,6 +113,8 @@ Page({
         return;
       }
       this.setData({ districts, errorText: "", state: "form" });
+      // REQ-IT7-07：进页面就带出前 20 家公司，避免「搜索框空着、点搜索也没反应」的误解
+      void this.searchCompanies();
     } catch (err) {
       const statusCode = (err as { statusCode?: number }).statusCode;
       if (statusCode === 401) {
@@ -130,17 +135,50 @@ Page({
 
   onCompanyKeywordInput(e: WechatMiniprogram.Input) {
     this.setData({ companyKeyword: e.detail.value });
+    // REQ-IT7-07：输入停顿 350ms 自动搜索，避免用户以为「只有点搜索才有反应」；
+    // 连续输入会重置计时器，只有最后一次触发请求。
+    const holder = this as unknown as { companyTimer?: number };
+    if (holder.companyTimer) {
+      clearTimeout(holder.companyTimer);
+    }
+    holder.companyTimer = setTimeout(() => {
+      void this.searchCompanies();
+    }, 350) as unknown as number;
   },
 
+  /**
+   * 搜索可选公司（REQ-IT7-07）。
+   *
+   * 三种可见反馈缺一不可：加载中、错误原因、无结果提示——此前结果为空时列表整块
+   * 不渲染，用户看到的就是「点了搜索毫无反应」。请求序号用于丢弃过期响应，
+   * 避免快速输入时旧请求覆盖新结果。
+   */
   async searchCompanies(): Promise<void> {
+    const keyword = this.data.companyKeyword.trim();
+    const holder = this as unknown as { companySeq?: number };
+    const seq = (holder.companySeq ?? 0) + 1;
+    holder.companySeq = seq;
+    this.setData({ companiesLoading: true, companiesError: "" });
     try {
       const data = await request<CompanyList>({
         url: "/public/merchant/broker-companies",
-        data: { keyword: this.data.companyKeyword.trim() || undefined },
+        data: { keyword: keyword || undefined },
       });
-      this.setData({ companies: data.items });
+      if (holder.companySeq !== seq) {
+        return;
+      }
+      this.setData({
+        companies: data.items || [],
+        companiesLoading: false,
+        companiesSearched: true,
+      });
     } catch (err) {
-      wx.showToast({ title: describeRequestError(err, "公司搜索失败"), icon: "none" });
+      if (holder.companySeq !== seq) {
+        return;
+      }
+      const message = describeRequestError(err, "公司搜索失败");
+      this.setData({ companiesLoading: false, companiesSearched: true, companiesError: message });
+      wx.showToast({ title: message, icon: "none" });
     }
   },
 

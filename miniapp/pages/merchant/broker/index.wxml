@@ -57,6 +57,18 @@
         </view>
       </view>
     </view>
+
+    <view class="card" wx:if="{{!qrStoreName}}">
+      <view class="card__title">绑定门店（可选）</view>
+      <view class="card__body">
+        <view class="hint">可以先搜索自己的门店，认证成功后自动绑定；也可以扫内部员工提供的门店二维码（REQ-IT7-08）。</view>
+        <view class="acts">
+          <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onOpenBindForRegister">搜索门店（认证后绑定）</button>
+          <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onScanBind">扫码识别门店</button>
+          <view class="hint" wx:if="{{pendingStoreName}}">已选择「{{pendingStoreName}}」，提交认证后自动绑定</view>
+        </view>
+      </view>
+    </view>
   </block>
 
   <!-- 已认证 -->
@@ -106,11 +118,19 @@
       </view>
       <view class="card__body" wx:elif="{{storeError}}">
         <view class="hint hint--warn">{{storeError}}</view>
+        <view class="acts">
+          <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onOpenBind">搜索绑定门店</button>
+        </view>
       </view>
       <view class="card__body" wx:else>
-        <view class="hint">还没绑定门店，绑定一家已有门店或自己建档都能开始推广</view>
+        <view class="hint">还没绑定门店：搜索自己的门店后绑定；也可以扫描内部员工提供的门店二维码（REQ-IT7-08）。</view>
         <view class="acts">
-          <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onCreateStore">创建新门店</button>
+          <button class="mbtn mbtn--block mbtn--ink" hover-class="hoverable" bindtap="onOpenBind">搜索绑定门店</button>
+          <button class="mbtn mbtn--block" hover-class="hoverable" bindtap="onScanBind">扫码绑定门店</button>
+          <view class="rowhead">
+            <view class="hint">找不到自己的门店？</view>
+            <view class="link" hover-class="hoverable" bindtap="onCreateStore">创建新门店</view>
+          </view>
           <view class="rowhead">
             <view class="hint">暂不绑定也能作为独立经纪人推荐客户</view>
             <view class="link" hover-class="hoverable" bindtap="onSkipBind">暂不绑定</view>
@@ -189,16 +209,13 @@
     bindtap="onRegister"
   >提交认证</button>
 </view>
-<view class="foot" wx:elif="{{state === 'profile' && !storeLoading && !myStore && !storeError}}">
-  <button class="mbtn mbtn--ink mbtn--cta" hover-class="hoverable" bindtap="onOpenBind">绑定已有门店</button>
-</view>
 
 <!-- 门店搜索 / 绑定 / 换绑 -->
 <view class="modal-mask" wx:if="{{storePanelOpen}}">
   <view class="modal">
-    <view class="modal-title">{{storeAction === 'bind' ? '绑定已有门店' : '申请换绑门店'}}</view>
+    <view class="modal-title">{{state === 'register' ? '选择门店（认证后绑定）' : (storeAction === 'bind' ? '绑定已有门店' : '申请换绑门店')}}</view>
     <view class="modal-sub">
-      {{storeAction === 'bind' ? '选中后立即绑定，你可以随时再申请换绑或解绑' : '换绑由运营审核，通过前当前门店继续有效'}}
+      {{state === 'register' ? '选中后将在认证成功时自动绑定' : (storeAction === 'bind' ? '选中后立即绑定，你可以随时再申请换绑或解绑' : '换绑由运营审核，通过前当前门店继续有效')}}
     </view>
     <view class="search-row">
       <input
@@ -213,7 +230,11 @@
       <button class="mbtn" hover-class="hoverable" bindtap="searchStores">搜索</button>
     </view>
     <scroll-view scroll-y class="modal-list">
-      <view class="empty" wx:if="{{!storeOptions.length}}">没有匹配的门店，换个关键词再试</view>
+      <view class="empty" wx:if="{{storeSearching}}">门店搜索中…</view>
+      <view class="empty" wx:elif="{{storeSearched && !storeOptions.length}}">
+        <view>没有匹配的门店，换个关键词再试</view>
+        <view class="link" hover-class="hoverable" bindtap="onCreateStoreFromPanel">找不到？创建新门店</view>
+      </view>
       <view class="option-list" wx:else>
         <view
           class="option {{selectedStoreId === item.id ? 'option--active' : ''}}"

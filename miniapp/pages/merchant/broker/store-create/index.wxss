@@ -11,6 +11,16 @@
   gap: 16rpx;
   margin-top: var(--mp-gap);
 }
+/* REQ-IT7-07：搜索状态行（加载中 / 错误 / 无结果），文字随表单次要信息层级 */
+.company-status {
+  margin-top: 16rpx;
+  font-size: 25rpx;
+  line-height: 1.6;
+  color: var(--graphite);
+}
+.company-status--error {
+  color: var(--rust);
+}
 /* 选项文字块可收缩，避免长公司名把图标挤出卡片 */
 .company-opt {
   flex: 1;

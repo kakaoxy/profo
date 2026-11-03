@@ -37,6 +37,13 @@
         <button class="mbtn" hover-class="hoverable" bindtap="searchCompanies">搜索</button>
       </view>
 
+      <!-- REQ-IT7-07：搜索必须有可见反馈（加载中 / 错误 / 无结果），否则用户会以为没响应 -->
+      <view class="company-status" wx:if="{{companiesLoading}}">正在搜索公司…</view>
+      <view class="company-status company-status--error" wx:elif="{{companiesError}}">{{companiesError}}</view>
+      <view class="company-status" wx:elif="{{companiesSearched && !companies.length}}"
+        >没有找到匹配的公司，请联系运营先在「公司管理」中添加。</view
+      >
+
       <view class="company-list" wx:if="{{companies.length}}">
         <view
           class="option {{item.id === companyId ? 'option--active' : ''}}"
