@@ -23,10 +23,10 @@
 
 ```bash
 cd frontend && npx playwright test e2e/merchant-iteration7.spec.ts --reporter=list
-# 10 passed (12.2s)
+# 12 passed (12.4s)
 
 cd backend && .venv/bin/pytest tests/test_merchant_broker.py -q --no-cov
-# 24 passed
+# 26 passed
 
 cd backend && .venv/bin/pytest tests/test_merchant_admin.py -q --no-cov
 # 19 passed
@@ -90,7 +90,7 @@ cd backend && .venv/bin/ruff check services/merchant routers/merchant schemas/me
 | 新建弹层门店搜索（REQ-IT7-06） | 新建经纪人弹层「绑定门店」使用同一 `BrokerStorePicker` | 通过（代码复用 + E2E 新建步骤） |
 | 单文件行数 | `frontend/src/app/(main)/admin/merchant/brokers/page.tsx` | 473 行（拆分 `broker-summary-cards.tsx`、`broker-pending-panel.tsx`） |
 | 类型/格式 | `npx tsc --noEmit`、`npx eslint "src/app/(main)/admin/merchant/brokers"` | 零错 / 无告警 |
-| 回归 | `merchant-iteration7.spec.ts` + `merchant-admin-forms.spec.ts` `--workers=1` | **12 passed (22.2s)**（admin-forms 的经纪人编辑用例已改为「行 → 抽屉 → 编辑资料」） |
+| 回归 | `merchant-iteration7.spec.ts` + `merchant-admin-forms.spec.ts` `--workers=1` | **17 passed (23.7s)**（admin-forms 的经纪人编辑用例已改为「行 → 抽屉 → 编辑资料」） |
 
 ### 2.6 REQ-IT7-07 经纪人建店页公司搜索补修验证（2026-11-03，m05050）
 
@@ -127,6 +127,25 @@ cd backend && .venv/bin/ruff check services/merchant routers/merchant schemas/me
 | E2E 用例 10 | `npx playwright test e2e/merchant-iteration7.spec.ts` | **10 passed (11.9s)**（用例 10 含 `env_version=develop` 契约、主包落地页、旧码兼容、scanCode 无 scanType 断言） |
 | 反向验证 | 临时移除落地页 `onShow` → 用例 10 **1 failed**（`expect(inviteTs).toContain("getEnterOptionsSync")`）；恢复后通过 | 通过 |
 | 后端回归 | `cd backend && .venv/bin/pytest tests/test_merchant_broker.py tests/test_recruit.py tests/test_property_sheet.py -q --no-cov`；`ruff check .`；`cd miniapp && npx tsc --noEmit` | **129 passed**；All checks passed；零错 |
+
+### 2.9 REQ-IT7-10 经纪人推荐记录跳转评估详情验证（2026-11-03，m06081）
+
+| 项 | 命令/断言 | 结果 |
+|---|---|---|
+| 源码绑定 | `miniapp/pages/merchant/broker/index.wxml` 推荐记录 `.entry` 含 `bindtap="onOpenLeadDetail"`、`data-id="{{item.id}}"`、`hover-class="hoverable"`、`.entry__arrow`；`index.wxss` 含 `.entry__arrow` | 通过（E2E 用例 11） |
+| 跳转 | `miniapp/pages/merchant/broker/index.ts` 含 `onOpenLeadDetail(e: WechatMiniprogram.BaseEvent)`，URL 为 `/pages/valuation/detail/index?id=${id}`；`app.json`（主包+分包）含 `pages/valuation/detail/index` | 通过（E2E 用例 11） |
+| 经纪人可读推荐线索 | `pytest tests/test_merchant_broker.py::test_my_recommended_leads_with_followups`：`creator_id=None`、`broker_id=本人` 的线索，经纪人 `GET /public/leads/{id}` → 200 | **1 passed** |
+| 权限边界 | 非创建人且非该线索归属经纪人的用户仍抛 `PermissionDeniedError("无权查看该线索")`（`LeadService.get_lead_detail`） | 通过（代码路径） |
+| 回归 | `npx playwright test e2e/merchant-iteration7.spec.ts` → **11 passed (12.4s)**；`cd miniapp && npx tsc --noEmit` 零错；`ruff check` 全绿 | 通过 |
+
+### 2.10 REQ-IT7-11 经纪人来源展示修正验证（2026-11-03，m06244）
+
+| 项 | 命令/断言 | 结果 |
+|---|---|---|
+| 接口字段 | `GET /api/v1/admin/merchant/brokers` 列表项新增 `bind_source`；`pytest tests/test_merchant_broker.py::test_admin_broker_summary_and_source_filter` 断言 `source=backoffice` 时 `bind_source=backoffice` | **25 passed** |
+| 展示逻辑 | `broker-labels.ts` 新增 `BIND_SOURCE_LABELS`（`qrcode: 扫码绑定`、`share: 分享绑定`、`manual: 手工绑定`、`backoffice: 后台绑定`）与 `brokerSourceLabel(source, bindSource)`；列表与抽屉均改为调用该函数 | 通过（E2E 用例 12 源码断言） |
+| 扫码绑定来源 | `BrokerBindRequest.qrcode_code` + `bind_initial` 校验二维码后写 `bind_source=qrcode`；`pytest tests/test_merchant_broker.py::test_bind_by_scanned_qrcode_records_qrcode_source` 断言绑定响应与历史记录均为 `qrcode`、`inviter_employee_id` 为发码员工 | **26 passed**（broker 套件） |
+| 回归 | `npx playwright test e2e/merchant-iteration7.spec.ts` → **12 passed (12.4s)**；`cd frontend && npx tsc --noEmit` 零错；`ruff check` 全绿 | 通过 |
 
 ## 3. 设计稿验证（REQ-IT7-03）
 

@@ -26,7 +26,7 @@ import { BrokerPendingPanel } from "./_components/broker-pending-panel";
 import { BrokerRebindDialog } from "./_components/broker-rebind-dialog";
 import { BrokerSummaryCards } from "./_components/broker-summary-cards";
 import {
-  BROKER_SOURCE_LABELS,
+  brokerSourceLabel,
   BROKER_SOURCE_OPTIONS,
   BROKER_STATUS_LABELS,
   brokerStatusTone,
@@ -378,7 +378,7 @@ export default function MerchantBrokersPage() {
                         </StatusBadge>
                       </td>
                       <td className="px-4 py-3 text-xs text-graphite">
-                        {BROKER_SOURCE_LABELS[item.source] || item.source}
+                        {brokerSourceLabel(item.source, item.bind_source)}
                       </td>
                       <td className="px-4 py-3 text-xs tabular-nums text-graphite">{formatDate(item.updated_at)}</td>
                       <td className="px-2 py-3 text-right">

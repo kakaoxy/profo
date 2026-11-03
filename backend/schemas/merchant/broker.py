@@ -48,6 +48,11 @@ class BrokerBindRequest(BaseModel):
     """首次绑定门店请求."""
 
     store_id: str = Field(min_length=1, max_length=36, description="门店ID")
+    qrcode_code: str | None = Field(
+        default=None,
+        max_length=64,
+        description="门店邀请二维码短码（扫门店二维码绑定时传，用于记录扫码来源）",
+    )
 
 
 class BrokerChangeRequest(BaseModel):
@@ -236,6 +241,7 @@ class BrokerListItem(BaseModel):
     store_name: str | None
     bind_status: str
     source: str
+    bind_source: str
     inviter_employee_id: str | None
     recruit_lead_id: str | None = None
     recommendation_count: int

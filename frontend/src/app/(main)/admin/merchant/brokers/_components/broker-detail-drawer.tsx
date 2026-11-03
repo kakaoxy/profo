@@ -11,8 +11,8 @@ import { merchantApi } from "../../_components/merchant-api";
 import { BrokerAvatar } from "./broker-avatar";
 import {
   BINDING_RECORD_LABELS,
-  BROKER_SOURCE_LABELS,
   BROKER_STATUS_LABELS,
+  brokerSourceLabel,
   brokerStatusTone,
 } from "./broker-labels";
 
@@ -108,7 +108,7 @@ export function BrokerDetailDrawer({
                 <div className="min-w-0">
                   <h2 className="text-xl font-medium tracking-tight text-ink">{broker.name}</h2>
                   <p className="mt-1 text-xs text-graphite">
-                    {broker.phone_masked} · {BROKER_SOURCE_LABELS[broker.source] || broker.source}
+                    {broker.phone_masked} · {brokerSourceLabel(broker.source, broker.bind_source)}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <StatusBadge tone={brokerStatusTone(broker.bind_status)}>
@@ -162,7 +162,9 @@ export function BrokerDetailDrawer({
                 </div>
                 <div>
                   <dt className="text-xs text-graphite">来源</dt>
-                  <dd className="mt-0.5 text-ink">{BROKER_SOURCE_LABELS[broker.source] || broker.source}</dd>
+                  <dd className="mt-0.5 text-ink">
+                    {brokerSourceLabel(broker.source, broker.bind_source)}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-xs text-graphite">创建时间</dt>

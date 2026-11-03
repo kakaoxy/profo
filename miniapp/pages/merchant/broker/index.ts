@@ -312,6 +312,13 @@ Page({
     }
   },
 
+  /** 打开推荐线索的评估详情（REQ-IT7-10）。 */
+  onOpenLeadDetail(e: WechatMiniprogram.BaseEvent) {
+    const id = String(e.currentTarget.dataset.id || "");
+    if (!id) return;
+    wx.navigateTo({ url: `/pages/valuation/detail/index?id=${id}` });
+  },
+
   onMoreLeads() {
     if (this.data.leadsLoading || this.data.leads.length >= this.data.leadsTotal) return;
     void this.loadLeads(this.data.leadsPage + 1);
@@ -544,7 +551,7 @@ Page({
       await request<Broker>({
         url: "/public/merchant/brokers/me/bind",
         method: "POST",
-        data: { store_id: resolved.store_id },
+        data: { store_id: resolved.store_id, qrcode_code: code },
       });
       wx.showToast({ title: "绑定成功", icon: "success" });
       await this.load();

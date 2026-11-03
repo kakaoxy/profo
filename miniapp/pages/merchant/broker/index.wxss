@@ -71,6 +71,16 @@
   line-height: 1.4;
   color: var(--graphite);
 }
+/* 推荐记录可点击跳转评估详情（REQ-IT7-10） */
+.entry--link {
+  cursor: pointer;
+}
+.entry__arrow {
+  flex-shrink: 0;
+  font-size: 28rpx;
+  line-height: 1.2;
+  color: var(--dove);
+}
 
 /* 推荐记录里的跟进：只用 .hint 语义，不再造一个圆角小卡 */
 .entry__follows {

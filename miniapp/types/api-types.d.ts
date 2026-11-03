@@ -10345,6 +10345,11 @@ export interface components {
              * @description 门店ID
              */
             store_id: string;
+            /**
+             * Qrcode Code
+             * @description 门店邀请二维码短码（扫门店二维码绑定时传，用于记录扫码来源）
+             */
+            qrcode_code?: string | null;
         };
         /**
          * BrokerBindingListResponse
@@ -10516,6 +10521,8 @@ export interface components {
             bind_status: string;
             /** Source */
             source: string;
+            /** Bind Source */
+            bind_source: string;
             /** Inviter Employee Id */
             inviter_employee_id: string | null;
             /** Recruit Lead Id */

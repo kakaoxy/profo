@@ -173,10 +173,18 @@
         <view class="hint hint--warn" wx:elif="{{leadsError}}">{{leadsError}}</view>
         <view class="empty" wx:elif="{{!leads.length}}">还没有推荐记录</view>
         <block wx:else>
-          <view class="entry" wx:for="{{leads}}" wx:key="id">
+          <view
+            class="entry entry--link"
+            wx:for="{{leads}}"
+            wx:key="id"
+            hover-class="hoverable"
+            bindtap="onOpenLeadDetail"
+            data-id="{{item.id}}"
+          >
             <view class="entry__top">
               <view class="entry__name">{{item.community_name}}</view>
               <text class="entry__status">{{item.statusText}}</text>
+              <text class="entry__arrow">›</text>
             </view>
             <view class="hint" wx:if="{{item.infoText}}">{{item.infoText}}</view>
             <view class="hint tnum">推荐时间 {{item.createdText}}</view>

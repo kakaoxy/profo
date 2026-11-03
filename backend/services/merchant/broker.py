@@ -327,7 +327,11 @@ class MerchantBrokerService:
         *,
         request: Request | None = None,
     ) -> BrokerResponse:
-        """首次绑定门店（免审直接生效，D3-A/Q22）."""
+        """首次绑定门店（免审直接生效，D3-A/Q22）.
+
+        REQ-IT7-11：扫码绑定时传 ``qrcode_code``，绑定记录与档案的 ``bind_source``
+        写 ``qrcode``（而不是 ``manual``），后台「来源」才能正确显示「扫码绑定」。
+        """
         broker = self._require_my_broker(user)
         store = self._selectable_store(req.store_id, allow_pending=False)
         if broker.store_id == store.id:
@@ -335,11 +339,29 @@ class MerchantBrokerService:
         if broker.store_id:
             msg = "经纪人已有有效绑定门店，请先解绑或申请换绑"
             raise ConflictError(msg)
+
+        bind_source = MerchantBindSource.MANUAL.value
+        inviter_id = broker.inviter_employee_id
+        if req.qrcode_code:
+            qr_service = MerchantBrokerQRCodeService(self.db)
+            resolved = qr_service.resolve(req.qrcode_code)
+            qr_token = qr_service.get_valid_token(req.qrcode_code)
+            if not resolved.valid or qr_token is None:
+                msg = resolved.reason or "门店邀请二维码无效或已过期"
+                raise ValidationError(msg)
+            if str(qr_token.store_id) != str(store.id):
+                msg = "二维码与所选门店不一致，请重新扫码"
+                raise ValidationError(msg)
+            bind_source = MerchantBindSource.QRCODE.value
+            inviter_id = str(qr_token.inviter_employee_id)
+            if not broker.inviter_employee_id:
+                broker.inviter_employee_id = inviter_id
+
         self._activate_binding(
             broker,
             store,
-            bind_source=MerchantBindSource.MANUAL.value,
-            inviter_employee_id=broker.inviter_employee_id,
+            bind_source=bind_source,
+            inviter_employee_id=inviter_id,
             approved_by=None,
         )
         add_audit_log(

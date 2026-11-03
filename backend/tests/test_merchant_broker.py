@@ -295,6 +295,41 @@ def test_bind_store_and_history(
     assert again.status_code == 409, again.text
 
 
+def test_bind_by_scanned_qrcode_records_qrcode_source(
+    broker_client: TestClient,
+    admin_client: TestClient,
+    employee: User,
+    seeded_db: dict,
+) -> None:
+    """已注册经纪人扫码绑定时，绑定来源应为 qrcode（REQ-IT7-11）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"])
+    _register(broker_client)
+
+    session: Session = seeded_db["session"]
+    code = "qr-bind-" + uuid.uuid4().hex[:8]
+    session.add(
+        MerchantStoreQRCode(
+            code=code,
+            store_id=store["id"],
+            inviter_employee_id=employee.id,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=7),
+        ),
+    )
+    session.commit()
+
+    bind = broker_client.post(
+        f"{API}/public/merchant/brokers/me/bind",
+        json={"store_id": store["id"], "qrcode_code": code},
+    )
+    assert bind.status_code == 200, bind.text
+    assert bind.json()["bind_source"] == "qrcode"
+    assert bind.json()["inviter_employee_id"] == employee.id
+
+    history = broker_client.get(f"{API}/public/merchant/brokers/me/bindings").json()
+    assert history[0]["bind_source"] == "qrcode"
+
+
 def test_change_binding_requires_approval(
     broker_client: TestClient,
     admin_client: TestClient,
@@ -505,6 +540,9 @@ def test_admin_broker_summary_and_source_filter(
     assert backoffice.status_code == 200
     assert backoffice.json()["total"] == 1
     assert backoffice.json()["items"][0]["name"] == "来源筛选经纪人"
+    # REQ-IT7-11：列表项需同时返回档案来源与绑定渠道，供前端区分「自主申请 / 扫码绑定」
+    assert backoffice.json()["items"][0]["source"] == "backoffice"
+    assert backoffice.json()["items"][0]["bind_source"] == "backoffice"
 
     contact = admin_client.get(f"{API}/admin/merchant/brokers", params={"source": "store_contact"})
     assert contact.status_code == 200
@@ -686,6 +724,11 @@ def test_my_recommended_leads_with_followups(
     assert body["total"] == 1
     assert body["items"][0]["community_name"] == "经纪人推荐小区"
     assert [row["content"] for row in body["items"][0]["follow_ups"]] == ["带看跟进", "首次沟通"]
+
+    # REQ-IT7-10：经纪人本人可打开推荐线索的评估详情（线索由运营录入时 creator 不是本人）
+    detail = broker_client.get(f"{API}/public/leads/{lead.id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["community_name"] == "经纪人推荐小区"
 
 
 pytestmark = pytest.mark.usefixtures("seeded_db")

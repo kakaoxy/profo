@@ -14,6 +14,8 @@ import { createApiContext, loginPage } from "./helpers/auth";
  * - REQ-IT7-03 经纪人模块设计稿：文件存在且包含 Steep 设计要素、无外部资源依赖
  * - REQ-IT7-03 经纪人管理页：KPI / 分段筛选 / 新建弹层 / 详情抽屉 / 编辑资料（设计稿落代码）
  * - REQ-IT7-08 经纪人绑定门店：扫码 / 搜索两条路径，搜索无结果可创建新门店
+ * - REQ-IT7-10 经纪人推荐记录：点击跳转评估详情
+ * - REQ-IT7-11 经纪人来源展示：source=self_apply 时按 bind_source 展示扫码/分享绑定
  *
  * 串行执行：afterAll 按 MARK 清理本文件造的数据，并行会互相删除。
  */
@@ -550,6 +552,67 @@ test("REQ-IT7-09 门店邀请二维码：主包落地页 + 冷/热启动都能�
   } finally {
     await cCtx.dispose();
   }
+});
+
+test("REQ-IT7-10 经纪人我的推荐记录可点击进入评估详情", async () => {
+  const miniappDir = path.resolve(__dirname, "../../miniapp");
+  const brokerTs = fs.readFileSync(path.join(miniappDir, "pages/merchant/broker/index.ts"), "utf8");
+  const brokerWxml = fs.readFileSync(
+    path.join(miniappDir, "pages/merchant/broker/index.wxml"),
+    "utf8",
+  );
+  const brokerWxss = fs.readFileSync(
+    path.join(miniappDir, "pages/merchant/broker/index.wxss"),
+    "utf8",
+  );
+  const appJson = JSON.parse(fs.readFileSync(path.join(miniappDir, "app.json"), "utf8")) as {
+    pages: string[];
+    subPackages?: { root: string; pages: string[] }[];
+  };
+
+  // 评估详情页已注册（跳转目标存在）
+  const allPages = [
+    ...appJson.pages,
+    ...(appJson.subPackages ?? []).flatMap((pkg) => pkg.pages.map((page) => `${pkg.root}/${page}`)),
+  ];
+  expect(allPages).toContain("pages/valuation/detail/index");
+
+  // 推荐记录行可点击：绑定事件 + data-id + 点击态 + 右侧箭头
+  expect(brokerWxml).toContain('bindtap="onOpenLeadDetail"');
+  expect(brokerWxml).toContain('data-id="{{item.id}}"');
+  expect(brokerWxml).toContain('hover-class="hoverable"');
+  expect(brokerWxml).toContain('class="entry__arrow"');
+  expect(brokerWxss).toContain(".entry__arrow");
+
+  // 跳转评估详情并携带线索 id
+  expect(brokerTs).toContain("onOpenLeadDetail(e: WechatMiniprogram.BaseEvent)");
+  expect(brokerTs).toContain("pages/valuation/detail/index?id=${id}");
+});
+
+test("REQ-IT7-11 经纪人列表来源正确展示扫码/分享绑定渠道", async () => {
+  const brokersDir = path.resolve(__dirname, "../src/app/(main)/admin/merchant/brokers");
+  const labels = fs.readFileSync(path.join(brokersDir, "_components/broker-labels.ts"), "utf8");
+  const pageTs = fs.readFileSync(path.join(brokersDir, "page.tsx"), "utf8");
+  const drawerTs = fs.readFileSync(
+    path.join(brokersDir, "_components/broker-detail-drawer.tsx"),
+    "utf8",
+  );
+
+  // 注册入口统一写 source=self_apply，真实渠道在 bind_source；列表/抽屉需优先展示绑定渠道
+  expect(labels).toContain("BIND_SOURCE_LABELS");
+  expect(labels).toContain('qrcode: "扫码绑定"');
+  expect(labels).toContain('share: "分享绑定"');
+  expect(labels).toContain("export function brokerSourceLabel(source: string, bindSource?: string | null)");
+  expect(pageTs).toContain("brokerSourceLabel(item.source, item.bind_source)");
+  expect(drawerTs).toContain("brokerSourceLabel(broker.source, broker.bind_source)");
+  expect(pageTs).not.toContain("BROKER_SOURCE_LABELS[item.source] || item.source");
+
+  // 扫码绑定必须把 qrcode_code 传给后端，否则绑定记录只能记成 manual
+  const brokerIndexTs = fs.readFileSync(
+    path.resolve(__dirname, "../../miniapp/pages/merchant/broker/index.ts"),
+    "utf8",
+  );
+  expect(brokerIndexTs).toContain("qrcode_code: code");
 });
 
 test.afterAll(() => {

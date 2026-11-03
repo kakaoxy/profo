@@ -636,7 +636,7 @@ class LeadService:
             msg = "线索不存在"
             raise ResourceNotFoundError(msg)
 
-        if lead.creator_id != user_id:
+        if lead.creator_id != user_id and not self._is_lead_broker(lead.broker_id, user_id):
             msg = "无权查看该线索"
             raise PermissionDeniedError(msg)
 
@@ -650,6 +650,30 @@ class LeadService:
             "follow_ups": follow_ups,
             "eval_histories": eval_histories,
         }
+
+    def _is_lead_broker(self, broker_id: str | None, user_id: str) -> bool:
+        """判断当前用户是否为该线索归属的经纪人（REQ-IT7-10）.
+
+        经纪人中心「我的推荐记录」展示 ``Lead.broker_id == 本人经纪人档案`` 的线索，
+        这些线索可能由运营/员工录入（creator 不是经纪人本人），
+        因此需要放行经纪人本人查看详情，否则点击推荐记录会 403。
+
+        Args:
+            broker_id: 线索归属的经纪人 ID（可为空）
+            user_id: 当前登录用户 ID
+
+        """
+        if not broker_id:
+            return False
+        # 局部导入避免 leads 与 merchant 域模块在启动期互相加载
+        from models.merchant import MerchantBroker
+
+        return (
+            self.db.query(MerchantBroker.id)
+            .filter(MerchantBroker.id == broker_id, MerchantBroker.user_id == user_id)
+            .first()
+            is not None
+        )
 
     def get_assessment_backlog(self) -> dict[str, int]:
         """待评估积压指标（迭代二 alert_card widget）."""
