@@ -911,7 +911,8 @@ Page<PageData, PageCustom>({
     if (prev && prev.route === "pages/valuation/list/index") {
       wx.navigateBack({ complete: release });
     } else {
-      wx.redirectTo({ url: "/pages/valuation/list/index", complete: release });
+      // from=submit：列表页展示提交成功回执与「返回首页」入口（该页为非 tab 页，原生仅左上角主页键）
+      wx.redirectTo({ url: "/pages/valuation/list/index?from=submit", complete: release });
     }
   },
 

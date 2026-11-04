@@ -10,6 +10,7 @@ import {
   resetTestStubs,
   wxStubs,
 } from "../test-harness";
+import listWxml from "../../pages/valuation/list/index.wxml?raw";
 
 vi.mock("../../utils/request", () => createRequestMock());
 vi.mock("../../utils/token", () => ({
@@ -46,6 +47,10 @@ vi.mock("../../utils/valuation-freshness", () => ({
     }
     return { prefix: "提交", text: "01-01" };
   },
+}));
+vi.mock("../../utils/valuation-notify", () => ({
+  fetchValuationSubscribeTemplate: vi.fn(async () => null),
+  requestValuationPriceSubscribe: vi.fn(),
 }));
 
 beforeAll(async () => {
@@ -369,5 +374,31 @@ describe("我的评估列表卡结论条（与评估工作台同口径）", () =
     const card = ctx.data.items[0] as AnyRecord;
     expect(card.showVerdict).toBe(false);
     expect(card.priceLabel).toBe("业主报价");
+  });
+});
+
+describe("我的评估列表：提交成功回执与返回首页入口", () => {
+  it("onLoad 读取 from=submit，onBackHome 切回房源 tab", async () => {
+    const ctx = createPageHarness({});
+    ctx.onLoad({ from: "submit" });
+    await flush();
+
+    expect(ctx.data.fromSubmit).toBe(true);
+    ctx.onBackHome();
+    expect(wxStubs.switchTab).toHaveBeenCalledWith({ url: "/pages/projects/list/index" });
+  });
+
+  it("普通进入不展示提交成功回执", async () => {
+    const ctx = createPageHarness({});
+    ctx.onLoad({});
+    await flush();
+
+    expect(ctx.data.fromSubmit).toBe(false);
+  });
+
+  it("WXML 的返回首页按钮绑定到 onBackHome，且回执仅在 from=submit 时渲染", () => {
+    expect(listWxml).toContain('wx:if="{{fromSubmit}}"');
+    expect(listWxml).toContain('bindtap="onBackHome"');
+    expect(listWxml).toContain("返回首页");
   });
 });

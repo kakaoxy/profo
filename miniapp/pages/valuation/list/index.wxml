@@ -1,4 +1,11 @@
 <view class="page">
+  <!-- 提交成功回执（仅 from=submit）：页面内提供「返回首页」入口，避免只剩左上角原生主页按钮 -->
+  <view class="submitted" wx:if="{{fromSubmit}}">
+    <view class="submitted__title">估价已提交</view>
+    <view class="submitted__desc">评估完成后会电话通知您，可在下方查看进度</view>
+    <button class="submitted__home" hover-class="hoverable" bindtap="onBackHome">返回首页</button>
+  </view>
+
   <!-- 统计条（对齐 evaluate 的 evalmeta） -->
   <view class="evalmeta" wx:if="{{!needLogin && !internalOnly && !error && items.length > 0}}">
     <view class="evalmeta__big">共 <text class="evalmeta__num">{{total}}</text> 条评估</view>

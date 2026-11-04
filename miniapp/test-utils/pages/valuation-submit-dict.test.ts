@@ -332,7 +332,7 @@ describe("提交成功后跳转与守卫（回归：与字典改造无关但共�
     ctx.afterSubmitSuccess();
     const wx = (globalThis as unknown as { wx: AnyRecord }).wx;
     expect(wx.redirectTo).toHaveBeenCalledWith(
-      expect.objectContaining({ url: "/pages/valuation/list/index" }),
+      expect.objectContaining({ url: "/pages/valuation/list/index?from=submit" }),
     );
   });
 });

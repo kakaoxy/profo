@@ -82,6 +82,8 @@ interface PageData {
   internalOnly: boolean;
   /** 「授权价提醒」授权入口可见（后端已下发订阅模板 ID）. */
   notifyBanner: boolean;
+  /** 是否由「估价提交」成功跳转而来：展示提交成功回执与页面内「返回首页」入口. */
+  fromSubmit: boolean;
 }
 
 /** 页面自定义方法（含非响应式实例字段）. */
@@ -109,6 +111,7 @@ interface PageCustom {
   onItemTap(e: WechatMiniprogram.BaseEvent): void;
   onGoLogin(): void;
   onGoValuation(): void;
+  onBackHome(): void;
   onRetry(): void;
   onSubscribeTap(): void;
 }
@@ -126,6 +129,7 @@ Page<PageData, PageCustom>({
     needLogin: false,
     internalOnly: false,
     notifyBanner: false,
+    fromSubmit: false,
   },
 
   _epoch: 0,
@@ -138,7 +142,9 @@ Page<PageData, PageCustom>({
 
   subscribeTemplateId: null,
 
-  onLoad() {
+  onLoad(options: Record<string, string | undefined>) {
+    // 估价提交成功后 redirectTo 带 from=submit：展示提交成功回执与「返回首页」入口
+    this.setData({ fromSubmit: options.from === "submit" });
     // 预取「授权价提醒」订阅模板 ID（静默失败置 null，授权入口隐藏）
     fetchValuationSubscribeTemplate().then((templateId) => {
       this.subscribeTemplateId = templateId;
@@ -477,6 +483,11 @@ Page<PageData, PageCustom>({
   onGoValuation() {
     // submit 页为 tabBar 页，必须用 switchTab 跳转（navigateTo 会报错）
     wx.switchTab({ url: "/pages/valuation/submit/index" });
+  },
+
+  /** 返回首页：房源列表为 tabBar 页，必须用 switchTab（与 recruit 详情成功态同口径）. */
+  onBackHome() {
+    wx.switchTab({ url: "/pages/projects/list/index" });
   },
 
   onRetry() {
