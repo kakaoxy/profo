@@ -87,6 +87,10 @@ page {
 /* agreePrivacyAuthorization 按钮样式重置：仅承载 checkbox 与微信侧授权同步，
    视觉上与原 checkbox 一致（透明内联，清除 button 默认边框/内边距/伪元素边框） */
 .agree-check-btn {
+  flex: 0 0 88rpx;
+  width: 88rpx;
+  height: 88rpx;
+  justify-content: center;
   background: transparent;
   padding: 0;
   margin: 0;
