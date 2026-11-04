@@ -616,12 +616,13 @@ class LeadService:
             creator_id=user_id,
         )
 
-    def get_lead_detail(self, lead_id: str, user_id: str) -> dict[str, Any]:
+    def get_lead_detail(self, lead_id: str, user_id: str, *, user: User | None = None) -> dict[str, Any]:
         """获取线索详情（含跟进记录），并校验归属权.
 
         Args:
             lead_id: 线索ID
             user_id: 当前用户ID
+            user: 当前用户对象（传入时避免额外查询，并支持内部员工访问）
 
         Returns:
             包含线索对象和跟进记录列表的字典
@@ -636,7 +637,11 @@ class LeadService:
             msg = "线索不存在"
             raise ResourceNotFoundError(msg)
 
-        if lead.creator_id != user_id and not self._is_lead_broker(lead.broker_id, user_id):
+        is_internal = self._has_internal_role(user) if user is not None else False
+        if not is_internal and user is None:
+            db_user = self.db.query(User).filter(User.id == user_id).first()
+            is_internal = bool(db_user and self._has_internal_role(db_user))
+        if lead.creator_id != user_id and not self._is_lead_broker(lead.broker_id, user_id) and not is_internal:
             msg = "无权查看该线索"
             raise PermissionDeniedError(msg)
 

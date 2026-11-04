@@ -231,7 +231,8 @@ test("REQ-IT4-02 小程序首页：进入/刷新重新定位并带原点请求�
   expect(homeTs).toContain("getCurrentLocation");
   expect(homeTs).toContain("refreshLocationAndLoad");
   expect(homeTs).toMatch(/origin_lng: origin\?\.lng/);
-  expect(homeTs).toMatch(/onShow\(\) \{\s*void this\.refreshLocationAndLoad\(\)/);
+  // onShow 先处理扫码进入的 scene（REQ-IT7-09），再刷新定位与列表
+  expect(homeTs).toMatch(/onShow\(\) \{[\s\S]*?getEnterOptionsSync[\s\S]*?void this\.refreshLocationAndLoad\(\);/);
   expect(homeWxml).toMatch(/bindtap="onRefresh"/);
   expect(homeWxml).toContain("store__distance");
 });

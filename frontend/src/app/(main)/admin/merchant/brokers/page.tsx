@@ -24,6 +24,7 @@ import { BrokerDetailDrawer } from "./_components/broker-detail-drawer";
 import { BrokerFormDialog } from "./_components/broker-form-dialog";
 import { BrokerPendingPanel } from "./_components/broker-pending-panel";
 import { BrokerRebindDialog } from "./_components/broker-rebind-dialog";
+import { BrokerStorePicker } from "./_components/broker-store-picker";
 import { BrokerSummaryCards } from "./_components/broker-summary-cards";
 import {
   brokerSourceLabel,
@@ -35,7 +36,6 @@ import {
 type BrokerList = components["schemas"]["BrokerListResponse"];
 type Broker = components["schemas"]["BrokerResponse"];
 type BrokerSummary = components["schemas"]["BrokerSummaryResponse"];
-type StoreList = components["schemas"]["MerchantStoreListResponse"];
 type PendingBinding = components["schemas"]["BrokerBindingResponse"];
 
 type TabKey = "all" | "bound" | "unbound" | "pending";
@@ -80,14 +80,14 @@ export default function MerchantBrokersPage() {
   const [keywordInput, setKeywordInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [tab, setTab] = useState<TabKey>("all");
-  const [storeFilter, setStoreFilter] = useState("all");
+  const [storeFilter, setStoreFilter] = useState("");
+  const [storeFilterName, setStoreFilterName] = useState("");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [page, setPage] = useState(1);
 
   const [data, setData] = useState<BrokerList | null>(null);
   const [summary, setSummary] = useState<BrokerSummary | null>(null);
   const [pending, setPending] = useState<PendingBinding[]>([]);
-  const [stores, setStores] = useState<StoreList["items"]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -109,13 +109,13 @@ export default function MerchantBrokersPage() {
     setLoading(true);
     setError("");
     try {
-      const [list, nextSummary, pendingBindings, storeList] = await Promise.all([
+      const [list, nextSummary, pendingBindings] = await Promise.all([
         merchantApi<BrokerList>(
           `/admin/merchant/brokers${queryString({
             page,
             page_size: PAGE_SIZE,
             keyword: keyword || undefined,
-            store_id: storeFilter === "all" ? undefined : storeFilter,
+            store_id: storeFilter || undefined,
             source: sourceFilter === "all" ? undefined : sourceFilter,
             bind_status: tab === "all" || tab === "pending" ? undefined : tab,
             pending_only: tab === "pending" ? "true" : undefined,
@@ -123,13 +123,11 @@ export default function MerchantBrokersPage() {
         ),
         merchantApi<BrokerSummary>("/admin/merchant/brokers/summary"),
         merchantApi<PendingBinding[]>("/admin/merchant/bindings/pending"),
-        merchantApi<StoreList>("/admin/merchant/stores?page=1&page_size=200"),
       ]);
       if (current !== requestId.current) return;
       setData(list);
       setSummary(nextSummary);
       setPending(pendingBindings);
-      setStores(storeList.items);
     } catch (err) {
       if (current === requestId.current) {
         setError(err instanceof Error ? err.message : "加载经纪人列表失败");
@@ -213,7 +211,7 @@ export default function MerchantBrokersPage() {
               <a
                 href={`/api/v1/admin/merchant/brokers/export${queryString({
                   keyword: keyword || undefined,
-                  store_id: storeFilter === "all" ? undefined : storeFilter,
+                  store_id: storeFilter || undefined,
                   bind_status: tab === "all" || tab === "pending" ? undefined : tab,
                   source: sourceFilter === "all" ? undefined : sourceFilter,
                   pending_only: tab === "pending" ? "true" : undefined,
@@ -286,25 +284,19 @@ export default function MerchantBrokersPage() {
                   }}
                 />
               </div>
-              <Select
-                value={storeFilter}
-                onValueChange={(value) => {
-                  setStoreFilter(value);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="h-9 w-[148px]" aria-label="按所属门店筛选">
-                  <SelectValue placeholder="全部门店" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部门店</SelectItem>
-                  {stores.map((store) => (
-                    <SelectItem key={store.id} value={store.id}>
-                      {store.store_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="w-[220px]">
+                <BrokerStorePicker
+                  value={storeFilter}
+                  selectedName={storeFilterName}
+                  onChange={(store) => {
+                    setStoreFilter(store?.id ?? "");
+                    setStoreFilterName(store?.store_name ?? "");
+                    setPage(1);
+                  }}
+                  ariaLabel="按所属门店筛选"
+                  placeholder="全部门店（输入关键词搜索）"
+                />
+              </div>
               <Select
                 value={sourceFilter}
                 onValueChange={(value) => {

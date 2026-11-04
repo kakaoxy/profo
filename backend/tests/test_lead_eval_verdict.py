@@ -643,6 +643,20 @@ class TestDetailAndHandled:
         assert body["expected_sale_days"] is None
         assert body["evaluator"] is None
 
+    def test_internal_staff_can_view_lead_detail(
+        self,
+        seeded_db: dict[str, Any],
+        actor_client: TestClient,
+        outsider: User,
+    ) -> None:
+        """内部员工可查看线索详情（与路由文案保持一致）."""
+        session: Session = seeded_db["session"]
+        lead = _make_lead(session, creator_id=outsider.id)
+        session.commit()
+
+        resp = actor_client.get(_DETAIL_URL_TPL.format(lead_id=lead.id))
+        assert resp.status_code == 200, resp.text
+
     def test_handled_cards_carry_verdict(
         self,
         seeded_db: dict[str, Any],

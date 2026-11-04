@@ -823,7 +823,15 @@ class MerchantBrokerService:
         if store_id:
             query = query.filter(MerchantBroker.store_id == store_id)
         if bind_status:
-            query = query.filter(MerchantBroker.bind_status == bind_status)
+            if bind_status == MerchantBindStatus.UNBOUND.value:
+                # 「未绑定」包含从未绑定与已解绑（unbound_after），与 summary 口径一致
+                query = query.filter(
+                    MerchantBroker.bind_status.in_(
+                        [MerchantBindStatus.UNBOUND.value, MerchantBindStatus.UNBOUND_AFTER.value]
+                    )
+                )
+            else:
+                query = query.filter(MerchantBroker.bind_status == bind_status)
         if source:
             query = query.filter(MerchantBroker.source == source)
         if pending_only:

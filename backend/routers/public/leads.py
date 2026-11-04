@@ -655,7 +655,7 @@ async def create_lead_followup(
 @router.get(
     "/{lead_id}/evaluator-contact",
     summary="获取评估人联系方式",
-    description="返回最新一次评估的评估人真实手机号（仅线索创建人或内部员工）",
+    description="返回最新一次评估的评估人真实手机号（仅线索创建人、内部员工或该线索归属经纪人）",
 )
 @limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_evaluator_contact(
@@ -713,7 +713,7 @@ async def create_customer_followup(
 @router.get(
     "/{lead_id}",
     summary="获取估价详情",
-    description="获取指定线索的详细信息，仅线索创建人或该线索归属经纪人可查看",
+    description="获取指定线索的详细信息，仅线索创建人、内部员工或该线索归属经纪人可查看",
 )
 @limiter.limit(RateLimits.PUBLIC_LEAD_LIST)
 def get_lead_detail(
@@ -722,8 +722,8 @@ def get_lead_detail(
     current_user: CurrentCustomerUserDep,
     service: LeadServiceDep,
 ) -> PublicLeadDetail:
-    """获取指定线索的详细信息，仅线索创建人或该线索归属经纪人可查看."""
-    result = service.get_lead_detail(lead_id=lead_id, user_id=current_user.id)
+    """获取指定线索的详细信息，仅线索创建人、内部员工或该线索归属经纪人可查看."""
+    result = service.get_lead_detail(lead_id=lead_id, user_id=current_user.id, user=current_user)
     lead = result["lead"]
     follow_ups = result["follow_ups"]
     eval_histories = result["eval_histories"]

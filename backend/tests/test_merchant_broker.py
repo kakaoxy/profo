@@ -621,6 +621,36 @@ def test_admin_broker_summary_and_source_filter(
     assert log.after["filters"]["source"] == "backoffice"
 
 
+def test_admin_broker_unbound_filter_includes_unbound_after(
+    admin_client: TestClient,
+) -> None:
+    """「未绑定」筛选需包含已解绑（unbound_after），与 summary 计数口径一致."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"])
+    created = admin_client.post(
+        f"{API}/admin/merchant/brokers",
+        json={"name": "已解绑经纪人", "phone": f"139{uuid.uuid4().int % 10**8:08d}", "store_id": store["id"]},
+    )
+    assert created.status_code == 201, created.text
+    broker_id = created.json()["id"]
+    unbound = admin_client.post(
+        f"{API}/admin/merchant/brokers/{broker_id}/unbind",
+        params={"reason": "E2E 口径校验"},
+    )
+    assert unbound.status_code == 200, unbound.text
+    assert unbound.json()["bind_status"] == MerchantBindStatus.UNBOUND_AFTER.value
+
+    listed = admin_client.get(
+        f"{API}/admin/merchant/brokers",
+        params={"bind_status": MerchantBindStatus.UNBOUND.value, "page_size": 200},
+    )
+    assert listed.status_code == 200, listed.text
+    assert broker_id in {item["id"] for item in listed.json()["items"]}
+    summary = admin_client.get(f"{API}/admin/merchant/brokers/summary")
+    assert summary.status_code == 200, summary.text
+    assert summary.json()["unbound"] >= 1
+
+
 def test_admin_force_change_keeps_history(
     broker_client: TestClient,
     admin_client: TestClient,

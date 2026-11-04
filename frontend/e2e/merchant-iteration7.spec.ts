@@ -270,6 +270,38 @@ test("REQ-IT7-03 经纪人管理页：KPI / 分段筛选 / 新建弹层 / 详情
   } finally {
     await verify.dispose();
   }
+
+  // 门店筛选走远程搜索：选中后列表请求带 store_id（不再一次性拉 200 家门店）
+  await page.goto("/admin/merchant/brokers");
+  const filteredRequest = page.waitForRequest(
+    (request) =>
+      request.url().includes("/api/v1/admin/merchant/brokers?") &&
+      request.url().includes(`store_id=${storeForDrawer}`),
+  );
+  const storeFilter = page.getByLabel("按所属门店筛选");
+  await storeFilter.click();
+  await storeFilter.fill(`${MARK}抽屉门店`);
+  await page
+    .getByRole("option")
+    .filter({ hasText: `${MARK}抽屉门店` })
+    .first()
+    .click();
+  await filteredRequest;
+  await expect(page.getByRole("button", { name: `查看经纪人 ${MARK}经纪人改名` })).toBeVisible();
+
+  // 「未绑定」tab 的计数与列表同口径：解绑后（unbound_after）应出现在未绑定列表
+  const unbindCtx = await createApiContext();
+  try {
+    const res = await unbindCtx.ctx.post(
+      `/api/v1/admin/merchant/brokers/${brokerId}/unbind?reason=${encodeURIComponent("E2E 未绑定口径")}`,
+    );
+    expect(res.ok(), `解绑失败 HTTP ${res.status()}`).toBeTruthy();
+  } finally {
+    await unbindCtx.dispose();
+  }
+  await page.goto("/admin/merchant/brokers");
+  await page.getByRole("button", { name: /^未绑定/ }).click();
+  await expect(page.getByRole("button", { name: `查看经纪人 ${MARK}经纪人改名` })).toBeVisible();
 });
 
 test("REQ-IT7-05 换绑门店改为关键词搜索选择（万级门店可用）", async ({ page }) => {
@@ -325,6 +357,15 @@ test("REQ-IT7-05 换绑门店改为关键词搜索选择（万级门店可用）
   } finally {
     await verify.dispose();
   }
+});
+
+test("REQ-IT7-03 经纪人页门店筛选改为远程搜索（门店上万时可用）", () => {
+  const pageTs = fs.readFileSync(
+    path.resolve(__dirname, "../src/app/(main)/admin/merchant/brokers/page.tsx"),
+    "utf8",
+  );
+  expect(pageTs).toContain("BrokerStorePicker");
+  expect(pageTs).not.toContain("page_size=200");
 });
 
 test("REQ-IT7-03 经纪人模块设计稿存在且遵循 Steep 规范", () => {
@@ -500,9 +541,10 @@ test("REQ-IT7-09 门店邀请二维码：主包落地页 + 冷/热启动都能�
   expect(inviteTs).toContain("pages/merchant/broker/index?code=");
   expect(inviteTs).toContain("邀请链接无效");
 
-  // 旧码兼容：首页 onShow 也处理 scene，且同一短码不重复跳转
+  // 旧码兼容：首页 onShow 也处理 scene，且同一短码不重复跳转（页面实例内去重）
   expect(homeTs).toContain("extractSceneCode");
-  expect(homeTs).toContain("lastHandledSceneCode");
+  expect(homeTs).toContain("handledSceneCode");
+  expect(homeTs).not.toContain("let lastHandledSceneCode");
   expect(homeTs).toMatch(/onShow\(\)[\s\S]{0,400}getEnterOptionsSync/);
 
   // 经纪人页也可直接接收 scene（分享路径 / 未来改 page 不影响）

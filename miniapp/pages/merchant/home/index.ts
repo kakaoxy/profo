@@ -86,23 +86,10 @@ function parseSceneCode(scene: string): string {
   return /^[A-Za-z0-9_-]{8,64}$/.test(scene) ? scene : "";
 }
 
-/** 已处理过的扫码短码：避免 onShow 反复跳转同一张码（REQ-IT7-09）. */
-let lastHandledSceneCode = "";
-
 /** 从页面 query / 小程序进入参数中提取邀请短码（REQ-IT7-09）. */
 function extractSceneCode(query: Record<string, string | undefined>): string {
   const rawScene = query.scene ? decodeURIComponent(query.scene) : "";
   return query.code || parseSceneCode(rawScene);
-}
-
-/** 跳转经纪人中心完成认证 / 绑定（REQ-M06-006 / REQ-IT7-09）. */
-function goBrokerBind(code: string, referrer?: string): void {
-  if (!code || code === lastHandledSceneCode) {
-    return;
-  }
-  lastHandledSceneCode = code;
-  const referrerQuery = referrer ? `&referrer=${encodeURIComponent(referrer)}` : "";
-  wx.redirectTo({ url: `/pages/merchant/broker/index?code=${encodeURIComponent(code)}${referrerQuery}` });
 }
 
 Page({
@@ -112,6 +99,9 @@ Page({
     keyword: "",
     stores: [] as DisplayStore[],
     total: 0,
+    // 页面实例内去重：避免 onShow 对同一短码重复跳转；
+    // 不能用模块级变量，否则退出后再次扫同一张码会永远不再跳转。
+    handledSceneCode: "",
     icons: {
       chevronRight: MP_ICONS.chevronRight,
       plus: MP_ICONS.plus,
@@ -127,7 +117,7 @@ Page({
    */
   onLoad(options: Record<string, string | undefined>) {
     // 冷启动扫码：scene 在页面 query 上（referrer 用于注册归属 AC-024）
-    goBrokerBind(extractSceneCode(options), options.referrer);
+    this.handleSceneCode(extractSceneCode(options), options.referrer);
   },
 
   onShow() {
@@ -135,8 +125,21 @@ Page({
     // getEnterOptionsSync 返回最近一次进入时的 scene/query，冷启动与热启动都可用。
     const enter = wx.getEnterOptionsSync ? wx.getEnterOptionsSync() : wx.getLaunchOptionsSync();
     const query = (enter.query || {}) as Record<string, string | undefined>;
-    goBrokerBind(extractSceneCode(query), query.referrer);
+    this.handleSceneCode(extractSceneCode(query), query.referrer);
     void this.refreshLocationAndLoad();
+  },
+
+  /** 跳转经纪人中心完成认证 / 绑定（REQ-M06-006 / REQ-IT7-09）. */
+  handleSceneCode(code: string, referrer?: string): void {
+    if (!code || code === this.data.handledSceneCode) {
+      return;
+    }
+    this.setData({ handledSceneCode: code });
+    const referrerQuery = referrer ? `&referrer=${encodeURIComponent(referrer)}` : "";
+    wx.redirectTo({
+      url: `/pages/merchant/broker/index?code=${encodeURIComponent(code)}${referrerQuery}`,
+      fail: () => this.setData({ handledSceneCode: "" }),
+    });
   },
 
   onPullDownRefresh() {
