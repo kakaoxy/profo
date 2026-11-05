@@ -181,6 +181,13 @@ def _register(broker_client: TestClient, name: str = "小李", **extra) -> dict:
     return resp.json()
 
 
+def test_my_broker_returns_null_before_register(broker_client: TestClient) -> None:
+    """非经纪人查询我的档案返回 200/null，不用 404 表达未认证."""
+    resp = broker_client.get(f"{API}/public/merchant/brokers/me")
+    assert resp.status_code == 200
+    assert resp.json() is None
+
+
 def test_register_requires_phone(seeded_db: dict) -> None:
     """未完善手机号不能注册经纪人."""
     session: Session = seeded_db["session"]

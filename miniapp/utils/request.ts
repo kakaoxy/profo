@@ -1,5 +1,11 @@
 import { BASE_URL } from "./config";
-import { getAccessToken, getCAccessToken, getCRefreshToken, getRefreshToken } from "./token";
+import {
+  getAccessToken,
+  getCAccessToken,
+  getCRefreshToken,
+  getRefreshToken,
+  isTokenExpiringSoon,
+} from "./token";
 
 /**
  * 请求参数.
@@ -279,11 +285,82 @@ async function renewCToken(): Promise<string | null> {
   return recovered ? getCAccessToken() || null : null;
 }
 
+/** 从 Authorization header 中取出 Bearer token；无 Bearer 前缀返回空串. */
+function getBearerToken(authorization: string | undefined): string {
+  return authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length) : "";
+}
+
+/** 刷新指定端令牌并返回新 access_token；失败返回 null. */
+function refreshTokenByAudience(isCAudience: boolean): Promise<string | null> {
+  return isCAudience ? renewCToken() : refreshAccessToken();
+}
+
+/**
+ * 发送前准备 Authorization：令牌即将过期时先续期，避免首次请求产生 401 噪音.
+ *
+ * - 自动注入与显式 Authorization 都覆盖；
+ * - 非 JWT / 无 exp 的令牌不做本地预判（保留既有 401 刷新兜底）；
+ * - 无 access_token 但有 refresh_token 时也先续期；两者都没有则不发起刷新；
+ * - 返回 null 表示可立即发送，返回 Promise 表示等待续期完成后再发送.
+ */
+function prepareAuthorization(
+  url: string,
+  requestHeader: Record<string, string>,
+  skipAuth: boolean,
+): Promise<void> | null {
+  if (skipAuth) {
+    return null;
+  }
+
+  const authorization = requestHeader.Authorization;
+  if (authorization) {
+    const explicitToken = getBearerToken(authorization);
+    if (!explicitToken || !isTokenExpiringSoon(explicitToken)) {
+      return null;
+    }
+    return refreshTokenByAudience(isCAudiencePath(url)).then((newToken) => {
+      if (newToken) {
+        requestHeader.Authorization = `Bearer ${newToken}`;
+      }
+    });
+  }
+
+  let token = getAccessToken();
+  if (isCAudiencePath(url)) {
+    const cToken = getCAccessToken();
+    if (cToken) {
+      token = cToken;
+    }
+  }
+
+  if (!token) {
+    const isCAudience = isCAudiencePath(url);
+    const refreshToken = isCAudience ? getCRefreshToken() : getRefreshToken();
+    if (!refreshToken) {
+      return null;
+    }
+    return refreshTokenByAudience(isCAudience).then((newToken) => {
+      if (newToken) {
+        requestHeader.Authorization = `Bearer ${newToken}`;
+      }
+    });
+  }
+
+  if (!isTokenExpiringSoon(token)) {
+    requestHeader.Authorization = `Bearer ${token}`;
+    return null;
+  }
+
+  return refreshTokenByAudience(isCAudiencePath(url)).then((newToken) => {
+    requestHeader.Authorization = `Bearer ${newToken || token}`;
+  });
+}
+
 /**
  * 封装 wx.request，返回 Promise<T>.
  * - 自动注入 Authorization（/public/* 与 /keys/* 优先用 c_access_token，其他用 access_token）；
- * - 401 时按接口受众自动刷新对应端令牌并重试一次（/public/* 与 /keys/* → C 端，其余 → 后台），
- *   C 端刷新失败时再静默重新微信登录一次，避免 refresh_token 过期后进入「全部 401」僵死状态；
+ * - 令牌即将过期时发送前主动续期，避免首次请求 401；401 时仍按接口受众自动刷新并重试一次
+ *   （/public/* 与 /keys/* → C 端，其余 → 后台），C 端刷新失败时再静默重新微信登录一次；
  * - 调用方显式传入 header.Authorization 时优先保留；
  * - HTTP 非 2xx reject { statusCode, body }；网络异常 reject { errMsg }.
  */
@@ -300,32 +377,20 @@ export function request<T>(options: RequestOptions): Promise<T> {
   } = options;
 
   const requestHeader: Record<string, string> = { ...header };
-  if (!skipAuth && !requestHeader.Authorization) {
-    // /public/* 与 /keys/* 路径优先用 C 端令牌（aud=c）：内部员工持 admin 令牌时需 C 端
-    // 令牌才能访问 /public/leads、/keys/properties 等接口（后端按路径推断期望受众并严格校验 aud）。
-    let token = getAccessToken();
-    if (isCAudiencePath(url)) {
-      const cToken = getCAccessToken();
-      if (cToken) {
-        token = cToken;
-      }
-    }
-    if (token) {
-      requestHeader.Authorization = `Bearer ${token}`;
-    }
-  }
+  const prepare = prepareAuthorization(url, requestHeader, skipAuth);
 
   const doFetch = () =>
     doRequest<T>(url, method, data, requestHeader, skipAuth, false, false, timeout);
+  const fetch = prepare ? prepare.then(doFetch) : doFetch();
 
   // GET 幂等 + cacheKey：成功后写入内存缓存，供页面 SWR（先渲染缓存再静默刷新）
   if (method === "GET" && cacheKey) {
-    return doFetch().then((res) => {
+    return fetch.then((res) => {
       setCacheData(cacheKey, res, cacheTtl);
       return res;
     });
   }
-  return doFetch();
+  return fetch;
 }
 
 /**

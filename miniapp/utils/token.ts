@@ -170,6 +170,23 @@ export function getTokenAud(token: string): string {
 }
 
 /**
+ * 判断 JWT 是否将在 skewMs 内过期（提前量容忍时钟偏差与请求耗时）.
+ *
+ * 仅用于客户端提前续期，不替代服务端校验：非 JWT（无法解析）或 payload 无 exp
+ * 时返回 false（无法本地判断，交由服务端决定）.
+ */
+export function isTokenExpiringSoon(token: string, skewMs = 30_000): boolean {
+  if (!token) {
+    return false;
+  }
+  const data = parseTokenPayload(token);
+  if (!data || typeof data.exp !== "number") {
+    return false;
+  }
+  return data.exp * 1000 <= Date.now() + skewMs;
+}
+
+/**
  * 同步读取后台 access_token 中的 sub（即 user.id），解析失败返回空串.
  *
  * 用途：onShareAppMessage / onShareTimeline 是微信同步回调，无法 await

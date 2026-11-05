@@ -106,11 +106,11 @@ describe("经纪人代填身份（V06）", () => {
     expect(lastReq("/public/merchant/brokers/me/store")).toBeUndefined();
   });
 
-  it("非经纪人（404）→ 不展示横幅，按普通用户降级", async () => {
+  it("非经纪人（200 null）→ 不展示横幅，按普通用户降级", async () => {
     const ctx = createPageHarness({});
     const loading = ctx.loadBrokerIdentity();
 
-    lastReq("/public/merchant/brokers/me")!.reject(new Error("404"));
+    lastReq("/public/merchant/brokers/me")!.resolve(null);
     await loading;
 
     expect(ctx.data.brokerName).toBe("");

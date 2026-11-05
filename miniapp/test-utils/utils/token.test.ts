@@ -14,6 +14,7 @@ import {
   clearCUserState,
   getTokenAud,
   getUserIdFromAccessToken,
+  isTokenExpiringSoon,
 } from "../../utils/token";
 
 /** base64url 编码 JSON（无 padding，与微信手写解码输入一致）；不依赖 Buffer/atob 全局差异. */
@@ -163,5 +164,24 @@ describe("JWT payload 解析（getTokenAud / getUserIdFromAccessToken）", () =>
     expect(getUserIdFromAccessToken()).toBe("");
     storage.set("access_token", makeToken({ sub: 42 }));
     expect(getUserIdFromAccessToken()).toBe("");
+  });
+});
+
+describe("isTokenExpiringSoon", () => {
+  it("已过期或落在提前量内视为即将过期", () => {
+    const now = Math.floor(Date.now() / 1000);
+    expect(isTokenExpiringSoon(makeToken({ exp: now - 60 }))).toBe(true);
+    expect(isTokenExpiringSoon(makeToken({ exp: now + 10 }))).toBe(true);
+  });
+
+  it("超过提前量的未来令牌不视为过期", () => {
+    const now = Math.floor(Date.now() / 1000);
+    expect(isTokenExpiringSoon(makeToken({ exp: now + 120 }))).toBe(false);
+  });
+
+  it("非 JWT / 无 exp 无法本地判断，返回 false 交由服务端校验", () => {
+    expect(isTokenExpiringSoon("old")).toBe(false);
+    expect(isTokenExpiringSoon("")).toBe(false);
+    expect(isTokenExpiringSoon(makeToken({ aud: "c" }))).toBe(false);
   });
 });

@@ -292,7 +292,7 @@ Page<PageData, PageCustom>({
    * - 已认证且有有效绑定门店：展示「XX 门店 · XX 经纪人」
    * - 已认证但未绑定门店（独立经纪人）：展示「独立经纪人 · XX」并提示待审核，允许提交
    * - 已绑定但门店不可用（停用/删除）：提示门店不可用，允许提交（后端按空门店处理）
-   * - 非经纪人（404）/未登录（401）：不展示横幅，按普通用户流程
+   * - 非经纪人（200 null）/未登录（401）：不展示横幅，按普通用户流程
    */
   async loadBrokerIdentity() {
     if (!getCAccessToken()) {
@@ -305,7 +305,16 @@ Page<PageData, PageCustom>({
       return;
     }
     try {
-      const broker = await request<Broker>({ url: "/public/merchant/brokers/me" });
+      const broker = await request<Broker | null>({ url: "/public/merchant/brokers/me" });
+      if (!broker) {
+        this.setData({
+          brokerName: "",
+          brokerStoreName: "",
+          brokerStoreMissing: false,
+          brokerStoreUnavailable: false,
+        });
+        return;
+      }
       let storeName = "";
       let unavailable = false;
       if (broker.store_id) {
@@ -329,7 +338,7 @@ Page<PageData, PageCustom>({
         brokerStoreUnavailable: unavailable,
       });
     } catch {
-      // 非经纪人/未登录：静默降级为普通用户，不阻断估价表单
+      // 网络异常/未登录：静默降级为普通用户，不阻断估价表单
       this.setData({
         brokerName: "",
         brokerStoreName: "",

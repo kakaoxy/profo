@@ -22,6 +22,22 @@ function queueResponses(hs: Array<(opts: WxRequestOptions) => void>): void {
   handlers = hs;
 }
 
+/** 构造 payload 可解析的 JWT（签名不参与前端解析）; */
+function makeToken(payload: Record<string, unknown>): string {
+  const bytes = new TextEncoder().encode(JSON.stringify(payload));
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  const encoded = btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `header.${encoded}.signature`;
+}
+
+/** 已过期的 access_token（提前 60s）. */
+function expiredToken(aud: "c" | "admin"): string {
+  return makeToken({ aud, exp: Math.floor(Date.now() / 1000) - 60 });
+}
+
 beforeEach(() => {
   storage.clear();
   handlers = [];
@@ -93,6 +109,89 @@ describe("令牌注入", () => {
       },
     ]);
     await request({ url: "/public/stats/platform", skipAuth: true });
+  });
+});
+
+describe("令牌即将过期时发送前主动续期", () => {
+  it("/public 路径过期 C 令牌 → 先刷新再请求，不产生首次 401", async () => {
+    storage.set("c_access_token", expiredToken("c"));
+    storage.set("c_refresh_token", "c-ref");
+    const calls: string[] = [];
+    queueResponses([
+      (opts) => {
+        calls.push("refresh");
+        expect(opts.url).toContain("/public/auth/refresh");
+        expect(opts.data).toMatchObject({ refresh_token: "c-ref" });
+        opts.success({
+          statusCode: 200,
+          data: { access_token: "c-new", refresh_token: "c-ref-2" },
+        });
+      },
+      (opts) => {
+        calls.push("me");
+        expect(opts.url).toContain("/public/auth/me");
+        expect(opts.header?.Authorization).toBe("Bearer c-new");
+        opts.success({ statusCode: 200, data: { ok: true } });
+      },
+    ]);
+
+    await expect(request({ url: "/public/auth/me" })).resolves.toEqual({ ok: true });
+    expect(calls).toEqual(["refresh", "me"]);
+  });
+
+  it("后台路径过期 admin 令牌 → 先刷新再请求，不产生首次 401", async () => {
+    storage.set("access_token", expiredToken("admin"));
+    storage.set("refresh_token", "ref");
+    const calls: string[] = [];
+    queueResponses([
+      (opts) => {
+        calls.push("refresh");
+        expect(opts.url).toContain("/auth/refresh");
+        expect(opts.data).toMatchObject({ refresh_token: "ref" });
+        opts.success({
+          statusCode: 200,
+          data: { access_token: "new-admin", refresh_token: "ref-2" },
+        });
+      },
+      (opts) => {
+        calls.push("me");
+        expect(opts.url).toContain("/auth/me");
+        expect(opts.header?.Authorization).toBe("Bearer new-admin");
+        opts.success({ statusCode: 200, data: { ok: true } });
+      },
+    ]);
+
+    await expect(request({ url: "/auth/me" })).resolves.toEqual({ ok: true });
+    expect(calls).toEqual(["refresh", "me"]);
+  });
+
+  it("显式 Authorization 的过期 C 令牌同样先刷新", async () => {
+    storage.set("c_refresh_token", "c-ref");
+    const calls: string[] = [];
+    queueResponses([
+      (opts) => {
+        calls.push("refresh");
+        expect(opts.url).toContain("/public/auth/refresh");
+        opts.success({
+          statusCode: 200,
+          data: { access_token: "c-new", refresh_token: "c-ref-2" },
+        });
+      },
+      (opts) => {
+        calls.push("me");
+        expect(opts.url).toContain("/public/auth/me");
+        expect(opts.header?.Authorization).toBe("Bearer c-new");
+        opts.success({ statusCode: 200, data: { ok: true } });
+      },
+    ]);
+
+    await expect(
+      request({
+        url: "/public/auth/me",
+        header: { Authorization: `Bearer ${expiredToken("c")}` },
+      }),
+    ).resolves.toEqual({ ok: true });
+    expect(calls).toEqual(["refresh", "me"]);
   });
 });
 

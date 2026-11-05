@@ -7728,7 +7728,7 @@ export interface paths {
         };
         /**
          * 我的经纪人档案
-         * @description 当前登录用户的经纪人档案.
+         * @description 当前登录用户的经纪人档案；未认证返回 null.
          */
         get: operations["get_my_broker_api_v1_public_merchant_brokers_me_get"];
         /**
@@ -40543,7 +40543,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["BrokerResponse"];
+                    "application/json": components["schemas"]["BrokerResponse"] | null;
                 };
             };
         };

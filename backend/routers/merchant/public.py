@@ -325,15 +325,9 @@ def get_my_broker(
     request: Request,
     db: DbSessionDep,
     current_user: CurrentCustomerUserDep,
-) -> BrokerResponse:
-    """当前登录用户的经纪人档案."""
-    profile = MerchantBrokerService(db).my_profile(current_user)
-    if profile is None:
-        from services.system.exceptions import ResourceNotFoundError
-
-        msg = "尚未完成经纪人认证"
-        raise ResourceNotFoundError(msg)
-    return profile
+) -> BrokerResponse | None:
+    """当前登录用户的经纪人档案；未认证返回 null."""
+    return MerchantBrokerService(db).my_profile(current_user)
 
 
 @router.put("/brokers/me", summary="修改经纪人资料")

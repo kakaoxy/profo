@@ -172,10 +172,15 @@ Page({
         await this.resolveQRCode(this.data.qrCode);
       }
       try {
-        const broker = await request<Broker>({ url: "/public/merchant/brokers/me" });
+        const broker = await request<Broker | null>({ url: "/public/merchant/brokers/me" });
+        if (!broker) {
+          this.setData({ state: "register" });
+          return;
+        }
         this.setData({ state: "profile", broker });
         await Promise.all([this.loadStore(), this.loadLeads(1)]);
       } catch (err) {
+        // 兼容尚未升级的旧版后端（未认证仍返回 404）
         if (statusCodeOf(err) === 404) {
           this.setData({ state: "register" });
           return;
