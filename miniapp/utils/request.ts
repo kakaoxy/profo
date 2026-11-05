@@ -4,6 +4,7 @@ import {
   getCAccessToken,
   getCRefreshToken,
   getRefreshToken,
+  getTokenAud,
   isTokenExpiringSoon,
 } from "./token";
 
@@ -290,9 +291,37 @@ function getBearerToken(authorization: string | undefined): string {
   return authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length) : "";
 }
 
-/** 刷新指定端令牌并返回新 access_token；失败返回 null. */
+/**
+ * 刷新指定端令牌并返回新 access_token；失败返回 null.
+ *
+ * 主动续期必须复用 refreshAccessToken / refreshCAccessToken 的全局单飞 Promise：
+ * 纯 C 用户的主令牌与 C 令牌相同，同一个 refresh_token 可能同时从 C 端和后台路径
+ * 触发刷新；若各自发起请求，会因后端 refresh_token 轮换防重放导致第二个刷新 401.
+ */
 function refreshTokenByAudience(isCAudience: boolean): Promise<string | null> {
-  return isCAudience ? renewCToken() : refreshAccessToken();
+  const refreshToken = isCAudience ? getCRefreshToken() : getRefreshToken();
+  const otherRefreshToken = isCAudience ? getRefreshToken() : getCRefreshToken();
+  const accessToken = isCAudience ? getCAccessToken() : getAccessToken();
+  // 纯 C 用户的主令牌与 C 令牌相同；即使调用方按 URL 判成后台路径，也应走 C 端刷新.
+  const refreshAsC =
+    isCAudience ||
+    (!!refreshToken && refreshToken === otherRefreshToken) ||
+    getTokenAud(refreshToken) === "c" ||
+    getTokenAud(accessToken) === "c";
+  const inFlight = refreshAsC ? refreshCPromise : refreshPromise;
+  if (inFlight) {
+    if (!refreshAsC) {
+      return inFlight;
+    }
+    // C 端刷新失败时继续复用会话恢复的单飞 Promise，保留静默重登语义.
+    return inFlight.then((newToken) => {
+      if (newToken) {
+        return newToken;
+      }
+      return recoverCSession().then((recovered) => (recovered ? getCAccessToken() || null : null));
+    });
+  }
+  return refreshAsC ? renewCToken() : refreshAccessToken();
 }
 
 /**
