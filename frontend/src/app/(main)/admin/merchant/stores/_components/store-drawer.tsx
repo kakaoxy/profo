@@ -1,42 +1,36 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PencilLine } from "lucide-react";
+import { PencilLine, X } from "lucide-react";
 
 import { Field } from "@/app/(main)/admin/_components/field";
 import { StatusBadge } from "@/app/(main)/admin/_components/status-badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SteepButton, SteepInput, SteepSelectTrigger } from "@/components/custom/steep-controls";
+import { Select, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import type { components } from "@/lib/api-types";
 import { merchantApi } from "../../_components/merchant-api";
+import {
+  cooperationTone,
+  formatDateTime,
+  reviewTone,
+  REVIEW_LABELS,
+  SOURCE_LABELS,
+  storeTone,
+  STORE_STATUS_LABELS,
+} from "./store-status";
 
 type StoreDetail = components["schemas"]["MerchantStoreResponse"];
 type StoreListItem = components["schemas"]["MerchantStoreListItem"];
 type DistrictList = components["schemas"]["MerchantDistrictListResponse"];
 type CircleList = components["schemas"]["MerchantBusinessCircleResponse"];
 type UserSimple = components["schemas"]["UserSimpleResponse"];
-
-const STATUS_LABELS: Record<string, string> = {
-  normal: "正常",
-  disabled: "停用",
-  merged: "已合并",
-  relocated: "已搬迁",
-};
-const REVIEW_LABELS: Record<string, string> = { pending: "待审核", approved: "已转正", merged: "已合并" };
-const SOURCE_LABELS: Record<string, string> = {
-  employee: "员工建档",
-  backoffice: "后台新增",
-  import: "批量导入",
-  broker: "经纪人创建",
-};
 
 type EditForm = {
   store_name: string;
@@ -122,7 +116,9 @@ export function StoreDrawer({
     merchantApi<DistrictList>("/admin/merchant/districts")
       .then((result) => setDistricts(result.items))
       .catch(() => setDistricts([]));
-    merchantApi<components["schemas"]["UserSimpleListResponse"]>("/users/simple?page=1&page_size=200")
+    merchantApi<components["schemas"]["UserSimpleListResponse"]>(
+      "/users/simple?page=1&page_size=200",
+    )
       .then((result) => setEmployees(result.items))
       .catch(() => setEmployees([]));
   }, [open]);
@@ -134,7 +130,9 @@ export function StoreDrawer({
       return;
     }
     let cancelled = false;
-    merchantApi<CircleList>(`/admin/merchant/business-circles?district=${encodeURIComponent(district)}`)
+    merchantApi<CircleList>(
+      `/admin/merchant/business-circles?district=${encodeURIComponent(district)}`,
+    )
       .then((result) => {
         if (!cancelled) setCircles(result.items);
       })
@@ -155,7 +153,12 @@ export function StoreDrawer({
 
   const save = async () => {
     if (!store || !form) return;
-    if (!form.store_name.trim() || !form.address.trim() || !form.district.trim() || !form.business_circle.trim()) {
+    if (
+      !form.store_name.trim() ||
+      !form.address.trim() ||
+      !form.district.trim() ||
+      !form.business_circle.trim()
+    ) {
       setError("门店名称、详细地址、区域、商圈为必填项");
       return;
     }
@@ -193,55 +196,85 @@ export function StoreDrawer({
     }
   };
 
+  const status = store?.status ?? summary?.status ?? "";
+  const reviewStatus = store?.review_status ?? summary?.review_status ?? "";
+  const cooperationStatus = store?.cooperation_status ?? summary?.cooperation_status ?? "";
+  const cooperationLabel =
+    store?.cooperation_status_label ?? summary?.cooperation_status_label ?? "—";
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full gap-0 overflow-y-auto p-0 sm:max-w-[560px]">
-        <div className="border-b border-dove/60 px-6 pt-6 pb-5">
-          <div className="flex items-start justify-between gap-4 pr-8">
-            <div className="min-w-0">
-              <SheetTitle className="truncate text-[22px] leading-tight font-medium text-ink">
+      <SheetContent
+        side="right"
+        showCloseButton={false}
+        className="w-full gap-0 overflow-y-auto rounded-l-[24px] border-0 bg-pure-white p-0 shadow-steep sm:max-w-[560px]"
+      >
+        <div className="border-b border-dove/40 px-6 pt-8 pb-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <SheetTitle className="truncate text-[26px] leading-[1.18] font-[500] tracking-[-0.009em] text-ink">
                 {store?.store_name ?? summary?.store_name ?? "门店详情"}
               </SheetTitle>
-              <SheetDescription className="mt-1 text-[13px] text-graphite">
-                {store ? `${store.company_name} · ${store.province}${store.city}` : "加载中…"}
+              <SheetDescription className="mt-1 text-[15px] leading-[1.4] text-graphite">
+                {store
+                  ? `${store.company_name} · ${Array.from(
+                      new Set([store.province, store.city].filter(Boolean)),
+                    ).join(" ")}`
+                  : "正在加载门店详情"}
               </SheetDescription>
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <StatusBadge tone={store?.status === "normal" ? "positive" : "neutral"}>
-                  {STATUS_LABELS[store?.status ?? summary?.status ?? ""] ?? store?.status ?? "—"}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <StatusBadge tone={storeTone(status)}>
+                  {STORE_STATUS_LABELS[status] ?? status ?? "—"}
                 </StatusBadge>
-                <StatusBadge tone={store?.review_status === "pending" ? "attention" : "neutral"}>
-                  {REVIEW_LABELS[store?.review_status ?? summary?.review_status ?? ""] ??
-                    store?.review_status ??
-                    "—"}
+                <StatusBadge tone={reviewTone(reviewStatus)}>
+                  {REVIEW_LABELS[reviewStatus] ?? reviewStatus ?? "—"}
                 </StatusBadge>
-                <StatusBadge tone="neutral">{store?.cooperation_status_label ?? "—"}</StatusBadge>
+                <StatusBadge tone={cooperationTone(cooperationStatus)}>
+                  {cooperationLabel}
+                </StatusBadge>
               </div>
             </div>
-            {!editing && store ? (
-              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-                <PencilLine className="mr-1 h-4 w-4" /> 编辑
-              </Button>
-            ) : null}
+            <div className="flex shrink-0 items-center gap-1">
+              {!editing && store ? (
+                <SteepButton variant="text" onClick={() => setEditing(true)}>
+                  <PencilLine />
+                  编辑
+                </SteepButton>
+              ) : null}
+              <SheetClose asChild>
+                <SteepButton variant="icon" aria-label="关闭门店详情">
+                  <X />
+                </SteepButton>
+              </SheetClose>
+            </div>
           </div>
         </div>
 
-        {error ? <p className="mx-6 mt-4 text-sm text-rust">{error}</p> : null}
-        {loading ? <p className="px-6 py-8 text-sm text-graphite">加载中…</p> : null}
+        {error ? (
+          <p className="mx-6 mt-4 rounded-[16px] bg-apricot-wash px-4 py-3 text-[14px] leading-[1.5] text-rust">
+            {error}
+          </p>
+        ) : null}
+        {loading ? (
+          <p className="px-6 py-8 text-[15px] leading-[1.5] text-graphite" aria-live="polite">
+            正在加载门店详情
+          </p>
+        ) : null}
 
         {store && form && !loading ? (
-          <div className="flex flex-col gap-7 px-6 py-6">
+          <div className="flex flex-col gap-8 px-6 py-6">
             <section className="flex flex-col gap-4">
-              <div className="text-[13px] font-medium tracking-wide text-graphite">基础信息</div>
+              <h2 className="text-[14px] font-[500] tracking-[-0.009em] text-graphite">基础信息</h2>
               {editing ? (
-                <div className="grid grid-cols-2 gap-4">
-                  <Field label="门店名称" required className="col-span-2">
-                    <Input
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="门店名称" required className="sm:col-span-2">
+                    <SteepInput
                       value={form.store_name}
                       onChange={(event) => setForm({ ...form, store_name: event.target.value })}
                     />
                   </Field>
-                  <Field label="详细地址" required className="col-span-2">
-                    <Input
+                  <Field label="详细地址" required className="sm:col-span-2">
+                    <SteepInput
                       value={form.address}
                       onChange={(event) => setForm({ ...form, address: event.target.value })}
                     />
@@ -254,10 +287,10 @@ export function StoreDrawer({
                         setForm({ ...form, district: value, business_circle: "" })
                       }
                     >
-                      <SelectTrigger aria-label="区域">
+                      <SteepSelectTrigger aria-label="区域">
                         <SelectValue placeholder="请选择区域" />
-                      </SelectTrigger>
-                      <SelectContent>
+                      </SteepSelectTrigger>
+                      <SelectContent className="rounded-[16px] border-dove/40 shadow-steep">
                         {districts.map((item) => (
                           <SelectItem key={item} value={item}>
                             {item}
@@ -266,47 +299,51 @@ export function StoreDrawer({
                       </SelectContent>
                     </Select>
                   </Field>
-                  <Field label="商圈" required hint={circles.length ? undefined : "该区域暂无候选，可沿用原商圈"}>
+                  <Field
+                    label="商圈"
+                    required
+                    hint={circles.length ? undefined : "该区域暂无候选，可沿用原商圈"}
+                  >
                     <Select
                       value={form.business_circle}
                       onValueChange={(value) => setForm({ ...form, business_circle: value })}
                     >
-                      <SelectTrigger aria-label="商圈">
+                      <SteepSelectTrigger aria-label="商圈">
                         <SelectValue placeholder="请选择商圈" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from(new Set([form.business_circle, ...circles].filter(Boolean))).map(
-                          (item) => (
-                            <SelectItem key={item} value={item}>
-                              {item}
-                            </SelectItem>
-                          ),
-                        )}
+                      </SteepSelectTrigger>
+                      <SelectContent className="rounded-[16px] border-dove/40 shadow-steep">
+                        {Array.from(
+                          new Set([form.business_circle, ...circles].filter(Boolean)),
+                        ).map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </Field>
                   <Field label="联系人" required>
-                    <Input
+                    <SteepInput
                       value={form.contact_name}
                       onChange={(event) => setForm({ ...form, contact_name: event.target.value })}
                     />
                   </Field>
                   <Field label="联系电话" required>
-                    <Input
+                    <SteepInput
                       value={form.contact_phone}
                       inputMode="tel"
                       onChange={(event) => setForm({ ...form, contact_phone: event.target.value })}
                     />
                   </Field>
-                  <Field label="负责人" className="col-span-2">
+                  <Field label="负责人" className="sm:col-span-2">
                     <Select
                       value={form.owner_employee_id}
                       onValueChange={(value) => setForm({ ...form, owner_employee_id: value })}
                     >
-                      <SelectTrigger aria-label="负责人">
+                      <SteepSelectTrigger aria-label="负责人">
                         <SelectValue placeholder="未指定" />
-                      </SelectTrigger>
-                      <SelectContent>
+                      </SteepSelectTrigger>
+                      <SelectContent className="rounded-[16px] border-dove/40 shadow-steep">
                         <SelectItem value="__none__">未指定</SelectItem>
                         {employees.map((employee) => (
                           <SelectItem key={employee.id} value={employee.id}>
@@ -318,65 +355,37 @@ export function StoreDrawer({
                   </Field>
                 </div>
               ) : (
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                  <div className="col-span-2">
-                    <dt className="text-xs text-graphite">详细地址</dt>
-                    <dd className="mt-1 text-ink">{store.address}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-graphite">区域 / 商圈</dt>
-                    <dd className="mt-1 text-ink">
-                      {store.district} · {store.business_circle}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-graphite">负责人</dt>
-                    <dd className="mt-1 text-ink">{ownerName}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-graphite">联系人</dt>
-                    <dd className="mt-1 text-ink">{store.contact_name}</dd>
-                  </div>
-                  <div>
-                    <dt className="text-xs text-graphite">联系电话</dt>
-                    <dd className="mt-1 text-ink">{store.contact_phone}</dd>
-                  </div>
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-5">
+                  <DetailItem label="详细地址" className="col-span-2">
+                    {store.address}
+                  </DetailItem>
+                  <DetailItem label="区域 / 商圈">
+                    {store.district} · {store.business_circle}
+                  </DetailItem>
+                  <DetailItem label="负责人">{ownerName}</DetailItem>
+                  <DetailItem label="联系人">{store.contact_name}</DetailItem>
+                  <DetailItem label="联系电话">{store.contact_phone}</DetailItem>
                 </dl>
               )}
             </section>
 
-            <section className="flex flex-col gap-3 border-t border-dove/50 pt-5">
-              <div className="text-[13px] font-medium tracking-wide text-graphite">经营信息</div>
-              <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                <div>
-                  <dt className="text-xs text-graphite">来源</dt>
-                  <dd className="mt-1 text-ink">{SOURCE_LABELS[store.source] ?? store.source}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-graphite">经纪人数量</dt>
-                  <dd className="mt-1 text-ink">{summary?.broker_count ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-graphite">最近拜访</dt>
-                  <dd className="mt-1 text-ink">
-                    {store.last_visit_at ? new Date(store.last_visit_at).toLocaleString("zh-CN") : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-graphite">创建时间</dt>
-                  <dd className="mt-1 text-ink">{new Date(store.created_at).toLocaleString("zh-CN")}</dd>
-                </div>
-                <div className="col-span-2">
-                  <dt className="text-xs text-graphite">备注</dt>
-                  <dd className="mt-1 text-ink">{store.remark || "—"}</dd>
-                </div>
+            <section className="flex flex-col gap-4 border-t border-dove/40 pt-6">
+              <h2 className="text-[14px] font-[500] tracking-[-0.009em] text-graphite">经营信息</h2>
+              <dl className="grid grid-cols-2 gap-x-6 gap-y-5">
+                <DetailItem label="来源">{SOURCE_LABELS[store.source] ?? store.source}</DetailItem>
+                <DetailItem label="经纪人数量">{summary?.broker_count ?? "—"}</DetailItem>
+                <DetailItem label="最近拜访">{formatDateTime(store.last_visit_at)}</DetailItem>
+                <DetailItem label="创建时间">{formatDateTime(store.created_at)}</DetailItem>
+                <DetailItem label="备注" className="col-span-2">
+                  {store.remark || "—"}
+                </DetailItem>
               </dl>
             </section>
 
             {editing ? (
-              <div className="sticky bottom-0 -mx-6 flex items-center justify-end gap-2 border-t border-dove/60 bg-background px-6 py-4">
-                <Button
-                  variant="outline"
+              <div className="sticky bottom-0 -mx-6 flex items-center justify-end gap-4 border-t border-dove/40 bg-pure-white px-6 py-4">
+                <SteepButton
+                  variant="text"
                   onClick={() => {
                     setEditing(false);
                     setForm(toForm(store));
@@ -385,15 +394,32 @@ export function StoreDrawer({
                   disabled={saving}
                 >
                   取消
-                </Button>
-                <Button onClick={() => void save()} disabled={saving}>
+                </SteepButton>
+                <SteepButton variant="primary" onClick={() => void save()} disabled={saving}>
                   {saving ? "保存中…" : "保存修改"}
-                </Button>
+                </SteepButton>
               </div>
             ) : null}
           </div>
         ) : null}
       </SheetContent>
     </Sheet>
+  );
+}
+
+function DetailItem({
+  label,
+  className,
+  children,
+}: {
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={className}>
+      <dt className="text-[14px] leading-[1.4] text-graphite">{label}</dt>
+      <dd className="mt-1 text-[15px] leading-[1.5] text-ink">{children}</dd>
+    </div>
   );
 }

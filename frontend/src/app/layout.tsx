@@ -33,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={`${inter.variable} ${sourceSerif.variable} font-(--font-sohne) antialiased`}>
+      <body className={`${inter.variable} ${sourceSerif.variable} antialiased`}>
         <NuqsAdapter>
           <SWRProvider>{children}</SWRProvider>
         </NuqsAdapter>

@@ -1,0 +1,174 @@
+{
+  "base": {
+    "pageBg": "rgb(247, 247, 248)",
+    "h1": {
+      "fontSize": "44px",
+      "fontWeight": "400",
+      "lineHeight": "48.4px",
+      "letterSpacing": "-0.66px",
+      "color": "rgb(23, 25, 28)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "height": 48.4,
+      "width": 364.7
+    },
+    "filterCard": {
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRadius": "24px",
+      "height": 111.6,
+      "width": 1136
+    },
+    "tableCard": {
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRadius": "24px",
+      "height": 760.5,
+      "width": 1136
+    },
+    "searchInput": {
+      "fontSize": "15px",
+      "fontWeight": "450",
+      "lineHeight": "22.5px",
+      "letterSpacing": "-0.135px",
+      "color": "rgb(23, 25, 28)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRadius": "16px",
+      "height": 44,
+      "width": 858.3
+    },
+    "primaryButton": {
+      "fontSize": "15px",
+      "fontWeight": "450",
+      "lineHeight": "22.5px",
+      "letterSpacing": "-0.135px",
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgb(23, 25, 28)",
+      "borderRadius": "3.35544e+07px",
+      "height": 40,
+      "width": 123.5
+    },
+    "statusBadge": {
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "lineHeight": "21px",
+      "letterSpacing": "-0.144px",
+      "color": "rgb(23, 25, 28)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "height": 21,
+      "width": 99.5
+    },
+    "tableHeader": {
+      "fontSize": "14px",
+      "fontWeight": "450",
+      "lineHeight": "21px",
+      "letterSpacing": "-0.144px",
+      "color": "rgb(119, 123, 134)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "height": 48,
+      "width": 306.9
+    },
+    "firstRow": {
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "height": 84,
+      "width": 1096
+    }
+  },
+  "sheet": {
+    "content": {
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRadius": "24px 0px 0px 24px",
+      "height": 1000,
+      "width": 560
+    },
+    "title": {
+      "fontSize": "26px",
+      "fontWeight": "500",
+      "lineHeight": "30.68px",
+      "letterSpacing": "-0.234px",
+      "color": "rgb(23, 25, 28)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "height": 30.7,
+      "width": 445.7
+    },
+    "input": {
+      "fontSize": "15px",
+      "fontWeight": "450",
+      "lineHeight": "21px",
+      "letterSpacing": "-0.135px",
+      "color": "rgb(23, 25, 28)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRadius": "16px",
+      "height": 44,
+      "width": 512
+    },
+    "primary": {
+      "fontSize": "15px",
+      "fontWeight": "450",
+      "lineHeight": "22.5px",
+      "letterSpacing": "-0.135px",
+      "color": "rgb(255, 255, 255)",
+      "backgroundColor": "rgb(23, 25, 28)",
+      "borderRadius": "3.35544e+07px",
+      "height": 40,
+      "width": 99.5
+    }
+  },
+  "dialog": {
+    "content": {
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "lineHeight": "24px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRadius": "24px",
+      "height": 319.1,
+      "width": 440
+    },
+    "title": {
+      "fontSize": "26px",
+      "fontWeight": "500",
+      "lineHeight": "30.68px",
+      "letterSpacing": "-0.234px",
+      "color": "rgb(23, 25, 28)",
+      "backgroundColor": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "height": 30.7,
+      "width": 103.1
+    },
+    "input": {
+      "fontSize": "15px",
+      "fontWeight": "450",
+      "lineHeight": "21px",
+      "letterSpacing": "-0.135px",
+      "color": "rgb(23, 25, 28)",
+      "backgroundColor": "rgb(255, 255, 255)",
+      "borderRadius": "16px",
+      "height": 44,
+      "width": 392
+    }
+  }
+}

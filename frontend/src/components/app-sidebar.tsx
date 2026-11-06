@@ -63,20 +63,13 @@ const MenuButton = React.forwardRef<
       tooltip={state === "collapsed" && !hasSubmenu ? item.title : undefined}
       isActive={isActive}
       className={`
-        rounded-xl px-3 py-2 text-[14.5px] font-[450] transition-colors duration-150
-        ${
-          isActive
-            ? "bg-pure-white text-ink font-medium shadow-steep-sm"
-            : "text-ink hover:bg-ink/5"
-        }
+        rounded-xl px-3 py-2 text-[15px] font-[450] tracking-[-0.009em] transition-colors duration-150
+        ${isActive ? "bg-ink/5 text-ink font-[500]" : "text-ink hover:bg-ink/5"}
       `}
       {...props}
     >
-      <Icon
-        className={`h-[18px] w-[18px] ${isActive ? "text-ink" : "text-graphite"}`}
-        strokeWidth={1.7}
-      />
-      <span className="text-sm tracking-tight">{item.title}</span>
+      <Icon className={`size-4 ${isActive ? "text-ink" : "text-graphite"}`} strokeWidth={1.6} />
+      <span className="text-[15px] leading-[1.4] tracking-[-0.009em]">{item.title}</span>
       {state === "expanded" && hasSubmenu && (
         <ChevronRight className="ml-auto h-4 w-4 text-dove transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
       )}
@@ -150,7 +143,10 @@ export function AppSidebar({ user }: { user: User | null }) {
    * 需要「子路径点亮父级」时用 `matchesPath` 而非新增父子映射表。
    */
   const matchesPath = React.useCallback(
-    (target: string) => pathname === target || pathname.startsWith(`${target}/`),
+    (target: string) =>
+      target === "/admin"
+        ? pathname === "/admin"
+        : pathname === target || pathname.startsWith(`${target}/`),
     [pathname],
   );
 
@@ -172,8 +168,8 @@ export function AppSidebar({ user }: { user: User | null }) {
           className={`flex items-center py-3 ${state === "collapsed" ? "justify-center px-0" : "px-3"}`}
         >
           {state === "expanded" ? (
-            <div className="flex items-center gap-2.5 transition-all">
-              <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] bg-ink text-[15px] font-semibold text-white">
+            <div className="flex items-center gap-2 transition-all">
+              <div className="flex size-8 shrink-0 items-center justify-center rounded-[8px] bg-ink text-[15px] font-[500] text-white">
                 P
               </div>
               <span className="truncate text-[16px] font-medium text-ink tracking-tight">
@@ -181,7 +177,7 @@ export function AppSidebar({ user }: { user: User | null }) {
               </span>
             </div>
           ) : (
-            <div className="flex h-[30px] w-[30px] items-center justify-center rounded-[9px] bg-ink text-[15px] font-semibold text-white">
+            <div className="flex size-8 items-center justify-center rounded-[8px] bg-ink text-[15px] font-[500] text-white">
               P
             </div>
           )}
@@ -234,9 +230,9 @@ export function AppSidebar({ user }: { user: User | null }) {
                         <HoverCardContent
                           side="right"
                           align="start"
-                          className="min-w-52 p-1.5 bg-pure-white rounded-cards shadow-steep z-50"
+                          className="min-w-52 p-2 bg-pure-white rounded-cards shadow-steep z-50"
                         >
-                          <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          <div className="px-3 py-2 text-[14px] font-[450] text-graphite tracking-[-0.009em]">
                             {item.title}
                           </div>
                           <div className="flex flex-col gap-1 mt-1">
@@ -245,7 +241,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                                 key={sub.title}
                                 href={sub.url}
                                 className={`
-                                  block px-3 py-2.5 text-[13.5px] rounded-[10px] transition-colors duration-150
+                                  block px-3 py-2 text-[14px] leading-[1.4] rounded-xl transition-colors duration-150
                                   ${
                                     pathname === sub.url
                                       ? "font-medium text-rust"
@@ -304,7 +300,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                           sideOffset={8}
                           className="min-w-52 p-1.5 bg-pure-white rounded-cards shadow-steep z-100"
                         >
-                          <div className="px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                          <div className="px-3 py-2 text-[14px] font-[450] text-graphite tracking-[-0.009em]">
                             {item.title}
                           </div>
                           <div className="flex flex-col gap-1 mt-1">
@@ -313,7 +309,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                                 key={sub.title}
                                 href={sub.url}
                                 className={`
-                                  block px-3 py-2.5 text-[13.5px] rounded-[10px] transition-colors duration-150
+                                  block px-3 py-2 text-[14px] leading-[1.4] rounded-xl transition-colors duration-150
                                   ${
                                     pathname === sub.url
                                       ? "font-medium text-rust"
@@ -355,7 +351,7 @@ export function AppSidebar({ user }: { user: User | null }) {
                                   asChild
                                   isActive={pathname === subItem.url}
                                   className={`
-                                  rounded-[10px] px-3 py-1.5 text-[13.5px] transition-colors duration-150
+                                  rounded-xl px-3 py-2 text-[14px] leading-[1.4] transition-colors duration-150
                                   ${
                                     pathname === subItem.url
                                       ? "text-rust font-medium"
@@ -430,17 +426,17 @@ export function AppSidebar({ user }: { user: User | null }) {
               >
                 <Avatar className="h-8 w-8 rounded-full shrink-0">
                   <AvatarImage src={user?.avatar || ""} alt={user?.username} />
-                  <AvatarFallback className="rounded-full bg-sky-wash text-ink text-xs font-medium">
+                  <AvatarFallback className="rounded-full bg-sky-wash text-ink text-[14px] font-[450]">
                     {user?.username?.slice(0, 2).toUpperCase() || "AD"}
                   </AvatarFallback>
                 </Avatar>
                 {state === "expanded" && (
                   <>
                     <div className="grid flex-1 text-left leading-tight">
-                      <span className="truncate font-medium text-[13px] text-foreground">
+                      <span className="truncate font-[500] text-[14px] text-ink">
                         {user?.nickname || user?.username}
                       </span>
-                      <span className="truncate text-[11px] text-muted-foreground">
+                      <span className="truncate text-[14px] text-graphite">
                         {user?.role?.name || "管理员"}
                       </span>
                     </div>
@@ -455,19 +451,19 @@ export function AppSidebar({ user }: { user: User | null }) {
               align="end"
               sideOffset={8}
             >
-              <div className="px-2.5 py-2 border-b border-border mb-1">
-                <p className="text-[13px] font-medium text-foreground">
+              <div className="px-3 py-2 border-b border-border mb-1">
+                <p className="text-[14px] font-[500] text-ink">
                   {user?.nickname || user?.username}
                 </p>
-                <p className="text-[11px] text-muted-foreground">{user?.role?.name || "管理员"}</p>
+                <p className="text-[14px] text-graphite">{user?.role?.name || "管理员"}</p>
               </div>
               <DropdownMenuSeparator className="hidden" />
               <DropdownMenuItem
                 onClick={() => logoutAction()}
-                className="rounded-lg px-2.5 py-2 text-error dark:text-error hover:bg-error-container dark:hover:bg-error/20 focus:bg-error-container dark:focus:bg-red-900/20 cursor-pointer"
+                className="rounded-xl px-3 py-2 text-rust hover:bg-apricot-wash focus:bg-apricot-wash cursor-pointer"
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                <span className="text-[13px]">退出登录</span>
+                <span className="text-[14px]">退出登录</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

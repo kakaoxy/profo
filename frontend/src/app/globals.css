@@ -204,10 +204,10 @@
   --muted-foreground: oklch(0.554 0.046 257.417);
   --accent: oklch(0.968 0.007 247.896);
   --accent-foreground: oklch(0.208 0.042 265.755);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #5d2a1a;
   --border: oklch(0.929 0.013 255.508);
   --input: oklch(0.929 0.013 255.508);
-  --ring: oklch(0.704 0.04 256.788);
+  --ring: #17191c;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -227,8 +227,8 @@
   --tertiary: #10b981;
   --success: #059669;
   --success-container: #ecfdf5;
-  --error: #ef4444;
-  --error-container: #fef2f2;
+  --error: #5d2a1a;
+  --error-container: #fbe1d1;
   --primary-container: #e6f0f7;
   --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
 
@@ -345,7 +345,8 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-sohne);
+    font-family: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+      "Segoe UI", Roboto, sans-serif;
     letter-spacing: -0.009em;
   }
   html,
@@ -365,6 +366,14 @@
     font-weight: 400;
     line-height: 1.1;
     letter-spacing: -0.025em;
+  }
+  /* 44px 页面标题：Signifier 的 44px 档字距是 -0.015em，不能沿用大标题的 -0.025em。 */
+  .page-title {
+    font-family: var(--font-source-serif), ui-serif, Georgia, Cambria, "Times New Roman", serif;
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
   }
   .shadow-steep {
     box-shadow: var(--shadow-steep);

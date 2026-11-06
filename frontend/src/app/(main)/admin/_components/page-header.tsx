@@ -15,12 +15,9 @@ export interface PageHeaderProps {
 /**
  * 后台页面统一页头。
  *
- * 主标题固定为 `<h1 className="font-display text-[34px] sm:text-[44px] text-ink">`
- * （Signifier，桌面 44px / 移动 34px / Ink，对齐 DESIGN.md「Signifier 不低于 40px」与
- * docs/design/admin-workspace-hifi.html 决策 05），
- * 副标题为 `<p className="mt-2.5 text-[15px] text-graphite">`。
- * 所有页面主标题必须使用本组件，禁止页面私有字号（16/20/24/26/40px）与 h2 主标题。
- * Server Component 可渲染，无浏览器 API / hooks 依赖。
+ * 主标题使用 `.page-title`（Signifier 400 / 1.1 / -0.015em，44px）。
+ * DESIGN 规定 Signifier 不得低于 40px，因此移动端也保持 44px。
+ * 副标题沿用 Sohne body 16px；动作区间距 8px。
  */
 export function PageHeader({ title, description, actions, className }: PageHeaderProps) {
   return (
@@ -31,12 +28,14 @@ export function PageHeader({ title, description, actions, className }: PageHeade
       )}
     >
       <div>
-        <h1 className="font-display text-[34px] leading-[1.1] tracking-[-0.015em] text-ink sm:text-[44px]">
-          {title}
-        </h1>
-        {description ? <p className="mt-2.5 text-[15px] text-graphite">{description}</p> : null}
+        <h1 className="page-title text-[44px] text-ink">{title}</h1>
+        {description ? (
+          <p className="mt-2 text-[16px] leading-[1.38] tracking-[-0.009em] text-graphite">
+            {description}
+          </p>
+        ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2.5">{actions}</div> : null}
+      {actions ? <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div> : null}
     </header>
   );
 }

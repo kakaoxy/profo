@@ -1,17 +1,16 @@
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 export type StatusTone = "neutral" | "attention" | "positive";
 
 /**
  * 状态徽标统一语义色。
- * DESIGN 明令：Ink 实心填充只留给主 CTA（徽标用 default 会与按钮混淆），
- * 且不得引入饱和红/绿/蓝做 UI chrome（故不使用 destructive）。
+ * Fog = 中性，Apricot/Rust = 需注意，Sky Wash/Ink = 正向。
+ * 不使用饱和色，也不使用 Ink 实心填充（Ink 实心只留给主 CTA）。
  */
 const TONE_CLASS: Record<StatusTone, string> = {
-  neutral: "",
-  attention: "border-transparent bg-apricot-wash text-rust",
-  positive: "border-rust/40 text-rust",
+  neutral: "bg-fog text-graphite",
+  attention: "bg-apricot-wash text-rust",
+  positive: "bg-sky-wash text-ink",
 };
 
 export function StatusBadge({
@@ -24,11 +23,14 @@ export function StatusBadge({
   children: React.ReactNode;
 }) {
   return (
-    <Badge
-      variant={tone === "neutral" ? "secondary" : "outline"}
-      className={cn(TONE_CLASS[tone], className)}
+    <span
+      className={cn(
+        "inline-flex h-7 items-center whitespace-nowrap rounded-full px-3 text-[14px] leading-none font-[450] tracking-[-0.009em]",
+        TONE_CLASS[tone],
+        className,
+      )}
     >
       {children}
-    </Badge>
+    </span>
   );
 }

@@ -22,16 +22,16 @@ export function Field({
     <Label
       className={cn(
         // Label 基类带 items-center，纵向排列必须显式 items-stretch，否则文字居中
-        "flex flex-col items-stretch gap-1.5 text-[13px] leading-tight font-normal text-graphite",
+        "flex flex-col items-stretch gap-2 text-[14px] leading-[1.4] font-normal tracking-[-0.009em] text-graphite",
         className,
       )}
     >
       <span>
         {label}
-        {required ? <span className="ml-0.5 text-rust">*</span> : null}
+        {required ? <span className="ml-1 text-rust">*</span> : null}
       </span>
       {children}
-      {hint ? <span className="text-xs leading-relaxed text-graphite">{hint}</span> : null}
+      {hint ? <span className="text-[14px] leading-[1.4] text-graphite">{hint}</span> : null}
     </Label>
   );
 }

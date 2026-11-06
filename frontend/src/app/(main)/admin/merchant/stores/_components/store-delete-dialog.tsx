@@ -1,17 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Field } from "@/app/(main)/admin/_components/field";
+import { SteepButton, SteepInput } from "@/components/custom/steep-controls";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { merchantApi } from "../../_components/merchant-api";
 
 /**
@@ -59,29 +61,54 @@ export function StoreDeleteDialog({
 
   return (
     <Dialog open={Boolean(store)} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
-        <DialogHeader>
-          <DialogTitle>删除门店</DialogTitle>
-          <DialogDescription>
+      <DialogContent
+        showCloseButton={false}
+        className="rounded-[24px] border-0 bg-pure-white p-6 shadow-steep sm:max-w-[440px]"
+      >
+        <DialogHeader className="gap-2">
+          <div className="flex items-start justify-between gap-4">
+            <DialogTitle className="text-[26px] leading-[1.18] font-[500] tracking-[-0.009em] text-ink">
+              删除门店
+            </DialogTitle>
+            <DialogClose asChild>
+              <SteepButton variant="icon" aria-label="关闭删除门店弹窗" disabled={submitting}>
+                <X />
+              </SteepButton>
+            </DialogClose>
+          </div>
+          <DialogDescription className="text-[15px] leading-[1.5] text-graphite">
             将软删除「{store?.store_name ?? ""}」：记录保留可追溯，列表与选择器不再展示。存在拜访、绑定、线索或协议的门店不能删除，请改用停用。
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-2">
-          <Input
+
+        <Field label="删除原因" required className="mt-2">
+          <SteepInput
             aria-label="删除原因"
-            placeholder="请填写删除原因（必填）"
+            placeholder="请说明删除原因，便于后续追溯"
             value={reason}
             onChange={(event) => setReason(event.target.value)}
           />
-          {error ? <p className="text-sm text-rust">{error}</p> : null}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
-            取消
-          </Button>
-          <Button onClick={() => void submit()} disabled={submitting || !reason.trim()}>
+        </Field>
+
+        {error ? (
+          <p className="rounded-[16px] bg-apricot-wash px-4 py-3 text-[14px] leading-[1.5] text-rust">
+            {error}
+          </p>
+        ) : null}
+
+        <DialogFooter className="mt-2 flex-row justify-end gap-4 sm:justify-end">
+          <DialogClose asChild>
+            <SteepButton variant="text" disabled={submitting}>
+              取消
+            </SteepButton>
+          </DialogClose>
+          <SteepButton
+            variant="primary"
+            onClick={() => void submit()}
+            disabled={submitting || !reason.trim()}
+          >
             {submitting ? "删除中…" : "确认删除"}
-          </Button>
+          </SteepButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

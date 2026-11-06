@@ -147,24 +147,120 @@ test("门店列表支持区县/负责人筛选，展示来源与待审核标识"
   await page.goto("/admin/merchant/stores");
 
   // 区县 + 负责人筛选：仅保留该负责人门店
-  await page.getByPlaceholder("区县").fill(DISTRICT);
-  await page.getByRole("combobox").filter({ hasText: "负责人" }).click();
+  await page.getByRole("button", { name: /高级筛选/ }).click();
+  await page.getByLabel("按区县筛选").fill(DISTRICT);
+  await page.getByLabel("按负责人筛选").click();
   await page.getByRole("option", { name: seeded.owner_name }).click();
   await page.getByRole("button", { name: "查询" }).click();
 
-  await expect(page.getByText(seeded.normal_store_name)).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(seeded.normal_store_name).first()).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText(seeded.broker_store_name)).toHaveCount(0);
 
   // 清空负责人后按关键词看来源列与审核标识
-  await page.getByRole("combobox").filter({ hasText: seeded.owner_name }).click();
+  await page.getByLabel("按负责人筛选").click();
   await page.getByRole("option", { name: "全部负责人" }).click();
-  await page.getByPlaceholder("门店名称 / 地址 / 公司 / 电话").fill(MARK);
+  await page.getByLabel("搜索门店").fill(MARK);
   await page.getByRole("button", { name: "查询" }).click();
 
-  await expect(page.getByText(seeded.broker_store_name)).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("经纪人创建")).toBeVisible();
-  await expect(page.getByText("后台新增").first()).toBeVisible();
+  await expect(page.getByText(seeded.broker_store_name).first()).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("待审核").first()).toBeVisible();
+  const row = page.locator("tbody tr").filter({ hasText: seeded.broker_store_name });
+  await row.getByRole("cell").nth(1).click();
+  const drawer = page.getByRole("dialog");
+  await expect(drawer.getByText("经纪人创建")).toBeVisible();
+});
+
+test("门店列表符合 DESIGN 版式与响应式契约", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/admin/merchant/stores");
+  await expect(page.getByText(seeded.normal_store_name).first()).toBeVisible({ timeout: 15_000 });
+
+  const desktop = await page.evaluate(() => {
+    const bodyFont = getComputedStyle(document.body).fontFamily;
+    const h1 = document.querySelector("h1");
+    const h1Style = h1 ? getComputedStyle(h1) : null;
+    const container = document.querySelector<HTMLElement>('[data-page="merchant-stores"] > div');
+    const table = document.querySelector("table");
+    const primaryCount = Array.from(
+      document.querySelectorAll<HTMLElement>('[data-slot="steep-button"]'),
+    ).filter((element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && getComputedStyle(element).backgroundColor === "rgb(23, 25, 28)";
+    }).length;
+    const minFontSize = Math.min(
+      ...Array.from(document.querySelectorAll<HTMLElement>('[data-page="merchant-stores"] *'))
+        .filter((element) => {
+          const rect = element.getBoundingClientRect();
+          return (
+            rect.width > 0 &&
+            rect.height > 0 &&
+            element.childElementCount === 0 &&
+            (element.textContent ?? "").trim().length > 0
+          );
+        })
+        .map((element) => parseFloat(getComputedStyle(element).fontSize))
+        .filter((size) => Number.isFinite(size)),
+    );
+    return {
+      bodyFont,
+      interLoaded: document.fonts.check("16px Inter"),
+      h1FontSize: h1Style?.fontSize ?? "",
+      h1FontWeight: h1Style?.fontWeight ?? "",
+      h1LetterSpacing: h1Style?.letterSpacing ?? "",
+      containerWidth: container?.getBoundingClientRect().width ?? 0,
+      primaryCount,
+      tableVisible: Boolean(table && table.getBoundingClientRect().height > 0),
+      headerHeights: Array.from(document.querySelectorAll("th")).map(
+        (element) => element.getBoundingClientRect().height,
+      ),
+      minFontSize,
+    };
+  });
+
+  expect(desktop.bodyFont.toLowerCase()).toContain("inter");
+  expect(desktop.interLoaded).toBe(true);
+  expect(desktop.h1FontSize).toBe("44px");
+  expect(desktop.h1FontWeight).toBe("400");
+  expect(parseFloat(desktop.h1LetterSpacing)).toBeCloseTo(-0.66, 1);
+  expect(desktop.containerWidth).toBeLessThanOrEqual(1200.5);
+  expect(desktop.primaryCount).toBe(1);
+  expect(desktop.tableVisible).toBe(true);
+  expect(desktop.headerHeights.every((height) => height <= 49)).toBe(true);
+  expect(desktop.minFontSize).toBeGreaterThanOrEqual(14);
+
+  await page.getByRole("button", { name: /高级筛选/ }).click();
+  await expect(page.getByLabel("按区县筛选")).toBeVisible();
+  await expect(page.getByLabel("按商圈筛选")).toBeVisible();
+  await expect(page.getByPlaceholder("开始日期")).toBeVisible();
+  await expect(page.getByPlaceholder("结束日期")).toBeVisible();
+  await page.getByRole("button", { name: /高级筛选/ }).click();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByTestId("store-card").first()).toBeVisible();
+  const mobile = await page.evaluate(() => {
+    const h1 = document.querySelector("h1");
+    return {
+      h1FontSize: h1 ? getComputedStyle(h1).fontSize : "",
+      cardCount: document.querySelectorAll('[data-testid="store-card"]').length,
+      tableVisible: Array.from(document.querySelectorAll("table")).some(
+        (table) => table.getBoundingClientRect().height > 0,
+      ),
+      scrollWidth: document.documentElement.scrollWidth,
+      viewportWidth: window.innerWidth,
+      actionCount: Array.from(
+        document.querySelectorAll<HTMLElement>('button[aria-label^="更多操作"]'),
+      ).filter((element) => element.getBoundingClientRect().width > 0).length,
+    };
+  });
+  expect(mobile.h1FontSize).toBe("44px");
+  expect(mobile.cardCount).toBeGreaterThanOrEqual(3);
+  expect(mobile.tableVisible).toBe(false);
+  expect(mobile.scrollWidth).toBeLessThanOrEqual(mobile.viewportWidth + 1);
+  expect(mobile.actionCount).toBeGreaterThanOrEqual(3);
+
+  await page.getByTestId("store-card").first().locator("dl").click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
 });
 
 test("已合并门店详情只读并展示合并去向", async ({ page }) => {

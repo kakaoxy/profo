@@ -234,8 +234,9 @@ test("Q4 后台门店列表移除省/市筛选控件，区县/商圈筛选保留
   await page.goto("/admin/merchant/stores");
   await expect(page.getByPlaceholder("省份")).toHaveCount(0);
   await expect(page.getByPlaceholder("城市")).toHaveCount(0);
-  await expect(page.getByPlaceholder("区县")).toBeVisible();
-  await expect(page.getByPlaceholder("商圈")).toBeVisible();
+  await page.getByRole("button", { name: /高级筛选/ }).click();
+  await expect(page.getByLabel("按区县筛选")).toBeVisible();
+  await expect(page.getByLabel("按商圈筛选")).toBeVisible();
 });
 
 test("REQ-IT1-01/02/04 小程序源码断言：新增公司入口需先搜索、按钮不超宽、区域商圈为选择器", async () => {

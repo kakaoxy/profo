@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 import { logger } from "@/lib/logger";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
@@ -95,7 +97,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     // overflow-clip 覆盖基类 overflow-hidden：hidden 会创建滚动容器，破坏后代
     // sticky（详情页副栏等）相对 viewport 吸附；clip 裁剪效果不变且不创建滚动容器
-    <SidebarProvider defaultOpen={false} className="overflow-clip">
+    <SidebarProvider
+      defaultOpen
+      className="overflow-clip"
+      style={{ "--sidebar-width": "15rem" } as CSSProperties}
+    >
       {/* 0. 会话身份登记（admin）：请求层 401 刷新/跳登录按此后台语义执行 */}
       <SessionIdentityBridge identity="admin" />
       {/* 1. 侧边栏 */}

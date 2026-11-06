@@ -157,7 +157,8 @@ test("REQ-IT7-01 门店软删除：后台 UI 删除后列表不再展示", async
   await page.getByRole("button", { name: "查询" }).click();
   await expect(page.getByText(`${MARK}待删门店`).first()).toBeVisible();
 
-  await page.getByRole("button", { name: `删除门店 ${MARK}待删门店` }).click();
+  await page.getByRole("button", { name: `更多操作 ${MARK}待删门店` }).click();
+  await page.getByRole("menuitem", { name: `删除门店 ${MARK}待删门店` }).click();
   await page.getByLabel("删除原因").fill("E2E 迭代 7：后台 UI 删除门店");
   await page.getByRole("button", { name: "确认删除" }).click();
   await expect(page.getByText(`${MARK}待删门店`)).toHaveCount(0);
@@ -180,7 +181,7 @@ test("REQ-IT7-01 门店详情抽屉：查看 → 编辑 → 保存修改", async
   await page.goto("/admin/merchant/stores");
   await page.getByLabel("搜索门店").fill(`${MARK}抽屉门店`);
   await page.getByRole("button", { name: "查询" }).click();
-  await page.getByRole("button", { name: "详情" }).first().click();
+  await page.getByRole("button", { name: `${MARK}抽屉门店` }).first().click();
 
   const drawer = page.getByRole("dialog");
   await expect(drawer.getByText("基础信息")).toBeVisible();
@@ -668,8 +669,8 @@ test("REQ-IT7-11 经纪人列表来源正确展示扫码/分享绑定渠道", as
 
 test("REQ-IT7-13 经纪人列表/抽屉与门店列表/抽屉展示对接人（内部员工）", async () => {
   const brokersDir = path.resolve(__dirname, "../src/app/(main)/admin/merchant/brokers");
-  const storePage = fs.readFileSync(
-    path.resolve(__dirname, "../src/app/(main)/admin/merchant/stores/page.tsx"),
+  const storeList = fs.readFileSync(
+    path.resolve(__dirname, "../src/app/(main)/admin/merchant/stores/_components/store-list.tsx"),
     "utf8",
   );
   const storeDrawer = fs.readFileSync(
@@ -687,7 +688,7 @@ test("REQ-IT7-13 经纪人列表/抽屉与门店列表/抽屉展示对接人（�
   expect(brokerPage).toContain("item.owner_employee_name");
   expect(brokerDrawer).toContain('对接人：{broker.owner_employee_name || "—"}');
   // 门店列表/抽屉：负责人列与抽屉展示（优先使用接口返回的姓名）
-  expect(storePage).toContain("item.owner_employee_name");
+  expect(storeList).toContain("item.owner_employee_name");
   expect(storeDrawer).toContain("store.owner_employee_name");
 });
 

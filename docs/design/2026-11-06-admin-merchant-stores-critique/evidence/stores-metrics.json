@@ -1,0 +1,1432 @@
+{
+  "h1": {
+    "tag": "H1",
+    "text": "门店列表",
+    "rect": {
+      "x": 96,
+      "y": 32,
+      "w": 327,
+      "h": 48
+    },
+    "fontSize": "44px",
+    "fontWeight": "400",
+    "fontFamily": "sourceSerif, \"sourceSerif Fallback\", ui-serif, Georgia, Cambria, \"Times New Roman\", serif",
+    "lineHeight": "48.4px",
+    "letterSpacing": "-1.1px",
+    "color": "rgb(23, 25, 28)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "0px",
+    "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "none",
+    "padding": "0px",
+    "gap": "normal"
+  },
+  "description": {
+    "tag": "P",
+    "text": "按区域、合作状态、审核状态查看与维护全部门店",
+    "rect": {
+      "x": 96,
+      "y": 90,
+      "w": 327,
+      "h": 23
+    },
+    "fontSize": "15px",
+    "fontWeight": "400",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "22.5px",
+    "letterSpacing": "-0.144px",
+    "color": "rgb(119, 123, 134)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "0px",
+    "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "none",
+    "padding": "0px",
+    "gap": "normal"
+  },
+  "pageContainer": {
+    "tag": "DIV",
+    "text": "门店列表按区域、合作状态、审核状态查看与维护全部门店导出 CSV 新建门店全部状态全部审核经纪人数量",
+    "rect": {
+      "x": 64,
+      "y": 0,
+      "w": 1376,
+      "h": 1413
+    },
+    "fontSize": "16px",
+    "fontWeight": "400",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "24px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(1.76974 1.32743 -9.28855)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "0px",
+    "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "none",
+    "padding": "32px",
+    "gap": "24px"
+  },
+  "filterCard": {
+    "tag": "DIV",
+    "text": "全部状态全部审核经纪人数量至创建日期至全部来源全部负责人 查询",
+    "rect": {
+      "x": 96,
+      "y": 137,
+      "w": 1312,
+      "h": 124
+    },
+    "fontSize": "16px",
+    "fontWeight": "400",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "24px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(1.76974 1.32743 -9.28855)",
+    "background": "lab(100 0 0)",
+    "borderRadius": "24px",
+    "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.06) 0px 10px 20px -8px, rgba(0, 0, 0, 0.05) 0px 3px 6px -4px",
+    "padding": "20px",
+    "gap": "24px"
+  },
+  "input": {
+    "tag": "INPUT",
+    "text": "",
+    "rect": {
+      "x": 116,
+      "y": 157,
+      "w": 256,
+      "h": 36
+    },
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "20px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(1.76974 1.32743 -9.28855)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "8px",
+    "border": "1px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+    "padding": "4px 12px",
+    "gap": "normal"
+  },
+  "select": {
+    "tag": "BUTTON",
+    "text": "全部状态",
+    "rect": {
+      "x": 384,
+      "y": 157,
+      "w": 144,
+      "h": 36
+    },
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "20px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(1.76974 1.32743 -9.28855)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "8px",
+    "border": "1px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+    "padding": "8px 12px",
+    "gap": "8px"
+  },
+  "outlineExport": {
+    "tag": "A",
+    "text": "导出 CSV",
+    "rect": {
+      "x": 1197,
+      "y": 32,
+      "w": 93,
+      "h": 36
+    },
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "20px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(1.76974 1.32743 -9.28855)",
+    "background": "lab(100 0 0)",
+    "borderRadius": "8px",
+    "border": "1px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+    "padding": "8px 16px",
+    "gap": "8px"
+  },
+  "primaryNew": {
+    "tag": "A",
+    "text": "新建门店",
+    "rect": {
+      "x": 1301,
+      "y": 32,
+      "w": 107,
+      "h": 36
+    },
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "20px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(98.1434 -0.369519 -1.05966)",
+    "background": "rgb(23, 25, 28)",
+    "borderRadius": "8px",
+    "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "none",
+    "padding": "8px 12px",
+    "gap": "8px"
+  },
+  "queryBtn": {
+    "tag": "BUTTON",
+    "text": "查询",
+    "rect": {
+      "x": 831,
+      "y": 205,
+      "w": 82,
+      "h": 36
+    },
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "20px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(1.76974 1.32743 -9.28855)",
+    "background": "lab(100 0 0)",
+    "borderRadius": "8px",
+    "border": "1px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+    "padding": "8px 12px",
+    "gap": "8px"
+  },
+  "tableCard": {
+    "tag": "DIV",
+    "text": "门店公司区域/商圈合作状态审核来源负责人经纪人最近拜访门店状态操作SHOT1793630391869",
+    "rect": {
+      "x": 96,
+      "y": 285,
+      "w": 1312,
+      "h": 1040
+    },
+    "fontSize": "16px",
+    "fontWeight": "400",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "24px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(1.76974 1.32743 -9.28855)",
+    "background": "lab(100 0 0)",
+    "borderRadius": "24px",
+    "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "rgba(4, 23, 43, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.06) 0px 10px 20px -8px, rgba(0, 0, 0, 0.05) 0px 3px 6px -4px",
+    "padding": "0px",
+    "gap": "0px"
+  },
+  "th": {
+    "tag": "TH",
+    "text": "门店",
+    "rect": {
+      "x": 96,
+      "y": 285,
+      "w": 362,
+      "h": 57
+    },
+    "fontSize": "12px",
+    "fontWeight": "700",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "16px",
+    "letterSpacing": "-0.144px",
+    "color": "rgb(119, 123, 134)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "0px",
+    "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "none",
+    "padding": "12px 16px",
+    "gap": "normal"
+  },
+  "firstRow": {
+    "tag": "TR",
+    "text": "SHOT1793630391869源门店SHOT1793630391869源路1号SHOT17936",
+    "rect": {
+      "x": 96,
+      "y": 341,
+      "w": 1312,
+      "h": 97
+    },
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "20px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(1.76974 1.32743 -9.28855)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "0px",
+    "border": "",
+    "boxShadow": "none",
+    "padding": "0px",
+    "gap": "normal"
+  },
+  "storeLink": {
+    "tag": "A",
+    "text": "SHOT1793630391869源门店",
+    "rect": {
+      "x": 112,
+      "y": 373,
+      "w": 188,
+      "h": 17
+    },
+    "fontSize": "14px",
+    "fontWeight": "500",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "20px",
+    "letterSpacing": "-0.144px",
+    "color": "rgb(23, 25, 28)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "0px",
+    "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "none",
+    "padding": "0px",
+    "gap": "normal"
+  },
+  "badgeNeutral": {
+    "tag": "SPAN",
+    "text": "未合作",
+    "rect": {
+      "x": 743,
+      "y": 379,
+      "w": 54,
+      "h": 22
+    },
+    "fontSize": "12px",
+    "fontWeight": "500",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "16px",
+    "letterSpacing": "-0.144px",
+    "color": "lab(7.78673 1.82345 -15.0537)",
+    "background": "lab(96.286 -0.852436 -2.46847)",
+    "borderRadius": "3.35544e+07px",
+    "border": "1px solid rgba(0, 0, 0, 0)",
+    "boxShadow": "none",
+    "padding": "2px 8px",
+    "gap": "4px"
+  },
+  "badgePositive": {
+    "tag": "SPAN",
+    "text": "已转正",
+    "rect": {
+      "x": 828,
+      "y": 379,
+      "w": 54,
+      "h": 22
+    },
+    "fontSize": "12px",
+    "fontWeight": "500",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "16px",
+    "letterSpacing": "-0.144px",
+    "color": "rgb(93, 42, 26)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "3.35544e+07px",
+    "border": "1px solid lab(24.1867 22.8291 21.6519 / 0.4)",
+    "boxShadow": "none",
+    "padding": "2px 8px",
+    "gap": "4px"
+  },
+  "pagination": {
+    "tag": "DIV",
+    "text": "共 12 家门店上一页1 / 1下一页",
+    "rect": {
+      "x": 96,
+      "y": 1349,
+      "w": 1312,
+      "h": 32
+    },
+    "fontSize": "14px",
+    "fontWeight": "400",
+    "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+    "lineHeight": "20px",
+    "letterSpacing": "-0.144px",
+    "color": "rgb(119, 123, 134)",
+    "background": "rgba(0, 0, 0, 0)",
+    "borderRadius": "0px",
+    "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+    "boxShadow": "none",
+    "padding": "0px",
+    "gap": "normal"
+  },
+  "counts": {
+    "buttons": 49,
+    "links": 29,
+    "darkFilled": [
+      "新建门店"
+    ],
+    "radii": [
+      "0px",
+      "14px",
+      "8px"
+    ]
+  },
+  "typography": [
+    [
+      "14px / 400 / -0.144px",
+      118
+    ],
+    [
+      "14px / 500 / -0.144px",
+      31
+    ],
+    [
+      "12px / 400 / -0.144px",
+      26
+    ],
+    [
+      "12px / 500 / -0.144px",
+      25
+    ],
+    [
+      "16px / 400 / -0.144px",
+      14
+    ],
+    [
+      "14.5px / 450 / -0.144px",
+      11
+    ],
+    [
+      "12px / 700 / -0.144px",
+      11
+    ],
+    [
+      "14.5px / 500 / -0.144px",
+      2
+    ],
+    [
+      "13px / 400 / -0.144px",
+      2
+    ],
+    [
+      "44px / 400 / -1.1px",
+      1
+    ],
+    [
+      "15px / 400 / -0.144px",
+      1
+    ]
+  ],
+  "rows": [
+    {
+      "h": 97,
+      "cells": [
+        {
+          "w": 362,
+          "h": 97,
+          "text": "SHOT1793630391869源门店SHOT179363"
+        },
+        {
+          "w": 193,
+          "h": 97,
+          "text": "SHOT1793630391869公司"
+        },
+        {
+          "w": 76,
+          "h": 97,
+          "text": "浦东新区陆家嘴商圈"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "未合作"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 97,
+          "text": "后台新增"
+        },
+        {
+          "w": 64,
+          "h": 97,
+          "text": "支武平"
+        },
+        {
+          "w": 59,
+          "h": 97,
+          "text": "2"
+        },
+        {
+          "w": 120,
+          "h": 97,
+          "text": "—"
+        },
+        {
+          "w": 68,
+          "h": 97,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 97,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 97,
+      "cells": [
+        {
+          "w": 362,
+          "h": 97,
+          "text": "DBG1793630271618B店DBG179363027"
+        },
+        {
+          "w": 193,
+          "h": 97,
+          "text": "DBG1793630271618公司"
+        },
+        {
+          "w": 76,
+          "h": 97,
+          "text": "浦东新区陆家嘴商圈"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "未合作"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 97,
+          "text": "后台新增"
+        },
+        {
+          "w": 64,
+          "h": 97,
+          "text": "—"
+        },
+        {
+          "w": 59,
+          "h": 97,
+          "text": "2"
+        },
+        {
+          "w": 120,
+          "h": 97,
+          "text": "—"
+        },
+        {
+          "w": 68,
+          "h": 97,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 97,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 97,
+      "cells": [
+        {
+          "w": 362,
+          "h": 97,
+          "text": "DBG1793630271618A店DBG179363027"
+        },
+        {
+          "w": 193,
+          "h": 97,
+          "text": "DBG1793630271618公司"
+        },
+        {
+          "w": 76,
+          "h": 97,
+          "text": "浦东新区陆家嘴商圈"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "未合作"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 97,
+          "text": "后台新增"
+        },
+        {
+          "w": 64,
+          "h": 97,
+          "text": "—"
+        },
+        {
+          "w": 59,
+          "h": 97,
+          "text": "1"
+        },
+        {
+          "w": 120,
+          "h": 97,
+          "text": "—"
+        },
+        {
+          "w": 68,
+          "h": 97,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 97,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 97,
+      "cells": [
+        {
+          "w": 362,
+          "h": 97,
+          "text": "DBG1793630262328B店DBG179363026"
+        },
+        {
+          "w": 193,
+          "h": 97,
+          "text": "DBG1793630262328公司"
+        },
+        {
+          "w": 76,
+          "h": 97,
+          "text": "浦东新区陆家嘴商圈"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "未合作"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 97,
+          "text": "后台新增"
+        },
+        {
+          "w": 64,
+          "h": 97,
+          "text": "—"
+        },
+        {
+          "w": 59,
+          "h": 97,
+          "text": "1"
+        },
+        {
+          "w": 120,
+          "h": 97,
+          "text": "—"
+        },
+        {
+          "w": 68,
+          "h": 97,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 97,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 97,
+      "cells": [
+        {
+          "w": 362,
+          "h": 97,
+          "text": "DBG1793630262328A店DBG179363026"
+        },
+        {
+          "w": 193,
+          "h": 97,
+          "text": "DBG1793630262328公司"
+        },
+        {
+          "w": 76,
+          "h": 97,
+          "text": "浦东新区陆家嘴商圈"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "未合作"
+        },
+        {
+          "w": 86,
+          "h": 97,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 97,
+          "text": "后台新增"
+        },
+        {
+          "w": 64,
+          "h": 97,
+          "text": "—"
+        },
+        {
+          "w": 59,
+          "h": 97,
+          "text": "2"
+        },
+        {
+          "w": 120,
+          "h": 97,
+          "text": "—"
+        },
+        {
+          "w": 68,
+          "h": 97,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 97,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 81,
+      "cells": [
+        {
+          "w": 362,
+          "h": 81,
+          "text": "【审计】望江店341777上海市浦东新区陆家嘴【审计】望江店"
+        },
+        {
+          "w": 193,
+          "h": 81,
+          "text": "【审计】341777"
+        },
+        {
+          "w": 76,
+          "h": 81,
+          "text": "浦东新区陆家嘴"
+        },
+        {
+          "w": 86,
+          "h": 81,
+          "text": "洽谈中"
+        },
+        {
+          "w": 86,
+          "h": 81,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 81,
+          "text": "后台新增"
+        },
+        {
+          "w": 64,
+          "h": 81,
+          "text": "—"
+        },
+        {
+          "w": 59,
+          "h": 81,
+          "text": "1"
+        },
+        {
+          "w": 120,
+          "h": 81,
+          "text": "—"
+        },
+        {
+          "w": 68,
+          "h": 81,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 81,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 61,
+      "cells": [
+        {
+          "w": 362,
+          "h": 61,
+          "text": "【审计】临街店352967上海市徐汇区徐家汇【审计】临街店3"
+        },
+        {
+          "w": 193,
+          "h": 61,
+          "text": "【审计】352967"
+        },
+        {
+          "w": 76,
+          "h": 61,
+          "text": "徐汇区徐家汇"
+        },
+        {
+          "w": 86,
+          "h": 61,
+          "text": "未合作"
+        },
+        {
+          "w": 86,
+          "h": 61,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 61,
+          "text": "后台新增"
+        },
+        {
+          "w": 64,
+          "h": 61,
+          "text": "—"
+        },
+        {
+          "w": 59,
+          "h": 61,
+          "text": "0"
+        },
+        {
+          "w": 120,
+          "h": 61,
+          "text": "—"
+        },
+        {
+          "w": 68,
+          "h": 61,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 61,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 81,
+      "cells": [
+        {
+          "w": 362,
+          "h": 81,
+          "text": "【审计】望江店352967上海市浦东新区陆家嘴【审计】望江店"
+        },
+        {
+          "w": 193,
+          "h": 81,
+          "text": "【审计】352967"
+        },
+        {
+          "w": 76,
+          "h": 81,
+          "text": "浦东新区陆家嘴"
+        },
+        {
+          "w": 86,
+          "h": 81,
+          "text": "洽谈中"
+        },
+        {
+          "w": 86,
+          "h": 81,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 81,
+          "text": "后台新增"
+        },
+        {
+          "w": 64,
+          "h": 81,
+          "text": "—"
+        },
+        {
+          "w": 59,
+          "h": 81,
+          "text": "1"
+        },
+        {
+          "w": 120,
+          "h": 81,
+          "text": "—"
+        },
+        {
+          "w": 68,
+          "h": 81,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 81,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 77,
+      "cells": [
+        {
+          "w": 362,
+          "h": 77,
+          "text": "【审计】老街店352967上海市黄浦区南京东路【审计】老街店"
+        },
+        {
+          "w": 193,
+          "h": 77,
+          "text": "【审计】352967"
+        },
+        {
+          "w": 76,
+          "h": 77,
+          "text": "黄浦区南京东路"
+        },
+        {
+          "w": 86,
+          "h": 77,
+          "text": "未合作"
+        },
+        {
+          "w": 86,
+          "h": 77,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 77,
+          "text": "后台新增"
+        },
+        {
+          "w": 64,
+          "h": 77,
+          "text": "—"
+        },
+        {
+          "w": 59,
+          "h": 77,
+          "text": "0"
+        },
+        {
+          "w": 120,
+          "h": 77,
+          "text": "—"
+        },
+        {
+          "w": 68,
+          "h": 77,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 77,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 61,
+      "cells": [
+        {
+          "w": 362,
+          "h": 61,
+          "text": "aaa地产莘庄店上海市上海市哈哈哈路哈哈号"
+        },
+        {
+          "w": 193,
+          "h": 61,
+          "text": "AAA公司"
+        },
+        {
+          "w": 76,
+          "h": 61,
+          "text": "闵行区莘庄"
+        },
+        {
+          "w": 86,
+          "h": 61,
+          "text": "已合作"
+        },
+        {
+          "w": 86,
+          "h": 61,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 61,
+          "text": "员工建档"
+        },
+        {
+          "w": 64,
+          "h": 61,
+          "text": "唐"
+        },
+        {
+          "w": 59,
+          "h": 61,
+          "text": "1"
+        },
+        {
+          "w": 120,
+          "h": 61,
+          "text": "2026/11/2 16:00:05"
+        },
+        {
+          "w": 68,
+          "h": 61,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 61,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 77,
+      "cells": [
+        {
+          "w": 362,
+          "h": 77,
+          "text": "AAA地产闵行店上海市闵行区沪闵路6258号(莘庄地铁站北2"
+        },
+        {
+          "w": 193,
+          "h": 77,
+          "text": "AAA公司"
+        },
+        {
+          "w": 76,
+          "h": 77,
+          "text": "闵行区七宝"
+        },
+        {
+          "w": 86,
+          "h": 77,
+          "text": "洽谈中"
+        },
+        {
+          "w": 86,
+          "h": 77,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 77,
+          "text": "员工建档"
+        },
+        {
+          "w": 64,
+          "h": 77,
+          "text": "唐"
+        },
+        {
+          "w": 59,
+          "h": 77,
+          "text": "1"
+        },
+        {
+          "w": 120,
+          "h": 77,
+          "text": "2026/11/1 20:37:35"
+        },
+        {
+          "w": 68,
+          "h": 77,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 77,
+          "text": "详情"
+        }
+      ]
+    },
+    {
+      "h": 61,
+      "cells": [
+        {
+          "w": 362,
+          "h": 61,
+          "text": "天天地产世界商城店上海市闵行区莘朱路 仲盛世界商城"
+        },
+        {
+          "w": 193,
+          "h": 61,
+          "text": "天天地产"
+        },
+        {
+          "w": 76,
+          "h": 61,
+          "text": "闵行区莘庄"
+        },
+        {
+          "w": 86,
+          "h": 61,
+          "text": "已合作"
+        },
+        {
+          "w": 86,
+          "h": 61,
+          "text": "已转正"
+        },
+        {
+          "w": 67,
+          "h": 61,
+          "text": "员工建档"
+        },
+        {
+          "w": 64,
+          "h": 61,
+          "text": "唐"
+        },
+        {
+          "w": 59,
+          "h": 61,
+          "text": "2"
+        },
+        {
+          "w": 120,
+          "h": 61,
+          "text": "2026/11/1 12:00:00"
+        },
+        {
+          "w": 68,
+          "h": 61,
+          "text": "正常"
+        },
+        {
+          "w": 132,
+          "h": 61,
+          "text": "详情"
+        }
+      ]
+    }
+  ],
+  "allTextSizes": {
+    "16px": [
+      "工作台",
+      "房源管理",
+      "商户管理",
+      "线索中心",
+      "项目管理",
+      "项目待办",
+      "房源营销",
+      "获客中心"
+    ],
+    "14.5px": [
+      "工作台",
+      "房源管理",
+      "商户管理",
+      "线索中心",
+      "项目管理",
+      "项目待办",
+      "房源营销",
+      "获客中心"
+    ],
+    "14px": [
+      "Toggle Sidebar",
+      "Toggle Sidebar",
+      "导出 CSV",
+      "新建门店",
+      "全部状态",
+      "全部状态",
+      "全部审核",
+      "全部审核"
+    ],
+    "12px": [
+      "AD",
+      "至",
+      "至",
+      "门店",
+      "公司",
+      "区域/商圈",
+      "合作状态",
+      "审核"
+    ],
+    "44px": [
+      "门店列表"
+    ],
+    "15px": [
+      "按区域、合作状态、审核状态查看与维护全部门店"
+    ],
+    "13px": [
+      "经纪人数量",
+      "创建日期"
+    ]
+  },
+  "drawer": {
+    "sheet": {
+      "tag": "DIV",
+      "text": "SHOT1793630391869源门店SHOT1793630391869公司 · 上海市上海市正常",
+      "rect": {
+        "x": 880,
+        "y": 0,
+        "w": 560,
+        "h": 1000
+      },
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "24px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "background": "lab(100 0 0)",
+      "borderRadius": "0px",
+      "border": "",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px",
+      "padding": "0px",
+      "gap": "0px"
+    },
+    "title": {
+      "tag": "H2",
+      "text": "SHOT1793630391869源门店",
+      "rect": {
+        "x": 905,
+        "y": 24,
+        "w": 290,
+        "h": 28
+      },
+      "fontSize": "22px",
+      "fontWeight": "500",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "27.5px",
+      "letterSpacing": "-0.144px",
+      "color": "rgb(23, 25, 28)",
+      "background": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+      "boxShadow": "none",
+      "padding": "0px",
+      "gap": "normal"
+    },
+    "desc": {
+      "tag": "P",
+      "text": "SHOT1793630391869公司 · 上海市上海市",
+      "rect": {
+        "x": 905,
+        "y": 56,
+        "w": 290,
+        "h": 20
+      },
+      "fontSize": "13px",
+      "fontWeight": "400",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "19.5px",
+      "letterSpacing": "-0.144px",
+      "color": "rgb(119, 123, 134)",
+      "background": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+      "boxShadow": "none",
+      "padding": "0px",
+      "gap": "normal"
+    },
+    "edit": {
+      "tag": "BUTTON",
+      "text": "编辑",
+      "rect": {
+        "x": 1308,
+        "y": 24,
+        "w": 76,
+        "h": 32
+      },
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "20px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "background": "lab(100 0 0)",
+      "borderRadius": "8px",
+      "border": "1px solid lab(91.7353 -0.998765 -4.76968)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+      "padding": "0px 10px",
+      "gap": "6px"
+    },
+    "sectionLabel": {
+      "tag": "DIV",
+      "text": "基础信息",
+      "rect": {
+        "x": 905,
+        "y": 154,
+        "w": 511,
+        "h": 20
+      },
+      "fontSize": "13px",
+      "fontWeight": "500",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "19.5px",
+      "letterSpacing": "0.325px",
+      "color": "rgb(119, 123, 134)",
+      "background": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+      "boxShadow": "none",
+      "padding": "0px",
+      "gap": "normal"
+    }
+  },
+  "dialog": {
+    "content": {
+      "tag": "DIV",
+      "text": "删除门店将软删除「SHOT1793630391869源门店」：记录保留可追溯，列表与选择器不再展示。",
+      "rect": {
+        "x": 500,
+        "y": 380,
+        "w": 440,
+        "h": 240
+      },
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "24px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "background": "lab(100 0 0)",
+      "borderRadius": "10px",
+      "border": "1px solid lab(91.7353 -0.998765 -4.76968)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.1) 0px 4px 6px -4px",
+      "padding": "24px",
+      "gap": "16px"
+    },
+    "title": {
+      "tag": "H2",
+      "text": "删除门店",
+      "rect": {
+        "x": 525,
+        "y": 405,
+        "w": 390,
+        "h": 18
+      },
+      "fontSize": "18px",
+      "fontWeight": "600",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "18px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "background": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+      "boxShadow": "none",
+      "padding": "0px",
+      "gap": "normal"
+    },
+    "desc": {
+      "tag": "P",
+      "text": "将软删除「SHOT1793630391869源门店」：记录保留可追溯，列表与选择器不再展示。存在拜访",
+      "rect": {
+        "x": 525,
+        "y": 431,
+        "w": 390,
+        "h": 60
+      },
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "20px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(48.0876 -2.03595 -16.5814)",
+      "background": "rgba(0, 0, 0, 0)",
+      "borderRadius": "0px",
+      "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+      "boxShadow": "none",
+      "padding": "0px",
+      "gap": "normal"
+    },
+    "input": {
+      "tag": "INPUT",
+      "text": "",
+      "rect": {
+        "x": 525,
+        "y": 507,
+        "w": 390,
+        "h": 36
+      },
+      "fontSize": "14px",
+      "fontWeight": "400",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "20px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "background": "rgba(0, 0, 0, 0)",
+      "borderRadius": "8px",
+      "border": "1px solid lab(65.5349 -2.25151 -14.5072)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, oklab(0.703997 -0.00914919 -0.038923 / 0.5) 0px 0px 0px 3px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+      "padding": "4px 12px",
+      "gap": "normal"
+    },
+    "cancel": {
+      "tag": "BUTTON",
+      "text": "取消",
+      "rect": {
+        "x": 758,
+        "y": 559,
+        "w": 62,
+        "h": 36
+      },
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "20px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(1.76974 1.32743 -9.28855)",
+      "background": "lab(100 0 0)",
+      "borderRadius": "8px",
+      "border": "1px solid lab(91.7353 -0.998765 -4.76968)",
+      "boxShadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 1px 2px 0px",
+      "padding": "8px 16px",
+      "gap": "8px"
+    },
+    "confirm": {
+      "tag": "BUTTON",
+      "text": "确认删除",
+      "rect": {
+        "x": 828,
+        "y": 559,
+        "w": 87,
+        "h": 36
+      },
+      "fontSize": "14px",
+      "fontWeight": "500",
+      "fontFamily": "ui-sans-serif, system-ui, sans-serif, \"Apple Color Emoji\", \"Segoe UI Emoji\", \"Segoe UI Symbol\", \"Noto Color Emoji\"",
+      "lineHeight": "20px",
+      "letterSpacing": "-0.144px",
+      "color": "lab(98.1434 -0.369519 -1.05966)",
+      "background": "rgb(23, 25, 28)",
+      "borderRadius": "8px",
+      "border": "0px solid lab(91.7353 -0.998765 -4.76968)",
+      "boxShadow": "none",
+      "padding": "8px 16px",
+      "gap": "8px"
+    }
+  }
+}

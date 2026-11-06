@@ -1,0 +1,93 @@
+{
+  "metrics": [
+    {
+      "viewport": {
+        "width": 1440,
+        "height": 1000,
+        "name": "01-desktop-1440"
+      },
+      "docScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "pageBg": "rgb(247, 247, 248)",
+      "tableDisplayed": "block",
+      "tableWidth": 1096,
+      "tableWrapClient": 1096,
+      "tableWrapScroll": 1096,
+      "primaryButtonCount": 1,
+      "fontSizes": {
+        "14px": 98,
+        "15px": 17,
+        "16px": 2,
+        "44px": 1
+      },
+      "cardCount": 2
+    },
+    {
+      "viewport": {
+        "width": 1024,
+        "height": 900,
+        "name": "02-desktop-1024"
+      },
+      "docScrollWidth": 1024,
+      "bodyScrollWidth": 1024,
+      "pageBg": "rgb(247, 247, 248)",
+      "tableDisplayed": "none",
+      "tableWidth": 0,
+      "tableWrapClient": 0,
+      "tableWrapScroll": 0,
+      "primaryButtonCount": 1,
+      "fontSizes": {
+        "14px": 98,
+        "15px": 17,
+        "16px": 2,
+        "44px": 1
+      },
+      "cardCount": 2
+    },
+    {
+      "viewport": {
+        "width": 768,
+        "height": 900,
+        "name": "03-desktop-768"
+      },
+      "docScrollWidth": 768,
+      "bodyScrollWidth": 768,
+      "pageBg": "rgb(247, 247, 248)",
+      "tableDisplayed": "none",
+      "tableWidth": 0,
+      "tableWrapClient": 0,
+      "tableWrapScroll": 0,
+      "primaryButtonCount": 1,
+      "fontSizes": {
+        "14px": 98,
+        "15px": 17,
+        "16px": 2,
+        "44px": 1
+      },
+      "cardCount": 2
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844,
+        "name": "04-mobile-390"
+      },
+      "docScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "pageBg": "rgb(247, 247, 248)",
+      "tableDisplayed": "none",
+      "tableWidth": 0,
+      "tableWrapClient": 0,
+      "tableWrapScroll": 0,
+      "primaryButtonCount": 1,
+      "fontSizes": {
+        "14px": 98,
+        "15px": 17,
+        "16px": 2,
+        "44px": 1
+      },
+      "cardCount": 2
+    }
+  ],
+  "errors": []
+}
