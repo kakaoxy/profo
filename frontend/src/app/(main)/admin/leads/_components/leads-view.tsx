@@ -87,6 +87,7 @@ export function LeadsView({
     openDetail,
     closeDetail,
     startAddLead,
+    startEditLead,
     closeAddModal,
   } = useLeadSelection({ initialSelectedLeadId, leads });
 
@@ -142,6 +143,12 @@ export function LeadsView({
         fallbackMessage: ERROR_MESSAGES.UPDATE_FAILED,
       });
     }
+  };
+
+  const handleEditLead = (lead: Lead) => {
+    // 先关闭抽屉，避免 Radix Sheet 的焦点陷阱挡住编辑弹窗
+    closeDetail();
+    requestAnimationFrame(() => startEditLead(lead));
   };
 
   const handleAddLead = async (newLeadData: Omit<Lead, "id" | "createdAt">) => {
@@ -297,6 +304,7 @@ export function LeadsView({
           onAudit={handleAudit}
           onAddFollowUp={handleAddFollowUp}
           onImagesUpdate={handleImagesUpdate}
+          onEdit={handleEditLead}
         />
 
         <AddLeadModal

@@ -10,6 +10,7 @@ import { AttributionSelects } from "./add-lead-parts/attribution-selects";
 import { CommunityImagePicker, type PickerImageItem } from "./community-image-picker";
 import { listCommunityImagesForLeadAction } from "@/app/(main)/admin/communities/images/actions/upload-image";
 import { cn } from "@/lib/utils";
+import { formatPlate, formatRoomNo } from "@/lib/dict-display";
 
 interface Props {
   isOpen: boolean;
@@ -93,18 +94,27 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
       });
       setImages(lead.images || []);
       // 四级选择器初值回显（surface-dict-binding-info）：已绑楼栋/户室不在编辑时被静默清空
+      // 旧线索可能没有 community_id（仅 community_name），也必须回显小区名称，避免编辑时重新填写
       setDictValue(
-        lead.communityId || lead.buildingId || lead.roomId
+        lead.communityName || lead.communityId || lead.buildingId || lead.roomId
           ? {
               communityId: lead.communityId || null,
               communityName: lead.communityName || "",
+              district: lead.district ?? null,
+              businessCircle: lead.businessArea ?? null,
               buildingId: lead.buildingId ?? null,
               buildingNo: lead.buildingNo ?? "",
               roomId: lead.roomId ?? null,
               roomNo: lead.roomNo ?? "",
-              address: lead.communityName || "",
+              address: formatPlate(
+                lead.communityName,
+                lead.buildingNo,
+                formatRoomNo(lead.roomNo),
+              ),
               dictStatus:
-                lead.dictStatus === "linked" || lead.dictStatus === "pending" || lead.dictStatus === "manual"
+                lead.dictStatus === "linked" ||
+                lead.dictStatus === "pending" ||
+                lead.dictStatus === "manual"
                   ? lead.dictStatus
                   : null,
             }
@@ -142,9 +152,9 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
     if (!formData.communityName || !formData.area || !formData.totalPrice) return;
 
     onAdd({
-      communityId: formData.communityId || undefined,
-      buildingId: dictValue?.buildingId ?? undefined,
-      roomId: dictValue?.roomId ?? undefined,
+      communityId: formData.communityId || null,
+      buildingId: dictValue?.buildingId ?? null,
+      roomId: dictValue?.roomId ?? null,
       dictStatus: dictValue?.dictStatus ?? undefined,
       newCommunity: dictValue?.newCommunity ?? null,
       newBuilding: dictValue?.newBuilding ?? null,
@@ -212,8 +222,8 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
                     ...prev,
                     communityId: next.communityId || "",
                     communityName: next.communityName || "",
-                    district: next.district || prev.district,
-                    businessArea: next.businessCircle || prev.businessArea,
+                    district: next.district ?? prev.district,
+                    businessArea: next.businessCircle ?? prev.businessArea,
                   }));
                 }}
                 sourceBizType="lead"

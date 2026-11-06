@@ -167,33 +167,45 @@ test.beforeEach(async ({ page }) => {
   await loginPage(page);
 });
 
-test("线索列表/详情展示五维归属，存量线索显示 —", async ({ page }) => {
+test("线索列表/详情展示五维归属，存量线索显示无归属", async ({ page }) => {
   const search = encodeURIComponent(`${MARK}商圈小区`);
   await page.goto(`/admin/leads?search=${search}`);
 
-  const row = page.locator("tr").filter({ hasText: `${MARK}商圈小区` }).first();
+  const headers = await page.locator("thead th").allTextContents();
+  expect(headers).toContain("区域");
+  expect(headers).not.toContain("归属（门店 / 经纪人 / 分享）");
+  expect(headers).not.toContain("员工归因（门店归属 / 邀请）");
+
+  const row = page
+    .locator("tr")
+    .filter({ hasText: `${MARK}商圈小区` })
+    .first();
   await expect(row).toBeVisible({ timeout: 15_000 });
-  // 门店 / 经纪人 / 分享员工 / 门店归属员工 / 经纪人邀请员工
-  await expect(row).toContainText(seeded.store_name);
-  await expect(row).toContainText(seeded.broker_name);
-  await expect(row).toContainText(seeded.share_name);
-  await expect(row).toContainText(seeded.owner_name);
   // BR-M07-013：录入人与分享员工语义分开
   await expect(row).toContainText(seeded.creator_name);
 
   // 详情抽屉五维归属卡片
   await row.click();
-  await expect(page.getByText("归属信息")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("推荐门店")).toBeVisible();
-  await expect(page.getByText("门店归属员工")).toBeVisible();
-  await expect(page.getByText("归属完整").first()).toBeVisible();
+  const drawer = page.getByRole("dialog");
+  await expect(drawer.getByText("归属信息")).toBeVisible({ timeout: 15_000 });
+  await expect(drawer.getByText("推荐门店")).toBeVisible();
+  await expect(drawer.getByText("门店归属员工")).toBeVisible();
+  await expect(drawer.getByText("归属完整").first()).toBeVisible();
+  await expect(drawer.getByText(seeded.store_name)).toBeVisible();
+  await expect(drawer.getByText(seeded.broker_name)).toBeVisible();
+  await expect(drawer.getByText(seeded.share_name).first()).toBeVisible();
+  await expect(drawer.getByText(seeded.owner_name).first()).toBeVisible();
   await page.keyboard.press("Escape");
 
-  // AC-V06-008：存量线索无归属字段，列表正常渲染并显示 —
+  // AC-V06-008：存量线索无归属字段，列表正常渲染，详情显示无归属
   await page.goto(`/admin/leads?search=${encodeURIComponent(`${MARK}存量小区`)}`);
-  const legacyRow = page.locator("tr").filter({ hasText: `${MARK}存量小区` }).first();
+  const legacyRow = page
+    .locator("tr")
+    .filter({ hasText: `${MARK}存量小区` })
+    .first();
   await expect(legacyRow).toBeVisible({ timeout: 15_000 });
-  await expect(legacyRow).toContainText("—");
+  await legacyRow.click();
+  await expect(page.getByRole("dialog").getByText("无归属")).toBeVisible({ timeout: 15_000 });
 });
 
 test("录入线索：门店→经纪人二级联动，切换门店清空经纪人", async ({ page }) => {
@@ -202,16 +214,18 @@ test("录入线索：门店→经纪人二级联动，切换门店清空经纪�
 
   const storeSelect = page.getByLabel("推荐门店", { exact: true });
   await expect(storeSelect).toBeVisible({ timeout: 15_000 });
-  await expect(
-    storeSelect.locator("option").filter({ hasText: seeded.store_name }),
-  ).toHaveCount(1, { timeout: 15_000 });
+  await expect(storeSelect.locator("option").filter({ hasText: seeded.store_name })).toHaveCount(
+    1,
+    { timeout: 15_000 },
+  );
 
   // 选择门店 → 仅加载该门店有效绑定经纪人
   await storeSelect.selectOption({ label: seeded.store_name });
   const brokerSelect = page.getByLabel("推荐经纪人", { exact: true });
-  await expect(
-    brokerSelect.locator("option").filter({ hasText: seeded.broker_name }),
-  ).toHaveCount(1, { timeout: 15_000 });
+  await expect(brokerSelect.locator("option").filter({ hasText: seeded.broker_name })).toHaveCount(
+    1,
+    { timeout: 15_000 },
+  );
   await brokerSelect.selectOption({ label: seeded.broker_name });
 
   // 切换门店 → 清空已选经纪人
@@ -221,7 +235,10 @@ test("录入线索：门店→经纪人二级联动，切换门店清空经纪�
 
 test("按门店/经纪人/归属员工筛选线索", async ({ page }) => {
   await page.goto("/admin/leads");
-  const row = page.locator("tr").filter({ hasText: `${MARK}商圈小区` }).first();
+  const row = page
+    .locator("tr")
+    .filter({ hasText: `${MARK}商圈小区` })
+    .first();
 
   // 门店筛选
   await page.getByRole("combobox", { name: "推荐门店筛选" }).click();

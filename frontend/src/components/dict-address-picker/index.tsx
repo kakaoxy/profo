@@ -28,7 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { formatBuildingLabel, formatPlate } from "@/lib/dict-display";
+import { formatBuildingLabel, formatPlate, formatRoomNo } from "@/lib/dict-display";
 import { client } from "@/lib/api-client";
 
 export interface DictAddressValue {
@@ -123,8 +123,7 @@ function floorOfRoom(roomNo: string): number | null {
 
 /** 门牌户号映射（与后端 format_plate_no 对齐：0401→401，非标/0 层原样返回） */
 function plateOfRoom(roomNo: string): string {
-  if (!/^\d{4}$/.test(roomNo) || parseInt(roomNo.slice(0, 2), 10) <= 0) return roomNo;
-  return String(Number(roomNo));
+  return formatRoomNo(roomNo);
 }
 
 export function DictAddressPicker({

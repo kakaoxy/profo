@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Image as ImageIcon, Plus, ChevronLeft, ChevronRight, X, Loader2 } from "lucide-react";
+import {
+  Image as ImageIcon,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  X,
+  Loader2,
+  Star,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUpload, DEFAULT_ALLOWED_IMAGE_TYPES } from "@/components/common/upload";
 import { toast } from "sonner";
@@ -76,7 +84,7 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
           {images.map((url, idx) => (
             <div
               key={`${idx}-${url}`}
-              className="shrink-0 w-24 h-24 rounded-[12px] overflow-hidden border border-dove cursor-pointer hover:border-ink transition-colors"
+              className="relative shrink-0 w-24 h-24 rounded-[12px] overflow-hidden border border-dove cursor-pointer hover:border-ink transition-colors"
               onClick={() => setSelectedIdx(idx)}
               title={`图片 ${idx + 1}`}
             >
@@ -87,6 +95,26 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
                 className="w-full h-full object-cover rounded-[12px]"
                 loading="lazy"
               />
+              {idx === 0 ? (
+                <span className="pointer-events-none absolute left-1.5 top-1.5 rounded-full bg-ink/85 px-2 py-0.5 text-[10px] font-medium text-white">
+                  标题图
+                </span>
+              ) : null}
+              {idx > 0 && onImagesChange ? (
+                <button
+                  type="button"
+                  aria-label={`将第 ${idx + 1} 张图片设为标题图`}
+                  title="设为标题图"
+                  className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition-colors hover:bg-white"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const next = [images[idx], ...images.filter((_, i) => i !== idx)];
+                    onImagesChange(next);
+                  }}
+                >
+                  <Star className="h-3.5 w-3.5" />
+                </button>
+              ) : null}
             </div>
           ))}
 

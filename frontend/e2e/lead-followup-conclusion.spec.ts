@@ -105,9 +105,10 @@ test("C1 抽屉登记跟进：结论 chip 可选可取消，提交后时间线�
   await page.getByPlaceholder("输入跟进摘要...").fill("业主希望再涨 10 万，价格未谈拢");
   await page.getByRole("button", { name: "记录", exact: true }).click();
 
-  // 时间线出现该记录，且带结论徽标
-  await expect(page.getByText("业主希望再涨 10 万，价格未谈拢")).toBeVisible({ timeout: 15000 });
-  await expect(page.getByText("价格未谈拢").last()).toBeVisible();
+  // 时间线出现该记录，且带结论徽标（限定抽屉，列表行也会显示最新跟进内容）
+  const drawer = page.getByRole("dialog");
+  await expect(drawer.getByText("业主希望再涨 10 万，价格未谈拢")).toBeVisible({ timeout: 15000 });
+  await expect(drawer.getByText("价格未谈拢").last()).toBeVisible();
 
   await page.screenshot({ path: join(ARTIFACT_DIR, "c1-drawer-conclusion.png"), fullPage: true });
   saveArtifact("c1-drawer-conclusion.json", { leadId: lead.id, leadCommunity: lead.community });
@@ -123,7 +124,9 @@ test("C2 不选结论提交：记录正常入库但时间线不渲染徽标（�
 
   await page.getByPlaceholder("输入跟进摘要...").fill("常规回访，无分歧");
   await page.getByRole("button", { name: "记录", exact: true }).click();
-  await expect(page.getByText("常规回访，无分歧")).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("dialog").getByText("常规回访，无分歧")).toBeVisible({
+    timeout: 15000,
+  });
 
   // 后端落库校验：conclusion 必须为空，而不是默认值
   const res = await api.ctx.get(`/api/v1/leads/${lead.id}/follow-ups`);

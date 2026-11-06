@@ -2,14 +2,12 @@
 
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatBuildingLabel } from "@/lib/dict-display";
 import { isValidUrl } from "@/lib/validators";
 import { safeFormatDate } from "@/lib/formatters";
-import { usePermission } from "@/hooks/use-permission";
 import { Lead } from "../types";
 import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
 import { getFollowUpConclusionMeta, getFollowUpMethodShort } from "../_lib/follow-up-meta";
@@ -33,42 +31,18 @@ interface LeadsTableProps {
   onDelete: (id: string) => void;
 }
 
-/** 历史归属标记（REQ-M07-004 分支 1） */
-const STORE_STATUS_SUFFIX: Record<string, string> = {
-  disabled: "（已停用）",
-  merged: "（已合并）",
-  relocated: "（已搬迁）",
-  deleted: "（已删除）",
-};
-const BROKER_STATUS_SUFFIX: Record<string, string> = {
-  disabled: "（已停用）",
-  unbound_after: "（已解绑）",
-};
-
 /**
  * 线索列表（列宽用 table-fixed + th 宽度类：断点隐藏 th 后剩余列按宽度类重排，
  * 容器 overflow-x-auto，窄屏横向滚动不挤压文字列）。
- * V06 归属扩展：新增「归属（门店 / 经纪人 / 分享）」与「员工归因（门店归属 / 邀请）」两列，
- * 缺值显示「—」；有权限时门店/经纪人名称可跳转对应后台页面。
  */
 export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onDelete }) => {
-  const { hasPermission } = usePermission();
-  const canOpenStore = hasPermission(PERMISSION_CODES.MERCHANT_READ);
-  const canOpenBroker = hasPermission(PERMISSION_CODES.MERCHANT_BROKER);
-
   return (
-    <table className="w-full min-w-[1524px] table-fixed border-collapse">
+    <table className="w-full min-w-[1224px] table-fixed border-collapse">
       <thead className="border-b border-dove">
         <tr className="text-left align-bottom text-[12.5px] font-medium tracking-wide text-graphite">
           <th className="w-[196px] whitespace-nowrap px-2.5 py-3 pl-5 font-medium">小区 / 房源</th>
           <th className="hidden w-[84px] whitespace-nowrap px-2.5 py-3 font-medium lg:table-cell">
             区域
-          </th>
-          <th className="hidden w-[160px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
-            归属（门店 / 经纪人 / 分享）
-          </th>
-          <th className="hidden w-[140px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
-            员工归因（门店归属 / 邀请）
           </th>
           <th className="w-[120px] whitespace-nowrap px-2.5 py-3 font-medium">户型 / 楼层</th>
           <th className="w-[102px] whitespace-nowrap px-2.5 py-3 text-right font-medium">
@@ -183,76 +157,6 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                 <span className="mt-0.5 block text-xs leading-tight text-graphite">
                   {lead.businessArea || "—"}
                 </span>
-              </td>
-
-              {/* 五维归属（V06）：门店 / 经纪人 / 分享员工（有权限时可跳转） */}
-              <td className="hidden px-2.5 py-2.5 align-middle xl:table-cell">
-                <div className="space-y-0.5 text-[12px] leading-tight">
-                  <div className="truncate text-ash">
-                    <span className="text-graphite">店 </span>
-                    {lead.storeName ? (
-                      <>
-                        {lead.storeId && lead.storeStatus !== "deleted" && canOpenStore ? (
-                          <Link
-                            href={`/admin/merchant/stores/${lead.storeId}`}
-                            className="hover:text-rust hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {lead.storeName}
-                          </Link>
-                        ) : (
-                          lead.storeName
-                        )}
-                        {STORE_STATUS_SUFFIX[lead.storeStatus || ""] || ""}
-                      </>
-                    ) : (
-                      "—"
-                    )}
-                  </div>
-                  <div className="truncate text-ash">
-                    <span className="text-graphite">纪 </span>
-                    {lead.brokerName ? (
-                      <>
-                        {lead.brokerId && canOpenBroker ? (
-                          <Link
-                            href={`/admin/merchant/brokers?keyword=${encodeURIComponent(lead.brokerName)}`}
-                            className="hover:text-rust hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {lead.brokerName}
-                          </Link>
-                        ) : (
-                          lead.brokerName
-                        )}
-                        {BROKER_STATUS_SUFFIX[lead.brokerStatus || ""] || ""}
-                      </>
-                    ) : (
-                      "—"
-                    )}
-                  </div>
-                  <div className="truncate text-ash">
-                    <span className="text-graphite">推 </span>
-                    {lead.referrerName || "—"}
-                  </div>
-                </div>
-              </td>
-
-              {/* 员工归因（V06 / BR-M07-021）：门店归属员工 / 经纪人邀请员工 */}
-              <td className="hidden px-2.5 py-2.5 align-middle xl:table-cell">
-                <div className="space-y-0.5 text-[12px] leading-tight">
-                  <div className="truncate text-ink">
-                    <span className="text-graphite">员 </span>
-                    {lead.employeeAttributionName || "无员工归因"}
-                  </div>
-                  <div className="truncate text-ash">
-                    <span className="text-graphite">门 </span>
-                    {lead.storeOwnerName || "—"}
-                  </div>
-                  <div className="truncate text-ash">
-                    <span className="text-graphite">邀 </span>
-                    {lead.brokerInviterName || "—"}
-                  </div>
-                </div>
               </td>
 
               {/* 户型 / 楼层 */}

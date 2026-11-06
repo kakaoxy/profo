@@ -27,6 +27,13 @@ export function formatBuildingLabel(buildingNo: string | null | undefined): stri
   return hasBuildingSuffix(s) ? s : `${s}号`;
 }
 
+/** 户室号展示映射：0401→401；非四位数字或 0 层原样返回（与后端 format_plate_no 同口径） */
+export function formatRoomNo(roomNo: string | null | undefined): string {
+  const s = (roomNo ?? "").trim();
+  if (!/^\d{4}$/.test(s) || parseInt(s.slice(0, 2), 10) <= 0) return s;
+  return String(Number(s));
+}
+
 /**
  * 门牌预览：小区名 + 楼栋展示 + 户号映射（0401→401）.
  *

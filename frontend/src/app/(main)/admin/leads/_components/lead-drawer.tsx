@@ -22,6 +22,7 @@ interface Props {
     conclusion?: FollowUpConclusion | null,
   ) => void;
   onImagesUpdate?: (leadId: string, images: string[]) => void;
+  onEdit?: (lead: Lead) => void;
 }
 
 export const LeadDrawer: React.FC<Props> = ({
@@ -31,6 +32,7 @@ export const LeadDrawer: React.FC<Props> = ({
   onAudit,
   onAddFollowUp,
   onImagesUpdate,
+  onEdit,
 }) => {
   const [activeTab, setActiveTab] = useState<TabId>("info");
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
@@ -89,7 +91,7 @@ export const LeadDrawer: React.FC<Props> = ({
         className="w-full sm:w-[720px] sm:max-w-[720px] p-0 flex flex-col gap-0"
       >
         <SheetTitle className="sr-only">客户详情</SheetTitle>
-        <DrawerHeader lead={lead} />
+        <DrawerHeader lead={lead} onEdit={onEdit ? () => onEdit(lead) : undefined} />
 
         <LifecycleStepper lead={lead} />
 

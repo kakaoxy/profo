@@ -14,7 +14,7 @@ from sqlalchemy import desc, func
 from sqlalchemy.orm import Session, joinedload
 
 from constants.role_codes import INTERNAL_ROLE_CODES
-from models import User
+from models import Community, CommunityAlias, User
 from models.common import FollowUpConclusion, FollowUpMethod, LeadStatus
 from models.lead import Lead, LeadEvalHistory, LeadFollowUp
 from schemas.growth_center import GrowthModule
@@ -80,6 +80,60 @@ class LeadService:
         self.price_service = LeadPriceService(db)
         self.followup_service = LeadFollowUpService(db)
         self.eval_service = LeadEvalService(db)
+
+    @staticmethod
+    def _derive_dict_status(
+        *,
+        new_community: dict | None,
+        new_building: dict | None,
+        new_room: dict | None,
+        building_id: int | None,
+        room_id: int | None,
+    ) -> str:
+        """按字典绑定事实推导单据状态：新增待审 → pending，绑定实表 → linked，否则 manual."""
+        if new_community or new_building or new_room:
+            return "pending"
+        if building_id or room_id:
+            return "linked"
+        return "manual"
+
+    def _resolve_community_by_name(self, community_name: str | None) -> Community | None:
+        """按小区名称/别名匹配有效小区，用于 C 端仅填名称时补齐字典关联.
+
+        Args:
+            community_name: 外部提交的小区名称
+
+        Returns:
+            匹配到的有效小区；未命中返回 None
+
+        """
+        if not community_name:
+            return None
+        name = community_name.strip()
+        if not name:
+            return None
+
+        def resolve_active(community: Community | None) -> Community | None:
+            if community is None:
+                return None
+            if community.merged_into_id:
+                community = self.db.get(Community, community.merged_into_id)
+            if community is not None and community.is_active:
+                return community
+            return None
+
+        community = self.db.query(Community).filter(Community.name == name).first()
+        matched = resolve_active(community)
+        if matched is not None:
+            return matched
+        alias = (
+            self.db.query(CommunityAlias)
+            .filter(CommunityAlias.alias_name == name, CommunityAlias.is_deleted.is_(False))
+            .first()
+        )
+        if alias is None:
+            return None
+        return resolve_active(self.db.get(Community, alias.community_id))
 
     def find_duplicate_lead(self, lead_data: LeadCreate) -> Lead | None:
         """按楼盘字典地址查找同地址未删除线索（V06 REQ-M08-005）.
@@ -164,15 +218,32 @@ class LeadService:
         new_community = lead_payload.pop("new_community", None) or None
         new_building = lead_payload.pop("new_building", None) or None
         new_room = lead_payload.pop("new_room", None) or None
+        # 仅填小区名称（C 端常见）时按名称/别名反查字典，补齐社区关联与区域/商圈；
+        # 显式传 community_id 时也补齐缺失的区域/商圈；走新增小区审核则不匹配存量。
+        if not new_community:
+            matched_community = (
+                self.db.get(Community, lead_payload["community_id"])
+                if lead_payload.get("community_id")
+                else self._resolve_community_by_name(lead_payload.get("community_name"))
+            )
+            if matched_community is not None and matched_community.is_active:
+                if not lead_payload.get("community_id"):
+                    lead_payload["community_id"] = matched_community.id
+                    lead_payload["community_name"] = matched_community.name
+                if not lead_payload.get("district"):
+                    lead_payload["district"] = matched_community.district
+                if not lead_payload.get("business_area"):
+                    lead_payload["business_area"] = matched_community.business_circle
         # dict_status 由服务端推导（M5 修复：不信任客户端自报，与项目链路口径对齐）：
         # 选到字典楼栋/户室 → linked；提交新增载荷 → pending；兼容手填 → manual
         lead_payload.pop("dict_status", None)
-        if new_community or new_building or new_room:
-            dict_status = "pending"
-        elif lead_payload.get("building_id") or lead_payload.get("room_id"):
-            dict_status = "linked"
-        else:
-            dict_status = "manual"
+        dict_status = self._derive_dict_status(
+            new_community=new_community,
+            new_building=new_building,
+            new_room=new_room,
+            building_id=lead_payload.get("building_id"),
+            room_id=lead_payload.get("room_id"),
+        )
         # 字典归属校验（M1 修复：楼栋/户室必须属于单据小区，防脏关联）
         validate_dict_ownership(
             self.db,
@@ -446,16 +517,43 @@ class LeadService:
         # 原实现直接 setattr，脏关联可从 PUT /leads/{id} 写入（创建有校验、编辑没有），
         # 且后续编辑会被 validate_dict_ownership 400 拦住，形成无法编辑的死单据。
         # community_id 被显式清空时，楼栋/户室一并归零（否则残留孤儿关联）。
-        next_community_id = update_dict.get("community_id") or lead.community_id
+        community_touched = "community_id" in update_dict
+        community_changed = community_touched and update_dict["community_id"] != lead.community_id
+        next_community_id = update_dict["community_id"] if community_touched else lead.community_id
+        if community_changed:
+            # 切小区时前端可能只传 community_id；未显式传楼栋/户室则清空旧值，
+            # 避免拿原小区楼栋去校验新小区（400）或写入孤儿关联。
+            update_dict.setdefault("building_id", None)
+            update_dict.setdefault("room_id", None)
         if not next_community_id:
-            update_dict.pop("building_id", None)
-            update_dict.pop("room_id", None)
+            update_dict["building_id"] = None
+            update_dict["room_id"] = None
+
+        effective_building_id = update_dict.get("building_id", lead.building_id)
+        effective_room_id = update_dict.get("room_id", lead.room_id)
         validate_dict_ownership(
             self.db,
             community_id=next_community_id,
-            building_id=update_dict.get("building_id", lead.building_id),
-            room_id=update_dict.get("room_id", lead.room_id),
+            building_id=effective_building_id,
+            room_id=effective_room_id,
         )
+
+        # 字典绑定实际发生变化时重新推导 dict_status（不信任客户端自报；
+        # 仅编辑备注等无关字段时保留原状态，含 pending/rejected 审核态）。
+        building_changed = "building_id" in update_dict and update_dict["building_id"] != lead.building_id
+        room_changed = "room_id" in update_dict and update_dict["room_id"] != lead.room_id
+        binding_changed = (
+            community_changed or building_changed or room_changed or bool(new_community or new_building or new_room)
+        )
+        update_dict.pop("dict_status", None)
+        if binding_changed:
+            update_dict["dict_status"] = self._derive_dict_status(
+                new_community=new_community,
+                new_building=new_building,
+                new_room=new_room,
+                building_id=effective_building_id,
+                room_id=effective_room_id,
+            )
 
         # 价格更新时记录历史
         new_price = update_dict.get("total_price")
@@ -520,7 +618,7 @@ class LeadService:
                 biz_type="lead",
                 biz_id=str(lead.id),
                 community_id=next_community_id,
-                building_id=update_dict.get("building_id", lead.building_id),
+                building_id=effective_building_id,
                 submitted_by=updater_id,
             )
 

@@ -67,7 +67,7 @@ export interface EvalHistory {
 export interface Lead {
   id: string;
   communityName: string;
-  communityId?: string; // 关联小区ID
+  communityId?: string | null; // 关联小区ID
   // ===== 楼盘字典四级地址（M3 / FR-18）=====
   buildingId?: number | null;
   roomId?: number | null;

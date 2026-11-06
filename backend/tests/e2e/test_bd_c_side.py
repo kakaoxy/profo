@@ -10,7 +10,9 @@
    且 `dict_status=manual`、不产生 pending（老版本小程序/外部调用方零破坏）；
 2. **字典命中**：带 community_id + building_id/room_id → `dict_status=linked`，不产生 pending；
 3. **进审核池**：带 `new_community` → `dict_status=pending` + `bd_pending_entries` 条目
-   + `bd_pending_references` 引用账本（来源类型 `lead`）。
+   + `bd_pending_references` 引用账本（来源类型 `lead`）；
+4. **仅名称自动落位**：只传真实小区名称（不带 community_id/district/business_area）
+   → `community_id` 自动命中，`district`/`business_area` 自动补齐。
 
 命令: cd backend && .venv/bin/python tests/e2e/test_bd_c_side.py
 前置: 后端 :8000 运行中；C 端测试账号（仓库根 .env 的 TEST_USERNAME/TEST_...）。
@@ -82,7 +84,7 @@ def check(name, actual, expect):
     return ok
 
 
-def reset_c_lead_quota(needed: int = 3) -> None:
+def reset_c_lead_quota(needed: int = 4) -> None:
     """仅本机开发环境：C 端创建限流不足时清理限流桶，保证脚本可复跑."""
     try:
         from utils.redis_client import get_redis_client
@@ -123,7 +125,15 @@ def lead_row(lead_id: str) -> dict | None:
         lead = db.query(Lead).filter(Lead.id == lead_id).first()
         if lead is None:
             return None
-        return {"dict_status": lead.dict_status, "building_id": lead.building_id, "room_id": lead.room_id}
+        return {
+            "dict_status": lead.dict_status,
+            "building_id": lead.building_id,
+            "room_id": lead.room_id,
+            "community_id": lead.community_id,
+            "community_name": lead.community_name,
+            "district": lead.district,
+            "business_area": lead.business_area,
+        }
     finally:
         db.close()
 
@@ -164,6 +174,8 @@ def pick_dict_target() -> dict | None:
             room = next((r for r in detail["rooms"] if not r["pending"]), None)
             if room is None:
                 continue
+            if not item.get("district") or not item.get("business_circle"):
+                continue
             return {
                 "community_id": item["id"],
                 "community_name": item["name"],
@@ -184,7 +196,7 @@ def main() -> None:
     if not token:
         print("SKIP: 无可用 C 端测试账号（请在仓库根 .env 配置 TEST_USERNAME/TEST_...）")
         return
-    reset_c_lead_quota(3)
+    reset_c_lead_quota(4)
 
     # ---- 1. 向后兼容：纯自由文本 ----
     print("\n=== 1. 老口径自由文本（向后兼容） ===")
@@ -258,6 +270,33 @@ def main() -> None:
         row = lead_row(lid)
         check("3.2 dict_status=pending", (row or {}).get("dict_status"), "pending")
         check("3.3 产生 1 条 pending 引用", pending_count(lid), 1)
+
+    # ---- 4. 仅小区名称自动落位 ----
+    print("\n=== 4. 仅小区名称 → 自动匹配字典并补齐区域/商圈 ===")
+    if target:
+        s, lead = req(
+            "POST",
+            "/public/leads",
+            {
+                "community_name": target["community_name"],
+                "floor_info": "7/18层",
+                "layout": "2室1厅",
+                "area": 80.0,
+            },
+            token=token,
+        )
+        check("4.1 提交 201", s, 201)
+        if s == 201:
+            lid = lead["id"]
+            CREATED.append(lid)
+            row = lead_row(lid)
+            check("4.2 community_id 自动命中", (row or {}).get("community_id"), target["community_id"])
+            check("4.3 community_name 标准化", (row or {}).get("community_name"), target["community_name"])
+            check("4.4 district 自动补齐", (row or {}).get("district"), target["district"])
+            check("4.5 business_area 自动补齐", (row or {}).get("business_area"), target["business_circle"])
+            check("4.6 dict_status=manual", (row or {}).get("dict_status"), "manual")
+    else:
+        print("  - 跳过：库内无可用的楼栋/户室数据")
 
     # ---- 清理 ----
     print("\n=== 清理 ===")
