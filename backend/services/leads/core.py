@@ -114,13 +114,16 @@ class LeadService:
             return None
 
         def resolve_active(community: Community | None) -> Community | None:
-            if community is None:
-                return None
-            if community.merged_into_id:
+            """沿 merged_into_id 追到主档；遇到循环时返回 None，避免脏数据造成死循环."""
+            seen: set[str] = set()
+            while community is not None:
+                if community.id in seen:
+                    return None
+                seen.add(community.id)
+                if not community.merged_into_id:
+                    break
                 community = self.db.get(Community, community.merged_into_id)
-            if community is not None and community.is_active:
-                return community
-            return None
+            return community if community is not None and community.is_active else None
 
         community = self.db.query(Community).filter(Community.name == name).first()
         matched = resolve_active(community)
@@ -221,6 +224,10 @@ class LeadService:
         # 仅填小区名称（C 端常见）时按名称/别名反查字典，补齐社区关联与区域/商圈；
         # 显式传 community_id 时也补齐缺失的区域/商圈；走新增小区审核则不匹配存量。
         if not new_community:
+            # 正常 API 由 Pydantic 保证 str；对内部/历史调用方再做一次防御性归一化。
+            raw_community_id = lead_payload.get("community_id")
+            if raw_community_id is not None:
+                lead_payload["community_id"] = str(raw_community_id)
             matched_community = (
                 self.db.get(Community, lead_payload["community_id"])
                 if lead_payload.get("community_id")
