@@ -1,0 +1,26 @@
+{
+  "390": {
+    "headerToFilter": 32,
+    "filterToList": 32,
+    "docScrollWidth": 390,
+    "viewport": 390
+  },
+  "768": {
+    "headerToFilter": 32,
+    "filterToList": 32,
+    "docScrollWidth": 768,
+    "viewport": 768
+  },
+  "1024": {
+    "headerToFilter": 32,
+    "filterToList": 32,
+    "docScrollWidth": 1024,
+    "viewport": 1024
+  },
+  "1440": {
+    "headerToFilter": 32,
+    "filterToList": 32,
+    "docScrollWidth": 1440,
+    "viewport": 1440
+  }
+}

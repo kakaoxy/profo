@@ -9,8 +9,8 @@ import { SteepButton } from "@/components/custom/steep-controls";
 import { merchantApi } from "../_components/merchant-api";
 import type { components } from "@/lib/api-types";
 import { CompanyDeleteDialog } from "./_components/company-delete-dialog";
+import { CompanyDrawer } from "./_components/company-drawer";
 import { CompanyFilters } from "./_components/company-filters";
-import { CompanyFormSheet } from "./_components/company-form-sheet";
 import { CompanyList } from "./_components/company-list";
 import { CompanyPagination } from "./_components/company-pagination";
 
@@ -29,6 +29,7 @@ export default function MerchantCompaniesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [formOpen, setFormOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<"view" | "edit" | "create">("view");
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Company | null>(null);
   // 请求序号：只有最后一次请求的结果才允许落地，避免「默认列表」与「搜索结果」乱序覆盖
@@ -83,20 +84,31 @@ export default function MerchantCompaniesPage() {
     setAppliedKeyword("");
   };
 
+  const openDetail = (company: Company) => {
+    setEditingCompany(company);
+    setSheetMode("view");
+    setFormOpen(true);
+  };
+
   const startCreate = () => {
     setEditingCompany(null);
+    setSheetMode("create");
     setFormOpen(true);
   };
 
   const startEdit = (company: Company) => {
     setEditingCompany(company);
+    setSheetMode("edit");
     setFormOpen(true);
   };
 
   const handleSaved = () => {
     const targetPage = editingCompany ? page : 1;
-    setFormOpen(false);
-    setEditingCompany(null);
+    // 编辑保存后留在详情抽屉，新建保存后关闭
+    if (!editingCompany) {
+      setFormOpen(false);
+      setEditingCompany(null);
+    }
     void load(targetPage, appliedKeyword);
   };
 
@@ -113,7 +125,7 @@ export default function MerchantCompaniesPage() {
 
   return (
     <div className="min-h-screen bg-fog" data-page="merchant-companies">
-      <PageContainer className="flex flex-col gap-10 lg:gap-20">
+      <PageContainer className="flex flex-col gap-8">
         <PageHeader
           title="公司列表"
           description="维护商户公司主数据，停用后不可再被新建门店选择"
@@ -125,7 +137,7 @@ export default function MerchantCompaniesPage() {
           }
         />
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-8">
           <CompanyFilters
             keyword={keyword}
             includeDisabled={includeDisabled}
@@ -145,6 +157,7 @@ export default function MerchantCompaniesPage() {
             onRetry={() => void load(1, appliedKeyword)}
             onClear={clearFilters}
             onCreate={startCreate}
+            onOpen={openDetail}
             onEdit={startEdit}
             onDelete={setDeleteTarget}
           />
@@ -158,12 +171,16 @@ export default function MerchantCompaniesPage() {
         </div>
       </PageContainer>
 
-      <CompanyFormSheet
+      <CompanyDrawer
         open={formOpen}
         company={editingCompany}
+        mode={sheetMode}
         onOpenChange={(next) => {
           setFormOpen(next);
-          if (!next) setEditingCompany(null);
+          if (!next) {
+            setEditingCompany(null);
+            setSheetMode("view");
+          }
         }}
         onSaved={handleSaved}
       />

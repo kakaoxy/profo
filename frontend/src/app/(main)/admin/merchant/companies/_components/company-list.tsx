@@ -44,6 +44,7 @@ export function CompanyList({
   onRetry,
   onClear,
   onCreate,
+  onOpen,
   onEdit,
   onDelete,
 }: {
@@ -54,6 +55,7 @@ export function CompanyList({
   onRetry: () => void;
   onClear: () => void;
   onCreate: () => void;
+  onOpen: (company: CompanyItem) => void;
   onEdit: (company: CompanyItem) => void;
   onDelete: (company: CompanyItem) => void;
 }) {
@@ -198,14 +200,14 @@ export function CompanyList({
               <tr
                 key={company.id}
                 onClick={(event) => {
-                  if (!isRowAction(event.target)) onEdit(company);
+                  if (!isRowAction(event.target)) onOpen(company);
                 }}
                 className="cursor-pointer border-t border-dove/40 transition-colors hover:bg-fog/60"
               >
                 <td className="h-[84px] px-4 align-middle">
                   <button
                     type="button"
-                    onClick={() => onEdit(company)}
+                    onClick={() => onOpen(company)}
                     className="block max-w-full cursor-pointer truncate text-left text-[15px] font-[450] tracking-[-0.009em] text-ink transition-colors hover:text-rust focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:outline-none"
                     title={company.company_name}
                   >
@@ -258,7 +260,7 @@ export function CompanyList({
           <article
             key={company.id}
             onClick={(event) => {
-              if (!isRowAction(event.target)) onEdit(company);
+              if (!isRowAction(event.target)) onOpen(company);
             }}
             className="cursor-pointer py-5 transition-colors first:pt-0 last:pb-0 hover:bg-fog/40"
             data-testid="company-card"
@@ -267,7 +269,7 @@ export function CompanyList({
               <div className="min-w-0">
                 <button
                   type="button"
-                  onClick={() => onEdit(company)}
+                  onClick={() => onOpen(company)}
                   className="block max-w-full cursor-pointer truncate text-left text-[15px] font-[450] tracking-[-0.009em] text-ink transition-colors hover:text-rust focus-visible:ring-2 focus-visible:ring-ink/20 focus-visible:outline-none"
                 >
                   {company.company_name}

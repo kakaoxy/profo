@@ -3,7 +3,7 @@
 - 页面：`/admin/merchant/companies`
 - 验证日期：2026-11-06
 - 验证方式：Next.js dev server（`:3000`）+ FastAPI（`:8000`）+ Playwright Chromium 真机浏览器
-- 结论：**通过**（类型、lint、构建、四断点布局、创建/编辑/删除、加载/错误态均验证）
+- 结论：**通过**（类型、lint、构建、四断点布局、创建/阅读/编辑/删除、加载/错误态均验证）
 
 ## 1. 静态检查
 
@@ -15,7 +15,7 @@
 
 ## 2. 四断点布局
 
-数据来源：[`companies-final-metrics.json`](./companies-final-metrics.json)。所有宽度均无横向溢出，页面背景为 Fog，整页只有 1 个 Ink 实心主按钮。
+数据来源：[`companies-final-metrics.json`](./companies-final-metrics.json) 与 [`companies-spacing.json`](./companies-spacing.json)。所有宽度均无横向溢出，页面背景为 Fog，整页只有 1 个 Ink 实心主按钮。
 
 | 视口 | `docScrollWidth` | 表格模式 | 表格宽度 | 主按钮数 | 实际字号 |
 | --- | --- | --- | --- | --- | --- |
@@ -28,20 +28,22 @@
 - 页面内无 12px 文本。
 - 桌面表格使用 `table-fixed`，1440 下容器与表格同宽，无隐藏列。
 - 390 下打开“新建公司”Sheet：`x=0 / width=390 / right=390`，`documentElement.scrollWidth=390`。
+- 标题→筛选卡、筛选卡→列表卡间距：1440 / 1024 / 768 / 390 四个断点均为 **32px**（`gap-8`），不再出现 80px/16px 的落差；数据见 `companies-spacing.json`。
 - 键盘焦点：Tab 顺序为页头主按钮 → 搜索输入 → 状态选择 → 查询；搜索框 `:focus-visible` 时边框变为 Ink `rgb(23,25,28)`，按钮显示 2px 焦点环。
 
 ## 3. 交互验证
 
 验证流程（公司名自动生成，验证后已删除）：
 
-1. 新建公司 `E2E-UI-公司-1793955917643`，填写公司名称、联系人、联系电话、备注。
+1. 新建公司（名称自动生成，如 `E2E-UI-公司-<时间戳>`），填写公司名称、联系人、联系电话、备注。
 2. 按公司名称搜索并确认唯一结果。
-3. 编辑联系人，状态改为“停用”，保存后列表显示停用。
-4. 打开行操作菜单，填删除原因，确认删除。
-5. 删除后按公司名搜索，结果为空。
-6. 390 宽度打开新建 Sheet，确认全宽、无横向溢出，Esc 关闭。
+3. 点击公司名称打开阅读态详情：标题为公司名，显示基础信息/档案信息，无输入框；截图 `14-detail-view-1440.png`。
+4. 点击详情头部“编辑”进入编辑态，改联系人并改为“停用”，保存后仍停留在阅读态且显示新联系人；截图 `15-detail-edit-1440.png`。
+5. 打开行操作菜单，填删除原因，确认删除。
+6. 删除后按公司名搜索，结果为空。
+7. 390 宽度打开新建 Sheet，确认全宽、无横向溢出，Esc 关闭；另截图 `16-detail-view-390.png` 验证移动端阅读态抽屉全宽。
 
-结果：`errors=[]`，创建/搜索/编辑/停用/删除全部通过。
+结果：`errors=[]`，创建/搜索/阅读/编辑/停用/删除全部通过。
 
 ## 4. 状态验证
 
@@ -84,6 +86,9 @@
 | `11-loading-1440.png` | 加载骨架 |
 | `12-error-1440.png` | 接口错误态 |
 | `13-empty-390.png` | 390 搜索空态 |
+| `14-detail-view-1440.png` | 1440 阅读态详情抽屉 |
+| `15-detail-edit-1440.png` | 阅读态点击“编辑”后的编辑态 |
+| `16-detail-view-390.png` | 390 阅读态详情抽屉（全宽） |
 
 ## 7. 复验命令
 
@@ -95,10 +100,12 @@ pnpm build
 
 # 复验脚本已归档在 tmp/unslop/verification-scripts/，复制到 frontend 后运行
 cp ../tmp/unslop/verification-scripts/.verify-*.mjs .
-node .verify-companies.mjs
-node .verify-interactions.mjs
+node .verify-layout.mjs
+node .verify-interactions-v2.mjs
 node .verify-states.mjs
 node .verify-tokens.mjs
+node .verify-detail.mjs
+node .verify-spacing.mjs
 ```
 
 > 注：Playwright 脚本依赖根目录 `.env` 的 `TEST_USERNAME` / `TEST_PASSWORD`；它们属于临时验证工具，不参与应用构建。截图、metrics JSON 与 token JSON 为最终可复验工件。

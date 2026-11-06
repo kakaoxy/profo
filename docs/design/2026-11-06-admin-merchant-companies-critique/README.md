@@ -547,3 +547,13 @@
 - 修复验证：[verification/README.md](verification/README.md)
 - 修复前后截图：`screens/`（修复前）与 `verification/`（修复后）
 - 静态检查：`pnpm typecheck`、`pnpm lint`、`pnpm build` 均通过
+
+## 13. 后续交互优化（2026-11-06）
+
+在修复记录之上继续完成三项体验优化：
+
+1. 标题区→筛选卡、筛选卡→列表卡统一为 32px（`gap-8`），消除原先 80px / 16px 的垂直节奏落差。
+2. 列表行（桌面表格行、公司名、移动卡片）点击改为打开**阅读态**详情抽屉，减少查看信息时先进入编辑态的多余操作；编辑仍可从行操作菜单或详情头部「编辑」进入。
+3. 详情抽屉改为 `view` / `edit` / `create` 三模式：阅读态展示联系人、脱敏电话、状态、创建时间、备注、更新时间，不再直接渲染表单；点击「编辑」才进入编辑态，编辑保存后回到阅读态。公司详情复用列表返回字段，未新增后端接口。
+
+验证证据与复验命令见 [verification/README.md](verification/README.md)，新增截图 `14-detail-view-1440.png`、`15-detail-edit-1440.png`、`16-detail-view-390.png`。`pnpm typecheck`、`pnpm lint`、`pnpm build` 均通过；Playwright 覆盖四断点、阅读态、编辑态和创建/编辑/删除全流程。
