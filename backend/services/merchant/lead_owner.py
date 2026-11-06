@@ -216,7 +216,8 @@ class LeadOwnerService:
             )
             .execution_options(synchronize_session=False)
         )
-        self.db.execute(
+        # 门店绑定数量不参与返回值，保留结果变量便于后续扩展同步指标。
+        _store_update_result = self.db.execute(
             update(Lead)
             .where(
                 Lead.broker_id == broker_id,
