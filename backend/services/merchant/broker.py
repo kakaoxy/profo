@@ -740,6 +740,13 @@ class MerchantBrokerService:
             broker.bound_at = _now()
             broker.unbound_at = None
             broker.bind_source = binding.bind_source
+            # 审批补绑与直接补绑同口径：同步无门店线索的门店与自动派生的归属员工。
+            LeadOwnerService(self.db).sync_broker_binding(
+                broker_id=str(broker.id),
+                store_id=str(store.id),
+                store_owner_employee_id=store.owner_employee_id,
+                broker_inviter_employee_id=broker.inviter_employee_id,
+            )
 
         add_audit_log(
             self.db,

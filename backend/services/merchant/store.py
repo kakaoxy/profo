@@ -645,7 +645,7 @@ class MerchantStoreService:
             msg = "没有需要更新的字段"
             raise ConflictError(msg)
 
-        # 门店负责人变更：该门店全部历史线索归属同步到新负责人（含无归属线索兜底）
+        # 门店负责人变更：仅同步原归属为空或等于原负责人的线索，保留人工指派
         if owner_changed:
             LeadOwnerService(self.db).sync_store_owner(
                 store_id=str(store.id),

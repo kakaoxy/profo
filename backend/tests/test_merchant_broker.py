@@ -400,7 +400,14 @@ def test_change_binding_requires_approval(
     old_store = _create_store(admin_client, company["id"])
     new_store = _create_store(admin_client, company["id"])
     _register(broker_client)
+    broker = broker_client.get(f"{API}/public/merchant/brokers/me").json()
     broker_client.post(f"{API}/public/merchant/brokers/me/bind", json={"store_id": old_store["id"]})
+
+    session: Session = seeded_db["session"]
+    unbound_lead = Lead(community_name="换绑前的无门店线索", broker_id=broker["id"], creator_id=None)
+    session.add(unbound_lead)
+    session.commit()
+    unbound_lead_id = unbound_lead.id
 
     change = broker_client.post(
         f"{API}/public/merchant/brokers/me/change",
@@ -424,6 +431,8 @@ def test_change_binding_requires_approval(
     assert approve.json()["status"] == "active"
     me = broker_client.get(f"{API}/public/merchant/brokers/me").json()
     assert me["store_id"] == new_store["id"]
+    session.expire_all()
+    assert session.query(Lead).filter(Lead.id == unbound_lead_id).one().store_id == new_store["id"]
     history = broker_client.get(f"{API}/public/merchant/brokers/me/bindings").json()
     statuses = {row["status"] for row in history}
     assert "unbound" in statuses

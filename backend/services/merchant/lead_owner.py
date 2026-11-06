@@ -43,6 +43,7 @@ class LeadOwnerService:
         store_id: str | None,
         broker_id: str | None,
         referrer_id: str | None = None,
+        auto_detect_broker: bool = True,
     ) -> LeadOwnership:
         """解析线索归属.
 
@@ -51,10 +52,10 @@ class LeadOwnerService:
         - 无门店/门店无负责人时，依次回退经纪人邀请员工、分享员工；
         - 门店/经纪人均可空；同时提供时必须为有效绑定关系；
         - 仅传经纪人且其有绑定门店时自动回填门店；
-        - 创建人本身是经纪人时自动识别其身份与当前绑定门店。
+        - 创建人本身是经纪人时自动识别其身份与当前绑定门店（auto_detect_broker=True 时）。
         """
         broker = self._get_broker(broker_id) if broker_id else None
-        if broker is None and creator_id:
+        if broker is None and creator_id and auto_detect_broker:
             broker = self.db.query(MerchantBroker).filter(MerchantBroker.user_id == creator_id).first()
         store = self._get_store(store_id) if store_id else None
 
@@ -108,6 +109,7 @@ class LeadOwnerService:
             store_id=store_id,
             broker_id=broker_id,
             referrer_id=referrer_id,
+            auto_detect_broker=False,
         )
 
         # 显式清空门店：保留经纪人字段，但门店不再自动回填，归属按经纪人邀请员工/分享员工兜底。
@@ -216,8 +218,8 @@ class LeadOwnerService:
             )
             .execution_options(synchronize_session=False)
         )
-        # 门店绑定数量不参与返回值，保留结果变量便于后续扩展同步指标。
-        _store_update_result = self.db.execute(
+        # 门店绑定本身对所有无门店的经纪人线索生效；该更新不计入返回值。
+        self.db.execute(
             update(Lead)
             .where(
                 Lead.broker_id == broker_id,

@@ -152,7 +152,8 @@ class LeadService:
         else:
             return None
         if lead_data.community_id:
-            query = query.filter(Lead.community_id == lead_data.community_id)
+            # 内部调用可能绕过 Pydantic 传入数字型 ID，统一转字符串避免类型比较异常/漏匹配。
+            query = query.filter(Lead.community_id == str(lead_data.community_id))
         return query.first()
 
     def create_lead(
@@ -228,7 +229,7 @@ class LeadService:
             # 正常 API 由 Pydantic 保证 str；对内部/历史调用方再做一次防御性归一化。
             raw_community_id = lead_payload.get("community_id")
             if raw_community_id is not None:
-                lead_payload["community_id"] = str(raw_community_id)
+                lead_payload["community_id"] = str(raw_community_id) if raw_community_id else None
             matched_community = (
                 self.db.get(Community, lead_payload["community_id"])
                 if lead_payload.get("community_id")
@@ -492,9 +493,17 @@ class LeadService:
         """
         lead = self.get_lead_or_404(lead_id)
         update_dict = update_data.model_dump(exclude_unset=True)
-        # 线索唯一归属：仅重算本次显式变更的门店/经纪人，未变更时保持原归属
+        # 空字符串统一归一化为 NULL：前端清空下拉框时可能提交 ""，直接写库会形成
+        # 无效逻辑外键（store_id/broker_id/community_id 均非真实 ID）。
+        for nullable_id_field in ("store_id", "broker_id", "community_id"):
+            if nullable_id_field in update_dict:
+                update_dict[nullable_id_field] = update_dict[nullable_id_field] or None
+        # 线索唯一归属：仅重算本次实际变更的门店/经纪人；字段出现在载荷里但值未变时
+        # 不重算，避免编辑表单全量提交把人工指派的 owner_employee_id 覆盖回自动派生值。
         store_touched = "store_id" in update_dict
         broker_touched = "broker_id" in update_dict
+        store_changed = store_touched and (update_dict.get("store_id") or None) != (lead.store_id or None)
+        broker_changed = broker_touched and (update_dict.get("broker_id") or None) != (lead.broker_id or None)
         # 归属变更审计（BR-M07-007）：变更前快照需在 setattr 前采集
         before_attribution = {
             "store_id": str(lead.store_id) if lead.store_id else None,
@@ -508,11 +517,11 @@ class LeadService:
             current_owner_employee_id=(str(lead.owner_employee_id) if lead.owner_employee_id else None),
             new_store_id=update_dict.get("store_id"),
             new_broker_id=update_dict.get("broker_id"),
-            store_touched=store_touched,
-            broker_touched=broker_touched,
+            store_touched=store_changed,
+            broker_touched=broker_changed,
             referrer_id=str(lead.referrer_id) if lead.referrer_id else None,
         )
-        if store_touched or broker_touched:
+        if store_changed or broker_changed:
             update_dict.update(attribution.as_dict())
         # 录入端新增载荷（new_*）非 Lead 列：提交审核池后弹出（M3/FR-10，
         # pending 关联由 dict_status=pending + 引用账本承载，单据照常更新）
@@ -527,12 +536,21 @@ class LeadService:
         community_touched = "community_id" in update_dict
         community_changed = community_touched and update_dict["community_id"] != lead.community_id
         next_community_id = update_dict["community_id"] if community_touched else lead.community_id
+        if community_changed and next_community_id:
+            # 切换小区时名称/区域/商圈随字典主档更新，避免只传 ID 时残留旧小区信息。
+            community = self.db.get(Community, next_community_id)
+            if community is not None:
+                update_dict["community_name"] = community.name
+                if update_dict.get("district") is None:
+                    update_dict["district"] = community.district
+                if update_dict.get("business_area") is None:
+                    update_dict["business_area"] = community.business_circle
         if community_changed:
             # 切小区时前端可能只传 community_id；未显式传楼栋/户室则清空旧值，
             # 避免拿原小区楼栋去校验新小区（400）或写入孤儿关联。
             update_dict.setdefault("building_id", None)
             update_dict.setdefault("room_id", None)
-        if not next_community_id:
+        if community_changed and not next_community_id:
             update_dict["building_id"] = None
             update_dict["room_id"] = None
 
@@ -576,7 +594,7 @@ class LeadService:
             setattr(lead, field, value)
 
         # 归属字段实际变化时写审计日志（同事务；日志失败回滚业务）
-        if store_touched or broker_touched:
+        if store_changed or broker_changed:
             after_attribution = {
                 "store_id": str(lead.store_id) if lead.store_id else None,
                 "broker_id": str(lead.broker_id) if lead.broker_id else None,
@@ -719,6 +737,8 @@ class LeadService:
     def get_lead_detail(self, lead_id: str, user_id: str, *, user: User | None = None) -> dict[str, Any]:
         """获取线索详情（含跟进记录），并校验归属权.
 
+        可见范围：线索创建人、归属员工（owner_employee_id）、归属经纪人、内部员工。
+
         Args:
             lead_id: 线索ID
             user_id: 当前用户ID
@@ -741,7 +761,11 @@ class LeadService:
         if not is_internal and user is None:
             db_user = self.db.query(User).filter(User.id == user_id).first()
             is_internal = bool(db_user and self._has_internal_role(db_user))
-        if lead.creator_id != user_id and not self._is_lead_broker(lead.broker_id, user_id) and not is_internal:
+        if (
+            user_id not in {lead.creator_id, lead.owner_employee_id}
+            and not self._is_lead_broker(lead.broker_id, user_id)
+            and not is_internal
+        ):
             msg = "无权查看该线索"
             raise PermissionDeniedError(msg)
 

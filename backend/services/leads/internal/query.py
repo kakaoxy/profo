@@ -338,7 +338,9 @@ class LeadQueryService:
         query = (
             self.db.query(Lead)
             .options(
-                joinedload(Lead.creator),
+                # source 判定需读取 creator 的主/附加角色，批量预加载避免 N+1。
+                selectinload(Lead.creator).joinedload(User.role),
+                selectinload(Lead.creator).selectinload(User.roles),
                 joinedload(Lead.referrer),
                 noload(Lead.auditor),
                 noload(Lead.follow_ups),

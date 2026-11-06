@@ -627,4 +627,53 @@ def test_broker_bind_preserves_manual_lead_assignment(
     assert row.owner_employee_id == seeded_db["users"]["admin"].id
 
 
+def test_update_lead_preserves_manual_assignment_when_store_broker_unchanged(
+    admin_client: TestClient,
+    employee: User,
+    employee_two: User,
+    seeded_db: dict,
+) -> None:
+    """编辑线索时表单回传未变化的门店/经纪人，不应把人工指派覆盖为自动派生值."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    broker = _create_broker(admin_client, store["id"])
+    lead = _create_lead(admin_client, store_id=store["id"], broker_id=broker["id"])
+
+    session: Session = seeded_db["session"]
+    row = session.query(Lead).filter(Lead.id == lead["id"]).one()
+    row.owner_employee_id = employee_two.id
+    session.commit()
+
+    updated = admin_client.put(
+        f"{API}/leads/{lead['id']}",
+        json={
+            "layout": "3室1厅",
+            "store_id": store["id"],
+            "broker_id": broker["id"],
+        },
+    )
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["owner_employee_id"] == employee_two.id
+
+
+def test_lead_detail_allows_owner_employee(
+    admin_client: TestClient,
+    employee: User,
+    employee_two: User,
+    seeded_db: dict,
+) -> None:
+    """获客列表按 owner 返回后，归属员工必须能打开 C 端线索详情."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    lead = _create_lead(admin_client, store_id=store["id"])
+
+    owner_client = _client(seeded_db["session"], employee, c_side=True)
+    resp = owner_client.get(f"/api/v1/public/leads/{lead['id']}")
+    assert resp.status_code == 200, resp.text
+
+    other_client = _client(seeded_db["session"], employee_two, c_side=True)
+    forbidden = other_client.get(f"/api/v1/public/leads/{lead['id']}")
+    assert forbidden.status_code == 403, forbidden.text
+
+
 pytestmark = pytest.mark.usefixtures("seeded_db")
