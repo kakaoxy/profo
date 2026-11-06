@@ -3,7 +3,7 @@
  * /public 令牌选择、GET 网络重试、timeout 覆盖、内存缓存.
  */
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { request, getCacheData, DEFAULT_TIMEOUT, registerCSessionRecovery } from "../../utils/request";
+import { request, getCacheData, refreshCAccessToken, DEFAULT_TIMEOUT, registerCSessionRecovery } from "../../utils/request";
 
 type WxRequestOptions = {
   url: string;
@@ -504,5 +504,151 @@ describe("401 分流：业务错误与续期异常", () => {
     await expect(
       request({ url: "/public/users/merge", method: "POST", data: {} }),
     ).rejects.toMatchObject({ statusCode: 401 });
+  });
+});
+
+describe("刷新失败状态码与纯 C 双槽令牌", () => {
+  it("后台刷新接口 500 → 保留令牌，仅以原 401 失败", async () => {
+    storage.set("access_token", "old-admin");
+    storage.set("refresh_token", "admin-ref");
+    queueResponses([
+      ok({}, 401),
+      (opts) => {
+        expect(opts.url).toContain("/auth/refresh");
+        opts.success({ statusCode: 500, data: {} });
+      },
+    ]);
+
+    await expect(request({ url: "/projects" })).rejects.toMatchObject({ statusCode: 401 });
+    expect(storage.get("access_token")).toBe("old-admin");
+    expect(storage.get("refresh_token")).toBe("admin-ref");
+  });
+
+  it("C 端刷新接口 500 → 保留 C 端令牌，仅以原 401 失败", async () => {
+    storage.set("c_access_token", "old-c");
+    storage.set("c_refresh_token", "c-ref");
+    queueResponses([
+      ok({}, 401),
+      (opts) => {
+        expect(opts.url).toContain("/public/auth/refresh");
+        opts.success({ statusCode: 500, data: {} });
+      },
+    ]);
+
+    await expect(request({ url: "/public/leads/mine" })).rejects.toMatchObject({
+      statusCode: 401,
+    });
+    expect(storage.get("c_access_token")).toBe("old-c");
+    expect(storage.get("c_refresh_token")).toBe("c-ref");
+  });
+
+  it("纯 C 用户刷新成功后同步主槽（双槽令牌一致）", async () => {
+    storage.set("access_token", "old-main");
+    storage.set("refresh_token", "same-ref");
+    storage.set("c_access_token", "old-c");
+    storage.set("c_refresh_token", "same-ref");
+    queueResponses([
+      (opts) => {
+        expect(opts.url).toContain("/public/auth/refresh");
+        opts.success({
+          statusCode: 200,
+          data: { access_token: "new-token", refresh_token: "new-ref" },
+        });
+      },
+    ]);
+
+    await expect(refreshCAccessToken()).resolves.toBe("new-token");
+    expect(storage.get("access_token")).toBe("new-token");
+    expect(storage.get("refresh_token")).toBe("new-ref");
+    expect(storage.get("c_access_token")).toBe("new-token");
+    expect(storage.get("c_refresh_token")).toBe("new-ref");
+  });
+
+  it("纯 C 用户历史双槽不一致时刷新仍同步主槽", async () => {
+    storage.set("access_token", makeToken({ aud: "c", exp: Math.floor(Date.now() / 1000) + 3600, sub: "main" }));
+    storage.set("refresh_token", makeToken({ aud: "c", exp: Math.floor(Date.now() / 1000) + 3600, sub: "main-ref" }));
+    storage.set("c_access_token", "c-old");
+    storage.set("c_refresh_token", makeToken({ aud: "c", exp: Math.floor(Date.now() / 1000) + 3600, sub: "c-ref" }));
+    queueResponses([
+      (opts) =>
+        opts.success({
+          statusCode: 200,
+          data: { access_token: "c-new", refresh_token: "c-ref-new" },
+        }),
+    ]);
+
+    await expect(refreshCAccessToken()).resolves.toBe("c-new");
+    expect(storage.get("access_token")).toBe("c-new");
+    expect(storage.get("refresh_token")).toBe("c-ref-new");
+    expect(storage.get("c_access_token")).toBe("c-new");
+    expect(storage.get("c_refresh_token")).toBe("c-ref-new");
+  });
+
+  it("纯 C 用户历史双槽不一致且刷新失效时清除主槽", async () => {
+    storage.set("access_token", "old-main");
+    storage.set("refresh_token", makeToken({ aud: "c", exp: Math.floor(Date.now() / 1000) + 3600, sub: "main-ref" }));
+    storage.set("c_access_token", "old-c");
+    storage.set("c_refresh_token", makeToken({ aud: "c", exp: Math.floor(Date.now() / 1000) + 3600, sub: "c-ref" }));
+    queueResponses([(opts) => opts.success({ statusCode: 401, data: {} })]);
+
+    await expect(refreshCAccessToken()).resolves.toBeNull();
+    expect(storage.get("access_token")).toBeUndefined();
+    expect(storage.get("refresh_token")).toBeUndefined();
+    expect(storage.get("c_access_token")).toBeUndefined();
+    expect(storage.get("c_refresh_token")).toBeUndefined();
+  });
+
+  it("内部员工后台刷新失效时不清除独立的 C 端令牌", async () => {
+    storage.set("access_token", "old-admin");
+    storage.set("refresh_token", "admin-ref");
+    storage.set("c_access_token", "old-c");
+    storage.set("c_refresh_token", makeToken({ aud: "c", exp: Math.floor(Date.now() / 1000) + 3600, sub: "c-ref" }));
+    queueResponses([
+      ok({}, 401),
+      (opts) => {
+        expect(opts.url).toContain("/auth/refresh");
+        opts.success({ statusCode: 401, data: {} });
+      },
+    ]);
+
+    await expect(request({ url: "/projects" })).rejects.toMatchObject({ statusCode: 401 });
+    expect(storage.get("access_token")).toBeUndefined();
+    expect(storage.get("refresh_token")).toBeUndefined();
+    expect(storage.get("c_access_token")).toBe("old-c");
+    expect(storage.get("c_refresh_token")).toBeDefined();
+  });
+
+  it("内部员工 C 端刷新不覆盖后台主槽", async () => {
+    storage.set("access_token", "admin-token");
+    storage.set("refresh_token", "admin-ref");
+    storage.set("c_access_token", "c-old");
+    storage.set("c_refresh_token", "c-ref");
+    queueResponses([
+      (opts) =>
+        opts.success({
+          statusCode: 200,
+          data: { access_token: "c-new", refresh_token: "c-ref2" },
+        }),
+    ]);
+
+    await expect(refreshCAccessToken()).resolves.toBe("c-new");
+    expect(storage.get("access_token")).toBe("admin-token");
+    expect(storage.get("refresh_token")).toBe("admin-ref");
+    expect(storage.get("c_access_token")).toBe("c-new");
+    expect(storage.get("c_refresh_token")).toBe("c-ref2");
+  });
+
+  it("纯 C 用户刷新令牌失效时同时清除主槽与 C 槽", async () => {
+    storage.set("access_token", "old-main");
+    storage.set("refresh_token", "same-ref");
+    storage.set("c_access_token", "old-c");
+    storage.set("c_refresh_token", "same-ref");
+    queueResponses([(opts) => opts.success({ statusCode: 401, data: {} })]);
+
+    await expect(refreshCAccessToken()).resolves.toBeNull();
+    expect(storage.get("access_token")).toBeUndefined();
+    expect(storage.get("refresh_token")).toBeUndefined();
+    expect(storage.get("c_access_token")).toBeUndefined();
+    expect(storage.get("c_refresh_token")).toBeUndefined();
   });
 });

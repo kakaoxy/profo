@@ -9,6 +9,12 @@ import {
 } from "./token";
 
 /**
+ * 本文件集中承载请求生命周期：内存缓存、鉴权注入、令牌提前续期、401 重试与网络重试。
+ * 超过 500 行仍不拆分：这些行为共享同一 requestHeader、缓存与单飞刷新 Promise，
+ * 拆到多个模块会把隐式契约扩散到跨文件状态，维护成本高于单文件收益。
+ */
+
+/**
  * 请求参数.
  * url: 以 `/` 开头的相对路径，如 `/public/stats/platform`，会与 BASE_URL 拼接.
  * method: 默认 GET.
@@ -85,6 +91,21 @@ interface TokenRefreshResponse {
 }
 
 /**
+ * 刷新接口仅在确认 refresh_token 失效时清除本地令牌。
+ *
+ * 500/429 等属于服务端或限流临时异常，清除令牌会把用户直接踢下线；
+ * 保留令牌可让后续请求重试刷新。
+ */
+function isRefreshTokenRejected(statusCode: number): boolean {
+  return statusCode === 400 || statusCode === 401 || statusCode === 403;
+}
+
+/** 判断刷新令牌是否属于 C 端受众（纯 C 用户主槽也可能是 aud=c 的 C 端令牌）. */
+function isCRefreshToken(token: string): boolean {
+  return getTokenAud(token) === "c";
+}
+
+/**
  * C 端令牌受众路径判定。
  *
  * 后端按路径推断期望 JWT 受众（aud）并严格校验：
@@ -113,7 +134,8 @@ let refreshPromise: Promise<string | null> | null = null;
  * 刷新后台 access_token：用 refresh_token 调 /auth/refresh（aud=admin）.
  *
  * - 成功：更新 storage 中的 access_token / refresh_token（轮换），返回新 access_token；
- * - 失败（refresh_token 过期/无效）：清除失效的后台令牌，返回 null；
+ * - refresh_token 明确失效（400/401/403）：清除失效的后台令牌，返回 null；
+ * - 5xx/429 等服务端或限流临时异常：保留令牌，返回 null；
  * - 网络异常：不清除令牌，返回 null；
  * - 并发：复用 refreshPromise，避免多次刷新触发轮换冲突.
  *
@@ -143,13 +165,30 @@ export function refreshAccessToken(): Promise<string | null> {
             if (data.refresh_token) {
               wx.setStorageSync("refresh_token", data.refresh_token);
             }
+            // 纯 C 用户主令牌与 C 端令牌同值（wechat-auth.ts 的双槽约定），
+            // 刷新后同步 C 槽，避免主槽长期保留已过期的旧令牌。
+            if (getCRefreshToken() === refreshToken || isCRefreshToken(refreshToken)) {
+              wx.setStorageSync("c_access_token", data.access_token);
+              if (data.refresh_token) {
+                wx.setStorageSync("c_refresh_token", data.refresh_token);
+              }
+            }
             resolve(data.access_token);
             return;
           }
+          // 2xx 但响应异常，按临时故障处理，保留令牌以便下次重试
+          resolve(null);
+          return;
         }
-        // 刷新失败（refresh_token 过期/无效），清除失效的后台令牌
-        wx.removeStorageSync("access_token");
-        wx.removeStorageSync("refresh_token");
+        // 仅 refresh_token 明确失效时清除；5xx/429 等临时异常保留令牌
+        if (isRefreshTokenRejected(res.statusCode)) {
+          wx.removeStorageSync("access_token");
+          wx.removeStorageSync("refresh_token");
+          if (getCRefreshToken() === refreshToken || isCRefreshToken(refreshToken)) {
+            wx.removeStorageSync("c_access_token");
+            wx.removeStorageSync("c_refresh_token");
+          }
+        }
         resolve(null);
       },
       fail: () => {
@@ -173,7 +212,8 @@ export function refreshAccessToken(): Promise<string | null> {
  * 刷新 C 端 access_token：用 c_refresh_token 调 /public/auth/refresh.
  *
  * - 成功：更新 storage 中的 c_access_token / c_refresh_token（轮换），返回新 access_token；
- * - 失败（refresh_token 过期/无效）：清除失效的 C 端令牌，返回 null；
+ * - refresh_token 明确失效（400/401/403）：清除失效的 C 端令牌，返回 null；
+ * - 5xx/429 等服务端或限流临时异常：保留令牌，返回 null；
  * - 网络异常：不清除令牌（临时问题，下次请求可再试），返回 null；
  * - 并发：复用 refreshCPromise，避免多次刷新触发轮换冲突.
  *
@@ -204,13 +244,29 @@ export function refreshCAccessToken(): Promise<string | null> {
             if (data.refresh_token) {
               wx.setStorageSync("c_refresh_token", data.refresh_token);
             }
+            // 纯 C 用户主令牌与 C 端令牌同值，刷新后同步主槽，保持双槽一致
+            if (getRefreshToken() === cRefreshToken || isCRefreshToken(getRefreshToken())) {
+              wx.setStorageSync("access_token", data.access_token);
+              if (data.refresh_token) {
+                wx.setStorageSync("refresh_token", data.refresh_token);
+              }
+            }
             resolve(data.access_token);
             return;
           }
+          // 2xx 但响应异常，按临时故障处理，保留令牌以便下次重试
+          resolve(null);
+          return;
         }
-        // 刷新失败（refresh_token 过期/无效），清除失效的 C 端令牌
-        wx.removeStorageSync("c_access_token");
-        wx.removeStorageSync("c_refresh_token");
+        // 仅 refresh_token 明确失效时清除；5xx/429 等临时异常保留令牌
+        if (isRefreshTokenRejected(res.statusCode)) {
+          wx.removeStorageSync("c_access_token");
+          wx.removeStorageSync("c_refresh_token");
+          if (getRefreshToken() === cRefreshToken || isCRefreshToken(getRefreshToken())) {
+            wx.removeStorageSync("access_token");
+            wx.removeStorageSync("refresh_token");
+          }
+        }
         resolve(null);
       },
       fail: () => {
