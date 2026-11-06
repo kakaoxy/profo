@@ -184,6 +184,7 @@ class LeadOwnerService:
         """经纪人补绑门店后，同步此前无门店的经纪人线索.
 
         仅更新无归属或仍为邀请员工兜底的线索；已单独指派给其他员工的线索保留原归属。
+        返回自动归属被更新的线索数；门店绑定本身对所有匹配线索生效。
         """
         new_owner = store_owner_employee_id or func.coalesce(
             Lead.broker_inviter_employee_id,
@@ -201,7 +202,7 @@ class LeadOwnerService:
             )
         # 先只更新可自动派生的归属，避免把人工指派覆盖掉；门店绑定本身对所有
         # 无门店的经纪人线索生效。
-        self.db.execute(
+        owner_update_result = self.db.execute(
             update(Lead)
             .where(
                 Lead.broker_id == broker_id,
@@ -215,7 +216,7 @@ class LeadOwnerService:
             )
             .execution_options(synchronize_session=False)
         )
-        result = self.db.execute(
+        self.db.execute(
             update(Lead)
             .where(
                 Lead.broker_id == broker_id,
@@ -228,7 +229,7 @@ class LeadOwnerService:
             )
             .execution_options(synchronize_session=False)
         )
-        return int(result.rowcount or 0)
+        return int(owner_update_result.rowcount or 0)
 
     def fill_names(self, items: list[LeadListItem | LeadResponse]) -> None:
         """批量回填门店/经纪人/归属员工名称（无 N+1）."""
