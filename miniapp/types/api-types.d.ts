@@ -15935,23 +15935,13 @@ export interface components {
             broker_name?: string | null;
             /** Broker Status */
             broker_status?: string | null;
-            /** Store Owner Employee Id */
-            store_owner_employee_id?: string | null;
-            /** Store Owner Name */
-            store_owner_name?: string | null;
-            /** Broker Inviter Employee Id */
-            broker_inviter_employee_id?: string | null;
-            /** Broker Inviter Name */
-            broker_inviter_name?: string | null;
             /**
-             * Employee Attribution Id
-             * @description 员工归因解析结果（referrer→broker_inviter→store_owner）
+             * Owner Employee Id
+             * @description 归属员工ID（门店负责人/对接人）
              */
-            employee_attribution_id?: string | null;
-            /** Employee Attribution Name */
-            employee_attribution_name?: string | null;
-            /** Attribution Status */
-            attribution_status?: string | null;
+            owner_employee_id?: string | null;
+            /** Owner Employee Name */
+            owner_employee_name?: string | null;
             /** Source Property Id */
             source_property_id?: number | null;
             /** Last Follow Up At */
@@ -16078,23 +16068,13 @@ export interface components {
              * @description 经纪人绑定状态（disabled=已停用）
              */
             broker_status?: string | null;
-            /** Store Owner Employee Id */
-            store_owner_employee_id?: string | null;
-            /** Store Owner Name */
-            store_owner_name?: string | null;
-            /** Broker Inviter Employee Id */
-            broker_inviter_employee_id?: string | null;
-            /** Broker Inviter Name */
-            broker_inviter_name?: string | null;
             /**
-             * Employee Attribution Id
-             * @description 员工归因解析结果（referrer→broker_inviter→store_owner）
+             * Owner Employee Id
+             * @description 归属员工ID（门店负责人/对接人）
              */
-            employee_attribution_id?: string | null;
-            /** Employee Attribution Name */
-            employee_attribution_name?: string | null;
-            /** Attribution Status */
-            attribution_status?: string | null;
+            owner_employee_id?: string | null;
+            /** Owner Employee Name */
+            owner_employee_name?: string | null;
             /** Last Follow Up At */
             last_follow_up_at?: string | null;
             /**
@@ -27897,8 +27877,8 @@ export interface operations {
                 store_id?: string | null;
                 /** @description 推荐经纪人筛选 */
                 broker_id?: string | null;
-                /** @description 归属员工筛选（分享/门店归属/经纪人邀请任一命中） */
-                attribution_employee_id?: string | null;
+                /** @description 归属员工筛选（门店负责人/对接人） */
+                owner_employee_id?: string | null;
                 /** @description 户型筛选 */
                 layout?: string | null;
                 /** @description 楼层筛选 */

@@ -1,4 +1,4 @@
-// 商户管理 V06 · 后台线索五维归属展示与门店/经纪人/归属员工筛选 UI E2E
+// 商户管理 · 后台线索归属三要素（经纪人/对接人/分享员工）与门店/经纪人/对接人筛选 UI E2E
 //
 // 前置：后端 :8000 + 前端 :3000；E2E_ADMIN_USER / E2E_ADMIN_PASSWORD 从环境变量读取。
 // 造数/清理走 backend/.venv/bin/python，按 E2E_MARK 精确隔离。
@@ -98,8 +98,7 @@ try:
         referrer_id=share.id,
         store_id=store.id,
         broker_id=broker.id,
-        store_owner_employee_id=owner.id,
-        broker_inviter_employee_id=share.id,
+        owner_employee_id=owner.id,
     )
     legacy = Lead(community_name=f"{mark}存量小区")
     db.add_all([lead, legacy])
@@ -167,12 +166,13 @@ test.beforeEach(async ({ page }) => {
   await loginPage(page);
 });
 
-test("线索列表/详情展示五维归属，存量线索显示无归属", async ({ page }) => {
+test("线索列表/详情展示归属三要素，存量线索显示无归属", async ({ page }) => {
   const search = encodeURIComponent(`${MARK}商圈小区`);
   await page.goto(`/admin/leads?search=${search}`);
 
   const headers = await page.locator("thead th").allTextContents();
   expect(headers).toContain("区域");
+  expect(headers).toContain("对接人");
   expect(headers).not.toContain("归属（门店 / 经纪人 / 分享）");
   expect(headers).not.toContain("员工归因（门店归属 / 邀请）");
 
@@ -184,15 +184,17 @@ test("线索列表/详情展示五维归属，存量线索显示无归属", asyn
   // BR-M07-013：录入人与分享员工语义分开
   await expect(row).toContainText(seeded.creator_name);
 
-  // 详情抽屉五维归属卡片
+  // 详情抽屉归属三要素卡片
   await row.click();
   const drawer = page.getByRole("dialog");
   await expect(drawer.getByText("归属信息")).toBeVisible({ timeout: 15_000 });
-  await expect(drawer.getByText("推荐门店")).toBeVisible();
-  await expect(drawer.getByText("门店归属员工")).toBeVisible();
-  await expect(drawer.getByText("归属完整").first()).toBeVisible();
-  await expect(drawer.getByText(seeded.store_name)).toBeVisible();
-  await expect(drawer.getByText(seeded.broker_name)).toBeVisible();
+  await expect(drawer.getByText("推荐经纪人")).toBeVisible();
+  await expect(drawer.getByText("对接人")).toBeVisible();
+  await expect(drawer.getByText("分享员工")).toBeVisible();
+  await expect(drawer.getByText("推荐门店")).toHaveCount(0);
+  await expect(drawer.getByText("门店归属员工")).toHaveCount(0);
+  await expect(drawer.getByText("归属完整")).toHaveCount(0);
+  await expect(drawer.getByText(`${seeded.broker_name}（${seeded.store_name}）`)).toBeVisible();
   await expect(drawer.getByText(seeded.share_name).first()).toBeVisible();
   await expect(drawer.getByText(seeded.owner_name).first()).toBeVisible();
   await page.keyboard.press("Escape");
@@ -233,7 +235,7 @@ test("录入线索：门店→经纪人二级联动，切换门店清空经纪�
   await expect(brokerSelect).toHaveValue("");
 });
 
-test("按门店/经纪人/归属员工筛选线索", async ({ page }) => {
+test("按门店/经纪人/对接人筛选线索", async ({ page }) => {
   await page.goto("/admin/leads");
   const row = page
     .locator("tr")
@@ -252,14 +254,15 @@ test("按门店/经纪人/归属员工筛选线索", async ({ page }) => {
   await expect(page).toHaveURL(/broker_id=/, { timeout: 15_000 });
   await expect(row).toBeVisible({ timeout: 15_000 });
 
-  // 归属员工筛选（分享员工命中）
-  await page.getByRole("combobox", { name: "归属员工筛选" }).click();
-  await page.getByRole("option", { name: seeded.share_name }).click();
-  await expect(page).toHaveURL(/attribution_employee_id=/, { timeout: 15_000 });
+  // 对接人筛选（门店负责人命中）
+  await page.getByRole("combobox", { name: "对接人筛选" }).click();
+  await page.getByRole("option", { name: seeded.owner_name }).click();
+  await expect(page).toHaveURL(/owner_employee_id=/, { timeout: 15_000 });
   await expect(row).toBeVisible({ timeout: 15_000 });
 
-  // 归属员工筛选（门店归属员工同样命中：三字段 OR 语义）
-  await page.getByRole("combobox", { name: "归属员工筛选" }).click();
-  await page.getByRole("option", { name: seeded.owner_name }).click();
-  await expect(row).toBeVisible({ timeout: 15_000 });
+  // 分享员工不是归属员工：按分享人筛选不应命中该线索
+  await page.getByRole("combobox", { name: "对接人筛选" }).click();
+  await page.getByRole("option", { name: seeded.share_name }).click();
+  await expect(page).toHaveURL(/owner_employee_id=/, { timeout: 15_000 });
+  await expect(row).toHaveCount(0);
 });

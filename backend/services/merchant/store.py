@@ -3,6 +3,7 @@
 import math
 from collections.abc import Sequence
 from datetime import date, datetime, timezone
+from typing import Any
 
 from fastapi import Request
 from sqlalchemy import and_, case, func, or_
@@ -51,6 +52,7 @@ from schemas.merchant import (
     StorePhotoItem,
 )
 from services.merchant.audit import add_audit_log
+from services.merchant.lead_owner import LeadOwnerService
 from services.merchant.scope import ensure_scope_role, ensure_store_visible, store_scope_condition
 from services.merchant.serializers import cooperation_label_map, store_list_item, store_response
 from services.property.region_dict import RegionDictService
@@ -621,11 +623,14 @@ class MerchantStoreService:
             store.contact_phone = phone
             store.contact_phone_hash = hash_phone(phone)
             updated = True
+        owner_changed = False
         if "owner_employee_id" in req.model_fields_set:
             if not ensure_scope_role(user):
                 msg = "仅管理员/运营可调整门店负责人"
                 raise PermissionDeniedError(msg)
-            store.owner_employee_id = req.owner_employee_id or None
+            new_owner = req.owner_employee_id or None
+            owner_changed = new_owner != store.owner_employee_id
+            store.owner_employee_id = new_owner
             updated = True
         if req.photos is not None:
             store.photos = _photo_json(req.photos)
@@ -637,6 +642,13 @@ class MerchantStoreService:
         if not updated:
             msg = "没有需要更新的字段"
             raise ConflictError(msg)
+
+        # 门店负责人变更：该门店全部历史线索归属同步到新负责人（含无归属线索兜底）
+        if owner_changed:
+            LeadOwnerService(self.db).sync_store_owner(
+                store_id=str(store.id),
+                owner_employee_id=store.owner_employee_id,
+            )
 
         add_audit_log(
             self.db,
@@ -834,10 +846,18 @@ class MerchantStoreService:
             .filter(MerchantVisit.store_id == merged.id)
             .update({MerchantVisit.store_id: keep.id}, synchronize_session=False)
         )
+        lead_values: dict[Any, Any] = {Lead.store_id: keep.id}
+        if keep.owner_employee_id:
+            lead_values[Lead.owner_employee_id] = keep.owner_employee_id
+        else:
+            # 保留门店无负责人时，不把原归属清空：沿用原 owner 或旧兜底字段
+            lead_values[Lead.owner_employee_id] = func.coalesce(
+                Lead.owner_employee_id,
+                Lead.broker_inviter_employee_id,
+                Lead.referrer_id,
+            )
         lead_count = (
-            self.db.query(Lead)
-            .filter(Lead.store_id == merged.id)
-            .update({Lead.store_id: keep.id}, synchronize_session=False)
+            self.db.query(Lead).filter(Lead.store_id == merged.id).update(lead_values, synchronize_session=False)
         )
         agreement_count = (
             self.db.query(MerchantAgreement)

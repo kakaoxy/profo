@@ -56,6 +56,7 @@ from schemas.merchant import (
 )
 from services.merchant.audit import add_audit_log
 from services.merchant.broker_qr import MerchantBrokerQRCodeService
+from services.merchant.lead_owner import LeadOwnerService
 from services.merchant.scope import ensure_store_visible, is_full_scope, visible_store_ids
 from services.merchant.serializers import (
     broker_binding_response,
@@ -1465,6 +1466,12 @@ class MerchantBrokerService:
         broker.bound_at = _now()
         broker.unbound_at = None
         broker.bind_source = bind_source
+        # 补绑/换绑门店：无门店的历史线索归属同步到该门店负责人（已归属其他门店的历史线索保留）
+        LeadOwnerService(self.db).sync_broker_binding(
+            broker_id=str(broker.id),
+            store_id=str(store.id),
+            store_owner_employee_id=store.owner_employee_id,
+        )
         return binding
 
     def _unbind_current(self, broker: MerchantBroker, *, operator_id: str, reason: str | None = None) -> None:

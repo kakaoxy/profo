@@ -294,6 +294,7 @@ def my_customers_data(c_users: dict[str, User], seeded_db: dict[str, Any]) -> di
             expected_price=300.0,
             creator_id=creator_id,
             referrer_id=referrer.id,
+            owner_employee_id=referrer.id,
             source_property_id=source_property_id,
         )
         session.add(lead)

@@ -323,7 +323,7 @@ def get_my_acquired(
     pagination: PaginationDep,
     lead_status: Annotated[LeadStatus | None, Query(alias="status", description="状态筛选")] = None,
 ) -> PublicAcquiredLeadListResponse:
-    """获取当前员工获客线索列表（分享归因 + 直接录入）."""
+    """获取当前员工获客线索列表（本人负责 + 直接录入）."""
     result = service.get_my_acquired(
         user_id=current_user.id,
         page=pagination.page,
@@ -335,9 +335,9 @@ def get_my_acquired(
     for lead in result["items"]:
         status_code = lead.status.value if hasattr(lead.status, "value") else str(lead.status)
         status_display, status_color = _get_status_display(status_code)
-        source = "customer_share" if lead.referrer_id == current_user.id else "employee_entry"
+        source = _lead_source(lead)
         phone_masked = None
-        if lead.referrer_id == current_user.id and lead.creator is not None and lead.creator.phone:
+        if lead.owner_employee_id == current_user.id and lead.creator is not None and lead.creator.phone:
             phone_masked = mask_phone(lead.creator.phone)
         items.append(
             PublicAcquiredLeadListItem(

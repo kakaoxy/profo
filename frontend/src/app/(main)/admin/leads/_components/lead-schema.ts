@@ -32,7 +32,7 @@ export const createLeadSchema = z.object({
   district: z.string().min(1, "区域不能为空").max(100),
   businessArea: z.string().min(1, "商圈不能为空").max(100),
   remarks: z.string().max(2000),
-  // 五维归属（V06）：门店/经纪人可空；员工快照由服务端回填
+  // 归属：门店/经纪人可空；归属员工由服务端解析
   storeId: z.string().max(36).nullable().optional(),
   brokerId: z.string().max(36).nullable().optional(),
   images: z

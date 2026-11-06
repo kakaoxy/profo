@@ -211,6 +211,7 @@ from migrations._merchant_company_soft_delete import add_merchant_company_soft_d
 from migrations._merchant_schema import (
     add_lead_client_request_id,
     add_lead_merchant_attribution_columns,
+    add_lead_owner_employee_column,
     add_merchant_store_phone_hash_column,
     add_merchant_visit_client_request_id,
     add_merchant_visit_location_failure_type,
@@ -550,6 +551,8 @@ def _run_all_migrations(engine: Engine) -> None:
         drop_agreement_review_fields(engine)
         # v117：公司管理支持软删除——补 deleted_at/deleted_by 与删除态索引（幂等）
         add_merchant_company_soft_delete_columns(engine)
+        # v118：线索归属简化——补 owner_employee_id 列并回填存量归属（幂等）
+        add_lead_owner_employee_column(engine)
     except Exception:
         logger.exception("启动迁移失败")
         raise

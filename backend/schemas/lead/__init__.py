@@ -240,23 +240,15 @@ class LeadResponse(LeadBase):
     creator_name: str | None = None
     referrer_id: str | None = None
     referrer_name: str | None = None
-
-    # 商户域五维归属（V06）
+    # 归属员工（门店负责人/对接人）唯一归属；referrer 仅记录分享来源
     store_id: str | None = None
     store_name: str | None = None
     store_status: str | None = Field(None, description="门店状态（disabled/merged/relocated/deleted 历史标记）")
     broker_id: str | None = None
     broker_name: str | None = None
     broker_status: str | None = Field(None, description="经纪人绑定状态（disabled=已停用）")
-    store_owner_employee_id: str | None = None
-    store_owner_name: str | None = None
-    broker_inviter_employee_id: str | None = None
-    broker_inviter_name: str | None = None
-    employee_attribution_id: str | None = Field(
-        None, description="员工归因解析结果（referrer→broker_inviter→store_owner）"
-    )
-    employee_attribution_name: str | None = None
-    attribution_status: str | None = None
+    owner_employee_id: str | None = Field(None, description="归属员工ID（门店负责人/对接人）")
+    owner_employee_name: str | None = None
 
     last_follow_up_at: datetime | None = None
     created_at: datetime
@@ -316,22 +308,15 @@ class LeadListItem(BaseModel):
     creator_name: str | None = None
     referrer_id: str | None = None
     referrer_name: str | None = None
-    # 商户域五维归属（V06）
+    # 归属员工（门店负责人/对接人）唯一归属；referrer 仅记录分享来源
     store_id: str | None = None
     store_name: str | None = None
     store_status: str | None = None
     broker_id: str | None = None
     broker_name: str | None = None
     broker_status: str | None = None
-    store_owner_employee_id: str | None = None
-    store_owner_name: str | None = None
-    broker_inviter_employee_id: str | None = None
-    broker_inviter_name: str | None = None
-    employee_attribution_id: str | None = Field(
-        None, description="员工归因解析结果（referrer→broker_inviter→store_owner）"
-    )
-    employee_attribution_name: str | None = None
-    attribution_status: str | None = None
+    owner_employee_id: str | None = Field(None, description="归属员工ID（门店负责人/对接人）")
+    owner_employee_name: str | None = None
     source_property_id: int | None = None
     last_follow_up_at: datetime | None = None
     latest_follow_up: LeadFollowUpSummary | None = Field(

@@ -12,7 +12,7 @@ interface PageProps {
     creator_id?: string;
     store_id?: string;
     broker_id?: string;
-    attribution_employee_id?: string;
+    owner_employee_id?: string;
     leadId?: string;
     page?: string;
     page_size?: string;
@@ -53,7 +53,7 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     queryParams.creator_id = params.creator_id;
   }
 
-  // 五维归属筛选（V06 / REQ-M07-004）：门店、经纪人、归属员工
+  // 归属筛选：门店、经纪人、对接人
   if (params.store_id) {
     queryParams.store_id = params.store_id;
   }
@@ -62,8 +62,8 @@ export default async function LeadsPage({ searchParams }: PageProps) {
     queryParams.broker_id = params.broker_id;
   }
 
-  if (params.attribution_employee_id) {
-    queryParams.attribution_employee_id = params.attribution_employee_id;
+  if (params.owner_employee_id) {
+    queryParams.owner_employee_id = params.owner_employee_id;
   }
 
   // 并行获取线索列表、状态统计与归属筛选下拉数据（统计不受分页影响）

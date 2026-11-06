@@ -42,7 +42,7 @@ interface LeadsViewProps {
   initialSelectedLeadId?: string;
   creatorId?: string;
   creatorName?: string;
-  /** 归属筛选（V06 / REQ-M07-004） */
+  /** 归属筛选 */
   storeOptions?: LeadFilterOption[];
   brokerOptions?: LeadFilterOption[];
   employeeOptions?: LeadFilterOption[];
@@ -75,8 +75,8 @@ export function LeadsView({
     setStoreId,
     brokerId,
     setBrokerId,
-    attributionEmployeeId,
-    setAttributionEmployeeId,
+    ownerEmployeeId,
+    setOwnerEmployeeId,
   } = useLeadsFilter(initialLeads);
 
   const {
@@ -213,8 +213,8 @@ export function LeadsView({
             onStoreChange={setStoreId}
             brokerId={brokerId}
             onBrokerChange={setBrokerId}
-            attributionEmployeeId={attributionEmployeeId}
-            onAttributionEmployeeChange={setAttributionEmployeeId}
+            ownerEmployeeId={ownerEmployeeId}
+            onOwnerEmployeeChange={setOwnerEmployeeId}
             storeOptions={storeOptions}
             brokerOptions={brokerOptions}
             employeeOptions={employeeOptions}

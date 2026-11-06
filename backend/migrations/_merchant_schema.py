@@ -218,6 +218,41 @@ def add_lead_merchant_attribution_columns(engine: Engine) -> None:
     )
 
 
+def add_lead_owner_employee_column(engine: Engine) -> None:
+    """v118：leads 补唯一归属员工列并回填存量数据（幂等）."""
+    if not _column_exists(engine, "leads", "owner_employee_id"):
+        logger.info("迁移 v118：leads 补列 owner_employee_id")
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE leads ADD COLUMN owner_employee_id VARCHAR(36)"))
+    _ensure_indexes(
+        engine,
+        (
+            (
+                "idx_leads_owner",
+                "CREATE INDEX IF NOT EXISTS idx_leads_owner ON leads (owner_employee_id)",
+            ),
+        ),
+    )
+    # 存量回填：门店负责人优先；无门店/无负责人时按经纪人邀请员工、分享员工兜底。
+    # 只回填空值，重复执行安全；历史旧列保留，不在此处清理。
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                """
+                UPDATE leads
+                SET owner_employee_id = COALESCE(
+                    (SELECT ms.owner_employee_id
+                     FROM merchant_stores ms
+                     WHERE ms.id = leads.store_id),
+                    leads.broker_inviter_employee_id,
+                    leads.referrer_id
+                )
+                WHERE owner_employee_id IS NULL
+                """
+            )
+        )
+
+
 # 以下两个函数的长字符串拼接必须保持原样：改动会改变迁移 checksum（K4/K5）
 # fmt: off
 def create_merchant_agreement_tables(engine: Engine) -> None:

@@ -48,7 +48,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
     district: "",
     businessArea: "",
     remarks: "",
-    // 五维归属（V06）：推荐门店 / 推荐经纪人（门店→经纪人二级联动）
+    // 归属：推荐门店 / 推荐经纪人（门店→经纪人二级联动）
     storeId: "",
     brokerId: "",
   });
@@ -169,7 +169,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
       district: formData.district,
       businessArea: formData.businessArea,
       remarks: formData.remarks,
-      // 空值显式传 null：编辑时可清除归属字段（后端留痕，V06 REQ-M07-002）
+      // 空值显式传 null：编辑时可清除归属字段（后端留痕并重算归属）
       storeId: formData.storeId || null,
       brokerId: formData.brokerId || null,
       status: lead?.status || LeadStatus.PENDING_ASSESSMENT,
@@ -265,7 +265,7 @@ export const AddLeadModal: React.FC<Props> = ({ isOpen, onClose, onAdd, lead }) 
             </div>
           </div>
 
-          {/* 五维归属（V06 REQ-M07-003）：门店→经纪人二级联动 */}
+          {/* 归属：门店→经纪人二级联动 */}
           <AttributionSelects
             storeId={formData.storeId}
             brokerId={formData.brokerId}

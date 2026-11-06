@@ -53,13 +53,13 @@ interface LeadsToolbarProps {
   creatorId?: string;
   creatorName?: string;
   onClearCreatorId: () => void;
-  /** 归属筛选（V06 / REQ-M07-004）：门店、经纪人、归属员工 */
+  /** 归属筛选：门店、经纪人、对接人 */
   storeId?: string;
   onStoreChange: (value: string) => void;
   brokerId?: string;
   onBrokerChange: (value: string) => void;
-  attributionEmployeeId?: string;
-  onAttributionEmployeeChange: (value: string) => void;
+  ownerEmployeeId?: string;
+  onOwnerEmployeeChange: (value: string) => void;
   storeOptions?: LeadFilterOption[];
   brokerOptions?: LeadFilterOption[];
   employeeOptions?: LeadFilterOption[];
@@ -84,8 +84,8 @@ export function LeadsToolbar({
   onStoreChange,
   brokerId,
   onBrokerChange,
-  attributionEmployeeId,
-  onAttributionEmployeeChange,
+  ownerEmployeeId,
+  onOwnerEmployeeChange,
   storeOptions = [],
   brokerOptions = [],
   employeeOptions = [],
@@ -163,7 +163,7 @@ export function LeadsToolbar({
           )}
         </div>
 
-        {/* 归属筛选（V06 / REQ-M07-004）：门店、经纪人、归属员工 */}
+        {/* 归属筛选：门店、经纪人、对接人 */}
         {hasAttributionFilters && (
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="归属筛选">
             {storeOptions.length > 0 && (
@@ -200,14 +200,14 @@ export function LeadsToolbar({
             )}
             {employeeOptions.length > 0 && (
               <Select
-                value={attributionEmployeeId || "all"}
-                onValueChange={onAttributionEmployeeChange}
+                value={ownerEmployeeId || "all"}
+                onValueChange={onOwnerEmployeeChange}
               >
-                <SelectTrigger className="h-9 w-44" aria-label="归属员工筛选">
-                  <SelectValue placeholder="全部归属员工" />
+                <SelectTrigger className="h-9 w-44" aria-label="对接人筛选">
+                  <SelectValue placeholder="全部对接人" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部归属员工</SelectItem>
+                  <SelectItem value="all">全部对接人</SelectItem>
                   {employeeOptions.map((option) => (
                     <SelectItem key={option.id} value={option.id}>
                       {option.name}

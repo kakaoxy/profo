@@ -90,6 +90,7 @@ from migrations._merchant_company_soft_delete import add_merchant_company_soft_d
 from migrations._merchant_schema import (
     add_lead_client_request_id,
     add_lead_merchant_attribution_columns,
+    add_lead_owner_employee_column,
     add_merchant_store_phone_hash_column,
     add_merchant_visit_client_request_id,
     add_merchant_visit_location_failure_type,
@@ -1435,6 +1436,17 @@ MIGRATIONS: tuple[Migration, ...] = (
         reversible=True,
         description="公司管理支持软删除（REQ-IT7-02）：补 deleted_at/deleted_by 与删除态索引",
     ),
+    Migration(
+        version=118,
+        name="add_lead_owner_employee_column",
+        fn=add_lead_owner_employee_column,
+        kind="schema",
+        risk="B",
+        backup="table",
+        backup_tables=("leads",),
+        reversible=False,
+        description="线索归属简化：补 owner_employee_id 列与索引，并按门店负责人/邀请员工/分享员工回填",
+    ),
 )
 
 MIGRATION_BY_VERSION: dict[int, Migration] = {m.version: m for m in MIGRATIONS}
@@ -1447,7 +1459,7 @@ LEGACY_MIGRATION_NAMES: tuple[str, ...] = tuple(m.name for m in MIGRATIONS)
 """旧 ``_run_all_migrations`` 期望的调用顺序（``test_registry_matches_legacy_order`` 使用）."""
 
 MIGRATION_COUNT = len(MIGRATIONS)
-"""登记总数（当前 117）。"""
+"""登记总数（当前 118）。"""
 
-NEXT_VERSION = 118
+NEXT_VERSION = 119
 """下一个可用版本号：新增迁移从这里开始，禁止回填空号。"""

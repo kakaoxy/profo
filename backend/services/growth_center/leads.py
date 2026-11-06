@@ -287,13 +287,13 @@ class GrowthLeadService:
             literal(module_value).label("module"),
             unified,
             native,
-            Lead.referrer_id.label("employee_id"),
+            Lead.owner_employee_id.label("employee_id"),
             name,
             source_expr,
             Lead.created_at.label("created_at"),
             cast(None, String).label("campaign_name"),
             false().label("is_internal"),
-        ).outerjoin(User, User.id == Lead.referrer_id)
+        ).outerjoin(User, User.id == Lead.owner_employee_id)
         if attributed_only:
             stmt = stmt.filter(Lead.source_property_id.isnot(None))
         else:
@@ -301,7 +301,7 @@ class GrowthLeadService:
         stmt = stmt.filter(Lead.is_deleted.is_(False))
         # 仅展示外部客户提交的线索：过滤 creator 为内部员工的估价/房源单线索
         stmt = stmt.filter(~internal_creator_exists())
-        return stmt, unified, native, Lead.referrer_id, Lead.created_at, name, source_expr
+        return stmt, unified, native, Lead.owner_employee_id, Lead.created_at, name, source_expr
 
     # ─── 手机号脱敏（仅当前页，按模块回表解密） ────────────────────────────
 

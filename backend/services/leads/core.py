@@ -27,7 +27,7 @@ from services.growth_center.customer_notify import (
 )
 from services.growth_center.normalize import map_valuation_status
 from services.merchant.audit import add_audit_log
-from services.merchant.lead_attribution import LeadAttributionService
+from services.merchant.lead_owner import LeadOwnerService
 from services.notification.dual_write import (
     MODULE_LABELS,
     emit_customer_new,
@@ -211,11 +211,12 @@ class LeadService:
         # 使用 exclude_unset=True：未显式提供的字段不传入构造，
         # 这样 created_at 等字段为 None 时不会覆盖 ORM 列级 default
         lead_payload = lead_data.model_dump(exclude_unset=True)
-        # 商户域五维归属（V06）：门店/经纪人快照由服务端解析，客户端不可直接写快照
-        attribution = LeadAttributionService(self.db).resolve(
+        # 线索唯一归属：门店负责人/对接人优先，无门店时回退经纪人邀请员工/分享员工
+        attribution = LeadOwnerService(self.db).resolve(
             creator_id=creator_id,
             store_id=lead_payload.pop("store_id", None),
             broker_id=lead_payload.pop("broker_id", None),
+            referrer_id=referrer_id,
         )
         # 录入端新增载荷（new_*）非 Lead 列：进审核池（M3/FR-10），单据 dict_status=pending
         new_community = lead_payload.pop("new_community", None) or None
@@ -304,15 +305,15 @@ class LeadService:
         if creator is not None:
             db_lead.creator = creator
         # 「我的客户」新线索留资通知（best-effort，通知内部捕获一切异常仅记日志）：
-        # 仅存在归属员工（referrer 非空）时推送，后台/内部创建不传 referrer 天然跳过；
+        # 仅存在归属员工（owner_employee_id 非空）时推送，无归属不打扰；
         # 房源单承接线索（source_property_id 非空）按 sheet 模块通知，其余为估价。
-        if db_lead.referrer_id:
+        if db_lead.owner_employee_id:
             module = GrowthModule.SHEET if db_lead.source_property_id is not None else GrowthModule.VALUATION
             notify_new_customer_lead(
                 self.db,
                 module.value,
                 str(db_lead.id),
-                db_lead.referrer_id,
+                db_lead.owner_employee_id,
                 db_lead.community_name or "",
             )
             # 迭代二：站内信旁路双写（best-effort，绝不影响主流程；K17）
@@ -320,7 +321,7 @@ class LeadService:
                 self.db,
                 module=module.value,
                 lead_id=db_lead.id,
-                referrer_user_id=db_lead.referrer_id,
+                referrer_user_id=db_lead.owner_employee_id,
                 community=db_lead.community_name or "",
                 module_label=MODULE_LABELS.get(module.value, module.value),
             )
@@ -425,7 +426,7 @@ class LeadService:
         creator_id: str | None = None,
         store_id: str | None = None,
         broker_id: str | None = None,
-        attribution_employee_id: str | None = None,
+        owner_employee_id: str | None = None,
         layout: str | None = None,
         floor: str | None = None,
         scope_employee_id: str | None = None,
@@ -441,10 +442,10 @@ class LeadService:
             creator_id: 创建人筛选
             store_id: 推荐门店筛选
             broker_id: 推荐经纪人筛选
-            attribution_employee_id: 归属员工筛选（分享/门店归属/经纪人邀请任一命中）
+            owner_employee_id: 归属员工筛选（门店负责人/对接人）
             layout: 户型筛选
             floor: 楼层筛选
-            scope_employee_id: 员工数据范围（仅本人归因线索；admin/operator 为空）
+            scope_employee_id: 员工数据范围（仅本人创建/负责线索；admin/operator 为空）
 
         Returns:
             包含线索列表和分页信息的字典
@@ -460,7 +461,7 @@ class LeadService:
             creator_id=creator_id,
             store_id=store_id,
             broker_id=broker_id,
-            attribution_employee_id=attribution_employee_id,
+            owner_employee_id=owner_employee_id,
             layout=layout,
             floor=floor,
             scope_employee_id=scope_employee_id,
@@ -491,26 +492,25 @@ class LeadService:
         """
         lead = self.get_lead_or_404(lead_id)
         update_dict = update_data.model_dump(exclude_unset=True)
-        # 商户域五维归属：仅重算本次显式变更的门店/经纪人，未变更时保持原快照
+        # 线索唯一归属：仅重算本次显式变更的门店/经纪人，未变更时保持原归属
         store_touched = "store_id" in update_dict
         broker_touched = "broker_id" in update_dict
-        # 归属变更审计（BR-M07-007 / AC-V06-016）：变更前快照需在 setattr 前采集
+        # 归属变更审计（BR-M07-007）：变更前快照需在 setattr 前采集
         before_attribution = {
             "store_id": str(lead.store_id) if lead.store_id else None,
             "broker_id": str(lead.broker_id) if lead.broker_id else None,
-            "store_owner_employee_id": (str(lead.store_owner_employee_id) if lead.store_owner_employee_id else None),
-            "broker_inviter_employee_id": (
-                str(lead.broker_inviter_employee_id) if lead.broker_inviter_employee_id else None
-            ),
+            "owner_employee_id": str(lead.owner_employee_id) if lead.owner_employee_id else None,
         }
-        attribution = LeadAttributionService(self.db).resolve_for_update(
+        attribution = LeadOwnerService(self.db).resolve_for_update(
             creator_id=str(lead.creator_id) if lead.creator_id else None,
             current_store_id=str(lead.store_id) if lead.store_id else None,
             current_broker_id=str(lead.broker_id) if lead.broker_id else None,
+            current_owner_employee_id=(str(lead.owner_employee_id) if lead.owner_employee_id else None),
             new_store_id=update_dict.get("store_id"),
             new_broker_id=update_dict.get("broker_id"),
             store_touched=store_touched,
             broker_touched=broker_touched,
+            referrer_id=str(lead.referrer_id) if lead.referrer_id else None,
         )
         if store_touched or broker_touched:
             update_dict.update(attribution.as_dict())
@@ -580,12 +580,7 @@ class LeadService:
             after_attribution = {
                 "store_id": str(lead.store_id) if lead.store_id else None,
                 "broker_id": str(lead.broker_id) if lead.broker_id else None,
-                "store_owner_employee_id": (
-                    str(lead.store_owner_employee_id) if lead.store_owner_employee_id else None
-                ),
-                "broker_inviter_employee_id": (
-                    str(lead.broker_inviter_employee_id) if lead.broker_inviter_employee_id else None
-                ),
+                "owner_employee_id": str(lead.owner_employee_id) if lead.owner_employee_id else None,
             }
             if after_attribution != before_attribution:
                 add_audit_log(
@@ -635,7 +630,7 @@ class LeadService:
             lead.creator = creator
         # 「我的客户」后台状态变更通知（best-effort，通知内部捕获一切异常仅记日志）：
         # 仅本次提交包含 status 且统一状态实际变化（对比变更前后）且线索有归属员工时推送
-        if "status" in update_dict and lead.referrer_id:
+        if "status" in update_dict and lead.owner_employee_id:
             new_unified = map_valuation_status(lead.status)
             if map_valuation_status(old_status) != new_unified:
                 module = GrowthModule.SHEET if lead.source_property_id is not None else GrowthModule.VALUATION
@@ -643,7 +638,7 @@ class LeadService:
                     self.db,
                     module.value,
                     str(lead.id),
-                    lead.referrer_id,
+                    lead.owner_employee_id,
                     unified_status_label(new_unified.value),
                     lead.community_name or "",
                 )
@@ -652,7 +647,7 @@ class LeadService:
                     self.db,
                     module=module.value,
                     lead_id=lead.id,
-                    referrer_user_id=lead.referrer_id,
+                    referrer_user_id=lead.owner_employee_id,
                     status=new_unified.value,
                     status_label=unified_status_label(new_unified.value),
                     community=lead.community_name or "",
@@ -663,7 +658,7 @@ class LeadService:
                 emit_lead_status_changed(
                     self.db,
                     lead_id=str(lead.id),
-                    owner_id=lead.referrer_id,
+                    owner_id=lead.owner_employee_id,
                     status=new_unified.value,
                     status_label=unified_status_label(new_unified.value),
                     community=lead.community_name or "",
@@ -876,8 +871,8 @@ class LeadService:
     def get_my_acquired_phone(self, user_id: str, lead_id: str) -> str | None:
         """获取当前员工获客线索的客户手机号.
 
-        仅当线索归属为「分享归因」（referrer_id==user_id）且 creator 绑定手机号时
-        返回解密后的手机号；直接录入（creator_id==user_id）或其他归属线索返回 None。
+        仅当线索归属为当前员工（owner_employee_id==user_id）且 creator 绑定手机号时
+        返回解密后的手机号；无归属或其他归属线索返回 None。
         线索不存在或不属于该员工时抛 ResourceNotFoundError。
 
         Args:
@@ -895,7 +890,7 @@ class LeadService:
         if lead is None:
             msg = "线索不存在"
             raise ResourceNotFoundError(msg)
-        if lead.referrer_id == user_id and lead.creator is not None and lead.creator.phone:
+        if lead.owner_employee_id == user_id and lead.creator is not None and lead.creator.phone:
             return lead.creator.phone
         return None
 

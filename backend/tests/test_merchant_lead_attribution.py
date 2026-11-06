@@ -1,4 +1,4 @@
-"""商户管理 V06：线索五维归属、二级联动、估价代填自动归因."""
+"""商户管理：线索唯一归属（门店负责人/对接人）、二级联动、估价代填自动归因."""
 
 import uuid
 from collections.abc import Generator
@@ -67,6 +67,25 @@ def employee(seeded_db: dict) -> User:
         username=f"lead-employee-{uuid.uuid4().hex[:8]}",
         password=get_password_hash(f"pw-{uuid.uuid4().hex}"),
         nickname="归属员工",
+        role_id=customer_role.id,
+        status="active",
+    )
+    user.roles.append(user_role)
+    session.add(user)
+    session.commit()
+    return user
+
+
+@pytest.fixture
+def employee_two(seeded_db: dict) -> User:
+    session: Session = seeded_db["session"]
+    customer_role = session.query(Role).filter(Role.code == "customer").one()
+    user_role = session.query(Role).filter(Role.code == "user").one()
+    user = User(
+        id=str(uuid.uuid4()),
+        username=f"lead-employee2-{uuid.uuid4().hex[:8]}",
+        password=get_password_hash(f"pw-{uuid.uuid4().hex}"),
+        nickname="归属员工2",
         role_id=customer_role.id,
         status="active",
     )
@@ -164,9 +183,15 @@ def _create_lead(client: TestClient, **extra) -> dict:
 
 
 def test_columns_migrated(seeded_db: dict) -> None:
-    """Leads 五维归属列已存在."""
+    """Leads 归属列已存在（旧列保留兼容迁移，新列 owner_employee_id 生效）."""
     columns = {col["name"] for col in inspect(seeded_db["session"].get_bind()).get_columns("leads")}
-    for column in ("store_id", "broker_id", "store_owner_employee_id", "broker_inviter_employee_id"):
+    for column in (
+        "store_id",
+        "broker_id",
+        "owner_employee_id",
+        "store_owner_employee_id",
+        "broker_inviter_employee_id",
+    ):
         assert column in columns
 
 
@@ -180,9 +205,8 @@ def test_lead_with_store_and_broker(admin_client: TestClient, employee: User, se
     assert lead["store_id"] == store["id"]
     assert lead["store_name"] == store["store_name"]
     assert lead["broker_id"] == broker["id"]
-    assert lead["store_owner_employee_id"] == employee.id
-    assert lead["store_owner_name"] == "归属员工"
-    assert lead["attribution_status"] == "complete"
+    assert lead["owner_employee_id"] == employee.id
+    assert lead["owner_employee_name"] == "归属员工"
 
     listed = admin_client.get(f"{API}/leads?store_id={store['id']}&broker_id={broker['id']}")
     assert listed.status_code == 200
@@ -195,48 +219,50 @@ def test_lead_attribution_employee_filter(
     employee: User,
     seeded_db: dict,
 ) -> None:
-    """归属员工筛选：分享员工/门店归属员工/经纪人邀请员工任一命中（V06 / BR-M07-021）."""
+    """归属员工筛选：仅按 owner_employee_id 命中."""
     session: Session = seeded_db["session"]
     session.add_all(
         [
-            Lead(community_name="分享归因线索", referrer_id=employee.id),
-            Lead(community_name="门店归属线索", store_owner_employee_id=employee.id),
-            Lead(community_name="经纪人邀请线索", broker_inviter_employee_id=employee.id),
+            Lead(community_name="本人负责线索", owner_employee_id=employee.id),
             Lead(community_name="无归属线索"),
         ],
     )
     session.commit()
 
-    resp = admin_client.get(f"{API}/leads?attribution_employee_id={employee.id}")
+    resp = admin_client.get(f"{API}/leads?owner_employee_id={employee.id}")
     assert resp.status_code == 200, resp.text
-    assert resp.json()["total"] == 3
-    names = {item["community_name"] for item in resp.json()["items"]}
-    assert names == {"分享归因线索", "门店归属线索", "经纪人邀请线索"}
+    assert resp.json()["total"] == 1
+    assert resp.json()["items"][0]["community_name"] == "本人负责线索"
 
 
-def test_employee_attribution_priority_referrer_first(
+def test_referrer_is_not_owner_when_store_owner_exists(
     admin_client: TestClient,
     employee: User,
     seeded_db: dict,
 ) -> None:
-    """BR-M07-021：员工归因按 referrer → broker_inviter → store_owner 顺序解析."""
+    """分享员工不覆盖门店负责人：owner 仍为门店负责人，referrer 保留分享来源."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    broker = _create_broker(admin_client, store["id"])
     session: Session = seeded_db["session"]
     other = session.query(User).filter(User.id != employee.id).first()
     assert other is not None
     lead = Lead(
-        community_name="员工归因优先级线索",
-        referrer_id=employee.id,
-        broker_inviter_employee_id=other.id,
-        store_owner_employee_id=other.id,
+        community_name="分享来源与归属分离线索",
+        store_id=store["id"],
+        broker_id=broker["id"],
+        owner_employee_id=employee.id,
+        referrer_id=other.id,
     )
     session.add(lead)
     session.commit()
 
-    resp = admin_client.get(f"{API}/leads?keyword=员工归因优先级线索")
+    resp = admin_client.get(f"{API}/leads?keyword=分享来源与归属分离线索")
     assert resp.status_code == 200, resp.text
     item = next(row for row in resp.json()["items"] if row["id"] == lead.id)
-    assert item["employee_attribution_id"] == employee.id
-    assert item["employee_attribution_name"] == "归属员工"
+    assert item["owner_employee_id"] == employee.id
+    assert item["owner_employee_name"] == "归属员工"
+    assert item["referrer_id"] == other.id
 
 
 def test_attribution_change_writes_audit_log(
@@ -269,7 +295,7 @@ def test_attribution_change_writes_audit_log(
     assert len(logs) == 1
     assert logs[0].before["store_id"] is None
     assert logs[0].after["store_id"] == store["id"]
-    assert logs[0].after["store_owner_employee_id"] == employee.id
+    assert logs[0].after["owner_employee_id"] == employee.id
     assert logs[0].after["broker_id"] == broker["id"]
 
 
@@ -290,7 +316,7 @@ def test_employee_lead_list_scoped_to_own_attribution(seeded_db: dict) -> None:
     session.add_all(
         [
             Lead(community_name="本人创建线索", creator_id=employee.id),
-            Lead(community_name="本人归因线索", store_owner_employee_id=employee.id),
+            Lead(community_name="本人负责线索", owner_employee_id=employee.id),
             Lead(community_name="他人线索"),
         ],
     )
@@ -301,7 +327,7 @@ def test_employee_lead_list_scoped_to_own_attribution(seeded_db: dict) -> None:
     assert resp.status_code == 200, resp.text
     body = resp.json()
     assert body["total"] == 2
-    assert {item["community_name"] for item in body["items"]} == {"本人创建线索", "本人归因线索"}
+    assert {item["community_name"] for item in body["items"]} == {"本人创建线索", "本人负责线索"}
 
     # 统计与列表同范围（V01 AC-V01-010 口径）
     stats = employee_client.get(f"{API}/leads/stats").json()
@@ -371,7 +397,7 @@ def test_lead_broker_unbound_missing_store(admin_client: TestClient, seeded_db: 
     lead = _create_lead(admin_client, broker_id=broker["id"])
     assert lead["store_id"] is None
     assert lead["broker_id"] == broker["id"]
-    assert lead["attribution_status"] == "missing_store"
+    assert lead["owner_employee_id"] is None
 
 
 def test_lead_broker_store_mismatch_rejected(
@@ -397,7 +423,7 @@ def test_broker_valuation_submit_auto_attribution(
     employee: User,
     seeded_db: dict,
 ) -> None:
-    """经纪人代填估价：broker/store/邀请员工/分享员工五维并存."""
+    """经纪人代填估价：门店、经纪人、邀请员工、分享员工正确落库，归属为门店负责人."""
     company = _create_company(admin_client)
     store = _create_store(admin_client, company["id"], employee.id)
     _register_broker(customer_client, employee.id)
@@ -422,8 +448,8 @@ def test_broker_valuation_submit_auto_attribution(
     assert row.referrer_id == employee.id
     assert row.store_id == store["id"]
     assert row.broker_id is not None
-    assert row.store_owner_employee_id == employee.id
-    assert row.broker_inviter_employee_id == employee.id
+    assert row.owner_employee_id == employee.id
+    assert row.referrer_id == employee.id
 
 
 def test_update_clear_store_keeps_broker(admin_client: TestClient, employee: User, seeded_db: dict) -> None:
@@ -435,9 +461,7 @@ def test_update_clear_store_keeps_broker(admin_client: TestClient, employee: Use
     updated = admin_client.put(f"{API}/leads/{lead['id']}", json={"store_id": None})
     assert updated.status_code == 200, updated.text
     assert updated.json()["store_id"] is None
-    assert updated.json()["store_owner_employee_id"] is None
     assert updated.json()["broker_id"] == broker["id"]
-    assert updated.json()["attribution_status"] == "missing_store"
 
 
 def test_store_broker_linkage_and_broker_search(
@@ -465,11 +489,76 @@ def test_store_broker_linkage_and_broker_search(
 
 
 def test_legacy_lead_shows_none(admin_client: TestClient, seeded_db: dict) -> None:
-    """存量线索五维为空 → attribution_status=none，不报错."""
+    """存量线索无归属字段 → owner_employee_id 为空，不报错."""
     lead = _create_lead(admin_client)
     assert lead["store_id"] is None
     assert lead["broker_id"] is None
-    assert lead["attribution_status"] == "none"
+    assert lead["owner_employee_id"] is None
+
+
+def test_store_owner_change_syncs_history_leads(
+    admin_client: TestClient,
+    employee: User,
+    employee_two: User,
+    seeded_db: dict,
+) -> None:
+    """门店换负责人后，该门店历史线索全部转给新负责人（含已归属线索）."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    broker = _create_broker(admin_client, store["id"])
+    lead = _create_lead(admin_client, store_id=store["id"], broker_id=broker["id"])
+    assert lead["owner_employee_id"] == employee.id
+
+    updated = admin_client.put(
+        f"{API}/admin/merchant/stores/{store['id']}",
+        json={"owner_employee_id": employee_two.id},
+    )
+    assert updated.status_code == 200, updated.text
+
+    detail = admin_client.get(f"{API}/leads/{lead['id']}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["owner_employee_id"] == employee_two.id
+    assert detail.json()["owner_employee_name"] == "归属员工2"
+
+
+def test_broker_bind_syncs_unbound_history_leads(
+    admin_client: TestClient,
+    customer_client: TestClient,
+    customer_user: User,
+    employee: User,
+    employee_two: User,
+    seeded_db: dict,
+) -> None:
+    """无门店经纪人补绑门店后，其历史线索归属同步到该门店负责人."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee_two.id)
+    _register_broker(customer_client, employee.id)
+    session: Session = seeded_db["session"]
+    broker = session.query(MerchantBroker).filter(MerchantBroker.user_id == customer_user.id).one()
+
+    resp = customer_client.post(
+        f"{API}/public/leads",
+        json={
+            "community_name": "待补绑历史线索",
+            "layout": "2室1厅",
+            "floor_info": "6/12",
+            "area": 89.5,
+            "total_price": 300,
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    lead_id = resp.json()["id"]
+    row = session.query(Lead).filter(Lead.id == lead_id).one()
+    assert row.owner_employee_id == employee.id
+    assert row.store_id is None
+    assert row.broker_id == broker.id
+
+    bind = customer_client.post(f"{API}/public/merchant/brokers/me/bind", json={"store_id": store["id"]})
+    assert bind.status_code == 200, bind.text
+    session.expire_all()
+    row = session.query(Lead).filter(Lead.id == lead_id).one()
+    assert row.store_id == store["id"]
+    assert row.owner_employee_id == employee_two.id
 
 
 pytestmark = pytest.mark.usefixtures("seeded_db")

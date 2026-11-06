@@ -457,7 +457,12 @@ def fallback_data(c_users: dict[str, User], seeded_db: dict[str, Any]) -> dict[s
     customer = c_users["customer"]
 
     unowned_valuation = Lead(community_name="无归属估价", creator_id=customer.id)
-    owned_valuation = Lead(community_name="已归属估价", creator_id=customer.id, referrer_id=EMPLOYEE_ID)
+    owned_valuation = Lead(
+        community_name="已归属估价",
+        creator_id=customer.id,
+        referrer_id=EMPLOYEE_ID,
+        owner_employee_id=EMPLOYEE_ID,
+    )
     unowned_sheet = Lead(community_name="无归属房源单", creator_id=customer.id, source_property_id=9801)
     unowned_booking = ProjectBooking(
         marketing_project_id=9201,
@@ -489,7 +494,7 @@ def test_assign_unowned_valuation_success(
     db_session: Session,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """无归属估价线索指派：200 返回员工 ID/名称，且 referrer_id 落库."""
+    """无归属估价线索指派：200 返回员工 ID/名称，且 owner_employee_id 落库."""
     monkeypatch.setattr(settings, "wechat_customer_lead_template_id", "")
     lead_id = fallback_data["unowned_valuation_id"]
 
@@ -498,7 +503,7 @@ def test_assign_unowned_valuation_success(
     assert resp.status_code == 200, resp.text
     assert resp.json() == {"employee_id": EMPLOYEE_ID, "employee_name": EMPLOYEE_NAME}
     lead = db_session.query(Lead).filter(Lead.id == lead_id).one()
-    assert lead.referrer_id == EMPLOYEE_ID
+    assert lead.owner_employee_id == EMPLOYEE_ID
 
 
 def test_assign_booking_and_recruit_success(
@@ -541,7 +546,7 @@ def test_assign_already_owned_409(
 
     assert resp.status_code == 409
     lead = db_session.query(Lead).filter(Lead.id == lead_id).one()
-    assert lead.referrer_id == EMPLOYEE_ID
+    assert lead.owner_employee_id == EMPLOYEE_ID
 
 
 def test_assign_invalid_employee_422(
@@ -564,7 +569,7 @@ def test_assign_invalid_employee_422(
     assert resp.status_code == 422
 
     lead = db_session.query(Lead).filter(Lead.id == lead_id).one()
-    assert lead.referrer_id is None
+    assert lead.owner_employee_id is None
 
 
 def test_assign_module_discrimination_404(
@@ -597,7 +602,7 @@ def test_assign_module_discrimination_404(
     )
     assert resp.status_code == 200, resp.text
     sheet_lead = db_session.query(Lead).filter(Lead.id == fallback_data["unowned_sheet_id"]).one()
-    assert sheet_lead.referrer_id == EMPLOYEE_ID
+    assert sheet_lead.owner_employee_id == EMPLOYEE_ID
 
 
 def test_assign_low_permission_403(
@@ -612,7 +617,7 @@ def test_assign_low_permission_403(
 
     assert resp.status_code == 403
     lead = db_session.query(Lead).filter(Lead.id == lead_id).one()
-    assert lead.referrer_id is None
+    assert lead.owner_employee_id is None
 
 
 def test_fallback_employee_set_and_clear_roundtrip(

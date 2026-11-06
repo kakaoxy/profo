@@ -85,22 +85,30 @@ class Lead(Base):
 
     # Linkage
     creator_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="创建人ID")
-    referrer_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="分享归属员工ID(逻辑外键)")
+    referrer_id: Mapped[str | None] = mapped_column(
+        String(36), nullable=True, comment="分享员工ID(逻辑外键，仅记录分享影响)"
+    )
     client_request_id: Mapped[str | None] = mapped_column(
         String(64), nullable=True, index=True, comment="客户端幂等键（重复提交不产生重复线索）"
     )
-    # 商户域五维归属（V06 / D7 / m02721）：门店、经纪人及提交时员工快照
+    # 商户域归属：门店/经纪人提交时快照 + 唯一归属员工（门店负责人/对接人）
     store_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="推荐门店ID(逻辑外键)")
     broker_id: Mapped[str | None] = mapped_column(String(36), nullable=True, comment="推荐经纪人ID(逻辑外键)")
+    owner_employee_id: Mapped[str | None] = mapped_column(
+        String(36),
+        nullable=True,
+        comment="归属员工ID（门店负责人/对接人，逻辑外键）",
+    )
+    # 以下两列为旧五维归属兼容字段，已废弃：仅保留历史数据，不再写入/展示
     store_owner_employee_id: Mapped[str | None] = mapped_column(
         String(36),
         nullable=True,
-        comment="提交时门店归属员工快照",
+        comment="[deprecated] 提交时门店归属员工快照",
     )
     broker_inviter_employee_id: Mapped[str | None] = mapped_column(
         String(36),
         nullable=True,
-        comment="提交时经纪人邀请员工快照",
+        comment="[deprecated] 提交时经纪人邀请员工快照",
     )
     source_property_id: Mapped[int | None] = mapped_column(Integer, nullable=True, comment="关联房源ID(软引用)")
 
@@ -128,6 +136,11 @@ class Lead(Base):
     # Relationships
     creator = relationship("User", foreign_keys=[creator_id], primaryjoin="foreign(Lead.creator_id) == User.id")
     referrer = relationship("User", foreign_keys=[referrer_id], primaryjoin="foreign(Lead.referrer_id) == User.id")
+    owner_employee = relationship(
+        "User",
+        foreign_keys=[owner_employee_id],
+        primaryjoin="foreign(Lead.owner_employee_id) == User.id",
+    )
     auditor = relationship("User", foreign_keys=[auditor_id], primaryjoin="foreign(Lead.auditor_id) == User.id")
     follow_ups = relationship(
         "LeadFollowUp",
@@ -152,8 +165,15 @@ class Lead(Base):
 
     @property
     def referrer_name(self) -> str | None:
-        """获取分享归属员工名称."""
+        """获取分享员工名称."""
         return self.referrer.nickname if self.referrer else None
+
+    @property
+    def owner_employee_name(self) -> str | None:
+        """获取归属员工（门店负责人/对接人）名称."""
+        if self.owner_employee is None:
+            return None
+        return self.owner_employee.nickname or self.owner_employee.username
 
     __table_args__ = (
         Index("idx_lead_status", "status"),
@@ -164,9 +184,11 @@ class Lead(Base):
         Index("idx_lead_auditor_audit_time", "auditor_id", "audit_time"),
         # 分享统计/归因：按 referrer_id 聚合「我的分享统计」lead_count 与今日 lead_count
         Index("idx_lead_referrer", "referrer_id"),
-        # 商户域五维归属筛选（V06）
+        # 商户域归属筛选（V06）
         Index("idx_leads_store", "store_id"),
         Index("idx_leads_broker", "broker_id"),
+        # 归属员工（门店负责人/对接人）筛选与数据范围
+        Index("idx_leads_owner", "owner_employee_id"),
     )
 
 

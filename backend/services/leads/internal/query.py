@@ -70,7 +70,7 @@ class LeadQueryService:
         creator_id: str | None = None,
         store_id: str | None = None,
         broker_id: str | None = None,
-        attribution_employee_id: str | None = None,
+        owner_employee_id: str | None = None,
         layout: str | None = None,
         floor: str | None = None,
         scope_employee_id: str | None = None,
@@ -86,10 +86,10 @@ class LeadQueryService:
             creator_id: 创建人筛选
             store_id: 推荐门店筛选
             broker_id: 推荐经纪人筛选
-            attribution_employee_id: 归属员工筛选（分享/门店归属/经纪人邀请任一命中）
+            owner_employee_id: 归属员工筛选（门店负责人/对接人）
             layout: 户型筛选
             floor: 楼层筛选
-            scope_employee_id: 员工数据范围（仅本人创建/归因线索；admin/operator 为空）
+            scope_employee_id: 员工数据范围（仅本人创建/归属线索；admin/operator 为空）
 
         Returns:
             包含线索列表和分页信息的字典
@@ -135,23 +135,14 @@ class LeadQueryService:
             query = query.filter(Lead.store_id == store_id)
         if broker_id:
             query = query.filter(Lead.broker_id == broker_id)
-        if attribution_employee_id:
-            # 员工归因三字段（V06 / BR-M07-021）：分享员工 / 门店归属员工 / 经纪人邀请员工任一命中
-            query = query.filter(
-                or_(
-                    Lead.referrer_id == attribution_employee_id,
-                    Lead.store_owner_employee_id == attribution_employee_id,
-                    Lead.broker_inviter_employee_id == attribution_employee_id,
-                ),
-            )
+        if owner_employee_id:
+            query = query.filter(Lead.owner_employee_id == owner_employee_id)
         if scope_employee_id:
-            # 员工数据范围（V06 REQ-M07-004）：仅本人创建或本人归因线索
+            # 员工数据范围：仅本人创建或本人负责的线索
             query = query.filter(
                 or_(
                     Lead.creator_id == scope_employee_id,
-                    Lead.referrer_id == scope_employee_id,
-                    Lead.store_owner_employee_id == scope_employee_id,
-                    Lead.broker_inviter_employee_id == scope_employee_id,
+                    Lead.owner_employee_id == scope_employee_id,
                 ),
             )
         if layout:
@@ -244,7 +235,7 @@ class LeadQueryService:
         - ``pending_count``：status = pending_assessment 的未删除线索数；
         - ``oldest_wait_days`` / ``oldest_wait_hours``：这些线索中最早的
           ``created_at`` 距今的整日与余数小时；
-        - ``owner_count``：distinct 归属人数（``referrer_id`` 优先，为空时回退
+        - ``owner_count``：distinct 归属人数（``owner_employee_id`` 优先，为空时回退
           ``creator_id``——与 ``_acquired_filter`` 的归属口径一致）。
 
         Returns:
@@ -276,7 +267,9 @@ class LeadQueryService:
             wait_hours = remainder // 3600
 
         owner_count = (
-            base.with_entities(func.count(func.distinct(func.coalesce(Lead.referrer_id, Lead.creator_id)))).scalar()
+            base.with_entities(
+                func.count(func.distinct(func.coalesce(Lead.owner_employee_id, Lead.creator_id)))
+            ).scalar()
             or 0
         )
 
@@ -305,9 +298,7 @@ class LeadQueryService:
             stmt = stmt.where(
                 or_(
                     Lead.creator_id == scope_employee_id,
-                    Lead.referrer_id == scope_employee_id,
-                    Lead.store_owner_employee_id == scope_employee_id,
-                    Lead.broker_inviter_employee_id == scope_employee_id,
+                    Lead.owner_employee_id == scope_employee_id,
                 ),
             )
         rows = self.db.execute(stmt.group_by(Lead.status)).all()
@@ -322,8 +313,8 @@ class LeadQueryService:
         return self.db.query(Lead).filter(Lead.is_deleted.is_(False)).count()
 
     def _acquired_filter(self, user_id: str) -> ColumnElement[bool]:
-        """员工获客归属过滤：分享归因（referrer_id）或直接录入（creator_id）."""
-        return or_(Lead.referrer_id == user_id, Lead.creator_id == user_id)
+        """员工获客归属过滤：本人负责（owner_employee_id）或直接录入（creator_id）."""
+        return or_(Lead.owner_employee_id == user_id, Lead.creator_id == user_id)
 
     def get_acquired_list(
         self,

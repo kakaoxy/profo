@@ -78,7 +78,11 @@ def ensure_customer_lead_owned(db: Session, module: GrowthModule, lead_id: str, 
     else:
         # 估价/房源单共用 leads 表，按 source_property_id 判别模块归属；
         # 内部员工提交的线索不对外展示（与列表 internal_creator_exists 口径一致）
-        query = db.query(Lead.id).filter(Lead.id == lead_id, Lead.referrer_id == user_id, Lead.is_deleted.is_(False))
+        query = db.query(Lead.id).filter(
+            Lead.id == lead_id,
+            Lead.owner_employee_id == user_id,
+            Lead.is_deleted.is_(False),
+        )
         query = query.filter(~internal_creator_exists())
         if module == GrowthModule.SHEET:
             exists_q = query.filter(Lead.source_property_id.isnot(None))
@@ -109,7 +113,7 @@ class MyCustomerService:
         """我的客户分页查询（created_at 倒序，跨表 UNION ALL，归属收窄）.
 
         Args:
-            user_id: 当前登录员工ID（referrer 收窄）
+            user_id: 当前登录员工ID（归属员工收窄）
             page: 页码
             page_size: 每页数量
             module: 模块筛选（None=全部）
@@ -340,7 +344,7 @@ class MyCustomerService:
         user_id: str,
         status: UnifiedLeadStatus | None,
     ) -> Select:
-        """构建单模块 UNION 分支（referrer 收窄为当前用户，已应用状态筛选）."""
+        """构建单模块 UNION 分支（归属员工收窄为当前用户，已应用状态筛选）."""
         stmt, unified, employee, _created = self._branch_for(module)
         stmt = stmt.filter(employee == user_id)
         if status is not None:
@@ -432,7 +436,7 @@ class MyCustomerService:
             literal(module_value).label("module"),
             unified,
             cast(Lead.status, String).label("native_status"),
-            Lead.referrer_id.label("employee_id"),
+            Lead.owner_employee_id.label("employee_id"),
             source_expr,
             Lead.created_at.label("created_at"),
             cast(None, String).label("campaign_name"),
@@ -452,7 +456,7 @@ class MyCustomerService:
         stmt = stmt.filter(Lead.is_deleted.is_(False))
         # 仅展示外部客户提交的线索：过滤 creator 为内部员工的估价/房源单线索
         stmt = stmt.filter(~internal_creator_exists())
-        return stmt, unified, Lead.referrer_id, Lead.created_at
+        return stmt, unified, Lead.owner_employee_id, Lead.created_at
 
     # ─── 分页后回表解析（脱敏手机号 / 房源单短码与套数） ──────────────────
 

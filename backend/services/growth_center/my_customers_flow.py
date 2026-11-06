@@ -143,7 +143,11 @@ class MyCustomerFlowService:
 
         # 行级锁重读附带归属+模块条件：锁前校验与加锁之间存在窗口期，
         # 防归属/模块（source_property_id 判别 valuation/sheet）被并发改写（TOCTOU）
-        query = self.db.query(Lead).filter(Lead.id == lead_id, Lead.referrer_id == user_id, Lead.is_deleted.is_(False))
+        query = self.db.query(Lead).filter(
+            Lead.id == lead_id,
+            Lead.owner_employee_id == user_id,
+            Lead.is_deleted.is_(False),
+        )
         query = (
             query.filter(Lead.source_property_id.isnot(None))
             if module == GrowthModule.SHEET

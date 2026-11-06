@@ -103,7 +103,7 @@ export interface Lead {
   creatorName: string;
   referrerId?: string;
   referrerName?: string;
-  /** 商户域五维归属（V06）：门店 / 经纪人 / 门店归属员工 / 经纪人邀请员工 */
+  /** 商户域归属：门店 / 经纪人 / 归属员工（门店负责人/对接人）；referrer 仅记录分享来源 */
   storeId?: string | null;
   storeName?: string;
   /** 门店状态（disabled/merged/relocated/deleted，历史归属标记用） */
@@ -112,14 +112,8 @@ export interface Lead {
   brokerName?: string;
   /** 经纪人绑定状态（disabled=已停用） */
   brokerStatus?: string | null;
-  storeOwnerEmployeeId?: string;
-  storeOwnerName?: string;
-  brokerInviterEmployeeId?: string;
-  brokerInviterName?: string;
-  employeeAttributionId?: string;
-  employeeAttributionName?: string;
-  /** 归属完整性：complete/missing_store/missing_broker/missing_store_broker/missing_referrer/none */
-  attributionStatus?: string;
+  ownerEmployeeId?: string;
+  ownerEmployeeName?: string;
   lastFollowUpAt?: string;
   /** 最近一条跟进摘要（结论/内容/方式/时间/跟进人），无跟进为空——列表两列跟进信息的数据源 */
   latestFollowUp?: LeadLatestFollowUp | null;
@@ -135,7 +129,7 @@ export interface FilterState {
   floors: string[]; // New: ['低', '中', '高']
 }
 
-/** 归属筛选下拉选项（门店/经纪人/归属员工，V06 / REQ-M07-004） */
+/** 归属筛选下拉选项（门店/经纪人/对接人） */
 export interface LeadFilterOption {
   id: string;
   name: string;

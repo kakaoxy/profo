@@ -63,6 +63,9 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
           <th className="hidden w-[96px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
             录入人
           </th>
+          <th className="hidden w-[96px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
+            对接人
+          </th>
           <th className="hidden w-[88px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
             创建 / 更新
           </th>
@@ -241,6 +244,13 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                   <span className="block truncate max-w-[56px] text-[13px] text-ash">
                     {lead.creatorName || "—"}
                   </span>
+                </span>
+              </td>
+
+              {/* 对接人（门店负责人）：与录入人、分享员工语义分开 */}
+              <td className="hidden whitespace-nowrap px-2.5 py-2.5 align-middle xl:table-cell">
+                <span className="block truncate max-w-[80px] text-[13px] text-ash">
+                  {lead.ownerEmployeeName || "—"}
                 </span>
               </td>
 

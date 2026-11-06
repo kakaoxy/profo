@@ -243,8 +243,8 @@ class GrowthLeadDetailService:
             "unified_status": map_valuation_status(LeadStatus(lead.status.value)),
             "native_status": lead.status.value,
             "phone_masked": self._creator_masked_phone(lead),  # leads 表无手机号，取 creator 手机号脱敏
-            "employee_id": lead.referrer_id,
-            "employee_name": self._employee_name(lead.referrer_id),
+            "employee_id": lead.owner_employee_id,
+            "employee_name": self._employee_name(lead.owner_employee_id),
             "source": self._lead_source(lead.referrer_id, None, share),
             "created_at": lead.created_at,
             "campaign_name": None,
@@ -291,8 +291,8 @@ class GrowthLeadDetailService:
             "unified_status": map_valuation_status(LeadStatus(lead.status.value)),
             "native_status": lead.status.value,
             "phone_masked": self._creator_masked_phone(lead),  # leads 表无手机号，取 creator 手机号脱敏
-            "employee_id": lead.referrer_id,
-            "employee_name": self._employee_name(lead.referrer_id),
+            "employee_id": lead.owner_employee_id,
+            "employee_name": self._employee_name(lead.owner_employee_id),
             "source": self._lead_source(lead.referrer_id, None, share),
             "created_at": lead.created_at,
             "campaign_name": None,

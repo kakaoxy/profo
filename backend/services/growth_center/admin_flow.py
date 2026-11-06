@@ -304,7 +304,7 @@ class AdminLeadFlowService:
                 self.db,
                 module.value,
                 lead_id,
-                lead.referrer_id,
+                lead.owner_employee_id,
                 UNIFIED_STATUS_LABELS[unified_after],
                 lead.community_name or "",
             )
@@ -313,7 +313,7 @@ class AdminLeadFlowService:
                 self.db,
                 module=module.value,
                 lead_id=lead_id,
-                referrer_user_id=lead.referrer_id,
+                referrer_user_id=lead.owner_employee_id,
                 status=unified_after.value,
                 status_label=UNIFIED_STATUS_LABELS[unified_after],
                 community=lead.community_name or "",
@@ -338,9 +338,8 @@ class AdminLeadFlowService:
     ) -> dict[str, Any]:
         """管理端为无归属线索指派兜底员工（仅归属为空可指派，已归属 409 不可改派）.
 
-        四模块通用：booking/valuation/sheet/recruit 均按当前归属为空（无分享
-        归因）才允许指派——招募 referrer 语义为「首次留资写入，此后永不更新」，
-        从 NULL 填充视为首次写入，已归属永不改派。指派员工经
+        四模块通用：booking/valuation/sheet/recruit 均按当前归属为空（无归属员工）才允许指派——
+        招募 referrer 语义为「首次留资写入，此后永不更新」，从 NULL 填充视为首次写入，已归属永不改派。指派员工经
         ``resolve_valid_referrer`` 校验（存在 + active + 后台身份，无效 422）。
         指派成功后 best-effort 推送新线索留资通知给该员工（通知内部捕获一切异常），
         并旁路写一条 ``lead.assigned`` 站内信（迭代二 D-01，收件人为被指派员工）。
@@ -429,10 +428,10 @@ class AdminLeadFlowService:
         if lead is None:
             msg = "线索不存在"
             raise ResourceNotFoundError(msg)
-        if lead.referrer_id is not None:
+        if lead.owner_employee_id is not None:
             msg = "线索已有归属员工"
             raise ConflictError(msg)
-        lead.referrer_id = employee_id
+        lead.owner_employee_id = employee_id
         return lead.community_name or ""
 
     def _employee_name(self, employee_id: str) -> str | None:
