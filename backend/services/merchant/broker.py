@@ -1471,6 +1471,7 @@ class MerchantBrokerService:
             broker_id=str(broker.id),
             store_id=str(store.id),
             store_owner_employee_id=store.owner_employee_id,
+            broker_inviter_employee_id=broker.inviter_employee_id,
         )
         return binding
 

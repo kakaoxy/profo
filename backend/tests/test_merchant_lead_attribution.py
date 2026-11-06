@@ -502,7 +502,7 @@ def test_store_owner_change_syncs_history_leads(
     employee_two: User,
     seeded_db: dict,
 ) -> None:
-    """门店换负责人后，该门店历史线索全部转给新负责人（含已归属线索）."""
+    """门店换负责人后，该门店由门店派生的历史线索转给新负责人（人工指派除外）."""
     company = _create_company(admin_client)
     store = _create_store(admin_client, company["id"], employee.id)
     broker = _create_broker(admin_client, store["id"])
@@ -519,6 +519,32 @@ def test_store_owner_change_syncs_history_leads(
     assert detail.status_code == 200, detail.text
     assert detail.json()["owner_employee_id"] == employee_two.id
     assert detail.json()["owner_employee_name"] == "归属员工2"
+
+
+def test_store_owner_change_preserves_manual_lead_assignment(
+    admin_client: TestClient,
+    employee: User,
+    employee_two: User,
+    seeded_db: dict,
+) -> None:
+    """门店换负责人时，单独指派给其他员工的线索不被覆盖."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee.id)
+    lead = _create_lead(admin_client, store_id=store["id"])
+    session: Session = seeded_db["session"]
+    row = session.query(Lead).filter(Lead.id == lead["id"]).one()
+    row.owner_employee_id = employee_two.id
+    session.commit()
+
+    updated = admin_client.put(
+        f"{API}/admin/merchant/stores/{store['id']}",
+        json={"owner_employee_id": seeded_db["users"]["admin"].id},
+    )
+    assert updated.status_code == 200, updated.text
+
+    session.expire_all()
+    row = session.query(Lead).filter(Lead.id == lead["id"]).one()
+    assert row.owner_employee_id == employee_two.id
 
 
 def test_broker_bind_syncs_unbound_history_leads(
@@ -559,6 +585,46 @@ def test_broker_bind_syncs_unbound_history_leads(
     row = session.query(Lead).filter(Lead.id == lead_id).one()
     assert row.store_id == store["id"]
     assert row.owner_employee_id == employee_two.id
+
+
+def test_broker_bind_preserves_manual_lead_assignment(
+    admin_client: TestClient,
+    customer_client: TestClient,
+    customer_user: User,
+    employee: User,
+    employee_two: User,
+    seeded_db: dict,
+) -> None:
+    """经纪人补绑门店时，已单独指派给其他员工的线索不被覆盖."""
+    company = _create_company(admin_client)
+    store = _create_store(admin_client, company["id"], employee_two.id)
+    _register_broker(customer_client, employee.id)
+    session: Session = seeded_db["session"]
+
+    resp = customer_client.post(
+        f"{API}/public/leads",
+        json={
+            "community_name": "已单独指派线索",
+            "layout": "2室1厅",
+            "floor_info": "8/12",
+            "area": 89.5,
+            "total_price": 300,
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    lead_id = resp.json()["id"]
+    row = session.query(Lead).filter(Lead.id == lead_id).one()
+    assert row.owner_employee_id == employee.id
+
+    row.owner_employee_id = seeded_db["users"]["admin"].id
+    session.commit()
+    bind = customer_client.post(f"{API}/public/merchant/brokers/me/bind", json={"store_id": store["id"]})
+    assert bind.status_code == 200, bind.text
+
+    session.expire_all()
+    row = session.query(Lead).filter(Lead.id == lead_id).one()
+    assert row.store_id == store["id"]
+    assert row.owner_employee_id == seeded_db["users"]["admin"].id
 
 
 pytestmark = pytest.mark.usefixtures("seeded_db")

@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from sqlalchemy import func, update
+from sqlalchemy import func, or_, update
 from sqlalchemy.orm import Session
 
 from constants.merchant import MerchantBindStatus
@@ -135,17 +135,35 @@ class LeadOwnerService:
         *,
         store_id: str,
         owner_employee_id: str | None,
+        previous_owner_employee_id: str | None = None,
     ) -> int:
-        """门店负责人变更后，批量同步该门店全部线索的归属员工."""
+        """门店负责人变更后，同步该门店由门店派生的线索归属员工.
+
+        仅更新无归属或归属等于原门店负责人的线索；若线索已被单独指派给其他员工，
+        保留该显式指派，避免门店负责人变更覆盖人工归属。
+        """
         new_owner = owner_employee_id or func.coalesce(
             Lead.broker_inviter_employee_id,
             Lead.referrer_id,
         )
+        if previous_owner_employee_id:
+            owner_condition = or_(
+                Lead.owner_employee_id.is_(None),
+                Lead.owner_employee_id == previous_owner_employee_id,
+            )
+        else:
+            # 原门店无负责人时，历史线索按经纪人邀请/分享员工兜底，这些属于自动派生值。
+            owner_condition = or_(
+                Lead.owner_employee_id.is_(None),
+                Lead.owner_employee_id == Lead.broker_inviter_employee_id,
+                Lead.owner_employee_id == Lead.referrer_id,
+            )
         result = self.db.execute(
             update(Lead)
             .where(
                 Lead.store_id == store_id,
                 Lead.is_deleted.is_(False),
+                owner_condition,
             )
             .values(
                 owner_employee_id=new_owner,
@@ -161,11 +179,41 @@ class LeadOwnerService:
         broker_id: str,
         store_id: str,
         store_owner_employee_id: str | None,
+        broker_inviter_employee_id: str | None = None,
     ) -> int:
-        """经纪人补绑门店后，仅同步此前无门店的经纪人线索."""
+        """经纪人补绑门店后，同步此前无门店的经纪人线索.
+
+        仅更新无归属或仍为邀请员工兜底的线索；已单独指派给其他员工的线索保留原归属。
+        """
         new_owner = store_owner_employee_id or func.coalesce(
             Lead.broker_inviter_employee_id,
             Lead.referrer_id,
+        )
+        if broker_inviter_employee_id:
+            owner_condition = or_(
+                Lead.owner_employee_id.is_(None),
+                Lead.owner_employee_id == broker_inviter_employee_id,
+            )
+        else:
+            owner_condition = or_(
+                Lead.owner_employee_id.is_(None),
+                Lead.owner_employee_id == Lead.referrer_id,
+            )
+        # 先只更新可自动派生的归属，避免把人工指派覆盖掉；门店绑定本身对所有
+        # 无门店的经纪人线索生效。
+        self.db.execute(
+            update(Lead)
+            .where(
+                Lead.broker_id == broker_id,
+                Lead.store_id.is_(None),
+                Lead.is_deleted.is_(False),
+                owner_condition,
+            )
+            .values(
+                owner_employee_id=new_owner,
+                updated_at=func.now(),
+            )
+            .execution_options(synchronize_session=False)
         )
         result = self.db.execute(
             update(Lead)
@@ -176,7 +224,6 @@ class LeadOwnerService:
             )
             .values(
                 store_id=store_id,
-                owner_employee_id=new_owner,
                 updated_at=func.now(),
             )
             .execution_options(synchronize_session=False)

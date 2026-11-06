@@ -624,12 +624,14 @@ class MerchantStoreService:
             store.contact_phone_hash = hash_phone(phone)
             updated = True
         owner_changed = False
+        previous_owner: str | None = None
         if "owner_employee_id" in req.model_fields_set:
             if not ensure_scope_role(user):
                 msg = "仅管理员/运营可调整门店负责人"
                 raise PermissionDeniedError(msg)
             new_owner = req.owner_employee_id or None
-            owner_changed = new_owner != store.owner_employee_id
+            previous_owner = store.owner_employee_id
+            owner_changed = new_owner != previous_owner
             store.owner_employee_id = new_owner
             updated = True
         if req.photos is not None:
@@ -648,6 +650,7 @@ class MerchantStoreService:
             LeadOwnerService(self.db).sync_store_owner(
                 store_id=str(store.id),
                 owner_employee_id=store.owner_employee_id,
+                previous_owner_employee_id=previous_owner,
             )
 
         add_audit_log(
