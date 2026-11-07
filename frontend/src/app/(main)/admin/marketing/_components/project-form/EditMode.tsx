@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MarketingInfoFields } from "./MarketingInfoFields";
 import { StageDatesFields } from "./StageDatesFields";
 import { BasicConfigFields } from "./BasicConfigFields";
+import { ListingFormPreview } from "./ListingFormPreview";
 import { useMiniProjectForm } from "./useMiniProjectForm";
 import { useProjectImport } from "./useProjectImport";
 import type { EditModeProps } from "../form-types";
@@ -200,6 +201,7 @@ export function EditMode({
     [],
   );
 
+  const dirtyCount = Object.keys(form.formState.dirtyFields).length;
   const submitButtonText = isSubmitting
     ? mode === "create"
       ? "创建中..."
@@ -227,9 +229,25 @@ export function EditMode({
               </ul>
             </div>
           )}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {mode === "edit" && isDirty ? (
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-cards border border-apricot-wash bg-apricot-wash/60 px-5 py-3">
+              <div className="flex items-center gap-2 text-[11px] text-rust">
+                <span className="h-1.5 w-1.5 rounded-full bg-rust" />
+                <span className="font-medium">{Math.max(dirtyCount, 1)} 项修改待保存</span>
+                <span className="text-rust/60">保存后更新线上展示并记录版本</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => form.reset()}
+                className="text-[11px] font-medium text-rust hover:underline"
+              >
+                放弃全部
+              </button>
+            </div>
+          ) : null}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_348px]">
             {/* 左侧：主要信息和照片 */}
-            <div className="lg:col-span-8 space-y-6">
+            <div className="min-w-0 space-y-5">
               {/* 导入按钮 */}
               <ProjectImportButton
                 selectedProject={selectedProject}
@@ -250,8 +268,9 @@ export function EditMode({
               />
             </div>
 
-            {/* 右侧：配置和标签风格 */}
-            <div className="lg:col-span-4 space-y-6">
+            {/* 右侧：客户端预览 + 发布与标签配置 */}
+            <div className="space-y-5 self-start lg:sticky lg:top-5">
+              <ListingFormPreview photos={localPhotos} />
               <BasicConfigFields />
             </div>
           </div>
@@ -286,34 +305,35 @@ export function EditMode({
               </div>
             </div>
           ) : (
-            <div className="fixed bottom-8 left-1/2 z-50 flex -translate-x-1/2 items-center gap-6 rounded-3xl bg-white/95 px-6 py-4 shadow-steep backdrop-blur-xl">
-              <div className="flex flex-col">
-                <span className="text-[10px] font-medium uppercase tracking-wider text-graphite">
-                  当前状态
-                </span>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-success"></div>
-                  <span className="text-sm font-medium text-ink">
-                    {mode === "create" ? "正在创建新项目" : `正在编辑: 房源 #${project?.id}`}
+            <div className="sticky bottom-0 -mx-6 z-10 mt-6 border-t border-dove/40 bg-white/95 px-6 py-4 backdrop-blur-xl">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-graphite">
+                    当前状态
                   </span>
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 animate-pulse rounded-full bg-success"></div>
+                    <span className="text-sm font-medium text-ink">
+                      {mode === "create" ? "正在创建新项目" : `正在编辑: 房源 #${project?.id}`}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              <div className="h-8 w-px bg-dove/40"></div>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="px-3 py-2 text-sm text-graphite transition-colors hover:text-ink"
-                >
-                  取消
-                </button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="rounded-full bg-ink px-6 py-2 text-sm font-medium text-white transition-all hover:bg-ink/90"
-                >
-                  {submitButtonText}
-                </Button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="rounded-full border border-dove bg-white px-5 py-2.5 text-sm text-ink transition-colors hover:bg-fog"
+                  >
+                    取消
+                  </button>
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="rounded-full bg-ink px-6 py-2.5 text-sm font-medium text-white transition-all hover:bg-ink/90"
+                  >
+                    {submitButtonText}
+                  </Button>
+                </div>
               </div>
             </div>
           )}

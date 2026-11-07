@@ -1,0 +1,638 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>创建新房源 · 房源编辑室</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face { font-family:"InterLocal"; src:url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2"); font-weight:100 900; font-style:normal; font-display:swap; }
+  @font-face { font-family:"SourceSerifLocal"; src:url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2"); font-weight:200 900; font-style:normal; font-display:swap; }
+  :root {
+    --ink:#17191c; --white:#fff; --fog:#f7f7f8; --ash:#4c4c4c; --graphite:#777b86; --dove:#a3a6af;
+    --rust:#5d2a1a; --apricot:#fbe1d1; --sky:#d3e3fc;
+    --hair:rgba(163,166,175,.32); --hair-soft:rgba(163,166,175,.18);
+    --font-ui:"InterLocal",-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;
+    --font-display:"SourceSerifLocal","Songti SC","Noto Serif SC",Georgia,serif;
+    --shadow-card:rgba(4,23,43,.05) 0 0 0 1px,rgba(0,0,0,.10) 0 20px 25px -5px,rgba(0,0,0,.10) 0 8px 10px -6px;
+    --shadow-sm:rgba(4,23,43,.05) 0 0 0 1px,rgba(0,0,0,.06) 0 10px 20px -8px,rgba(0,0,0,.05) 0 3px 6px -4px;
+    --r-card:24px; --r-input:16px; --r-pill:9999px;
+  }
+  *,*::before,*::after { box-sizing:border-box; }
+  html { -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+  body { margin:0; background:var(--fog); color:var(--ink); font-family:var(--font-ui); font-size:14px; font-weight:430; letter-spacing:-.009em; line-height:1.5; }
+  button,input,select,textarea { font:inherit; letter-spacing:inherit; color:inherit; }
+  button { background:none; border:0; padding:0; cursor:pointer; }
+  h1,h2,h3,p { margin:0; }
+  a { color:inherit; text-decoration:none; }
+  svg { display:block; }
+  .ic { width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  :focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  .app { display:flex; min-height:100vh; background:var(--fog); }
+  .rail { width:76px; flex:none; align-self:flex-start; position:sticky; top:0; height:100vh; padding:20px 0 18px; display:flex; flex-direction:column; align-items:center; background:var(--fog); border-right:1px solid var(--hair-soft); }
+  .logo { width:34px; height:34px; border-radius:9px; background:var(--ink); color:var(--white); display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:480; }
+  .rail-nav { margin-top:30px; display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .rail-btn { width:42px; height:42px; border-radius:13px; color:var(--graphite); display:flex; align-items:center; justify-content:center; position:relative; transition:background .16s ease,color .16s ease,box-shadow .16s ease; }
+  .rail-btn .ic { width:19px; height:19px; stroke-width:1.6; }
+  .rail-btn:hover { background:rgba(23,25,28,.05); color:var(--ink); }
+  .rail-btn[aria-current="page"] { background:var(--white); color:var(--ink); box-shadow:var(--shadow-sm); }
+  .rail-btn[aria-current="page"]::after { content:""; position:absolute; bottom:5px; left:50%; width:3px; height:3px; margin-left:-1.5px; border-radius:50%; background:var(--rust); }
+  .rail-bottom { margin-top:auto; display:flex; flex-direction:column; gap:4px; align-items:center; }
+  .rail-btn.small { width:38px; height:38px; border-radius:11px; color:var(--dove); }
+  .rail-btn.small .ic { width:18px; height:18px; }
+  .main { flex:1; min-width:0; }
+  .wrap { max-width:1200px; margin:0 auto; padding:20px 44px 44px; }
+  .topbar { height:52px; display:flex; align-items:center; justify-content:space-between; gap:24px; border-bottom:1px solid var(--hair-soft); }
+  .crumb { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--dove); }
+  .crumb .slash { color:var(--hair); }
+  .crumb .here { color:var(--ink); font-weight:450; }
+  .topbar-right { display:flex; align-items:center; gap:18px; }
+  .sync { display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--graphite); }
+  .sync .live { width:5px; height:5px; border-radius:50%; background:var(--rust); box-shadow:0 0 0 3px rgba(93,42,26,.08); }
+  .avatar-btn { width:30px; height:30px; border-radius:50%; background:var(--apricot); color:var(--rust); display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:480; }
+
+  .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:32px; padding:22px 0 18px; }
+  .eyebrow { display:flex; align-items:center; gap:9px; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--graphite); font-weight:480; }
+  .eyebrow::before { content:""; width:18px; height:1px; background:var(--rust); }
+  .page-head h1 { margin-top:8px; font-family:var(--font-display); font-size:44px; line-height:1.06; font-weight:400; letter-spacing:-.022em; }
+  .page-sub { margin-top:8px; font-size:12px; color:var(--graphite); max-width:540px; }
+  .head-tools { display:flex; align-items:center; gap:9px; padding-bottom:4px; }
+  .btn-outline { height:42px; padding:0 17px; border:1px solid var(--hair); border-radius:var(--r-pill); display:inline-flex; align-items:center; gap:7px; font-size:12.5px; font-weight:450; background:var(--white); transition:border-color .15s ease,background .15s ease; }
+  .btn-outline:hover { border-color:var(--ink); background:var(--fog); }
+  .btn-outline .ic { width:14px; height:14px; }
+
+  .flowline { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:12px 16px; background:rgba(255,255,255,.62); border:1px solid var(--hair-soft); border-radius:14px; margin-bottom:18px; }
+  .flow-steps { display:flex; align-items:center; gap:10px; font-size:10.5px; color:var(--graphite); }
+  .flow-step { display:flex; align-items:center; gap:6px; }
+  .flow-step b { width:18px; height:18px; border-radius:50%; background:var(--ink); color:var(--white); font-size:9px; display:inline-flex; align-items:center; justify-content:center; font-weight:480; }
+  .flow-step.done b { background:var(--rust); }
+  .flow-step.mute b { background:var(--fog); color:var(--dove); }
+  .flow-sep { width:20px; height:1px; background:var(--hair); }
+  .completion { display:flex; align-items:center; gap:8px; font-size:10.5px; color:var(--graphite); }
+  .completion-bar { width:110px; height:4px; border-radius:999px; background:var(--hair-soft); overflow:hidden; }
+  .completion-bar i { display:block; height:100%; width:{{completionPct}}%; background:var(--rust); border-radius:999px; }
+
+  .layout { display:grid; grid-template-columns:minmax(0,1fr) 348px; gap:22px; align-items:start; }
+  .form-col { display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .side-col { position:sticky; top:20px; display:flex; flex-direction:column; gap:16px; }
+  .card { background:var(--white); border-radius:var(--r-card); box-shadow:var(--shadow-card); }
+  .form-card { padding:22px 24px 24px; }
+  .card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .card-kicker { display:flex; align-items:center; gap:8px; font-size:9.5px; letter-spacing:.15em; text-transform:uppercase; color:var(--dove); font-weight:480; }
+  .card-kicker .n { width:18px; height:18px; border-radius:50%; background:var(--fog); color:var(--graphite); font-size:8.5px; letter-spacing:0; display:inline-flex; align-items:center; justify-content:center; font-weight:480; }
+  .card-head h2 { margin-top:4px; font-size:19px; line-height:1.2; font-weight:480; letter-spacing:-.02em; }
+  .card-head .hint { font-size:10.5px; color:var(--dove); padding-top:3px; }
+
+  .field { min-width:0; }
+  .field-label { display:flex; align-items:center; gap:5px; margin-bottom:6px; font-size:10.5px; color:var(--graphite); font-weight:450; }
+  .req { color:var(--rust); font-size:10px; }
+  .input { width:100%; height:42px; border:1px solid var(--hair); border-radius:12px; background:var(--white); padding:0 13px; font-size:12px; color:var(--ink); transition:border-color .15s ease,box-shadow .15s ease; }
+  .input::placeholder { color:var(--dove); }
+  .input:hover { border-color:rgba(119,123,134,.55); }
+  .input:focus { outline:0; border-color:var(--ink); box-shadow:0 0 0 3px rgba(23,25,28,.06); }
+  .select { appearance:auto; padding-right:13px; }
+  .field-grid { display:grid; gap:14px; }
+  .g2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .g3 { grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .g4 { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .g6 { grid-template-columns:repeat(6,minmax(0,1fr)); }
+  .mt14 { margin-top:14px; }
+
+  .addr-box { margin-top:16px; border:1px solid var(--hair); border-radius:16px; padding:14px 15px; display:flex; align-items:flex-start; gap:12px; background:linear-gradient(180deg,rgba(251,225,209,.18) 0%,rgba(255,255,255,0) 70%); }
+  .addr-icon { width:36px; height:36px; border-radius:10px; background:var(--apricot); color:var(--rust); display:flex; align-items:center; justify-content:center; flex:none; }
+  .addr-icon .ic { width:17px; height:17px; }
+  .addr-body { flex:1; min-width:0; }
+  .addr-top { display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .addr-name { font-size:14px; font-weight:480; letter-spacing:-.01em; }
+  .match-tag { height:20px; padding:0 7px; border-radius:6px; background:var(--apricot); color:var(--rust); font-size:8.5px; display:inline-flex; align-items:center; gap:4px; font-weight:450; }
+  .match-tag .ic { width:9px; height:9px; }
+  .addr-path { margin-top:3px; font-size:10.5px; color:var(--graphite); }
+  .addr-fields { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin-top:11px; }
+  .mini-field .k { font-size:9.5px; color:var(--dove); margin-bottom:4px; }
+  .mini-input { height:34px; border:1px solid var(--hair-soft); border-radius:9px; background:var(--fog); padding:0 10px; display:flex; align-items:center; justify-content:space-between; font-size:11px; color:var(--ash); }
+  .mini-input .ic { width:11px; height:11px; color:var(--dove); }
+  .addr-change { flex:none; font-size:10.5px; color:var(--rust); display:inline-flex; align-items:center; gap:4px; padding-top:3px; }
+  .addr-change .ic { width:11px; height:11px; }
+
+  .title-wrap { position:relative; }
+  .title-wrap .input { padding-right:64px; font-size:13px; font-weight:450; }
+  .char-count { position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:9.5px; color:var(--dove); font-variant-numeric:tabular-nums; }
+
+  .layout-picker { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .layout-select { height:42px; border:1px solid var(--hair); border-radius:12px; background:var(--white); padding:0 10px; font-size:12px; color:var(--ink); appearance:auto; }
+  .input-affix { position:relative; }
+  .input-affix .input { padding-right:36px; }
+  .input-affix .affix { position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:10px; color:var(--graphite); pointer-events:none; }
+
+  .price-panel { margin-top:14px; background:var(--fog); border-radius:14px; padding:13px 15px; display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:end; }
+  .price-input { display:flex; align-items:baseline; gap:5px; }
+  .price-input .currency { font-size:13px; color:var(--graphite); }
+  .price-input input { width:100%; border:0; outline:0; background:transparent; font-family:var(--font-display); font-size:40px; line-height:1; letter-spacing:-.03em; font-weight:400; font-variant-numeric:tabular-nums; }
+  .price-input .unit { font-size:11px; color:var(--graphite); }
+  .unit-box { padding-left:18px; border-left:1px solid var(--hair); }
+  .unit-box .k { font-size:9.5px; color:var(--dove); }
+  .unit-box .v { margin-top:3px; font-size:18px; font-weight:450; font-variant-numeric:tabular-nums; }
+  .unit-box .note { margin-top:2px; font-size:9px; color:var(--dove); }
+
+  .photo-tabs { display:flex; align-items:center; gap:18px; margin-top:12px; }
+  .photo-tab { position:relative; padding-bottom:7px; font-size:11px; color:var(--graphite); }
+  .photo-tab.on { color:var(--ink); font-weight:480; }
+  .photo-tab.on::after { content:""; position:absolute; left:0; right:0; bottom:0; height:2px; background:var(--ink); border-radius:2px; }
+  .photo-tab .n { margin-left:3px; font-size:9px; color:var(--dove); }
+  .photo-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:8px; margin-top:10px; }
+  .photo-item { position:relative; height:96px; border-radius:10px; overflow:hidden; background:#eae6e0; padding:0; border:2px solid transparent; }
+  .photo-item.on { border-color:var(--ink); }
+  .photo-item img { width:100%; height:100%; object-fit:cover; display:block; }
+  .cover-badge { position:absolute; left:6px; top:6px; height:18px; padding:0 6px; border-radius:5px; background:rgba(255,255,255,.94); color:var(--ink); font-size:8px; display:inline-flex; align-items:center; }
+  .photo-item .remove { position:absolute; right:5px; top:5px; width:18px; height:18px; border-radius:50%; background:rgba(23,25,28,.65); color:var(--white); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .15s ease; }
+  .photo-item:hover .remove { opacity:1; }
+  .photo-item .remove .ic { width:9px; height:9px; }
+  .upload-tile { height:96px; border:1px dashed rgba(119,123,134,.55); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; color:var(--graphite); background:rgba(247,247,248,.6); }
+  .upload-tile:hover { border-color:var(--ink); color:var(--ink); background:var(--fog); }
+  .upload-tile .ic { width:17px; height:17px; }
+  .upload-tile span { font-size:9px; }
+  .photo-foot { display:flex; align-items:center; justify-content:space-between; margin-top:9px; font-size:9.5px; color:var(--dove); }
+  .photo-foot .tip { display:inline-flex; align-items:center; gap:4px; }
+  .photo-foot .tip .ic { width:10px; height:10px; }
+
+  .stage-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:8px; margin-top:14px; }
+  .stage-field .k { text-align:center; font-size:9.5px; color:var(--graphite); margin-bottom:5px; }
+  .stage-input { height:34px; border:1px solid var(--hair-soft); border-radius:9px; background:var(--fog); padding:0 6px; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--ash); font-variant-numeric:tabular-nums; }
+  .stage-field.empty .stage-input { color:var(--dove); }
+
+  .style-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-top:8px; }
+  .style-chip { height:36px; border:1px solid var(--hair); border-radius:10px; font-size:10.5px; color:var(--ash); background:var(--white); }
+  .style-chip:hover { border-color:var(--ink); }
+  .style-chip.on { border-color:var(--rust); background:var(--apricot); color:var(--rust); font-weight:450; }
+  .tags-box { display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-height:38px; border:1px solid var(--hair); border-radius:12px; padding:5px 8px; background:var(--white); }
+  .tag { height:26px; padding:0 8px 0 10px; border-radius:7px; background:var(--fog); color:var(--ash); font-size:10px; display:inline-flex; align-items:center; gap:5px; }
+  .tag button { color:var(--dove); display:flex; }
+  .tag button:hover { color:var(--ink); }
+  .tag button .ic { width:9px; height:9px; }
+  .tag-input { flex:1; min-width:80px; height:24px; border:0; outline:0; font-size:10.5px; background:transparent; }
+  .tag-input::placeholder { color:var(--dove); }
+  .tag-add { height:26px; padding:0 9px; border-radius:7px; background:var(--ink); color:var(--white); font-size:9.5px; }
+  .tag-add:hover { background:#000; }
+
+  .side-card { padding:20px; }
+  .side-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .side-head h3 { margin-top:3px; font-size:15px; font-weight:480; letter-spacing:-.015em; }
+  .side-kicker { font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--dove); font-weight:480; }
+  .seg { display:flex; padding:3px; border-radius:10px; background:var(--fog); margin-top:14px; }
+  .seg button { flex:1; height:34px; border-radius:8px; font-size:11px; color:var(--graphite); }
+  .seg button.on { background:var(--white); color:var(--ink); font-weight:480; box-shadow:0 1px 4px rgba(23,25,28,.08); }
+  .status-opts { display:flex; gap:6px; margin-top:8px; }
+  .status-opt { flex:1; height:32px; border:1px solid var(--hair); border-radius:8px; font-size:10px; color:var(--ash); background:var(--white); }
+  .status-opt.on { border-color:var(--ink); background:var(--ink); color:var(--white); font-weight:450; }
+  .weight-row { display:flex; align-items:center; gap:10px; margin-top:9px; }
+  .weight-row input[type=range] { flex:1; accent-color:var(--rust); }
+  .weight-val { width:34px; text-align:right; font-size:11px; color:var(--ash); font-variant-numeric:tabular-nums; }
+  .side-note { margin-top:8px; font-size:9px; color:var(--dove); line-height:1.5; }
+
+  .mini-listing { margin-top:13px; border-radius:15px; overflow:hidden; background:var(--white); box-shadow:var(--shadow-sm); }
+  .mini-photo { height:176px; position:relative; background:#eae6e0; }
+  .mini-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+  .mini-photo .new-tag { position:absolute; left:10px; top:10px; height:20px; padding:0 7px; border-radius:5px; background:var(--ink); color:var(--white); font-size:8px; display:inline-flex; align-items:center; }
+  .mini-body { padding:12px 13px 13px; }
+  .mini-price { font-family:var(--font-display); font-size:28px; line-height:1; letter-spacing:-.03em; font-weight:400; font-variant-numeric:tabular-nums; }
+  .mini-price small { font-family:var(--font-ui); font-size:9px; color:var(--graphite); letter-spacing:0; }
+  .mini-title { margin-top:6px; font-size:12px; font-weight:450; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mini-meta { margin-top:3px; font-size:9.5px; color:var(--graphite); }
+  .mini-tags { display:flex; gap:4px; margin-top:8px; flex-wrap:wrap; }
+  .mini-tags span { height:18px; padding:0 6px; border-radius:4px; background:var(--fog); color:var(--graphite); font-size:8px; display:inline-flex; align-items:center; }
+  .mini-foot { display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:9px; border-top:1px solid var(--hair-soft); }
+  .mini-foot span { font-size:8.5px; color:var(--dove); }
+  .mini-foot a { font-size:9.5px; color:var(--rust); display:inline-flex; align-items:center; gap:3px; }
+  .mini-foot a .ic { width:10px; height:10px; }
+
+  .checklist { margin-top:11px; }
+  .check-row { display:flex; align-items:center; gap:8px; padding:6px 0; font-size:10px; color:var(--ash); }
+  .check-dot { width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:none; background:var(--fog); color:var(--dove); }
+  .check-dot.done { background:var(--apricot); color:var(--rust); }
+  .check-dot .ic { width:9px; height:9px; stroke-width:2.2; }
+  .check-row .val { margin-left:auto; color:var(--dove); font-size:9px; }
+  .check-foot { display:flex; align-items:center; justify-content:space-between; margin-top:9px; padding-top:10px; border-top:1px solid var(--hair-soft); }
+  .check-foot .ok { display:inline-flex; align-items:center; gap:5px; font-size:9.5px; color:var(--rust); font-weight:450; }
+  .check-foot .ok .ic { width:11px; height:11px; }
+
+  .actionbar { margin-top:20px; background:var(--white); border-radius:18px; box-shadow:var(--shadow-card); padding:13px 16px 13px 20px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+  .action-status { display:flex; align-items:center; gap:9px; }
+  .action-status .dot { width:7px; height:7px; border-radius:50%; background:var(--rust); }
+  .action-status b { font-size:11.5px; font-weight:450; }
+  .action-status span { font-size:9.5px; color:var(--dove); }
+  .action-btns { display:flex; align-items:center; gap:8px; }
+  .btn-cancel { height:40px; padding:0 16px; border-radius:var(--r-pill); font-size:11px; color:var(--graphite); }
+  .btn-cancel:hover { color:var(--ink); }
+  .btn-save { height:40px; padding:0 17px; border:1px solid var(--hair); border-radius:var(--r-pill); background:var(--white); font-size:11px; color:var(--ash); }
+  .btn-save:hover { border-color:var(--ink); color:var(--ink); }
+  .btn-create { height:40px; padding:0 20px; border-radius:var(--r-pill); background:var(--ink); color:var(--white); font-size:11.5px; font-weight:480; display:inline-flex; align-items:center; gap:6px; }
+  .btn-create:hover { background:#000; }
+  .btn-create .ic { width:13px; height:13px; }
+
+  .form-error { display:flex; align-items:center; gap:8px; margin-bottom:14px; padding:10px 13px; border-radius:10px; background:var(--apricot); color:var(--rust); font-size:10.5px; }
+  .form-error .ic { width:13px; height:13px; }
+  .toast { position:fixed; left:50%; bottom:30px; transform:translateX(-50%); z-index:100; display:flex; align-items:center; gap:8px; height:42px; padding:0 16px; border-radius:var(--r-pill); background:var(--ink); color:var(--white); font-size:12px; box-shadow:0 16px 32px -12px rgba(23,25,28,.4); }
+  .toast .ic { width:14px; height:14px; }
+
+  @media (max-width:1150px) { .wrap { padding:18px 28px 40px; } .layout { grid-template-columns:minmax(0,1fr) 314px; } }
+  @media (max-width:900px) { .rail { display:none; } .layout { grid-template-columns:1fr; } .side-col { position:static; } .page-head { align-items:flex-start; flex-direction:column; gap:14px; } }
+  @media (max-width:680px) { .wrap { padding:14px 16px 32px; } .g4,.g6,.photo-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .g3 { grid-template-columns:1fr; } .price-panel { grid-template-columns:1fr; } }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M8 21v-2h4v2"/><path d="M2 21h20"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M14 8a5 5 0 0 1 0 8M17 5a9 9 0 0 1 0 14"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 4.8a3.2 3.2 0 0 1 0 6.4M18 14.4a6 6 0 0 1 3 5.6"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1h-5a3 3 0 0 0 0 6h5v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M14 10h7v4h-7a2 2 0 0 1 0-4Z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2-2.5 3.7"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-10"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.8"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="rail" aria-label="主导航">
+    <div class="logo" aria-label="P">P</div>
+    <nav class="rail-nav">
+      <button class="rail-btn" type="button" aria-label="工作台"><svg class="ic"><use href="#i-grid"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="房源管理"><svg class="ic"><use href="#i-building"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="项目管理"><svg class="ic"><use href="#i-folder"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="营销项目" aria-current="page"><svg class="ic"><use href="#i-megaphone"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="线索中心"><svg class="ic"><use href="#i-target"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="客户管理"><svg class="ic"><use href="#i-users"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="数据报表"><svg class="ic"><use href="#i-chart"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="财务结算"><svg class="ic"><use href="#i-wallet"></use></svg></button>
+    </nav>
+    <div class="rail-bottom">
+      <button class="rail-btn small" type="button" aria-label="帮助中心"><svg class="ic"><use href="#i-help"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="系统设置"><svg class="ic"><use href="#i-settings"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="收起导航"><svg class="ic"><use href="#i-panel"></use></svg></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="crumb"><span>营销中心</span><span class="slash">/</span><a href="Main.dc.html">营销项目</a><span class="slash">/</span><span class="here">创建新房源</span></div>
+        <div class="topbar-right"><span class="sync"><span class="live"></span>自动保存草稿 · 10:32</span><button class="avatar-btn" type="button" aria-label="账户菜单：唐欣帆">唐</button></div>
+      </div>
+
+      <header class="page-head">
+        <div>
+          <div class="eyebrow">房源编辑室 / Listing studio</div>
+          <h1>创建新房源</h1>
+          <div class="page-sub">填写房源信息，右侧将实时呈现客户端展示效果。保存草稿后可随时继续编辑。</div>
+        </div>
+        <div class="head-tools">
+          <button class="btn-outline" type="button" onClick="{{onImport}}"><svg class="ic"><use href="#i-file"></use></svg>从项目库导入</button>
+          <a class="btn-outline" href="Main.dc.html"><svg class="ic"><use href="#i-arrow-left"></use></svg>返回列表</a>
+        </div>
+      </header>
+
+      <div class="flowline">
+        <div class="flow-steps">
+          <span class="flow-step done"><b>1</b>基础信息</span><span class="flow-sep"></span>
+          <span class="flow-step done"><b>2</b>照片与改造</span><span class="flow-sep"></span>
+          <span class="flow-step mute"><b>3</b>发布设置</span>
+        </div>
+        <div class="completion"><span>资料完整度</span><span class="completion-bar"><i></i></span><span>{{completionPct}}%</span></div>
+      </div>
+
+      <sc-if value="{{formError}}"><div class="form-error"><svg class="ic"><use href="#i-info"></use></svg>{{formError}}</div></sc-if>
+
+      <div class="layout">
+        <div class="form-col">
+          <section class="card form-card" aria-label="地址与基本信息">
+            <div class="card-head">
+              <div><div class="card-kicker"><span class="n">01</span>Address & identity</div><h2>地址与基本信息</h2></div>
+              <span class="hint">字典匹配后自动带出小区信息</span>
+            </div>
+            <div class="addr-box">
+              <div class="addr-icon"><svg class="ic"><use href="#i-map-pin"></use></svg></div>
+              <div class="addr-body">
+                <div class="addr-top"><span class="addr-name">金杨十街坊 · 21号楼 102室</span><span class="match-tag"><svg class="ic"><use href="#i-check"></use></svg>字典已匹配</span></div>
+                <div class="addr-path">浦东新区 / 金杨 / 金杨十街坊 / 21号楼 / 1单元 / 102室</div>
+                <div class="addr-fields">
+                  <div class="mini-field"><div class="k">楼栋</div><div class="mini-input">21号楼<svg class="ic"><use href="#i-chevron-down"></use></svg></div></div>
+                  <div class="mini-field"><div class="k">户室</div><div class="mini-input">102室<svg class="ic"><use href="#i-chevron-down"></use></svg></div></div>
+                  <div class="mini-field"><div class="k">楼层</div><div class="mini-input">1 层 / 共 6 层<svg class="ic"><use href="#i-chevron-down"></use></svg></div></div>
+                </div>
+              </div>
+              <button class="addr-change" type="button" onClick="{{onChangeAddress}}">更换<svg class="ic"><use href="#i-arrow-right"></use></svg></button>
+            </div>
+            <div class="field-grid g2 mt14">
+              <div class="field">
+                <label class="field-label" for="listing-title">房源标题<span class="req">*</span></label>
+                <div class="title-wrap"><input id="listing-title" class="input" value="{{title}}" onInput="{{onTitle}}" placeholder="如：金杨十街坊 · 南向一居" maxlength="255" /><span class="char-count">{{titleLen}} / 255</span></div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="consultant">关联顾问</label>
+                <select id="consultant" class="input select"><option>唐欣帆 · 金杨店</option><option>周予安 · 金桥店</option><option>林小满 · 碧云店</option></select>
+              </div>
+            </div>
+          </section>
+
+          <section class="card form-card" aria-label="户型与价格">
+            <div class="card-head">
+              <div><div class="card-kicker"><span class="n">02</span>Specification & price</div><h2>户型与价格</h2></div>
+              <span class="hint">单价将根据总价与面积自动计算</span>
+            </div>
+            <div class="field-grid g4 mt14">
+              <div class="field">
+                <label class="field-label">户型<span class="req">*</span></label>
+                <div class="layout-picker">
+                  <select class="layout-select" aria-label="室"><option>1 室</option><option selected>2 室</option><option>3 室</option></select>
+                  <select class="layout-select" aria-label="厅"><option>0 厅</option><option selected>1 厅</option><option>2 厅</option></select>
+                  <select class="layout-select" aria-label="卫"><option selected>1 卫</option><option>2 卫</option></select>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="area">建筑面积<span class="req">*</span></label>
+                <div class="input-affix"><input id="area" class="input" type="number" value="{{area}}" onInput="{{onArea}}" /><span class="affix">㎡</span></div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="floor">楼层</label>
+                <div class="input-affix"><input id="floor" class="input" value="1 层 / 共 6 层" /><span class="affix">FT</span></div>
+              </div>
+              <div class="field">
+                <label class="field-label" for="orientation">朝向</label>
+                <select id="orientation" class="input select"><option selected>南</option><option>东南</option><option>东</option><option>西南</option><option>北</option></select>
+              </div>
+            </div>
+            <div class="price-panel">
+              <div>
+                <div class="field-label">总价<span class="req">*</span></div>
+                <div class="price-input"><span class="currency">¥</span><input type="number" value="{{price}}" onInput="{{onPrice}}" aria-label="总价（万元）" /><span class="unit">万元</span></div>
+              </div>
+              <div class="unit-box">
+                <div class="k">自动计算单价</div>
+                <div class="v">¥{{unitPrice}} <span style="font-size:10px;color:var(--graphite);font-weight:430">/ ㎡</span></div>
+                <div class="note">总价 × 10000 ÷ 建筑面积</div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card form-card" aria-label="房源照片">
+            <div class="card-head">
+              <div><div class="card-kicker"><span class="n">03</span>Photography</div><h2>房源照片</h2></div>
+              <span class="hint">第一张为营销主图，可点击缩略图切换</span>
+            </div>
+            <div class="photo-tabs">
+              <button class="photo-tab {{marketingTabClass}}" type="button" onClick="{{showMarketing}}">营销照片<span class="n">4</span></button>
+              <button class="photo-tab {{renovationTabClass}}" type="button" onClick="{{showRenovation}}">改造照片<span class="n">2</span></button>
+            </div>
+            <div class="photo-grid">
+              <sc-for list="{{photoTiles}}" as="ph" hint-placeholder-count="5">
+                <button class="photo-item {{ph.onClass}}" type="button" onClick="{{ph.onClick}}" aria-label="设为营销主图：{{ph.label}}">
+                  <img src="{{ph.src}}" alt="" />
+                  <sc-if value="{{ph.isCover}}"><span class="cover-badge">营销主图</span></sc-if>
+                  <span class="remove" aria-hidden="true"><svg class="ic"><use href="#i-x"></use></svg></span>
+                </button>
+              </sc-for>
+              <button class="upload-tile" type="button" onClick="{{onUpload}}"><svg class="ic"><use href="#i-upload"></use></svg><span>上传照片</span></button>
+            </div>
+            <div class="photo-foot"><span class="tip"><svg class="ic"><use href="#i-info"></use></svg>建议上传 3–8 张，首图为封面；支持 JPG / PNG，单张 ≤ 10MB</span><span>{{photoCount}} 张已上传</span></div>
+          </section>
+
+          <section class="card form-card" aria-label="改造阶段">
+            <div class="card-head">
+              <div><div class="card-kicker"><span class="n">04</span>Renovation timeline</div><h2>改造阶段</h2></div>
+              <span class="hint">可选填，按实际完成日期记录</span>
+            </div>
+            <div class="stage-grid">
+              <div class="stage-field"><div class="k">拆除</div><div class="stage-input">2026-08-12</div></div>
+              <div class="stage-field"><div class="k">设计</div><div class="stage-input">2026-08-20</div></div>
+              <div class="stage-field"><div class="k">水电</div><div class="stage-input">2026-09-02</div></div>
+              <div class="stage-field"><div class="k">木瓦</div><div class="stage-input">2026-09-18</div></div>
+              <div class="stage-field empty"><div class="k">油漆</div><div class="stage-input">待填写</div></div>
+              <div class="stage-field empty"><div class="k">交付</div><div class="stage-input">待填写</div></div>
+            </div>
+          </section>
+
+          <section class="card form-card" aria-label="标签与风格">
+            <div class="card-head">
+              <div><div class="card-kicker"><span class="n">05</span>Tags & style</div><h2>标签与风格</h2></div>
+              <span class="hint">最多 20 个标签</span>
+            </div>
+            <div class="field-grid g2 mt14">
+              <div class="field">
+                <label class="field-label">房源标签</label>
+                <div class="tags-box">
+                  <sc-for list="{{tags}}" as="t" hint-placeholder-count="3">
+                    <span class="tag">{{t.label}}<button type="button" onClick="{{t.onRemove}}" aria-label="移除标签 {{t.label}}"><svg class="ic"><use href="#i-x"></use></svg></button></span>
+                  </sc-for>
+                  <input class="tag-input" value="{{tagDraft}}" onInput="{{onTagDraft}}" placeholder="输入后添加" />
+                  <button class="tag-add" type="button" onClick="{{addTag}}">添加</button>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field-label">装修风格</label>
+                <div class="style-grid">
+                  <sc-for list="{{styles}}" as="st" hint-placeholder-count="4">
+                    <button class="style-chip {{st.onClass}}" type="button" onClick="{{st.onClick}}">{{st.label}}</button>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <div class="actionbar">
+            <div class="action-status"><span class="dot"></span><b>{{actionTitle}}</b><span>{{actionNote}}</span></div>
+            <div class="action-btns">
+              <a class="btn-cancel" href="Main.dc.html">取消</a>
+              <button class="btn-save" type="button" onClick="{{saveDraft}}">保存草稿</button>
+              <button class="btn-create" type="button" onClick="{{createListing}}"><svg class="ic"><use href="#i-check"></use></svg>创建房源</button>
+            </div>
+          </div>
+        </div>
+
+        <aside class="side-col">
+          <section class="card side-card" aria-label="发布设置">
+            <div class="side-head"><div><div class="side-kicker">Publish</div><h3>发布设置</h3></div><span class="match-tag"><svg class="ic"><use href="#i-check"></use></svg>准备就绪</span></div>
+            <div class="seg">
+              <button class="{{draftClass}}" type="button" onClick="{{setDraft}}">保存为草稿</button>
+              <button class="{{publishClass}}" type="button" onClick="{{setPublish}}">立即发布</button>
+            </div>
+            <div class="side-note">发布后房源将出现在客户端营销列表，并同步至小红书、视频号等渠道。</div>
+            <div class="field-label" style="margin-top:14px">项目状态</div>
+            <div class="status-opts">
+              <sc-for list="{{statusOptions}}" as="so" hint-placeholder-count="3"><button class="status-opt {{so.onClass}}" type="button" onClick="{{so.onClick}}">{{so.label}}</button></sc-for>
+            </div>
+            <div class="field-label" style="margin-top:14px">排序权重</div>
+            <div class="weight-row"><input type="range" min="0" max="100" value="50" aria-label="排序权重" /><span class="weight-val">50</span></div>
+            <div class="side-note">0–100，数值越高在列表越靠前。</div>
+          </section>
+
+          <section class="card side-card" aria-label="客户端预览">
+            <div class="side-head"><div><div class="side-kicker">Client preview</div><h3>客户端预览</h3></div><span class="match-tag"><svg class="ic"><use href="#i-eye"></use></svg>实时</span></div>
+            <div class="mini-listing">
+              <div class="mini-photo"><img src="{{coverPhoto}}" alt="" /><span class="new-tag">新上</span></div>
+              <div class="mini-body">
+                <div class="mini-price">¥{{price}}<small>万</small></div>
+                <div class="mini-title">{{previewTitle}}</div>
+                <div class="mini-meta">2室1厅 · {{area}}㎡ · 南 · 金杨十街坊</div>
+                <div class="mini-tags"><sc-for list="{{tags}}" as="t" hint-placeholder-count="3"><span>{{t.label}}</span></sc-for></div>
+                <div class="mini-foot"><span>唐欣帆 · 金杨店</span><a href="Detail.dc.html">预览详情<svg class="ic"><use href="#i-arrow-right"></use></svg></a></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card side-card" aria-label="发布检查">
+            <div class="side-head"><div><div class="side-kicker">Checklist</div><h3>发布检查</h3></div><span class="match-tag">{{checkCount}} / 5</span></div>
+            <div class="checklist">
+              <sc-for list="{{checks}}" as="c" hint-placeholder-count="5">
+                <div class="check-row"><span class="check-dot {{c.onClass}}"><svg class="ic"><use href="#i-check"></use></svg></span>{{c.label}}<span class="val">{{c.val}}</span></div>
+              </sc-for>
+            </div>
+            <div class="check-foot"><span class="ok"><svg class="ic"><use href="#i-check"></use></svg>资料完整，可以发布</span><span style="font-size:9px;color:var(--dove)">最后检查 10:32</span></div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1750}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      title: "金杨十街坊 · 南向一居",
+      area: "26.81",
+      price: "115",
+      publishStatus: "发布",
+      projectStatus: "在售",
+      cover: 0,
+      photoTab: "marketing",
+      tags: ["南向采光", "近地铁", "满五唯一"],
+      tagDraft: "",
+      style: "现代简约",
+      toast: null,
+      formError: null
+    };
+    this._timer = null;
+  }
+  componentWillUnmount() { if (this._timer) clearTimeout(this._timer); }
+  notify(text) {
+    if (this._timer) clearTimeout(this._timer);
+    this.setState({ toast: text });
+    this._timer = setTimeout(() => this.setState({ toast: null }), 2400);
+  }
+  renderVals() {
+    const s = this.state;
+    const area = Number(s.area) || 0;
+    const price = Number(s.price) || 0;
+    const unit = area > 0 ? Math.round((price * 10000) / area) : 0;
+    const photos = s.photoTab === "marketing" ? CREATE_PHOTOS : CREATE_RENOVATION;
+    const photoTiles = photos.map((p, i) => ({
+      src: p.src,
+      label: p.label,
+      onClass: i === s.cover ? "on" : "",
+      isCover: i === s.cover,
+      onClick: () => this.setState({ cover: i })
+    }));
+    const tags = s.tags.map((t, i) => ({ label: t, onRemove: () => this.setState({ tags: s.tags.filter((_, j) => j !== i) }) }));
+    const styles = ["现代简约", "法式奢华", "中式典雅", "极简侘寂"].map((x) => ({
+      label: x, onClass: x === s.style ? "on" : "", onClick: () => this.setState({ style: x })
+    }));
+    const statusOptions = ["在途", "在售", "已售"].map((x) => ({
+      label: x, onClass: x === s.projectStatus ? "on" : "", onClick: () => this.setState({ projectStatus: x })
+    }));
+    const checks = [
+      { label: "地址字典已匹配", val: "已匹配", on: true },
+      { label: "房源标题", val: s.title.trim() ? s.title.length + " 字" : "待填写", on: !!s.title.trim() },
+      { label: "总价与面积", val: price > 0 && area > 0 ? "已填写" : "待填写", on: price > 0 && area > 0 },
+      { label: "营销照片", val: photos.length + " 张", on: photos.length >= 3 },
+      { label: "房源标签", val: s.tags.length + " 个", on: s.tags.length > 0 }
+    ];
+    const done = checks.filter((c) => c.on).length;
+    return {
+      title: s.title,
+      titleLen: s.title.length,
+      area: s.area,
+      price: s.price,
+      unitPrice: unit.toLocaleString("zh-CN"),
+      onTitle: (e) => this.setState({ title: e.target.value }),
+      onArea: (e) => this.setState({ area: e.target.value }),
+      onPrice: (e) => this.setState({ price: e.target.value }),
+      completionPct: Math.round((done / 5) * 100),
+      formError: s.formError,
+      photoCount: photos.length,
+      photoTiles: photoTiles,
+      marketingTabClass: s.photoTab === "marketing" ? "on" : "",
+      renovationTabClass: s.photoTab === "renovation" ? "on" : "",
+      showMarketing: () => this.setState({ photoTab: "marketing", cover: 0 }),
+      showRenovation: () => this.setState({ photoTab: "renovation", cover: 0 }),
+      tags: tags,
+      tagDraft: s.tagDraft,
+      onTagDraft: (e) => this.setState({ tagDraft: e.target.value }),
+      addTag: () => {
+        const v = s.tagDraft.trim();
+        if (!v || s.tags.includes(v) || s.tags.length >= 20) return;
+        this.setState({ tags: s.tags.concat(v), tagDraft: "" });
+      },
+      styles: styles,
+      statusOptions: statusOptions,
+      publishStatus: s.publishStatus,
+      actionTitle: s.publishStatus === "发布" ? "将立即发布" : "保存为草稿",
+      actionNote: s.publishStatus === "发布" ? "创建后客户端立即可见" : "保存后可随时继续编辑",
+      previewTitle: s.title || "未填写房源标题",
+      draftClass: s.publishStatus === "草稿" ? "on" : "",
+      publishClass: s.publishStatus === "发布" ? "on" : "",
+      setDraft: () => this.setState({ publishStatus: "草稿" }),
+      setPublish: () => this.setState({ publishStatus: "发布" }),
+      coverPhoto: photos[Math.min(s.cover, photos.length - 1)].src,
+      checks: checks.map((c) => ({ label: c.label, val: c.val, onClass: c.on ? "done" : "" })),
+      checkCount: done,
+      onImport: () => this.notify("已从项目库载入 1 套房源信息（演示）"),
+      onChangeAddress: () => this.notify("打开地址字典选择器（演示）"),
+      onUpload: () => this.notify("打开照片上传（演示）"),
+      saveDraft: () => this.notify("已保存为草稿，可稍后继续编辑（演示）"),
+      createListing: () => {
+        if (!s.title.trim() || price <= 0 || area <= 0) {
+          this.setState({ formError: "请先补充房源标题、建筑面积与总价。" });
+          return;
+        }
+        this.setState({ formError: null });
+        this.notify(s.publishStatus === "发布" ? "房源已创建并发布，推送已排队（演示）" : "房源已创建为草稿（演示）");
+      },
+      toast: s.toast
+    };
+  }
+}
+const CREATE_PHOTOS = [
+  { src: "/_blob/eef2b5c537e41cef4635ccb4d63f577e", label: "客厅" },
+  { src: "/_blob/c4a6fad37f17151aef3b97c7d3e18320", label: "卧室" },
+  { src: "/_blob/e3ac7e5b293c1710c5fd9e6e352af5a5", label: "厨房" },
+  { src: "/_blob/b63e531b3f9b8651c6c79a4f7fa3abfc", label: "卫生间" }
+];
+const CREATE_RENOVATION = [
+  { src: "/_blob/643372c970e9d376152075fd96331d83", label: "原始户型图" },
+  { src: "/_blob/14d9e1013ff8bfd63d1b8d83db0fb375", label: "家具布置图" }
+];
+</script>
+</body>
+</html>

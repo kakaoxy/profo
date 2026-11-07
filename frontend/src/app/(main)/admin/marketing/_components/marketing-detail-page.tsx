@@ -21,14 +21,11 @@ import {
   getL4MarketingMediaAction,
   createL4MarketingProjectAction,
   updateL4MarketingProjectAction,
+  deleteL4MarketingProjectAction,
 } from "../actions";
 
 import { MarketingDetailHeader } from "./detail/marketing-detail-header";
-import { MarketingInfoSection } from "./detail/marketing-info-section";
-import { BasicConfigSection } from "./detail/basic-config-section";
-import { PriceChangeCard } from "./price-change-card";
-import { PushStatCard } from "./push-stat-card";
-import { PhotosSection } from "./detail/photos-section";
+import { ListingDetailView } from "./detail/listing-detail-view";
 import { EditMode } from "./project-form/EditMode";
 
 interface MarketingDetailPageProps {
@@ -138,6 +135,17 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
     setMode("edit");
   }, []);
 
+  /** 删除房源：成功后回到列表并刷新 RSC 数据 */
+  const handleDelete = useCallback(async () => {
+    const res = await deleteL4MarketingProjectAction(project.id);
+    if (!res.success) {
+      return { success: false, message: res.error };
+    }
+    router.replace("/admin/marketing");
+    router.refresh();
+    return { success: true };
+  }, [project.id, router]);
+
   /** 调价成功：静默 reloadDetail 换入新 project（左栏信息卡/推送统计同步）+ router.refresh（列表 RSC 缓存）。不触发全屏 spinner（避免卸载调价卡丢失成功态） */
   const handlePriceChanged = useCallback(async () => {
     await reloadDetail(project.id, { silent: true });
@@ -176,10 +184,11 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
         onClose={handleBack}
         mode={mode}
         onStartEdit={handleStartEdit}
+        onDelete={handleDelete}
       />
 
       {/* Content */}
-      <div className="mx-auto max-w-7xl px-6 py-6">
+      <div className="pb-6">
         {isRefreshing ? (
           <div className="flex items-center justify-center py-20">
             <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-rust" />
@@ -196,30 +205,11 @@ export const MarketingDetailPage = memo(function MarketingDetailPage({
             onDirtyChange={handleDirtyChange}
           />
         ) : (
-          /* view 态：左主（浏览语义）+ 右辅（高频操作语义）；<1024px 折叠单列，右栏内容顺延 */
-          <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_348px]">
-            {/* 左主栏 */}
-            <div className="min-w-0 space-y-6">
-              {/* 1. 房源信息 - 左右布局（主图+信息） */}
-              <MarketingInfoSection project={project} photos={photos} />
-
-              {/* 2. 房源状态 + 管理配置 */}
-              <BasicConfigSection project={project} />
-
-              {/* 3. 媒体资源 */}
-              <PhotosSection project={project} photos={photos} />
-            </div>
-
-            {/* 右辅栏：sticky 常驻（top-20 避开顶栏）——价格与调价 + 推送统计 */}
-            <div className="space-y-5 lg:sticky lg:top-20">
-              <PriceChangeCard
-                variant="card"
-                project={project}
-                onPriceSuccess={() => void handlePriceChanged()}
-              />
-              <PushStatCard project={project} />
-            </div>
-          </div>
+          <ListingDetailView
+            project={project}
+            photos={photos}
+            onPriceChanged={() => void handlePriceChanged()}
+          />
         )}
       </div>
 

@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>编辑房源 · 金杨十街坊</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face { font-family:"InterLocal"; src:url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2"); font-weight:100 900; font-style:normal; font-display:swap; }
+  @font-face { font-family:"SourceSerifLocal"; src:url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2"); font-weight:200 900; font-style:normal; font-display:swap; }
+  :root {
+    --ink:#17191c; --white:#fff; --fog:#f7f7f8; --ash:#4c4c4c; --graphite:#777b86; --dove:#a3a6af;
+    --rust:#5d2a1a; --apricot:#fbe1d1; --sky:#d3e3fc;
+    --hair:rgba(163,166,175,.32); --hair-soft:rgba(163,166,175,.18);
+    --font-ui:"InterLocal",-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;
+    --font-display:"SourceSerifLocal","Songti SC","Noto Serif SC",Georgia,serif;
+    --shadow-card:rgba(4,23,43,.05) 0 0 0 1px,rgba(0,0,0,.10) 0 20px 25px -5px,rgba(0,0,0,.10) 0 8px 10px -6px;
+    --shadow-sm:rgba(4,23,43,.05) 0 0 0 1px,rgba(0,0,0,.06) 0 10px 20px -8px,rgba(0,0,0,.05) 0 3px 6px -4px;
+    --r-card:24px; --r-input:16px; --r-pill:9999px;
+  }
+  *,*::before,*::after { box-sizing:border-box; }
+  html { -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+  body { margin:0; background:var(--fog); color:var(--ink); font-family:var(--font-ui); font-size:14px; font-weight:430; letter-spacing:-.009em; line-height:1.5; }
+  button,input,select,textarea { font:inherit; letter-spacing:inherit; color:inherit; }
+  button { background:none; border:0; padding:0; cursor:pointer; }
+  h1,h2,h3,p { margin:0; }
+  a { color:inherit; text-decoration:none; }
+  svg { display:block; }
+  .ic { width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  :focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  .app { display:flex; min-height:100vh; background:var(--fog); }
+  .rail { width:76px; flex:none; align-self:flex-start; position:sticky; top:0; height:100vh; padding:20px 0 18px; display:flex; flex-direction:column; align-items:center; background:var(--fog); border-right:1px solid var(--hair-soft); }
+  .logo { width:34px; height:34px; border-radius:9px; background:var(--ink); color:var(--white); display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:480; }
+  .rail-nav { margin-top:30px; display:flex; flex-direction:column; gap:6px; align-items:center; }
+  .rail-btn { width:42px; height:42px; border-radius:13px; color:var(--graphite); display:flex; align-items:center; justify-content:center; position:relative; transition:background .16s ease,color .16s ease,box-shadow .16s ease; }
+  .rail-btn .ic { width:19px; height:19px; stroke-width:1.6; }
+  .rail-btn:hover { background:rgba(23,25,28,.05); color:var(--ink); }
+  .rail-btn[aria-current="page"] { background:var(--white); color:var(--ink); box-shadow:var(--shadow-sm); }
+  .rail-btn[aria-current="page"]::after { content:""; position:absolute; bottom:5px; left:50%; width:3px; height:3px; margin-left:-1.5px; border-radius:50%; background:var(--rust); }
+  .rail-bottom { margin-top:auto; display:flex; flex-direction:column; gap:4px; align-items:center; }
+  .rail-btn.small { width:38px; height:38px; border-radius:11px; color:var(--dove); }
+  .rail-btn.small .ic { width:18px; height:18px; }
+  .main { flex:1; min-width:0; }
+  .wrap { max-width:1200px; margin:0 auto; padding:20px 44px 44px; }
+  .topbar { height:52px; display:flex; align-items:center; justify-content:space-between; gap:24px; border-bottom:1px solid var(--hair-soft); }
+  .crumb { display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--dove); }
+  .crumb .slash { color:var(--hair); }
+  .crumb .here { color:var(--ink); font-weight:450; }
+  .topbar-right { display:flex; align-items:center; gap:18px; }
+  .sync { display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--graphite); }
+  .sync .live { width:5px; height:5px; border-radius:50%; background:var(--rust); box-shadow:0 0 0 3px rgba(93,42,26,.08); }
+  .avatar-btn { width:30px; height:30px; border-radius:50%; background:var(--apricot); color:var(--rust); display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:480; }
+
+  .page-head { display:flex; align-items:flex-end; justify-content:space-between; gap:32px; padding:22px 0 18px; }
+  .eyebrow { display:flex; align-items:center; gap:9px; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--graphite); font-weight:480; }
+  .eyebrow::before { content:""; width:18px; height:1px; background:var(--rust); }
+  .page-head h1 { margin-top:8px; font-family:var(--font-display); font-size:44px; line-height:1.06; font-weight:400; letter-spacing:-.022em; }
+  .page-sub { margin-top:8px; font-size:12px; color:var(--graphite); display:flex; align-items:center; gap:7px; flex-wrap:wrap; }
+  .page-sub .sep { color:var(--dove); }
+  .head-status { display:flex; align-items:center; gap:7px; padding-bottom:6px; }
+  .pill { height:24px; padding:0 9px; border-radius:var(--r-pill); display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:450; }
+  .pill::before { content:""; width:5px; height:5px; border-radius:50%; background:currentColor; }
+  .pill-publish { background:var(--rust); color:var(--white); }
+  .pill-soft { background:var(--fog); color:var(--graphite); }
+  .pill-soft::before { background:var(--dove); }
+  .pill-dirty { background:var(--apricot); color:var(--rust); }
+  .backline { display:flex; align-items:center; gap:7px; padding:16px 0 0; font-size:12px; color:var(--graphite); }
+  .backline a { display:inline-flex; align-items:center; gap:7px; }
+  .backline a:hover { color:var(--ink); }
+  .backline .ic { width:14px; height:14px; }
+
+  .dirty-bar { margin:2px 0 18px; padding:11px 14px; border-radius:14px; background:var(--apricot); display:flex; align-items:center; gap:12px; }
+  .dirty-icon { width:30px; height:30px; border-radius:9px; background:rgba(255,255,255,.55); color:var(--rust); display:flex; align-items:center; justify-content:center; flex:none; }
+  .dirty-icon .ic { width:15px; height:15px; }
+  .dirty-text { font-size:11px; color:var(--rust); font-weight:450; }
+  .dirty-text b { font-weight:480; }
+  .dirty-chips { display:flex; align-items:center; gap:6px; flex:1; flex-wrap:wrap; }
+  .dirty-chip { height:22px; padding:0 8px; border-radius:5px; background:rgba(255,255,255,.62); font-size:9.5px; color:var(--rust); display:inline-flex; align-items:center; }
+  .dirty-bar .text-btn { flex:none; font-size:10px; color:var(--rust); display:inline-flex; align-items:center; gap:3px; }
+  .dirty-bar .text-btn .ic { width:10px; height:10px; }
+
+  .layout { display:grid; grid-template-columns:minmax(0,1fr) 348px; gap:22px; align-items:start; }
+  .form-col { display:flex; flex-direction:column; gap:16px; min-width:0; }
+  .side-col { position:sticky; top:20px; display:flex; flex-direction:column; gap:16px; }
+  .card { background:var(--white); border-radius:var(--r-card); box-shadow:var(--shadow-card); }
+  .form-card { padding:22px 24px 24px; }
+  .card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; }
+  .card-kicker { display:flex; align-items:center; gap:8px; font-size:9.5px; letter-spacing:.15em; text-transform:uppercase; color:var(--dove); font-weight:480; }
+  .card-kicker .n { width:18px; height:18px; border-radius:50%; background:var(--fog); color:var(--graphite); font-size:8.5px; letter-spacing:0; display:inline-flex; align-items:center; justify-content:center; font-weight:480; }
+  .card-head h2 { margin-top:4px; font-size:19px; line-height:1.2; font-weight:480; letter-spacing:-.02em; }
+  .card-head .hint { font-size:10.5px; color:var(--dove); padding-top:3px; }
+  .field { min-width:0; }
+  .field-label { display:flex; align-items:center; gap:5px; margin-bottom:6px; font-size:10.5px; color:var(--graphite); font-weight:450; }
+  .changed-tag { height:18px; padding:0 6px; border-radius:5px; background:var(--apricot); color:var(--rust); font-size:8px; display:inline-flex; align-items:center; font-weight:450; }
+  .input { width:100%; height:42px; border:1px solid var(--hair); border-radius:12px; background:var(--white); padding:0 13px; font-size:12px; color:var(--ink); transition:border-color .15s ease,box-shadow .15s ease; }
+  .input::placeholder { color:var(--dove); }
+  .input:hover { border-color:rgba(119,123,134,.55); }
+  .input:focus { outline:0; border-color:var(--ink); box-shadow:0 0 0 3px rgba(23,25,28,.06); }
+  .input.changed { border-color:rgba(93,42,26,.45); background:rgba(251,225,209,.08); }
+  .select { appearance:auto; padding-right:13px; }
+  .field-grid { display:grid; gap:14px; }
+  .g2 { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .g4 { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  .mt14 { margin-top:14px; }
+  .readonly-address { margin-top:14px; height:44px; border-radius:12px; background:var(--fog); padding:0 13px; display:flex; align-items:center; gap:8px; font-size:11.5px; color:var(--ash); }
+  .readonly-address .ic { width:14px; height:14px; color:var(--dove); }
+  .readonly-address .path { color:var(--dove); font-size:10.5px; }
+  .readonly-address .match { margin-left:auto; height:20px; padding:0 7px; border-radius:5px; background:var(--white); color:var(--rust); font-size:8.5px; display:inline-flex; align-items:center; gap:3px; }
+  .readonly-address .match .ic { width:9px; height:9px; color:var(--rust); }
+
+  .layout-picker { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .layout-select { height:42px; border:1px solid var(--hair); border-radius:12px; background:var(--white); padding:0 10px; font-size:12px; appearance:auto; }
+  .price-panel { margin-top:14px; background:var(--fog); border-radius:14px; padding:13px 15px 14px; }
+  .price-top { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; }
+  .price-input { display:flex; align-items:baseline; gap:5px; }
+  .price-input .currency { font-size:13px; color:var(--graphite); }
+  .price-input input { width:150px; border:0; outline:0; background:transparent; font-family:var(--font-display); font-size:42px; line-height:1; letter-spacing:-.03em; font-weight:400; font-variant-numeric:tabular-nums; }
+  .price-input .unit { font-size:11px; color:var(--graphite); }
+  .price-diff { display:flex; align-items:center; gap:7px; padding-bottom:5px; }
+  .diff-chip { height:24px; padding:0 9px; border-radius:6px; background:var(--apricot); color:var(--rust); font-size:9.5px; display:inline-flex; align-items:center; gap:4px; font-weight:450; }
+  .diff-original { font-size:9.5px; color:var(--dove); text-decoration:line-through; font-variant-numeric:tabular-nums; }
+  .price-meta-row { display:flex; align-items:center; justify-content:space-between; margin-top:12px; padding-top:11px; border-top:1px solid var(--hair); font-size:9.5px; color:var(--graphite); }
+  .price-meta-row b { font-weight:450; color:var(--ash); font-variant-numeric:tabular-nums; }
+
+  .seg { display:flex; padding:3px; border-radius:10px; background:var(--fog); margin-top:2px; }
+  .seg button { flex:1; height:34px; border-radius:8px; font-size:11px; color:var(--graphite); }
+  .seg button.on { background:var(--white); color:var(--ink); font-weight:480; box-shadow:0 1px 4px rgba(23,25,28,.08); }
+  .status-opts { display:flex; gap:6px; margin-top:8px; }
+  .status-opt { flex:1; height:32px; border:1px solid var(--hair); border-radius:8px; font-size:10px; color:var(--ash); background:var(--white); }
+  .status-opt.on { border-color:var(--ink); background:var(--ink); color:var(--white); font-weight:450; }
+  .weight-row { display:flex; align-items:center; gap:10px; margin-top:9px; }
+  .weight-row input[type=range] { flex:1; accent-color:var(--rust); }
+  .weight-val { width:32px; text-align:right; font-size:11px; color:var(--ash); font-variant-numeric:tabular-nums; }
+
+  .photo-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; margin-top:14px; }
+  .photo-item { position:relative; height:104px; border-radius:10px; overflow:hidden; background:#eae6e0; padding:0; border:2px solid transparent; }
+  .photo-item.on { border-color:var(--ink); }
+  .photo-item img { width:100%; height:100%; object-fit:cover; display:block; }
+  .cover-badge { position:absolute; left:6px; top:6px; height:18px; padding:0 6px; border-radius:5px; background:rgba(255,255,255,.94); color:var(--ink); font-size:8px; display:inline-flex; align-items:center; }
+  .add-photo { height:104px; border:1px dashed rgba(119,123,134,.55); border-radius:10px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; color:var(--graphite); background:rgba(247,247,248,.6); }
+  .add-photo:hover { border-color:var(--ink); color:var(--ink); }
+  .add-photo .ic { width:16px; height:16px; }
+  .add-photo span { font-size:9px; }
+
+  .tags-box { display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-height:38px; border:1px solid var(--hair); border-radius:12px; padding:5px 8px; }
+  .tag { height:26px; padding:0 8px 0 10px; border-radius:7px; background:var(--fog); color:var(--ash); font-size:10px; display:inline-flex; align-items:center; gap:5px; }
+  .tag.new { background:var(--apricot); color:var(--rust); }
+  .tag button { color:var(--dove); display:flex; }
+  .tag button:hover { color:var(--ink); }
+  .tag button .ic { width:9px; height:9px; }
+  .tag-input { flex:1; min-width:70px; height:24px; border:0; outline:0; font-size:10.5px; background:transparent; }
+  .tag-add { height:26px; padding:0 9px; border-radius:7px; background:var(--ink); color:var(--white); font-size:9.5px; }
+  .style-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; margin-top:8px; }
+  .style-chip { height:34px; border:1px solid var(--hair); border-radius:9px; font-size:10px; color:var(--ash); background:var(--white); }
+  .style-chip.on { border-color:var(--rust); background:var(--apricot); color:var(--rust); font-weight:450; }
+
+  .side-card { padding:20px; }
+  .side-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .side-head h3 { margin-top:3px; font-size:15px; font-weight:480; letter-spacing:-.015em; }
+  .side-kicker { font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--dove); font-weight:480; }
+  .live-tag { height:20px; padding:0 7px; border-radius:5px; background:var(--apricot); color:var(--rust); font-size:8.5px; display:inline-flex; align-items:center; gap:3px; }
+  .live-tag .ic { width:9px; height:9px; }
+  .mini-listing { margin-top:12px; border-radius:15px; overflow:hidden; box-shadow:var(--shadow-sm); }
+  .mini-photo { height:168px; position:relative; }
+  .mini-photo img { width:100%; height:100%; object-fit:cover; display:block; }
+  .mini-photo .new-tag { position:absolute; left:10px; top:10px; height:20px; padding:0 7px; border-radius:5px; background:var(--ink); color:var(--white); font-size:8px; display:inline-flex; align-items:center; }
+  .mini-body { padding:12px 13px 13px; }
+  .mini-price { font-family:var(--font-display); font-size:28px; line-height:1; letter-spacing:-.03em; font-weight:400; font-variant-numeric:tabular-nums; }
+  .mini-price small { font-family:var(--font-ui); font-size:9px; color:var(--graphite); letter-spacing:0; }
+  .mini-title { margin-top:6px; font-size:12px; font-weight:450; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .mini-meta { margin-top:3px; font-size:9.5px; color:var(--graphite); }
+  .mini-foot { display:flex; align-items:center; justify-content:space-between; margin-top:10px; padding-top:9px; border-top:1px solid var(--hair-soft); font-size:8.5px; color:var(--dove); }
+  .mini-foot a { font-size:9.5px; color:var(--rust); display:inline-flex; align-items:center; gap:3px; }
+  .mini-foot a .ic { width:10px; height:10px; }
+
+  .impact { margin-top:11px; display:flex; flex-direction:column; gap:0; }
+  .impact-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--hair-soft); font-size:10px; color:var(--graphite); }
+  .impact-row:last-child { border-bottom:0; }
+  .impact-row b { font-size:11px; font-weight:450; color:var(--ash); }
+  .impact-row .down { color:var(--rust); }
+  .impact-note { margin-top:10px; padding:10px 12px; border-radius:10px; background:var(--fog); font-size:9.5px; line-height:1.55; color:var(--graphite); }
+  .impact-note b { color:var(--ink); font-weight:450; }
+
+  .activity { margin-top:9px; }
+  .activity-row { display:flex; gap:9px; padding:8px 0; }
+  .activity-dot { width:7px; height:7px; border-radius:50%; background:var(--dove); margin-top:5px; flex:none; }
+  .activity-row:first-child .activity-dot { background:var(--rust); box-shadow:0 0 0 3px rgba(93,42,26,.08); }
+  .activity-body { min-width:0; }
+  .activity-body p { font-size:10px; color:var(--ash); line-height:1.5; }
+  .activity-body p b { font-weight:450; color:var(--ink); }
+  .activity-body span { display:block; margin-top:2px; font-size:8.5px; color:var(--dove); }
+
+  .actionbar { margin-top:20px; background:var(--white); border-radius:18px; box-shadow:var(--shadow-card); padding:13px 16px 13px 20px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+  .action-status { display:flex; align-items:center; gap:9px; }
+  .action-status .dot { width:7px; height:7px; border-radius:50%; background:var(--rust); }
+  .action-status b { font-size:11.5px; font-weight:450; }
+  .action-status span { font-size:9.5px; color:var(--dove); }
+  .action-btns { display:flex; align-items:center; gap:8px; }
+  .btn-cancel { height:40px; padding:0 16px; border-radius:var(--r-pill); font-size:11px; color:var(--graphite); }
+  .btn-cancel:hover { color:var(--ink); }
+  .btn-save { height:40px; padding:0 20px; border-radius:var(--r-pill); background:var(--ink); color:var(--white); font-size:11.5px; font-weight:480; display:inline-flex; align-items:center; gap:6px; }
+  .btn-save:hover { background:#000; }
+  .btn-save .ic { width:13px; height:13px; }
+  .toast { position:fixed; left:50%; bottom:30px; transform:translateX(-50%); z-index:100; display:flex; align-items:center; gap:8px; height:42px; padding:0 16px; border-radius:var(--r-pill); background:var(--ink); color:var(--white); font-size:12px; box-shadow:0 16px 32px -12px rgba(23,25,28,.4); }
+  .toast .ic { width:14px; height:14px; }
+
+  @media (max-width:1150px) { .wrap { padding:18px 28px 40px; } .layout { grid-template-columns:minmax(0,1fr) 314px; } }
+  @media (max-width:900px) { .rail { display:none; } .layout { grid-template-columns:1fr; } .side-col { position:static; } .page-head { align-items:flex-start; flex-direction:column; gap:14px; } }
+  @media (max-width:680px) { .wrap { padding:14px 16px 32px; } .g4,.photo-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } .dirty-chips { display:none; } }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M8 21v-2h4v2"/><path d="M2 21h20"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M14 8a5 5 0 0 1 0 8M17 5a9 9 0 0 1 0 14"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 4.8a3.2 3.2 0 0 1 0 6.4M18 14.4a6 6 0 0 1 3 5.6"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1h-5a3 3 0 0 0 0 6h5v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M14 10h7v4h-7a2 2 0 0 1 0-4Z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2-2.5 3.7"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.8"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M3 7v6h6"/><path d="M3.5 13a9 9 0 1 0 2.1-9.4L3 7"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="2.8"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="rail" aria-label="主导航">
+    <div class="logo" aria-label="P">P</div>
+    <nav class="rail-nav">
+      <button class="rail-btn" type="button" aria-label="工作台"><svg class="ic"><use href="#i-grid"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="房源管理"><svg class="ic"><use href="#i-building"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="项目管理"><svg class="ic"><use href="#i-folder"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="营销项目" aria-current="page"><svg class="ic"><use href="#i-megaphone"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="线索中心"><svg class="ic"><use href="#i-target"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="客户管理"><svg class="ic"><use href="#i-users"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="数据报表"><svg class="ic"><use href="#i-chart"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="财务结算"><svg class="ic"><use href="#i-wallet"></use></svg></button>
+    </nav>
+    <div class="rail-bottom">
+      <button class="rail-btn small" type="button" aria-label="帮助中心"><svg class="ic"><use href="#i-help"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="系统设置"><svg class="ic"><use href="#i-settings"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="收起导航"><svg class="ic"><use href="#i-panel"></use></svg></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="crumb"><span>营销中心</span><span class="slash">/</span><a href="Main.dc.html">营销项目</a><span class="slash">/</span><a href="Detail.dc.html">金杨十街坊</a><span class="slash">/</span><span class="here">编辑房源</span></div>
+        <div class="topbar-right"><span class="sync"><span class="live"></span>有未保存修改 · 10:36</span><button class="avatar-btn" type="button" aria-label="账户菜单：唐欣帆">唐</button></div>
+      </div>
+
+      <div class="backline"><a href="Detail.dc.html"><svg class="ic"><use href="#i-arrow-left"></use></svg>返回房源详情</a></div>
+
+      <header class="page-head">
+        <div>
+          <div class="eyebrow">房源编辑室 / Edit listing</div>
+          <h1>编辑房源</h1>
+          <div class="page-sub"><span>金杨十街坊 · 南向一居</span><span class="sep">/</span><span>ID 298</span><span class="sep">/</span><span>最后保存 今天 09:24</span></div>
+        </div>
+        <div class="head-status"><span class="pill pill-publish">已发布</span><span class="pill pill-dirty">未保存修改</span><span class="pill pill-soft">在售</span></div>
+      </header>
+
+      <div class="dirty-bar">
+        <div class="dirty-icon"><svg class="ic"><use href="#i-edit"></use></svg></div>
+        <div class="dirty-text"><b>3 项修改待保存</b></div>
+        <div class="dirty-chips"><span class="dirty-chip">总价 ¥115 → {{price}} 万</span><span class="dirty-chip">房源标题</span><span class="dirty-chip">新增标签「满五唯一」</span></div>
+        <button class="text-btn" type="button" onClick="{{discardAll}}"><svg class="ic"><use href="#i-undo"></use></svg>放弃全部</button>
+      </div>
+
+      <div class="layout">
+        <div class="form-col">
+          <section class="card form-card" aria-label="基本信息">
+            <div class="card-head"><div><div class="card-kicker"><span class="n">01</span>Identity</div><h2>基本信息</h2></div><span class="hint">地址由字典锁定，如需变更请联系管理员</span></div>
+            <div class="readonly-address"><svg class="ic"><use href="#i-map-pin"></use></svg>金杨十街坊 · 21号楼 102室<span class="path">浦东新区 / 金杨 / 21号楼 / 1单元 / 102室</span><span class="match"><svg class="ic"><use href="#i-check"></use></svg>字典已匹配</span></div>
+            <div class="field-grid g2 mt14">
+              <div class="field"><label class="field-label" for="edit-title">房源标题<span class="changed-tag">已修改</span></label><input id="edit-title" class="input changed" value="{{title}}" onInput="{{onTitle}}" /></div>
+              <div class="field"><label class="field-label" for="edit-consultant">关联顾问</label><select id="edit-consultant" class="input select"><option selected>唐欣帆 · 金杨店</option><option>周予安 · 金桥店</option><option>林小满 · 碧云店</option></select></div>
+            </div>
+          </section>
+
+          <section class="card form-card" aria-label="户型与价格">
+            <div class="card-head"><div><div class="card-kicker"><span class="n">02</span>Specification & price</div><h2>户型与价格</h2></div><span class="hint">保存后同步更新客户端展示</span></div>
+            <div class="field-grid g4 mt14">
+              <div class="field"><label class="field-label">户型</label><div class="layout-picker"><select class="layout-select" aria-label="室"><option selected>1 室</option></select><select class="layout-select" aria-label="厅"><option selected>1 厅</option></select><select class="layout-select" aria-label="卫"><option selected>1 卫</option></select></div></div>
+              <div class="field"><label class="field-label" for="edit-area">建筑面积</label><div class="input"><span style="line-height:42px">26.81 ㎡</span></div></div>
+              <div class="field"><label class="field-label" for="edit-floor">楼层</label><div class="input"><span style="line-height:42px">1 层 / 共 6 层</span></div></div>
+              <div class="field"><label class="field-label" for="edit-orientation">朝向</label><select id="edit-orientation" class="input select"><option selected>南</option><option>东南</option><option>东</option><option>北</option></select></div>
+            </div>
+            <div class="price-panel">
+              <div class="price-top">
+                <div><div class="field-label">总价<span class="changed-tag">已修改</span></div><div class="price-input"><span class="currency">¥</span><input type="number" value="{{price}}" onInput="{{onPrice}}" aria-label="总价（万元）" /><span class="unit">万元</span></div></div>
+                <div class="price-diff"><span class="diff-chip">{{diffText}}</span><span class="diff-original">原价 ¥115 万</span></div>
+              </div>
+              <div class="price-meta-row"><span>自动单价 <b>¥{{unitPrice}} / ㎡</b></span><span>上次调价 2026-10-28 · <b>¥131 万 → ¥115 万</b></span></div>
+            </div>
+          </section>
+
+          <section class="card form-card" aria-label="发布与排序">
+            <div class="card-head"><div><div class="card-kicker"><span class="n">03</span>Publishing</div><h2>发布与排序</h2></div><span class="hint">调整发布状态会同步客户端</span></div>
+            <div class="field-grid g2 mt14">
+              <div class="field"><label class="field-label">发布状态</label><div class="seg"><button class="{{draftClass}}" type="button" onClick="{{setDraft}}">草稿</button><button class="{{publishClass}}" type="button" onClick="{{setPublish}}">已发布</button></div></div>
+              <div class="field"><label class="field-label">项目状态</label><div class="status-opts"><sc-for list="{{statusOptions}}" as="so" hint-placeholder-count="3"><button class="status-opt {{so.onClass}}" type="button" onClick="{{so.onClick}}">{{so.label}}</button></sc-for></div></div>
+            </div>
+            <div class="field mt14"><label class="field-label">排序权重</label><div class="weight-row"><input type="range" min="0" max="100" value="80" aria-label="排序权重" /><span class="weight-val">80</span><span style="font-size:9px;color:var(--dove)">数值越高在列表越靠前</span></div></div>
+          </section>
+
+          <section class="card form-card" aria-label="房源照片">
+            <div class="card-head"><div><div class="card-kicker"><span class="n">04</span>Photography</div><h2>房源照片</h2></div><span class="hint">点击缩略图设为营销主图</span></div>
+            <div class="photo-grid">
+              <sc-for list="{{photoTiles}}" as="ph" hint-placeholder-count="5">
+                <button class="photo-item {{ph.onClass}}" type="button" onClick="{{ph.onClick}}" aria-label="设为营销主图：{{ph.label}}"><img src="{{ph.src}}" alt="" /><sc-if value="{{ph.isCover}}"><span class="cover-badge">营销主图</span></sc-if></button>
+              </sc-for>
+              <button class="add-photo" type="button" onClick="{{onUpload}}"><svg class="ic"><use href="#i-upload"></use></svg><span>添加照片</span></button>
+            </div>
+          </section>
+
+          <section class="card form-card" aria-label="标签与风格">
+            <div class="card-head"><div><div class="card-kicker"><span class="n">05</span>Tags & style</div><h2>标签与风格</h2></div><span class="hint">标签会出现在客户端筛选与推荐中</span></div>
+            <div class="field-grid g2 mt14">
+              <div class="field"><label class="field-label">房源标签</label><div class="tags-box"><sc-for list="{{tags}}" as="t" hint-placeholder-count="4"><span class="tag {{t.onClass}}">{{t.label}}<button type="button" onClick="{{t.onRemove}}" aria-label="移除标签 {{t.label}}"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-for><input class="tag-input" value="{{tagDraft}}" onInput="{{onTagDraft}}" placeholder="添加标签" /><button class="tag-add" type="button" onClick="{{addTag}}">添加</button></div></div>
+              <div class="field"><label class="field-label">装修风格</label><div class="style-grid"><sc-for list="{{styles}}" as="st" hint-placeholder-count="4"><button class="style-chip {{st.onClass}}" type="button" onClick="{{st.onClick}}">{{st.label}}</button></sc-for></div></div>
+            </div>
+          </section>
+
+          <div class="actionbar">
+            <div class="action-status"><span class="dot"></span><b>未保存的修改</b><span>保存后更新线上展示并记录版本</span></div>
+            <div class="action-btns"><a class="btn-cancel" href="Detail.dc.html">取消</a><button class="btn-save" type="button" onClick="{{saveChanges}}"><svg class="ic"><use href="#i-check"></use></svg>保存更改</button></div>
+          </div>
+        </div>
+
+        <aside class="side-col">
+          <section class="card side-card" aria-label="客户端预览">
+            <div class="side-head"><div><div class="side-kicker">Client preview</div><h3>客户端预览</h3></div><span class="live-tag"><svg class="ic"><use href="#i-eye"></use></svg>实时</span></div>
+            <div class="mini-listing">
+              <div class="mini-photo"><img src="{{coverPhoto}}" alt="" /><span class="new-tag">已发布</span></div>
+              <div class="mini-body">
+                <div class="mini-price">¥{{price}}<small>万</small></div>
+                <div class="mini-title">{{title}}</div>
+                <div class="mini-meta">1室1厅 · 26.81㎡ · 南 · 金杨十街坊</div>
+                <div class="mini-foot"><span>更新后立即同步客户端</span><a href="Detail.dc.html">查看详情<svg class="ic"><use href="#i-arrow-right"></use></svg></a></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card side-card" aria-label="变更影响">
+            <div class="side-head"><div><div class="side-kicker">Impact</div><h3>变更影响</h3></div><span class="live-tag">3 项</span></div>
+            <div class="impact">
+              <div class="impact-row"><span>浏览用户</span><b>842 人</b></div>
+              <div class="impact-row"><span>本次价格变动</span><b class="down">{{diffText}}</b></div>
+              <div class="impact-row"><span>推送渠道</span><b>客户端 · 微信 · 短信</b></div>
+              <div class="impact-row"><span>近 7 天浏览</span><b>318 次</b></div>
+            </div>
+            <div class="impact-note">保存后<b>立即同步价格</b>到客户端房源详情页，并记录在房源调价历史中。</div>
+          </section>
+
+          <section class="card side-card" aria-label="最近动态">
+            <div class="side-head"><div><div class="side-kicker">Activity</div><h3>最近动态</h3></div><span class="live-tag"><svg class="ic"><use href="#i-clock"></use></svg>今天</span></div>
+            <div class="activity">
+              <div class="activity-row"><span class="activity-dot"></span><div class="activity-body"><p><b>唐欣帆</b> 正在编辑总价与标题</p><span>刚刚 · 当前会话</span></div></div>
+              <div class="activity-row"><span class="activity-dot"></span><div class="activity-body"><p><b>唐欣帆</b> 将总价从 ¥131 万调整为 ¥115 万</p><span>10-28 14:06 · 已推送 36 人</span></div></div>
+              <div class="activity-row"><span class="activity-dot"></span><div class="activity-body"><p><b>系统</b> 自动同步房源至客户端</p><span>10-28 14:07</span></div></div>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1830}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      title: "金杨十街坊 · 南向一居",
+      price: "112",
+      publishStatus: "发布",
+      projectStatus: "在售",
+      cover: 0,
+      tags: ["南向采光", "近地铁", "满五唯一"],
+      tagDraft: "",
+      style: "现代简约",
+      toast: null
+    };
+    this._timer = null;
+  }
+  componentWillUnmount() { if (this._timer) clearTimeout(this._timer); }
+  notify(text) {
+    if (this._timer) clearTimeout(this._timer);
+    this.setState({ toast: text });
+    this._timer = setTimeout(() => this.setState({ toast: null }), 2400);
+  }
+  renderVals() {
+    const s = this.state;
+    const price = Number(s.price) || 0;
+    const unit = Math.round((price * 10000) / 26.81);
+    const diff = Math.round((price - 115) * 10) / 10;
+    const diffText = diff === 0 ? "价格未变" : (diff > 0 ? "上调 " + diff + " 万" : "下调 " + Math.abs(diff) + " 万");
+    const photoTiles = EDIT_PHOTOS.map((p, i) => ({ src: p.src, label: p.label, onClass: i === s.cover ? "on" : "", isCover: i === s.cover, onClick: () => this.setState({ cover: i }) }));
+    const tags = s.tags.map((t, i) => ({ label: t, onClass: t === "满五唯一" ? "new" : "", onRemove: () => this.setState({ tags: s.tags.filter((_, j) => j !== i) }) }));
+    const styles = ["现代简约", "法式奢华", "中式典雅", "极简侘寂"].map((x) => ({ label: x, onClass: x === s.style ? "on" : "", onClick: () => this.setState({ style: x }) }));
+    const statusOptions = ["在途", "在售", "已售"].map((x) => ({ label: x, onClass: x === s.projectStatus ? "on" : "", onClick: () => this.setState({ projectStatus: x }) }));
+    return {
+      title: s.title,
+      onTitle: (e) => this.setState({ title: e.target.value }),
+      price: s.price,
+      onPrice: (e) => this.setState({ price: e.target.value }),
+      unitPrice: unit.toLocaleString("zh-CN"),
+      diffText: diffText,
+      publishStatus: s.publishStatus,
+      draftClass: s.publishStatus === "草稿" ? "on" : "",
+      publishClass: s.publishStatus === "发布" ? "on" : "",
+      setDraft: () => this.setState({ publishStatus: "草稿" }),
+      setPublish: () => this.setState({ publishStatus: "发布" }),
+      statusOptions: statusOptions,
+      photoTiles: photoTiles,
+      coverPhoto: EDIT_PHOTOS[Math.min(s.cover, EDIT_PHOTOS.length - 1)].src,
+      tags: tags,
+      tagDraft: s.tagDraft,
+      onTagDraft: (e) => this.setState({ tagDraft: e.target.value }),
+      addTag: () => {
+        const v = s.tagDraft.trim();
+        if (!v || s.tags.includes(v) || s.tags.length >= 20) return;
+        this.setState({ tags: s.tags.concat(v), tagDraft: "" });
+      },
+      styles: styles,
+      onUpload: () => this.notify("打开照片上传（演示）"),
+      discardAll: () => {
+        this.setState({ title: "金杨十街坊 · 南向一居", price: "112", tags: ["南向采光", "近地铁", "满五唯一"] });
+        this.notify("已放弃本次修改（演示）");
+      },
+      saveChanges: () => this.notify("修改已保存，调价通知已排队（演示）"),
+      toast: s.toast
+    };
+  }
+}
+const EDIT_PHOTOS = [
+  { src: "/_blob/eef2b5c537e41cef4635ccb4d63f577e", label: "客厅" },
+  { src: "/_blob/c4a6fad37f17151aef3b97c7d3e18320", label: "卧室" },
+  { src: "/_blob/e3ac7e5b293c1710c5fd9e6e352af5a5", label: "厨房" },
+  { src: "/_blob/b63e531b3f9b8651c6c79a4f7fa3abfc", label: "卫生间" }
+];
+</script>
+</body>
+</html>

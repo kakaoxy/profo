@@ -28,6 +28,7 @@ from schemas.l4_marketing import (
     L4MarketingProjectResponse,
     L4MarketingProjectUpdate,
     L4MarketingSubscriptionStatsResponse,
+    L4MarketingViewSummary,
     L4SyncResponse,
     MediaSortOrderUpdate,
 )
@@ -37,7 +38,11 @@ from services.marketing import (
 from services.marketing import (
     MarketingProjectService as L4MarketingProjectService,
 )
-from services.marketing.aggregate import aggregate_notify_fields
+from services.marketing.aggregate import (
+    aggregate_notify_fields,
+    aggregate_view_summaries,
+    aggregate_view_summary,
+)
 from services.marketing.notify import notify_project_price_changed, notify_projects_published
 from services.marketing.public import PublicProjectService
 from services.marketing.subscription import MarketingSubscriptionService
@@ -82,13 +87,15 @@ def _aggregate_response(db: DbSessionDep, item: L4MarketingProject) -> L4Marketi
     """单项目响应体回填聚合字段（M5）.
 
     GET 详情与 PUT/POST 响应共用：latest_price_change / notify_summary /
-    is_new_listing 三项均为服务端聚合字段（非 DB 列），裸 model_validate 恒为
-    null/false。与列表接口同口径回填，保证 PUT/POST 响应可直接消费。
+    view_summary / is_new_listing 均为服务端聚合字段（非 DB 列），裸
+    model_validate 恒为 null/false。与列表接口同口径回填，保证 PUT/POST
+    响应可直接消费。
     """
     resp = L4MarketingProjectResponse.model_validate(item)
     latest_change, notify_summary = aggregate_notify_fields(db, [item])[item.id]
     resp.latest_price_change = L4MarketingPriceChangeSummary(**latest_change) if latest_change else None
     resp.notify_summary = L4MarketingNotifySummary(**notify_summary)
+    resp.view_summary = L4MarketingViewSummary(**aggregate_view_summary(db, item.id, include_daily=True))
     # 新上徽标与 C 端同口径（published_at ≤ 窗口期）
     badge_map = PublicProjectService(db).resolve_listing_badges([item])
     resp.is_new_listing = badge_map[item.id][0]
@@ -157,6 +164,8 @@ def list_marketing_projects(
     badge_map = PublicProjectService(db).resolve_listing_badges(items)
     # 调价摘要 + 通知统计批量聚合（admin 通知列 / 总价副行 / 详情 Sheet 数据源）
     notify_map = aggregate_notify_fields(db, items)
+    # 浏览统计批量聚合（admin 列表浏览列；避免 N+1）
+    view_map = aggregate_view_summaries(db, [item.id for item in items])
     # 字典解析名称批量（单次两查询，无 N+1）
     dict_names = BuildingDictReadService().resolve_doc_names(db, [_marketing_dict_key(item) for item in items])
     result_items = []
@@ -169,6 +178,7 @@ def list_marketing_projects(
         latest_change, notify_summary = notify_map[item.id]
         resp.latest_price_change = L4MarketingPriceChangeSummary(**latest_change) if latest_change else None
         resp.notify_summary = L4MarketingNotifySummary(**notify_summary)
+        resp.view_summary = L4MarketingViewSummary(**view_map[item.id])
         _apply_dict_names(resp, item, dict_names)
         result_items.append(resp)
 

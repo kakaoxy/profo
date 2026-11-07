@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "threads": [
+    {
+      "id": "c_f313ade17a",
+      "anchor": "#dc-root > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(3) > aside:nth-of-type(1) > section:nth-of-type(2) > dct:nth-of-type(346) > dce0f8b3bf898d360331500:nth-of-type(1)",
+      "label": "02 · 房源详情 › shape \"触达 / Reach近 30 天 {{subscribers}}位订阅用户 较…\"",
+      "detail": "Detail.dc.html: #345:2/1/0/3/1/1 shape \"触达 / Reach近 30 天 {{subscribers}}位订阅用户 较…\"",
+      "location": {
+        "file": "project/Detail.dc.html",
+        "board": "Detail.dc.html"
+      },
+      "status": "resolved",
+      "createdAt": "2026-11-07T11:01:22.875Z",
+      "updatedAt": "2026-11-07T11:10:37.370Z",
+      "messages": [
+        {
+          "id": "m_4fc6ff0b81",
+          "author": {
+            "kind": "user",
+            "name": "bugco"
+          },
+          "text": "现在订阅人数少，改为查看人数吧，如果后端没接口就新增接口",
+          "at": "2026-11-07T11:01:22.875Z"
+        }
+      ],
+      "resolvedAt": "2026-11-07T11:10:37.370Z"
+    },
+    {
+      "id": "c_4cdc109151",
+      "anchor": "#dc-root > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(1) > section:nth-of-type(2) > dct:nth-of-type(258) > dcee69c502aabc558754941:nth-of-type(1)",
+      "label": "03 · 新建房源 › element",
+      "detail": "Create.dc.html: #257:2/1/0/4/0/1/2/0/1/1 other",
+      "location": {
+        "file": "project/Create.dc.html",
+        "board": "Create.dc.html"
+      },
+      "status": "resolved",
+      "createdAt": "2026-11-07T11:04:56.707Z",
+      "updatedAt": "2026-11-07T11:10:39.550Z",
+      "messages": [
+        {
+          "id": "m_84c3789f2d",
+          "author": {
+            "kind": "user",
+            "name": "bugco"
+          },
+          "text": "现在默认这个总价是收房的签约价，实际应该是挂牌价后端有数据可以取得，这次一并优化",
+          "at": "2026-11-07T11:04:56.707Z"
+        }
+      ],
+      "resolvedAt": "2026-11-07T11:10:39.550Z"
+    }
+  ]
+}

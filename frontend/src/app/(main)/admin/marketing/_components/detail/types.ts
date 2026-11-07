@@ -8,6 +8,8 @@ export interface MarketingDetailHeaderProps {
   mode?: "view" | "edit";
   /** 切换到编辑态（view 态点「编辑房源」） */
   onStartEdit?: () => void;
+  /** 删除当前房源（保留原 ActionCell 的删除能力） */
+  onDelete?: () => Promise<{ success: boolean; message?: string }>;
 }
 
 // 营销信息区域组件属性

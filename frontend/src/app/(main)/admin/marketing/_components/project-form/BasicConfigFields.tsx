@@ -83,11 +83,7 @@ export function BasicConfigFields() {
                             : "border-dove/40 hover:border-rust/60 text-ink"
                         }`}
                       >
-                        <span className="text-lg mb-1">
-                          {status === "在途" && "🚀"}
-                          {status === "在售" && "⭐"}
-                          {status === "已售" && "✓"}
-                        </span>
+                        <span className={`mb-1 h-1.5 w-1.5 rounded-full ${isSelected ? "bg-white/70" : "bg-dove"}`} />
                         <span className="text-[10px] font-medium">{status}</span>
                       </button>
                     );

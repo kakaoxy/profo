@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>边界状态 · 加载 / 空 / 异常</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face { font-family:"InterLocal"; src:url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2"); font-weight:100 900; font-style:normal; font-display:swap; }
+  @font-face { font-family:"SourceSerifLocal"; src:url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2"); font-weight:200 900; font-style:normal; font-display:swap; }
+  :root {
+    --ink:#17191c; --white:#fff; --fog:#f7f7f8; --ash:#4c4c4c; --graphite:#777b86; --dove:#a3a6af;
+    --rust:#5d2a1a; --apricot:#fbe1d1; --sky:#d3e3fc;
+    --hair:rgba(163,166,175,.32); --hair-soft:rgba(163,166,175,.18);
+    --font-ui:"InterLocal",-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;
+    --font-display:"SourceSerifLocal","Songti SC","Noto Serif SC",Georgia,serif;
+    --shadow-card:rgba(4,23,43,.05) 0 0 0 1px,rgba(0,0,0,.10) 0 20px 25px -5px,rgba(0,0,0,.10) 0 8px 10px -6px;
+    --shadow-sm:rgba(4,23,43,.05) 0 0 0 1px,rgba(0,0,0,.06) 0 10px 20px -8px,rgba(0,0,0,.05) 0 3px 6px -4px;
+  }
+  *,*::before,*::after { box-sizing:border-box; }
+  html { -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+  body { margin:0; background:var(--fog); color:var(--ink); font-family:var(--font-ui); font-size:14px; font-weight:430; letter-spacing:-.009em; line-height:1.5; }
+  button { font:inherit; letter-spacing:inherit; color:inherit; background:none; border:0; padding:0; cursor:pointer; }
+  h1,h2,h3,p { margin:0; }
+  svg { display:block; }
+  .ic { width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  :focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  .board { width:1440px; min-height:900px; margin:0 auto; padding:44px 72px 56px; background:var(--fog); }
+  .head { display:flex; align-items:flex-end; justify-content:space-between; gap:32px; }
+  .eyebrow { display:flex; align-items:center; gap:9px; font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--graphite); font-weight:480; }
+  .eyebrow::before { content:""; width:18px; height:1px; background:var(--rust); }
+  .head h1 { margin-top:7px; font-family:var(--font-display); font-size:44px; line-height:1.06; font-weight:400; letter-spacing:-.022em; }
+  .head p { margin-top:8px; font-size:12px; color:var(--graphite); max-width:560px; }
+  .legend { display:flex; align-items:center; gap:18px; padding-bottom:6px; }
+  .legend span { display:flex; align-items:center; gap:6px; font-size:10px; color:var(--graphite); }
+  .legend i { width:6px; height:6px; border-radius:50%; background:var(--dove); }
+  .legend .a i { background:var(--rust); }
+  .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; margin-top:30px; }
+  .panel { background:var(--white); border-radius:24px; box-shadow:var(--shadow-card); overflow:hidden; display:flex; flex-direction:column; }
+  .panel-head { padding:20px 22px 17px; border-bottom:1px solid var(--hair-soft); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .state-tag { font-size:9px; letter-spacing:.15em; color:var(--dove); font-weight:480; text-transform:uppercase; }
+  .panel-head h2 { margin-top:3px; font-size:17px; font-weight:480; letter-spacing:-.02em; }
+  .panel-head .note { font-size:9.5px; color:var(--dove); text-align:right; line-height:1.6; max-width:150px; }
+  .preview { flex:1; background:var(--fog); padding:16px; display:flex; align-items:stretch; }
+  .frame { flex:1; background:var(--white); border-radius:14px; box-shadow:var(--shadow-sm); overflow:hidden; display:flex; flex-direction:column; }
+
+  .skeleton { padding:16px; display:flex; flex-direction:column; gap:12px; }
+  .sk { background:linear-gradient(90deg,rgba(23,25,28,.055) 25%,rgba(23,25,28,.09) 37%,rgba(23,25,28,.055) 63%); background-size:400% 100%; animation:shimmer 1.6s infinite linear; border-radius:6px; }
+  @keyframes shimmer { 0% { background-position:100% 0; } 100% { background-position:-100% 0; } }
+  .sk-title { width:46%; height:14px; }
+  .sk-sub { width:66%; height:7px; margin-top:-4px; }
+  .sk-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:4px; }
+  .sk-stat { height:54px; border-radius:8px; background:var(--fog); padding:10px; display:flex; flex-direction:column; gap:7px; }
+  .sk-stat .l { width:50%; height:5px; }
+  .sk-stat .v { width:36%; height:12px; }
+  .sk-toolbar { height:32px; border-radius:7px; display:flex; gap:6px; align-items:center; padding:0 7px; background:var(--fog); }
+  .sk-pill { width:52px; height:16px; border-radius:999px; }
+  .sk-pill:first-child { width:86px; }
+  .sk-row { display:flex; align-items:center; gap:9px; padding:7px 0; border-bottom:1px solid var(--hair-soft); }
+  .sk-thumb { width:44px; height:34px; border-radius:5px; flex:none; }
+  .sk-lines { flex:1; display:flex; flex-direction:column; gap:5px; }
+  .sk-l1 { width:62%; height:7px; }
+  .sk-l2 { width:40%; height:5px; }
+  .sk-cell { width:42px; height:16px; border-radius:4px; flex:none; }
+  .loading-note { margin-top:auto; padding-top:12px; text-align:center; font-size:9px; color:var(--dove); }
+
+  .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:28px 22px; }
+  .empty-art { width:132px; height:112px; position:relative; margin-bottom:18px; }
+  .empty-art .arch { position:absolute; left:16px; bottom:0; width:100px; height:96px; border:1.5px solid var(--ink); border-bottom:0; border-radius:56px 56px 0 0; opacity:.85; }
+  .empty-art .arch::after { content:""; position:absolute; left:14px; bottom:0; width:70px; height:70px; border:1px solid var(--hair); border-bottom:0; border-radius:40px 40px 0 0; }
+  .empty-art .sun { position:absolute; right:3px; top:12px; width:24px; height:24px; border-radius:50%; background:var(--apricot); }
+  .empty-art .line { position:absolute; left:0; bottom:0; width:132px; height:1px; background:var(--ink); }
+  .empty-art .dot { position:absolute; left:0; bottom:-2px; width:5px; height:5px; border-radius:50%; background:var(--rust); }
+  .empty-state h3 { font-family:var(--font-display); font-size:28px; font-weight:400; letter-spacing:-.02em; }
+  .empty-state p { margin-top:8px; font-size:10.5px; line-height:1.7; color:var(--graphite); max-width:230px; }
+  .empty-actions { display:flex; flex-direction:column; align-items:center; gap:8px; margin-top:18px; }
+  .btn-primary { height:38px; padding:0 18px; border-radius:999px; background:var(--ink); color:var(--white); font-size:10.5px; font-weight:480; display:inline-flex; align-items:center; gap:5px; }
+  .btn-primary:hover { background:#000; }
+  .btn-primary .ic { width:12px; height:12px; }
+  .btn-ghost { font-size:9.5px; color:var(--graphite); display:inline-flex; align-items:center; gap:4px; }
+  .btn-ghost:hover { color:var(--ink); }
+  .btn-ghost .ic { width:10px; height:10px; }
+
+  .error-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:28px 22px; }
+  .error-icon { width:56px; height:56px; border-radius:50%; background:var(--apricot); color:var(--rust); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+  .error-icon .ic { width:24px; height:24px; }
+  .error-state h3 { font-size:18px; font-weight:480; letter-spacing:-.02em; }
+  .error-state p { margin-top:7px; font-size:10.5px; line-height:1.7; color:var(--graphite); max-width:240px; }
+  .error-code { margin-top:10px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:9px; color:var(--dove); background:var(--fog); padding:5px 8px; border-radius:5px; }
+  .error-actions { display:flex; align-items:center; gap:10px; margin-top:16px; }
+  .btn-outline { height:38px; padding:0 16px; border-radius:999px; border:1px solid var(--hair); font-size:10.5px; color:var(--ash); background:var(--white); }
+  .btn-outline:hover { border-color:var(--ink); color:var(--ink); }
+
+  .panel-foot { padding:13px 22px 16px; border-top:1px solid var(--hair-soft); display:flex; align-items:center; justify-content:space-between; gap:14px; }
+  .panel-foot p { font-size:9px; color:var(--dove); line-height:1.5; }
+  .panel-foot .code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:8.5px; color:var(--graphite); background:var(--fog); padding:4px 6px; border-radius:4px; flex:none; }
+  .toast { position:fixed; left:50%; bottom:30px; transform:translateX(-50%); z-index:100; display:flex; align-items:center; gap:8px; height:40px; padding:0 15px; border-radius:999px; background:var(--ink); color:var(--white); font-size:11px; box-shadow:0 16px 32px -12px rgba(23,25,28,.4); }
+  .toast .ic { width:13px; height:13px; }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19Z"/><path d="M12 9v5M12 17h.01"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-10"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+</svg>
+
+<div class="board">
+  <header class="head">
+    <div>
+      <div class="eyebrow">边缘状态 / Edge cases</div>
+      <h1>加载、空与异常</h1>
+      <p>营销列表在所有状态下都保持同一套骨架与语气：不闪烁、不跳版，每个状态都能明确告诉用户下一步。</p>
+    </div>
+    <div class="legend"><span class="a"><i></i>操作入口</span><span><i></i>系统状态</span></div>
+  </header>
+
+  <div class="grid">
+    <section class="panel">
+      <div class="panel-head"><div><div class="state-tag">State 01 / Loading</div><h2>正在加载</h2></div><div class="note">骨架屏与真实布局<br>1:1 对齐，避免跳动</div></div>
+      <div class="preview">
+        <div class="frame">
+          <div class="skeleton">
+            <div class="sk sk-title"></div>
+            <div class="sk sk-sub"></div>
+            <div class="sk-stats"><div class="sk-stat"><span class="sk l"></span><span class="sk v"></span></div><div class="sk-stat"><span class="sk l"></span><span class="sk v"></span></div><div class="sk-stat"><span class="sk l"></span><span class="sk v"></span></div><div class="sk-stat"><span class="sk l"></span><span class="sk v"></span></div></div>
+            <div class="sk-toolbar"><span class="sk sk-pill"></span><span class="sk sk-pill"></span><span class="sk sk-pill"></span></div>
+            <div class="sk-row"><span class="sk sk-thumb"></span><div class="sk-lines"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></div><span class="sk sk-cell"></span></div>
+            <div class="sk-row"><span class="sk sk-thumb"></span><div class="sk-lines"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></div><span class="sk sk-cell"></span></div>
+            <div class="sk-row"><span class="sk sk-thumb"></span><div class="sk-lines"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></div><span class="sk sk-cell"></span></div>
+            <div class="sk-row"><span class="sk sk-thumb"></span><div class="sk-lines"><span class="sk sk-l1"></span><span class="sk sk-l2"></span></div><span class="sk sk-cell"></span></div>
+            <div class="loading-note">正在同步营销项目…</div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-foot"><p>骨架使用 Fog 底色 + 8% Ink 微光，不做大面积纯灰块。</p><span class="code">skeleton / 6 cards + table</span></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><div class="state-tag">State 02 / Empty</div><h2>还没有房源</h2></div><div class="note">首次使用与筛选无结果<br>共用同一空态结构</div></div>
+      <div class="preview">
+        <div class="frame">
+          <div class="empty-state">
+            <div class="empty-art"><div class="sun"></div><div class="arch"></div><div class="line"></div><div class="dot"></div></div>
+            <h3>还没有营销房源</h3>
+            <p>创建第一套房源，或从项目库导入已有房源，开始搭建你的营销目录。</p>
+            <div class="empty-actions">
+              <button class="btn-primary" type="button" onClick="{{onCreate}}"><svg class="ic"><use href="#i-plus"></use></svg>创建第一套房源</button>
+              <button class="btn-ghost" type="button" onClick="{{onImport}}"><svg class="ic"><use href="#i-upload"></use></svg>从项目库导入</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-foot"><p>筛选无结果时替换标题为「没有符合条件的房源」，保留「清除筛选」入口。</p><span class="code">empty / filter-aware</span></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><div class="state-tag">State 03 / Error</div><h2>加载失败</h2></div><div class="note">错误信息说人话<br>保留唯一重试入口</div></div>
+      <div class="preview">
+        <div class="frame">
+          <div class="error-state">
+            <div class="error-icon"><svg class="ic"><use href="#i-alert"></use></svg></div>
+            <h3>数据加载失败</h3>
+            <p>未能连接到营销服务，请检查网络后重试。如果问题持续，请联系系统管理员。</p>
+            <span class="error-code">ERR_MARKETING_FETCH · 502</span>
+            <div class="error-actions">
+              <button class="btn-primary" type="button" onClick="{{onRetry}}"><svg class="ic"><use href="#i-refresh"></use></svg>重试</button>
+              <button class="btn-outline" type="button" onClick="{{onContact}}">联系管理员</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="panel-foot"><p>重试时按钮进入 loading 态，失败后保留原错误，不叠加 toast。</p><span class="code">error / retry-safe</span></div>
+    </section>
+  </div>
+</div>
+
+<sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { toast: null };
+    this._timer = null;
+  }
+  componentWillUnmount() { if (this._timer) clearTimeout(this._timer); }
+  notify(text) {
+    if (this._timer) clearTimeout(this._timer);
+    this.setState({ toast: text });
+    this._timer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+  renderVals() {
+    return {
+      onCreate: () => this.notify("前往创建新房源（演示）"),
+      onImport: () => this.notify("打开项目库选择（演示）"),
+      onRetry: () => this.notify("正在重新加载…（演示）"),
+      onContact: () => this.notify("已复制支持邮箱（演示）"),
+      toast: this.state.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

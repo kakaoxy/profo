@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>移动端房源预览</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face { font-family:"InterLocal"; src:url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2"); font-weight:100 900; font-style:normal; font-display:swap; }
+  @font-face { font-family:"SourceSerifLocal"; src:url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2"); font-weight:200 900; font-style:normal; font-display:swap; }
+  :root {
+    --ink:#17191c; --white:#fff; --fog:#f7f7f8; --ash:#4c4c4c; --graphite:#777b86; --dove:#a3a6af;
+    --rust:#5d2a1a; --apricot:#fbe1d1; --sky:#d3e3fc;
+    --hair:rgba(163,166,175,.32); --hair-soft:rgba(163,166,175,.18);
+    --font-ui:"InterLocal",-apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",sans-serif;
+    --font-display:"SourceSerifLocal","Songti SC","Noto Serif SC",Georgia,serif;
+    --shadow-card:rgba(4,23,43,.05) 0 0 0 1px,rgba(0,0,0,.10) 0 20px 25px -5px,rgba(0,0,0,.10) 0 8px 10px -6px;
+  }
+  *,*::before,*::after { box-sizing:border-box; }
+  html { -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+  body { margin:0; background:var(--white); color:var(--ink); font-family:var(--font-ui); font-size:14px; font-weight:430; letter-spacing:-.009em; line-height:1.5; }
+  button,input,select,textarea { font:inherit; letter-spacing:inherit; color:inherit; }
+  button { background:none; border:0; padding:0; cursor:pointer; }
+  h1,h2,h3,p { margin:0; }
+  a { color:inherit; text-decoration:none; }
+  svg { display:block; }
+  .ic { width:18px; height:18px; flex:none; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  :focus-visible { outline:2px solid var(--ink); outline-offset:2px; }
+  .phone { width:390px; height:844px; background:var(--white); position:relative; overflow:hidden; display:flex; flex-direction:column; }
+  .statusbar { height:44px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 22px; font-size:12px; font-weight:480; letter-spacing:.01em; }
+  .status-right { display:flex; align-items:center; gap:5px; }
+  .status-right .ic { width:14px; height:14px; stroke-width:2; }
+  .battery { width:22px; height:11px; border:1px solid var(--ink); border-radius:3px; position:relative; padding:1.5px; }
+  .battery::after { content:""; position:absolute; right:-3px; top:3px; width:2px; height:5px; background:var(--ink); border-radius:0 1px 1px 0; }
+  .battery i { display:block; height:100%; width:76%; background:var(--ink); border-radius:1px; }
+  .nav { height:48px; flex:none; display:flex; align-items:center; justify-content:space-between; padding:0 14px; background:var(--white); z-index:5; }
+  .nav-btn { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--ink); }
+  .nav-btn:active { background:var(--fog); }
+  .nav-title { font-size:13px; font-weight:480; letter-spacing:-.01em; }
+  .scroll { flex:1; min-height:0; overflow:hidden; position:relative; }
+  .hero { height:246px; position:relative; background:#eae6e0; }
+  .hero img { width:100%; height:100%; object-fit:cover; display:block; }
+  .hero-shade { position:absolute; inset:auto 0 0 0; height:46%; background:linear-gradient(180deg,rgba(23,25,28,0),rgba(23,25,28,.45)); pointer-events:none; }
+  .hero-top { position:absolute; left:14px; top:12px; display:flex; gap:6px; }
+  .badge { height:24px; padding:0 9px; border-radius:6px; background:rgba(255,255,255,.94); color:var(--ink); font-size:9.5px; display:inline-flex; align-items:center; gap:4px; font-weight:450; }
+  .badge::before { content:""; width:4px; height:4px; border-radius:50%; background:var(--rust); }
+  .hero-count { position:absolute; right:14px; top:12px; height:24px; padding:0 9px; border-radius:999px; background:rgba(23,25,28,.55); color:var(--white); font-size:9.5px; display:inline-flex; align-items:center; font-variant-numeric:tabular-nums; }
+  .hero-bottom { position:absolute; left:14px; right:14px; bottom:14px; display:flex; align-items:flex-end; justify-content:space-between; gap:10px; }
+  .hero-caption { color:var(--white); font-size:10.5px; display:flex; align-items:center; gap:6px; text-shadow:0 1px 6px rgba(0,0,0,.3); }
+  .hero-caption .dot { width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.7); }
+  .hero-next { width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.9); color:var(--ink); display:flex; align-items:center; justify-content:center; }
+  .hero-next .ic { width:15px; height:15px; }
+  .dots { position:absolute; left:50%; bottom:14px; transform:translateX(-50%); display:flex; gap:4px; }
+  .dot-i { width:4px; height:4px; border-radius:999px; background:rgba(255,255,255,.45); }
+  .dot-i.on { width:14px; background:var(--white); }
+
+  .body { padding:18px 20px 110px; }
+  .price-row { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; }
+  .price { font-family:var(--font-display); font-size:40px; line-height:.95; letter-spacing:-.04em; font-weight:400; font-variant-numeric:tabular-nums; }
+  .price small { font-family:var(--font-ui); font-size:11px; color:var(--graphite); letter-spacing:0; }
+  .price-sub { text-align:right; padding-bottom:4px; }
+  .price-sub b { display:block; font-size:10px; color:var(--ash); font-weight:450; font-variant-numeric:tabular-nums; }
+  .price-sub span { font-size:9px; color:var(--dove); }
+  .title { margin-top:11px; font-size:20px; line-height:1.3; font-weight:480; letter-spacing:-.025em; }
+  .meta { margin-top:5px; font-size:11px; color:var(--graphite); }
+  .tags { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; }
+  .tag { height:22px; padding:0 8px; border-radius:5px; background:var(--fog); color:var(--ash); font-size:9px; display:inline-flex; align-items:center; }
+  .tag.rust { background:var(--apricot); color:var(--rust); }
+  .rule { height:1px; background:var(--hair-soft); margin:18px 0 0; }
+  .section { padding-top:18px; }
+  .section-head { display:flex; align-items:center; justify-content:space-between; }
+  .section-head h2 { font-size:14px; font-weight:480; letter-spacing:-.015em; }
+  .section-head span { font-size:9.5px; color:var(--dove); }
+  .spec-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 18px; margin-top:10px; }
+  .spec-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--hair-soft); font-size:10.5px; }
+  .spec-row span { color:var(--dove); }
+  .spec-row b { font-weight:450; color:var(--ash); }
+  .highlight { margin-top:12px; padding:12px 13px; border-radius:12px; background:linear-gradient(135deg,var(--apricot) 0%,#fff7f1 100%); }
+  .highlight p { font-size:10.5px; line-height:1.6; color:var(--rust); }
+  .highlight b { font-weight:480; }
+  .agent { margin-top:13px; display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:12px; border:1px solid var(--hair-soft); }
+  .agent-avatar { width:36px; height:36px; border-radius:50%; background:var(--apricot); color:var(--rust); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:480; flex:none; }
+  .agent-body { flex:1; min-width:0; }
+  .agent-body b { font-size:11.5px; font-weight:450; }
+  .agent-body span { display:block; font-size:9px; color:var(--dove); margin-top:1px; }
+  .online { display:flex; align-items:center; gap:3px; font-size:8.5px; color:var(--rust); }
+  .online::before { content:""; width:4px; height:4px; border-radius:50%; background:var(--rust); }
+  .agent-call { width:34px; height:34px; border-radius:50%; background:var(--fog); display:flex; align-items:center; justify-content:center; color:var(--ink); }
+  .agent-call .ic { width:14px; height:14px; }
+  .community-row { margin-top:10px; border-radius:12px; background:var(--fog); padding:11px 12px; display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .community-row .name { font-size:11px; font-weight:450; }
+  .community-row .sub { font-size:9px; color:var(--dove); margin-top:1px; }
+  .community-row a { font-size:9.5px; color:var(--rust); display:inline-flex; align-items:center; gap:3px; }
+  .community-row a .ic { width:10px; height:10px; }
+
+  .bottom-bar { position:absolute; left:0; right:0; bottom:0; height:78px; padding:10px 16px 18px; background:rgba(255,255,255,.96); backdrop-filter:blur(12px); border-top:1px solid var(--hair-soft); display:flex; align-items:center; gap:9px; z-index:10; }
+  .bar-icon { width:44px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; color:var(--graphite); }
+  .bar-icon .ic { width:18px; height:18px; }
+  .bar-icon span { font-size:8px; }
+  .bar-icon.on { color:var(--rust); }
+  .bar-icon.on .ic { fill:var(--apricot); }
+  .btn-sub { flex:1; height:44px; border-radius:999px; border:1px solid var(--hair); font-size:12px; color:var(--ash); background:var(--white); }
+  .btn-sub.on { border-color:var(--rust); color:var(--rust); background:rgba(251,225,209,.35); }
+  .btn-book { flex:1.2; height:44px; border-radius:999px; background:var(--ink); color:var(--white); font-size:12px; font-weight:480; }
+  .btn-book:active { background:#000; }
+
+  .sheet-layer { position:absolute; inset:0; z-index:20; }
+  .sheet-scrim { position:absolute; inset:0; background:rgba(23,25,28,.38); }
+  .sheet { position:absolute; left:0; right:0; bottom:0; background:var(--white); border-radius:26px 26px 0 0; padding:10px 20px 26px; box-shadow:0 -20px 50px rgba(0,0,0,.18); }
+  .sheet-grab { width:36px; height:4px; border-radius:999px; background:var(--hair); margin:0 auto 16px; }
+  .sheet-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .sheet-head h3 { font-size:19px; font-weight:480; letter-spacing:-.02em; }
+  .sheet-head p { margin-top:3px; font-size:10px; color:var(--graphite); }
+  .sheet-close { width:32px; height:32px; border-radius:50%; background:var(--fog); display:flex; align-items:center; justify-content:center; color:var(--graphite); }
+  .sheet-close .ic { width:13px; height:13px; }
+  .slot-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; margin-top:18px; }
+  .slot { height:44px; border:1px solid var(--hair); border-radius:10px; font-size:10.5px; color:var(--ash); background:var(--white); }
+  .slot.on { border-color:var(--rust); background:var(--apricot); color:var(--rust); font-weight:450; }
+  .slot-label { font-size:9.5px; color:var(--dove); margin-top:15px; }
+  .sheet-confirm { width:100%; height:46px; margin-top:18px; border-radius:999px; background:var(--ink); color:var(--white); font-size:12.5px; font-weight:480; }
+  .toast { position:absolute; left:50%; bottom:92px; transform:translateX(-50%); z-index:30; display:flex; align-items:center; gap:7px; height:38px; padding:0 14px; border-radius:999px; background:var(--ink); color:var(--white); font-size:11px; white-space:nowrap; box-shadow:0 12px 24px -10px rgba(23,25,28,.45); }
+  .toast .ic { width:12px; height:12px; }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 20s-7-4.4-9.3-8.6C.9 8 3.2 4 7 4c2 0 3.4 1 5 3 1.6-2 3-3 5-3 3.8 0 6.1 4 4.3 7.4C19 15.6 12 20 12 20Z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M6.5 3h3l1.5 4-2 1.5a14 14 0 0 0 6.5 6.5L17 13l4 1.5v3a2.5 2.5 0 0 1-2.5 2.5A16.5 16.5 0 0 1 4 5.5 2.5 2.5 0 0 1 6.5 3Z"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0"/><circle cx="12" cy="19" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-7M14 20V9M19 20V4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-10"/></symbol>
+  <symbol id="i-map-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.8"/></symbol>
+</svg>
+
+<div class="phone">
+  <div class="statusbar">
+    <span>9:41</span>
+    <div class="status-right"><svg class="ic"><use href="#i-signal"></use></svg><svg class="ic"><use href="#i-wifi"></use></svg><span class="battery"><i></i></span></div>
+  </div>
+  <div class="nav">
+    <button class="nav-btn" type="button" aria-label="返回" onClick="{{onBack}}"><svg class="ic"><use href="#i-back"></use></svg></button>
+    <span class="nav-title">房源详情</span>
+    <button class="nav-btn" type="button" aria-label="分享" onClick="{{onShare}}"><svg class="ic"><use href="#i-share"></use></svg></button>
+  </div>
+
+  <div class="scroll">
+    <div class="hero">
+      <img src="{{activePhoto}}" alt="{{activeLabel}}" />
+      <div class="hero-shade"></div>
+      <div class="hero-top"><span class="badge">营销主图</span><span class="badge" style="background:var(--rust);color:var(--white)">已发布</span></div>
+      <span class="hero-count">{{photoIndex}} / {{photoTotal}}</span>
+      <div class="hero-bottom">
+        <div class="hero-caption"><strong>{{activeLabel}}</strong><span class="dot"></span><span>{{activeNote}}</span></div>
+        <button class="hero-next" type="button" aria-label="下一张照片" onClick="{{nextPhoto}}"><svg class="ic"><use href="#i-arrow-right"></use></svg></button>
+      </div>
+      <div class="dots"><sc-for list="{{dotList}}" as="d" hint-placeholder-count="6"><span class="dot-i {{d.onClass}}"></span></sc-for></div>
+    </div>
+
+    <div class="body">
+      <div class="price-row">
+        <div class="price">¥{{price}}<small>万</small></div>
+        <div class="price-sub"><b>¥{{unitPrice}} / ㎡</b><span>东南向 · 简装</span></div>
+      </div>
+      <div class="title">金杨十街坊 · 南向一居</div>
+      <div class="meta">1室1厅1卫 · 26.81㎡ · 南 · 1/6层</div>
+      <div class="tags"><span class="tag rust">南向采光</span><span class="tag">近地铁 6 号线</span><span class="tag">满五唯一</span><span class="tag">看房方便</span></div>
+
+      <div class="rule"></div>
+      <section class="section">
+        <div class="section-head"><h2>房源信息</h2><span>编号 298</span></div>
+        <div class="spec-grid">
+          <div class="spec-row"><span>户型</span><b>1室1厅1卫</b></div>
+          <div class="spec-row"><span>建筑面积</span><b>26.81 ㎡</b></div>
+          <div class="spec-row"><span>楼层</span><b>1 / 6 层</b></div>
+          <div class="spec-row"><span>朝向</span><b>南</b></div>
+          <div class="spec-row"><span>装修</span><b>现代简约</b></div>
+          <div class="spec-row"><span>用途</span><b>住宅</b></div>
+        </div>
+        <div class="highlight"><p><b>南向全明一居，</b>客厅与主卧双朝南，上午采光充足；步行约 600 米可达地铁 6 号线，周边生活配套成熟。</p></div>
+        <div class="agent">
+          <div class="agent-avatar">唐</div>
+          <div class="agent-body"><b>唐欣帆</b><span>金杨店 · 从业 6 年</span></div>
+          <span class="online">在线</span>
+          <button class="agent-call" type="button" aria-label="电话联系顾问" onClick="{{onShare}}"><svg class="ic"><use href="#i-phone"></use></svg></button>
+        </div>
+      </section>
+
+      <div class="rule"></div>
+      <section class="section">
+        <div class="section-head"><h2>小区信息</h2><span>1998 年建成</span></div>
+        <div class="community-row">
+          <div><div class="name">金杨十街坊</div><div class="sub">浦东新区 金杨 · 绿化率 35% · 物业 0.8 元/㎡</div></div>
+          <a href="#" onClick="{{onShare}}">地图<svg class="ic"><use href="#i-arrow-right"></use></svg></a>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div class="bottom-bar">
+    <button class="bar-icon {{favClass}}" type="button" onClick="{{toggleFav}}"><svg class="ic"><use href="#i-heart"></use></svg><span>{{favLabel}}</span></button>
+    <button class="btn-sub {{subClass}}" type="button" onClick="{{toggleSub}}">{{subLabel}}</button>
+    <button class="btn-book" type="button" onClick="{{openSheet}}">预约看房</button>
+  </div>
+
+  <sc-if value="{{sheetOpen}}">
+    <div class="sheet-layer">
+      <button class="sheet-scrim" type="button" onClick="{{closeSheet}}" aria-label="关闭预约面板"></button>
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+        <div class="sheet-grab"></div>
+        <div class="sheet-head">
+          <div><h3 id="sheet-title">预约看房</h3><p>金杨十街坊 · 21号楼 102室</p></div>
+          <button class="sheet-close" type="button" onClick="{{closeSheet}}" aria-label="关闭"><svg class="ic"><use href="#i-x"></use></svg></button>
+        </div>
+        <div class="slot-label">选择日期</div>
+        <div class="slot-grid"><sc-for list="{{daySlots}}" as="d" hint-placeholder-count="3"><button class="slot {{d.onClass}}" type="button" onClick="{{d.onClick}}">{{d.label}}</button></sc-for></div>
+        <div class="slot-label">选择时段</div>
+        <div class="slot-grid"><sc-for list="{{timeSlots}}" as="t" hint-placeholder-count="3"><button class="slot {{t.onClass}}" type="button" onClick="{{t.onClick}}">{{t.label}}</button></sc-for></div>
+        <button class="sheet-confirm" type="button" onClick="{{confirmBooking}}">确认预约 · 随时可取消</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      photoIndex: 0,
+      favorite: false,
+      subscribed: false,
+      sheetOpen: false,
+      day: 0,
+      time: 1,
+      toast: null
+    };
+    this._timer = null;
+  }
+  componentWillUnmount() { if (this._timer) clearTimeout(this._timer); }
+  notify(text) {
+    if (this._timer) clearTimeout(this._timer);
+    this.setState({ toast: text });
+    this._timer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+  renderVals() {
+    const s = this.state;
+    const photo = MOBILE_PHOTOS[s.photoIndex];
+    return {
+      activePhoto: photo.src,
+      activeLabel: photo.label,
+      activeNote: photo.note,
+      photoIndex: s.photoIndex + 1,
+      photoTotal: MOBILE_PHOTOS.length,
+      dotList: MOBILE_PHOTOS.map((_, i) => ({ onClass: i === s.photoIndex ? "on" : "" })),
+      nextPhoto: () => this.setState({ photoIndex: (s.photoIndex + 1) % MOBILE_PHOTOS.length }),
+      price: "115",
+      unitPrice: "42,895",
+      favClass: s.favorite ? "on" : "",
+      favLabel: s.favorite ? "已收藏" : "收藏",
+      toggleFav: () => { this.setState({ favorite: !s.favorite }); this.notify(s.favorite ? "已取消收藏" : "已加入收藏"); },
+      subClass: s.subscribed ? "on" : "",
+      subLabel: s.subscribed ? "已订阅 37 人" : "订阅房源",
+      toggleSub: () => { this.setState({ subscribed: !s.subscribed }); this.notify(s.subscribed ? "已取消订阅" : "订阅成功，有调价将第一时间通知你"); },
+      openSheet: () => this.setState({ sheetOpen: true }),
+      closeSheet: () => this.setState({ sheetOpen: false }),
+      sheetOpen: s.sheetOpen,
+      daySlots: ["今天 11/07", "周六 11/08", "周日 11/09"].map((label, i) => ({ label, onClass: i === s.day ? "on" : "", onClick: () => this.setState({ day: i }) })),
+      timeSlots: ["上午 10:00", "下午 14:00", "傍晚 17:30"].map((label, i) => ({ label, onClass: i === s.time ? "on" : "", onClick: () => this.setState({ time: i }) })),
+      confirmBooking: () => { this.setState({ sheetOpen: false }); this.notify("预约已提交，顾问将在 30 分钟内联系你（演示）"); },
+      onBack: () => this.notify("返回列表（演示）"),
+      onShare: () => this.notify("房源链接已复制（演示）"),
+      toast: s.toast
+    };
+  }
+}
+const MOBILE_PHOTOS = [
+  { src: "/_blob/eef2b5c537e41cef4635ccb4d63f577e", label: "客厅 · 南向采光", note: "上午 10:12 实拍" },
+  { src: "/_blob/c4a6fad37f17151aef3b97c7d3e18320", label: "卧室 · 南向", note: "上午 10:18 实拍" },
+  { src: "/_blob/e3ac7e5b293c1710c5fd9e6e352af5a5", label: "厨房 · 一字型操作台", note: "上午 10:22 实拍" },
+  { src: "/_blob/b63e531b3f9b8651c6c79a4f7fa3abfc", label: "卫生间 · 干湿分离", note: "上午 10:26 实拍" },
+  { src: "/_blob/b6fa178faebe9faa3f4aca7da94452f1", label: "餐厅 · 四人位", note: "上午 10:31 实拍" },
+  { src: "/_blob/2402638cc2d41050c476aedcc1f7c939", label: "小区外立面", note: "上午 10:40 实拍" }
+];
+</script>
+</body>
+</html>

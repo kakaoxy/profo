@@ -25,6 +25,7 @@ from .media import (
     MediaSortOrderUpdate,
 )
 from .project import (
+    L4MarketingDailyView,
     L4MarketingNotifySummary,
     L4MarketingPriceChangeSummary,
     L4MarketingPriceChangeTimelineItem,
@@ -33,6 +34,7 @@ from .project import (
     L4MarketingProjectCreate,
     L4MarketingProjectResponse,
     L4MarketingProjectUpdate,
+    L4MarketingViewSummary,
 )
 from .query import (
     L4MarketingMediaListResponse,
@@ -60,6 +62,7 @@ __all__ = [
     "L3ProjectImportResponse",
     "L3ProjectListResponse",
     "L3ProjectQueryParams",
+    "L4MarketingDailyView",
     # Media
     "L4MarketingMediaBase",
     "L4MarketingMediaCreate",
@@ -80,6 +83,7 @@ __all__ = [
     "L4MarketingProjectSummary",
     "L4MarketingProjectUpdate",
     "L4MarketingSubscriptionStatsResponse",
+    "L4MarketingViewSummary",
     "L4MediaType",
     "L4RefreshResponse",
     "L4SyncResponse",

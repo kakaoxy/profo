@@ -33,6 +33,24 @@ class L4MarketingNotifySummary(BaseModel):
     )
 
 
+class L4MarketingDailyView(BaseModel):
+    """营销项目单日浏览统计."""
+
+    date: str = Field(description="日期 YYYY-MM-DD")
+    count: int = Field(default=0, ge=0, description="当日浏览次数(PV)")
+
+
+class L4MarketingViewSummary(BaseModel):
+    """营销项目浏览统计（admin 详情页，累计口径 + 近 7 日曲线）."""
+
+    view_count: int = Field(default=0, description="累计浏览次数(PV)")
+    visitor_count: int = Field(default=0, description="累计浏览人数(UV，按 visitor_id 去重)")
+    daily_views: list[L4MarketingDailyView] = Field(
+        default_factory=list,
+        description="近 7 日按日浏览次数（仅详情接口填充，列表接口为空数组）",
+    )
+
+
 class L4MarketingPriceChangeTimelineItem(BaseModel):
     """调价历史时间线条目（admin 详情抽屉时间线数据源，含分次送达统计）."""
 
@@ -320,6 +338,12 @@ class L4MarketingProjectResponse(BaseModel):
     notify_summary: L4MarketingNotifySummary | None = Field(
         None,
         description="订阅通知送达统计（服务层聚合填充）",
+    )
+
+    # 浏览统计（admin 详情页；服务层聚合填充，累计口径）
+    view_summary: L4MarketingViewSummary | None = Field(
+        None,
+        description="房源浏览统计（服务层聚合填充）",
     )
 
     @field_validator("images", "tags", mode="before")

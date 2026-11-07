@@ -21,9 +21,19 @@ export interface DeleteConfirmButtonProps {
   onDelete: () => Promise<{ success: boolean; message?: string }>;
   itemName?: string;
   description?: string;
+  /** 可选文案；传入后显示图标 + 文案，默认仅图标 */
+  label?: string;
+  /** 追加按钮样式，用于页面级操作与行内操作统一视觉语言 */
+  className?: string;
 }
 
-export function DeleteConfirmButton({ onDelete, itemName, description }: DeleteConfirmButtonProps) {
+export function DeleteConfirmButton({
+  onDelete,
+  itemName,
+  description,
+  label,
+  className,
+}: DeleteConfirmButtonProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -56,10 +66,14 @@ export function DeleteConfirmButton({ onDelete, itemName, description }: DeleteC
         <Button
           variant="ghost"
           size="sm"
-          className="text-muted-foreground hover:text-error hover:bg-error-container h-8 w-8 p-0 rounded-full"
+          className={`text-muted-foreground hover:text-error hover:bg-error-container ${
+            label ? "h-8 gap-1.5 rounded-full px-2.5" : "h-8 w-8 rounded-full p-0"
+          } ${className ?? ""}`}
+          aria-label={label || "删除"}
           onClick={handleStopPropagation}
         >
           <Trash2 className="h-3.5 w-3.5" />
+          {label ? <span className="text-xs font-medium">{label}</span> : null}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent onClick={handleStopPropagation}>

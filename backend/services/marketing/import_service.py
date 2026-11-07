@@ -133,11 +133,11 @@ class MarketingImportService:
         return community.id if community else None
 
     def _get_total_price(self, project: Project) -> Decimal | None:
-        """获取总价（优先使用签约价格）."""
-        if project.contract and project.contract.signing_price:
-            return project.contract.signing_price
+        """获取总价（优先使用挂牌价，缺失时回退签约价）."""
         if project.sale and project.sale.list_price:
             return project.sale.list_price
+        if project.contract and project.contract.signing_price:
+            return project.contract.signing_price
         return None
 
     def _calculate_unit_price(

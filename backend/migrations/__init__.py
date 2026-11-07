@@ -240,6 +240,7 @@ from migrations._project_sale_partial_unique import (
     cleanup_redundant_soft_deleted_sales,
     rebuild_project_sale_unique_index,
 )
+from migrations._project_visits_index import add_project_visits_project_index
 from migrations._property_sheet import create_property_sheet_tables
 from migrations._recruit import (
     add_poster_bg_url_to_campaigns,
@@ -412,6 +413,8 @@ def _run_all_migrations(engine: Engine) -> None:
         # 房源预约与分享归因闭环：幂等创建 5 张新表
         # （project_bookings/project_visits/project_share_events/valuation_visits/valuation_share_events）
         create_project_booking_and_share_tables(engine)
+        # 详情页浏览统计：project_visits(marketing_project_id, created_at) 复合索引
+        add_project_visits_project_index(engine)
         # 预约状态机：project_bookings 补加 status 列（统一 5 态，存量回填 'new'）
         add_project_booking_status_column(engine)
         # 房源单分享（多房源一图分享）：幂等创建 4 张新表

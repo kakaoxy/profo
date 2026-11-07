@@ -357,8 +357,8 @@ export const PriceChangeCard = memo(function PriceChangeCard({
   // ── 浏览态 ──
   const browsePane = (
     <div>
-      <div className="text-[11px] tracking-wide text-graphite">当前总价</div>
-      <div className="font-display mt-1.5 text-[40px] leading-none tracking-tight text-ink">
+      <div className="text-[10px] text-graphite">当前挂牌总价</div>
+      <div className="font-display mt-2 text-[52px] leading-none tracking-[-0.035em] text-ink tabular-nums">
         {formatWanDisplay(currentPrice)}
         <span className="ml-1 font-sans text-sm font-normal text-graphite">万</span>
       </div>
@@ -390,15 +390,15 @@ export const PriceChangeCard = memo(function PriceChangeCard({
         </div>
       )}
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-5">
         {showEntry ? (
           <Button
             size="sm"
-            className="rounded-full bg-ink text-white hover:bg-ink/90"
+            className="h-10 w-full rounded-full bg-ink text-white hover:bg-ink/90"
             onClick={openPricing}
           >
-            <Pencil className="mr-1 h-3 w-3" />
-            调价
+            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            调整价格
           </Button>
         ) : (
           <span className="text-[11px] text-dove">
@@ -410,14 +410,14 @@ export const PriceChangeCard = memo(function PriceChangeCard({
           </span>
         )}
         {showEntry && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 rounded-full text-xs text-graphite hover:bg-fog hover:text-ink"
+          <button
+            type="button"
+            className="mt-3 w-full text-center text-[11px] text-graphite hover:text-ink"
             onClick={() => setTlOpen((v) => !v)}
           >
             调价历史{timeline !== null ? ` (${timeline.length})` : ""}
-          </Button>
+            <span className="ml-1 text-dove">{tlOpen ? "收起" : "展开"}</span>
+          </button>
         )}
       </div>
 
@@ -520,11 +520,11 @@ export const PriceChangeCard = memo(function PriceChangeCard({
           className="rounded-full text-xs text-graphite hover:bg-fog hover:text-ink"
           onClick={() => {
             document
-              .getElementById("push-stat-card")
+              .getElementById("view-stat-card")
               ?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
         >
-          查看推送统计
+          查看浏览数据
         </Button>
         <Button
           size="sm"
@@ -538,9 +538,14 @@ export const PriceChangeCard = memo(function PriceChangeCard({
   );
 
   return (
-    <div className="bg-white rounded-cards shadow-steep-sm p-6">
-      <h3 className="mb-3 text-xs font-medium text-ink">价格与调价</h3>
+    <section className="rounded-cards bg-white p-5 shadow-steep-sm">
+      <div className="mb-3 flex items-center justify-between">
+        <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-graphite">
+          Pricing <span className="text-dove">/</span> 价格
+        </div>
+        <span className="text-[10px] text-dove">总价 · 万元</span>
+      </div>
       {mode === "browse" ? browsePane : mode === "form" ? formPane : successPane}
-    </div>
+    </section>
   );
 });

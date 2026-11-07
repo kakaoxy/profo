@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>房源营销 · 营销总览</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face {
+    font-family: "InterLocal";
+    src: url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "SourceSerifLocal";
+    src: url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --ink: #17191c;
+    --white: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-edge: rgba(93,42,26,.18);
+    --sky: #d3e3fc;
+    --hair: rgba(163, 166, 175, 0.32);
+    --hair-soft: rgba(163, 166, 175, 0.18);
+    --font-ui: "InterLocal", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --font-display: "SourceSerifLocal", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --shadow-card: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.10) 0 20px 25px -5px, rgba(0, 0, 0, 0.10) 0 8px 10px -6px;
+    --shadow-sm: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.06) 0 10px 20px -8px, rgba(0, 0, 0, 0.05) 0 3px 6px -4px;
+    --r-card: 24px;
+    --r-input: 16px;
+    --r-pill: 9999px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    margin: 0;
+    background: var(--fog);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 430;
+    letter-spacing: -0.009em;
+    line-height: 1.5;
+  }
+  button, input, select { font: inherit; letter-spacing: inherit; color: inherit; }
+  button { background: none; border: 0; padding: 0; cursor: pointer; }
+  h1, h2, h3, p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  svg { display: block; }
+  .ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .app { display: flex; min-height: 100vh; background: var(--fog); }
+
+  /* rail */
+  .rail {
+    width: 76px; flex: none; align-self: flex-start; position: sticky; top: 0;
+    height: 100vh; padding: 20px 0 18px; display: flex; flex-direction: column; align-items: center;
+    background: var(--fog); border-right: 1px solid var(--hair-soft);
+  }
+  .logo {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--ink); color: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-ui); font-size: 17px; font-weight: 480; letter-spacing: 0;
+  }
+  .rail-nav { margin-top: 30px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .rail-btn {
+    width: 42px; height: 42px; border-radius: 13px; color: var(--graphite);
+    display: flex; align-items: center; justify-content: center; position: relative;
+    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  }
+  .rail-btn .ic { width: 19px; height: 19px; stroke-width: 1.6; }
+  .rail-btn:hover { background: rgba(23, 25, 28, 0.05); color: var(--ink); }
+  .rail-btn[aria-current="page"] { background: var(--white); color: var(--ink); box-shadow: var(--shadow-sm); }
+  .rail-btn[aria-current="page"]::after {
+    content: ""; position: absolute; bottom: 5px; left: 50%; width: 3px; height: 3px;
+    margin-left: -1.5px; border-radius: 50%; background: var(--rust);
+  }
+  .rail-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .rail-btn.small { width: 38px; height: 38px; border-radius: 11px; color: var(--dove); }
+  .rail-btn.small .ic { width: 18px; height: 18px; }
+
+  /* page frame */
+  .main { flex: 1; min-width: 0; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 44px 56px; }
+  .topbar { height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--hair-soft); }
+  .crumb { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--dove); }
+  .crumb .slash { color: var(--hair); }
+  .crumb .here { color: var(--ink); font-weight: 450; }
+  .topbar-right { display: flex; align-items: center; gap: 18px; }
+  .sync { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--graphite); }
+  .sync .ic { width: 14px; height: 14px; color: var(--dove); }
+  .sync .live { width: 5px; height: 5px; border-radius: 50%; background: var(--rust); box-shadow: 0 0 0 3px rgba(93, 42, 26, 0.08); }
+  .avatar-btn {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--apricot); color: var(--rust);
+    display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 480;
+  }
+
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; padding: 30px 0 24px; }
+  .eyebrow { display: flex; align-items: center; gap: 9px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--graphite); font-weight: 480; }
+  .eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--rust); }
+  .page-title h1 { margin-top: 10px; font-family: var(--font-display); font-size: 44px; line-height: 1.06; font-weight: 400; letter-spacing: -0.022em; }
+  .page-desc { max-width: 620px; margin-top: 10px; font-size: 13.5px; line-height: 1.55; color: var(--graphite); }
+  .page-actions { display: flex; align-items: center; gap: 18px; padding-bottom: 4px; flex: none; }
+  .text-action { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--graphite); transition: color 150ms ease; }
+  .text-action:hover { color: var(--ink); }
+  .text-action .ic { width: 15px; height: 15px; }
+  .btn-primary {
+    height: 46px; padding: 0 22px; border-radius: var(--r-pill); background: var(--ink); color: var(--white);
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 13.5px; font-weight: 480; letter-spacing: -0.01em; box-shadow: 0 10px 22px -12px rgba(23, 25, 28, 0.6);
+    transition: background 160ms ease, transform 160ms ease;
+  }
+  .btn-primary:hover { background: #000; }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-primary .ic { width: 15px; height: 15px; }
+
+  /* desk summary */
+  .desk { background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-card); overflow: hidden; }
+  .desk-head { display: grid; grid-template-columns: minmax(340px, 1.05fr) minmax(560px, 1fr); gap: 48px; align-items: end; padding: 28px 30px 26px; }
+  .desk-kicker { display: flex; align-items: center; gap: 9px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--graphite); font-weight: 480; }
+  .desk-kicker::before { content: ""; width: 18px; height: 1px; background: var(--rust); }
+  .desk-number { display: flex; align-items: baseline; gap: 10px; margin-top: 8px; }
+  .desk-num { font-family: var(--font-display); font-size: 64px; line-height: 0.94; font-weight: 400; letter-spacing: -0.035em; font-variant-numeric: lining-nums tabular-nums; }
+  .desk-unit { font-size: 13.5px; color: var(--graphite); letter-spacing: -0.01em; }
+  .desk-sub { margin-top: 9px; font-size: 12px; color: var(--graphite); }
+  .desk-sub b { font-weight: 450; color: var(--ink); }
+  .desk-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .desk-metric { min-width: 0; padding: 0 18px; border-left: 1px solid var(--hair-soft); }
+  .desk-metric:first-child { padding-left: 0; border-left: 0; }
+  .dm-label { display: block; font-size: 11px; color: var(--dove); letter-spacing: 0.02em; white-space: nowrap; }
+  .dm-value { margin-top: 5px; font-size: 24px; line-height: 1.1; font-weight: 450; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .dm-value small { margin-left: 3px; font-size: 10.5px; font-weight: 430; color: var(--graphite); letter-spacing: 0; }
+  .dm-sub { margin-top: 4px; font-size: 10.5px; color: var(--dove); white-space: nowrap; }
+  .desk-foot { display: flex; align-items: center; gap: 28px; padding: 14px 30px; border-top: 1px solid var(--hair-soft); background: rgba(247,247,248,.58); }
+  .signal { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--graphite); }
+  .signal .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--dove); }
+  .signal .dot.rust { background: var(--rust); }
+  .signal b { color: var(--ink); font-weight: 480; font-variant-numeric: tabular-nums; }
+  .signal:last-child { margin-left: auto; color: var(--rust); }
+
+  /* list card */
+  .list-card { margin-top: 22px; background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-card); overflow: hidden; }
+  .list-top { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 22px 24px 14px; }
+  .list-title { display: flex; align-items: center; gap: 9px; }
+  .list-title h2 { font-size: 18px; font-weight: 480; letter-spacing: -0.018em; }
+  .count-pill { height: 21px; min-width: 21px; padding: 0 7px; border-radius: var(--r-pill); background: var(--fog); color: var(--graphite); display: inline-flex; align-items: center; justify-content: center; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .list-tools { display: flex; align-items: center; gap: 8px; }
+  .search {
+    width: 268px; height: 44px; padding: 0 12px; border: 1px solid var(--hair); border-radius: var(--r-input);
+    background: var(--white); display: flex; align-items: center; gap: 8px; color: var(--dove);
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .search:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23, 25, 28, 0.06); }
+  .search .ic { width: 15px; height: 15px; }
+  .search input { min-width: 0; flex: 1; height: 100%; border: 0; outline: 0; background: transparent; font-size: 12.5px; color: var(--ink); }
+  .search input::placeholder { color: var(--dove); }
+  .kbd { flex: none; padding: 1px 5px; border: 1px solid var(--hair-soft); border-radius: 5px; font-size: 9.5px; color: var(--dove); }
+  .view-seg { display: flex; gap: 2px; padding: 3px; border-radius: 12px; background: var(--fog); }
+  .view-seg button { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: var(--dove); transition: background 150ms ease, color 150ms ease; }
+  .view-seg button:hover { color: var(--ink); }
+  .view-seg button.on { background: var(--white); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .view-seg .ic { width: 16px; height: 16px; }
+
+  .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 0 24px 16px; border-bottom: 1px solid var(--hair-soft); flex-wrap: wrap; }
+  .quick-tabs { display: flex; align-items: center; gap: 22px; }
+  .quick-tab { position: relative; padding: 4px 0 9px; font-size: 12.5px; color: var(--graphite); transition: color 150ms ease; }
+  .quick-tab:hover { color: var(--ink); }
+  .quick-tab.on { color: var(--ink); font-weight: 480; }
+  .quick-tab.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 2px; background: var(--ink); }
+  .quick-tab .n { margin-left: 4px; font-size: 10.5px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .quick-tab.on .n { color: var(--rust); }
+  .filters { display: flex; align-items: center; gap: 8px; }
+  .select-wrap { position: relative; height: 40px; border: 1px solid var(--hair); border-radius: 12px; background: var(--white); display: flex; align-items: center; }
+  .select-wrap select { height: 100%; padding: 0 30px 0 11px; border: 0; outline: 0; appearance: none; background: transparent; font-size: 11.5px; color: var(--ash); cursor: pointer; }
+  .select-wrap .chev { position: absolute; right: 9px; width: 12px; height: 12px; color: var(--dove); pointer-events: none; }
+  .sort-btn { display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 8px; border-radius: 8px; font-size: 11px; color: var(--graphite); }
+  .sort-btn:hover { background: var(--fog); color: var(--ink); }
+  .sort-btn .ic { width: 12px; height: 12px; color: var(--dove); }
+
+  .filter-row { display: flex; align-items: center; gap: 6px; padding: 12px 24px 0; flex-wrap: wrap; }
+  .chip { height: 26px; padding: 0 4px 0 10px; border-radius: var(--r-pill); background: var(--fog); display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ash); }
+  .chip button { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--dove); }
+  .chip button:hover { background: var(--white); color: var(--ink); }
+  .chip .ic { width: 10px; height: 10px; }
+  .clear-all { margin-left: 4px; font-size: 11px; color: var(--graphite); text-decoration: underline; text-underline-offset: 2px; }
+  .clear-all:hover { color: var(--ink); }
+
+  .table-scroll { overflow-x: auto; }
+  .t-head, .l-row { display: grid; grid-template-columns: minmax(300px, 2.1fr) 132px 118px 142px 124px 104px 30px; column-gap: 14px; align-items: center; padding: 0 24px; }
+  .t-head { height: 42px; border-bottom: 1px solid var(--hair-soft); background: var(--fog); font-size: 10px; font-weight: 480; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dove); }
+  .t-head span:last-child { text-align: right; }
+  .l-row { min-height: 92px; border-bottom: 1px solid var(--hair-soft); position: relative; transition: background 150ms ease, box-shadow 150ms ease; }
+  .l-row:hover { background: rgba(23,25,28,.02); box-shadow: inset 2px 0 0 var(--rust); }
+  .l-row:last-child { border-bottom: 0; }
+  .prop { display: flex; align-items: center; gap: 13px; min-width: 0; }
+  .cover { width: 72px; height: 56px; flex: none; border-radius: 12px; overflow: hidden; background: #eae6e0; position: relative; }
+  .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cover .badge { position: absolute; left: 5px; top: 5px; height: 16px; padding: 0 5px; border-radius: 5px; background: rgba(23,25,28,.82); color: #fff; font-size: 8px; letter-spacing: .04em; display: inline-flex; align-items: center; }
+  .p-text { min-width: 0; }
+  .p-title { display: flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 480; letter-spacing: -0.012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .new-tag { flex: none; height: 18px; padding: 0 6px; border-radius: 999px; background: var(--ink); color: var(--white); font-size: 8.5px; font-weight: 450; display: inline-flex; align-items: center; letter-spacing: .02em; }
+  .p-meta { margin-top: 4px; font-size: 11px; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-meta .dot { margin: 0 5px; color: var(--dove); }
+  .p-id { margin-top: 2px; font-size: 9.5px; color: var(--dove); font-variant-numeric: tabular-nums; }
+
+  .status-stack { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; }
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: var(--r-pill); font-size: 10.5px; font-weight: 450; white-space: nowrap; }
+  .status-pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .85; }
+  .st-published { background: var(--rust); color: var(--white); }
+  .st-draft { background: var(--fog); color: var(--graphite); }
+  .sale-label { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--graphite); }
+  .sale-label .sq { width: 5px; height: 5px; border-radius: 50%; background: var(--dove); }
+  .sale-label.online .sq { background: var(--ink); }
+  .sale-label.sold .sq { background: var(--dove); }
+
+  .spec-main { font-size: 13px; font-weight: 450; letter-spacing: -0.008em; white-space: nowrap; }
+  .spec-sub { margin-top: 4px; font-size: 10.5px; color: var(--graphite); white-space: nowrap; }
+  .price-main { font-size: 15px; font-weight: 480; letter-spacing: -0.015em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .price-main .unit { margin-left: 2px; font-size: 10.5px; font-weight: 430; color: var(--graphite); }
+  .price-sub { margin-top: 3px; font-size: 10.5px; color: var(--graphite); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .price-change { margin-top: 2px; font-size: 9.5px; color: var(--rust); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .reach-main { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 450; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .reach-main .ic { width: 13px; height: 13px; color: var(--rust); }
+  .reach-sub { margin-top: 4px; font-size: 10px; color: var(--dove); white-space: nowrap; }
+  .update-main { font-size: 11.5px; color: var(--ash); white-space: nowrap; }
+  .update-sub { margin-top: 3px; font-size: 9.5px; color: var(--dove); white-space: nowrap; }
+  .row-arrow { width: 30px; height: 30px; justify-self: end; border: 1px solid var(--hair); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--dove); transition: background 150ms ease, border-color 150ms ease, color 150ms ease; }
+  .row-arrow .ic { width: 13px; height: 13px; }
+  .l-row:hover .row-arrow { background: var(--ink); border-color: var(--ink); color: var(--white); }
+
+  .gallery { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 18px 24px 24px; }
+  .g-card { border: 1px solid var(--hair-soft); border-radius: 20px; overflow: hidden; background: var(--white); transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease; }
+  .g-card:hover { border-color: var(--hair); box-shadow: var(--shadow-sm); transform: translateY(-2px); }
+  .g-img { height: 156px; position: relative; background: #eae6e0; overflow: hidden; }
+  .g-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .g-badges { position: absolute; left: 10px; top: 10px; display: flex; gap: 5px; }
+  .g-badges .status-pill { box-shadow: 0 4px 10px rgba(0,0,0,.14); }
+  .g-copy { padding: 15px 15px 14px; }
+  .g-title { font-size: 14.5px; font-weight: 480; letter-spacing: -0.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g-meta { margin-top: 4px; font-size: 10.5px; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .g-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 13px; padding-top: 12px; border-top: 1px solid var(--hair-soft); }
+  .g-price { font-size: 20px; font-weight: 480; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; line-height: 1; }
+  .g-price small { margin-left: 2px; font-size: 10px; font-weight: 430; color: var(--graphite); letter-spacing: 0; }
+  .g-unit { margin-top: 4px; font-size: 9.5px; color: var(--dove); }
+  .g-reach { text-align: right; }
+  .g-reach b { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 11px; font-weight: 450; color: var(--ink); }
+  .g-reach b .ic { width: 12px; height: 12px; color: var(--rust); }
+  .g-reach span { display: block; margin-top: 3px; font-size: 9px; color: var(--dove); }
+
+  .empty-state { padding: 66px 24px 72px; text-align: center; }
+  .empty-icon { width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 14px; background: var(--fog); display: flex; align-items: center; justify-content: center; color: var(--dove); }
+  .empty-icon .ic { width: 20px; height: 20px; }
+  .empty-state h3 { font-size: 15px; font-weight: 480; }
+  .empty-state p { margin-top: 5px; font-size: 12px; color: var(--graphite); }
+  .btn-ghost { margin-top: 16px; height: 40px; padding: 0 18px; border: 1px solid var(--hair); border-radius: var(--r-pill); font-size: 12px; color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--ink); }
+
+  .list-foot { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 24px; border-top: 1px solid var(--hair-soft); flex-wrap: wrap; }
+  .foot-info { font-size: 11px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .pager { display: flex; align-items: center; gap: 3px; }
+  .pager button { min-width: 32px; height: 32px; padding: 0 8px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .pager button:hover { background: var(--fog); color: var(--ink); }
+  .pager button.on { background: var(--ink); color: var(--white); }
+  .pager button.is-off { opacity: 0.3; pointer-events: none; }
+  .pager .ic { width: 13px; height: 13px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 90;
+    display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px;
+    border-radius: var(--r-pill); background: var(--ink); color: var(--white); font-size: 12px; box-shadow: 0 16px 32px -12px rgba(23, 25, 28, 0.4);
+  }
+  .toast .ic { width: 14px; height: 14px; }
+
+  @media (max-width: 1180px) {
+    .wrap { padding: 18px 28px 44px; }
+    .desk-head { grid-template-columns: 1fr; gap: 24px; }
+    .desk-metrics { max-width: 640px; }
+    .search { width: 230px; }
+    .gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 900px) {
+    .rail { display: none; }
+    .page-head { align-items: flex-start; flex-direction: column; gap: 18px; }
+    .page-actions { padding-bottom: 0; }
+    .list-top { align-items: flex-start; flex-direction: column; }
+    .toolbar { align-items: flex-start; flex-direction: column; }
+    .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .wrap { padding: 14px 16px 36px; }
+    .topbar-right .sync { display: none; }
+    .desk-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 0; }
+    .desk-metric:nth-child(3) { border-left: 0; padding-left: 0; }
+    .desk-foot { flex-wrap: wrap; gap: 10px 18px; }
+    .signal:last-child { margin-left: 0; }
+    .search { width: 100%; }
+    .list-tools { width: 100%; }
+    .filters { flex-wrap: wrap; }
+    .gallery { grid-template-columns: 1fr; }
+  }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M8 21v-2h4v2"/><path d="M2 21h20"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-megaphone" viewBox="0 0 24 24"><path d="M3 11v2a1 1 0 0 0 1 1h2l4 4V6L6 10H4a1 1 0 0 0-1 1Z"/><path d="M14 8a5 5 0 0 1 0 8M17 5a9 9 0 0 1 0 14"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 4.8a3.2 3.2 0 0 1 0 6.4M18 14.4a6 6 0 0 1 3 5.6"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1h-5a3 3 0 0 0 0 6h5v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M14 10h7v4h-7a2 2 0 0 1 0-4Z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2-2.5 3.7"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></symbol>
+  <symbol id="i-grid-view" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13l2.2-7A2 2 0 0 1 8.1 4.5h7.8a2 2 0 0 1 1.9 1.5L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M4 13h4l1 2h6l1-2h4"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="rail" aria-label="主导航">
+    <div class="logo" aria-label="P">P</div>
+    <nav class="rail-nav">
+      <button class="rail-btn" type="button" aria-label="工作台"><svg class="ic"><use href="#i-grid"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="房源管理"><svg class="ic"><use href="#i-building"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="项目管理"><svg class="ic"><use href="#i-folder"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="营销项目" aria-current="page"><svg class="ic"><use href="#i-megaphone"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="线索中心"><svg class="ic"><use href="#i-target"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="客户管理"><svg class="ic"><use href="#i-users"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="数据报表"><svg class="ic"><use href="#i-chart"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="财务结算"><svg class="ic"><use href="#i-wallet"></use></svg></button>
+    </nav>
+    <div class="rail-bottom">
+      <button class="rail-btn small" type="button" aria-label="帮助中心"><svg class="ic"><use href="#i-help"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="系统设置"><svg class="ic"><use href="#i-settings"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="收起导航"><svg class="ic"><use href="#i-panel"></use></svg></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="crumb"><span>营销中心</span><span class="slash">/</span><span class="here">营销项目</span></div>
+        <div class="topbar-right">
+          <span class="sync"><span class="live"></span>数据同步于 10:24 · 2 分钟前</span>
+          <button class="avatar-btn" type="button" aria-label="账户菜单：唐欣帆">唐</button>
+        </div>
+      </div>
+
+      <header class="page-head">
+        <div class="page-title">
+          <div class="eyebrow">Marketing · 房源内容与发布</div>
+          <h1>房源营销</h1>
+          <p class="page-desc">编辑房源信息、照片与改造进度，管理发布状态，让每一套房源以最好的样子抵达客户。</p>
+        </div>
+        <div class="page-actions">
+          <button class="text-action" type="button" onClick="{{onExport}}"><svg class="ic"><use href="#i-download"></use></svg>导出列表</button>
+          <a class="btn-primary" href="Create.dc.html"><svg class="ic"><use href="#i-plus"></use></svg>新建房源</a>
+        </div>
+      </header>
+
+      <section class="desk" aria-label="营销资产概览">
+        <div class="desk-head">
+          <div>
+            <div class="desk-kicker">营销资产 / Listing desk</div>
+            <div class="desk-number"><span class="desk-num">{{totalCount}}</span><span class="desk-unit">套在管房源</span></div>
+            <div class="desk-sub">覆盖 <b>{{communityCount}} 个小区</b> · {{consultantCount}} 位顾问协作 · 本周新增 <b>{{weekNew}} 套</b></div>
+          </div>
+          <div class="desk-metrics">
+            <div class="desk-metric"><span class="dm-label">已发布</span><div class="dm-value">{{publishedCount}}<small>套</small></div><div class="dm-sub">占比 {{publishedRate}}%</div></div>
+            <div class="desk-metric"><span class="dm-label">草稿</span><div class="dm-value">{{draftCount}}<small>套</small></div><div class="dm-sub">待补内容后发布</div></div>
+            <div class="desk-metric"><span class="dm-label">在售</span><div class="dm-value">{{onSaleCount}}<small>套</small></div><div class="dm-sub">可被客户浏览</div></div>
+            <div class="desk-metric"><span class="dm-label">累计浏览</span><div class="dm-value">{{viewTotal}}<small>次</small></div><div class="dm-sub">近 30 天新增 {{viewNew}}</div></div>
+          </div>
+        </div>
+        <div class="desk-foot">
+          <span class="signal"><span class="dot rust"></span>本周新上 <b>{{weekNew}}</b> 套</span>
+          <span class="signal"><span class="dot"></span>近 7 天调价 <b>{{priceChangeCount}}</b> 套</span>
+          <span class="signal"><span class="dot"></span>待补主图 <b>{{missingCover}}</b> 套</span>
+          <span class="signal">先处理草稿，再统一发布 <svg class="ic" style="width:13px;height:13px"><use href="#i-arrow-right"></use></svg></span>
+        </div>
+      </section>
+
+      <section class="list-card" aria-label="房源列表">
+        <div class="list-top">
+          <div class="list-title"><h2>{{listTitle}}</h2><span class="count-pill">{{listCount}}</span>
+            <button class="sort-btn" type="button" onClick="{{cycleSort}}">{{sortLabel}}<svg class="ic"><use href="#i-chevron-down"></use></svg></button>
+          </div>
+          <div class="list-tools">
+            <label class="search" for="listing-search">
+              <svg class="ic"><use href="#i-search"></use></svg>
+              <input id="listing-search" type="search" placeholder="搜索小区、房源标题或 ID" value="{{query}}" onInput="{{onSearch}}" />
+              <span class="kbd">⌘K</span>
+            </label>
+            <div class="view-seg" aria-label="视图切换">
+              <button class="{{tableOnClass}}" type="button" onClick="{{showTable}}" aria-label="表格视图" aria-pressed="{{tableAria}}"><svg class="ic"><use href="#i-table"></use></svg></button>
+              <button class="{{galleryOnClass}}" type="button" onClick="{{showGallery}}" aria-label="画廊视图" aria-pressed="{{galleryAria}}"><svg class="ic"><use href="#i-grid-view"></use></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="quick-tabs" role="tablist" aria-label="快捷筛选">
+            <sc-for list="{{quickTabs}}" as="t" hint-placeholder-count="4">
+              <button class="quick-tab {{t.onClass}}" type="button" onClick="{{t.onClick}}" role="tab" aria-selected="{{t.aria}}">{{t.label}}<span class="n">{{t.count}}</span></button>
+            </sc-for>
+          </div>
+          <div class="filters">
+            <div class="select-wrap"><select aria-label="发布状态筛选" value="{{publishFilter}}" onChange="{{onPublish}}"><option value="all">全部发布状态</option><option value="published">已发布</option><option value="draft">草稿</option></select><svg class="ic chev"><use href="#i-chevron-down"></use></svg></div>
+            <div class="select-wrap"><select aria-label="项目状态筛选" value="{{saleFilter}}" onChange="{{onSale}}"><option value="all">全部项目状态</option><option value="在途">在途</option><option value="在售">在售</option><option value="已售">已售</option></select><svg class="ic chev"><use href="#i-chevron-down"></use></svg></div>
+            <div class="select-wrap"><select aria-label="户型筛选" value="{{layoutFilter}}" onChange="{{onLayout}}"><option value="all">全部户型</option><option value="1室">1 室</option><option value="2室">2 室</option><option value="3室">3 室</option></select><svg class="ic chev"><use href="#i-chevron-down"></use></svg></div>
+          </div>
+        </div>
+
+        <sc-if value="{{showClear}}">
+          <div class="filter-row">
+            <sc-if value="{{hasQuick}}"><span class="chip">{{quickLabel}}<button type="button" onClick="{{clearQuick}}" aria-label="移除快捷筛选"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-if>
+            <sc-if value="{{hasQuery}}"><span class="chip">“{{query}}”<button type="button" onClick="{{clearQuery}}" aria-label="移除关键词"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-if>
+            <sc-if value="{{hasPublish}}"><span class="chip">{{publishLabel}}<button type="button" onClick="{{clearPublish}}" aria-label="移除发布状态筛选"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-if>
+            <sc-if value="{{hasSale}}"><span class="chip">{{saleLabel}}<button type="button" onClick="{{clearSale}}" aria-label="移除项目状态筛选"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-if>
+            <sc-if value="{{hasLayout}}"><span class="chip">{{layoutLabel}}<button type="button" onClick="{{clearLayout}}" aria-label="移除户型筛选"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-if>
+            <button class="clear-all" type="button" onClick="{{clearAll}}">清空全部</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isTable}}">
+          <div class="table-scroll">
+            <sc-if value="{{hasRows}}">
+              <div class="t-head"><span>房源</span><span>营销状态</span><span>户型 / 面积</span><span>总价 / 单价</span><span>浏览</span><span>最近更新</span><span><span class="sr-only">查看</span></span></div>
+              <sc-for list="{{rows}}" as="row" hint-placeholder-count="8">
+                <a class="l-row" href="{{row.href}}" aria-label="查看 {{row.title}} 详情">
+                  <div class="prop">
+                    <span class="cover"><img src="{{row.cover}}" alt="" /><sc-if value="{{row.isNew}}"><span class="badge">NEW</span></sc-if></span>
+                    <span class="p-text">
+                      <span class="p-title">{{row.title}}<sc-if value="{{row.isNew}}"><span class="new-tag">新上</span></sc-if></span>
+                      <span class="p-meta">{{row.communityLine}}</span>
+                      <span class="p-id">ID {{row.id}}</span>
+                    </span>
+                  </div>
+                  <div class="status-stack">
+                    <span class="status-pill {{row.publishClass}}">{{row.publish}}</span>
+                    <span class="sale-label {{row.saleClass}}"><span class="sq"></span>{{row.sale}}</span>
+                  </div>
+                  <div>
+                    <div class="spec-main">{{row.layout}}</div>
+                    <div class="spec-sub">{{row.area}}㎡ · {{row.floor}}</div>
+                  </div>
+                  <div>
+                    <div class="price-main">¥{{row.price}}<span class="unit">万</span></div>
+                    <div class="price-sub">¥{{row.unitPrice}} / ㎡</div>
+                    <sc-if value="{{row.hasPriceChange}}"><div class="price-change">{{row.priceChangeText}}</div></sc-if>
+                  </div>
+                  <div>
+                    <div class="reach-main"><svg class="ic"><use href="#i-eye"></use></svg>{{row.views}} 次浏览</div>
+                    <div class="reach-sub">{{row.visitors}} 位访客</div>
+                  </div>
+                  <div>
+                    <div class="update-main">{{row.updated}}</div>
+                    <div class="update-sub">{{row.consultant}}</div>
+                  </div>
+                  <span class="row-arrow"><svg class="ic"><use href="#i-arrow-right"></use></svg></span>
+                </a>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{noRows}}">
+              <div class="empty-state">
+                <div class="empty-icon"><svg class="ic"><use href="#i-search"></use></svg></div>
+                <h3>没有找到匹配的房源</h3>
+                <p>试试更换关键词，或清空当前筛选条件。</p>
+                <button class="btn-ghost" type="button" onClick="{{clearAll}}">清空筛选</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isGallery}}">
+          <sc-if value="{{hasRows}}">
+            <div class="gallery">
+              <sc-for list="{{rows}}" as="row" hint-placeholder-count="8">
+                <a class="g-card" href="{{row.href}}" aria-label="查看 {{row.title}} 详情">
+                  <div class="g-img"><img src="{{row.cover}}" alt="" /><div class="g-badges"><span class="status-pill {{row.publishClass}}">{{row.publish}}</span><sc-if value="{{row.isNew}}"><span class="status-pill st-published">新上</span></sc-if></div></div>
+                  <div class="g-copy">
+                    <div class="g-title">{{row.title}}</div>
+                    <div class="g-meta">{{row.communityLine}}</div>
+                    <div class="g-foot">
+                      <div><div class="g-price">¥{{row.price}}<small>万</small></div><div class="g-unit">{{row.layout}} · {{row.area}}㎡</div></div>
+                      <div class="g-reach"><b><svg class="ic"><use href="#i-eye"></use></svg>{{row.views}}</b><span>次浏览</span></div>
+                    </div>
+                  </div>
+                </a>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{noRows}}">
+            <div class="empty-state">
+              <div class="empty-icon"><svg class="ic"><use href="#i-search"></use></svg></div>
+              <h3>没有找到匹配的房源</h3>
+              <p>试试更换关键词，或清空当前筛选条件。</p>
+              <button class="btn-ghost" type="button" onClick="{{clearAll}}">清空筛选</button>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <div class="list-foot">
+          <div class="foot-info">第 {{rangeStart}}–{{rangeEnd}} 条 · 共 {{totalLabel}} 套房源</div>
+          <div class="pager">
+            <button class="{{prevClass}}" type="button" onClick="{{prevPage}}" aria-label="上一页"><svg class="ic"><use href="#i-chevron-left"></use></svg></button>
+            <sc-for list="{{pageButtons}}" as="p" hint-placeholder-count="5">
+              <button class="{{p.onClass}}" type="button" onClick="{{p.onClick}}" aria-current="{{p.aria}}">{{p.label}}</button>
+            </sc-for>
+            <button class="{{nextClass}}" type="button" onClick="{{nextPage}}" aria-label="下一页"><svg class="ic"><use href="#i-chevron-right"></use></svg></button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1580}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      quick: "all",
+      q: "",
+      publish: "all",
+      sale: "all",
+      layout: "all",
+      view: "table",
+      sort: "recent",
+      page: 1,
+      toast: null
+    };
+    this._toastTimer = null;
+  }
+
+  componentWillUnmount() { if (this._toastTimer) clearTimeout(this._toastTimer); }
+
+  notify(text) {
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this.setState({ toast: text });
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+
+  fmt(n) { return Number(n).toLocaleString("zh-CN"); }
+
+  rowVals(p) {
+    const unit = Math.round((p.price * 10000) / p.area);
+    return {
+      id: p.id,
+      title: p.title,
+      communityLine: p.district + " · " + p.community + " · " + p.room,
+      layout: p.layout,
+      area: p.area,
+      floor: p.floor,
+      price: this.fmt(p.price),
+      unitPrice: this.fmt(unit),
+      publish: p.publish,
+      publishClass: p.publish === "已发布" ? "st-published" : "st-draft",
+      sale: p.sale,
+      saleClass: p.sale === "在售" ? "online" : p.sale === "已售" ? "sold" : "",
+      isNew: p.isNew,
+      hasPriceChange: !!p.priceChange,
+      priceChangeText: p.priceChange ? "较上次 " + p.priceChange + " 万 · " + p.priceChangeDate : "",
+      views: p.views,
+      visitors: p.visitors,
+      updated: p.updated,
+      consultant: p.consultant,
+      cover: p.cover,
+      href: "Detail.dc.html"
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    let list = LISTINGS.filter((p) => {
+      if (s.quick === "new" && !p.isNew) return false;
+      if (s.quick === "price" && !p.priceChange) return false;
+      if (s.quick === "draft" && p.publish !== "草稿") return false;
+      if (s.publish === "published" && p.publish !== "已发布") return false;
+      if (s.publish === "draft" && p.publish !== "草稿") return false;
+      if (s.sale !== "all" && p.sale !== s.sale) return false;
+      if (s.layout !== "all" && p.layout.indexOf(s.layout) !== 0) return false;
+      if (s.q) {
+        const q = s.q.toLowerCase();
+        const hay = (p.title + " " + p.community + " " + p.room + " " + p.id + " " + p.consultant).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    list = list.slice().sort((a, b) => {
+      if (s.sort === "price") return b.price - a.price;
+      if (s.sort === "reach") return b.views - a.views;
+      return a.order - b.order;
+    });
+    const PAGE_SIZE = 8;
+    const total = list.length;
+    const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const page = Math.min(s.page, pageCount);
+    const rows = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((p) => this.rowVals(p));
+    const quickDefs = [
+      { id: "all", label: "全部", count: LISTINGS.length },
+      { id: "new", label: "新上房源", count: LISTINGS.filter((p) => p.isNew).length },
+      { id: "price", label: "近期调价", count: LISTINGS.filter((p) => p.priceChange).length },
+      { id: "draft", label: "待发布", count: LISTINGS.filter((p) => p.publish === "草稿").length }
+    ];
+    const quickTabs = quickDefs.map((t) => ({
+      label: t.label,
+      count: t.count,
+      onClass: s.quick === t.id ? "on" : "",
+      aria: s.quick === t.id ? "true" : "false",
+      onClick: () => this.setState({ quick: s.quick === t.id ? "all" : t.id, page: 1 })
+    }));
+    const pageButtons = [];
+    for (let i = 1; i <= pageCount; i++) pageButtons.push({ label: String(i), onClass: i === page ? "on" : "", aria: i === page ? "page" : "false", onClick: () => this.setState({ page: i }) });
+    const sortLabels = { recent: "最近更新", price: "总价从高到低", reach: "浏览热度" };
+    const published = LISTINGS.filter((p) => p.publish === "已发布").length;
+    const draft = LISTINGS.filter((p) => p.publish === "草稿").length;
+    const onSale = LISTINGS.filter((p) => p.sale === "在售").length;
+    const weekly = LISTINGS.filter((p) => p.order <= 3).length;
+    const viewTotal = LISTINGS.reduce((a, p) => a + p.views, 0);
+    const quickLabels = { new: "新上房源", price: "近期调价", draft: "待发布" };
+    const publishLabels = { published: "已发布", draft: "草稿" };
+    return {
+      totalCount: LISTINGS.length,
+      communityCount: new Set(LISTINGS.map((p) => p.community)).size,
+      consultantCount: new Set(LISTINGS.map((p) => p.consultant)).size,
+      weekNew: weekly,
+      publishedCount: published,
+      draftCount: draft,
+      onSaleCount: onSale,
+      publishedRate: Math.round((published / LISTINGS.length) * 100),
+      viewTotal: this.fmt(viewTotal),
+      viewNew: "+1,286",
+      priceChangeCount: LISTINGS.filter((p) => p.priceChange).length,
+      missingCover: 2,
+      rows: rows,
+      hasRows: rows.length > 0,
+      noRows: rows.length === 0,
+      listTitle: s.quick === "all" ? "全部房源" : quickLabels[s.quick],
+      listCount: total + " 套",
+      totalLabel: total,
+      rangeStart: total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1,
+      rangeEnd: Math.min(page * PAGE_SIZE, total),
+      pageButtons: pageButtons,
+      prevClass: page <= 1 ? "is-off" : "",
+      nextClass: page >= pageCount ? "is-off" : "",
+      prevPage: () => this.setState({ page: Math.max(1, page - 1) }),
+      nextPage: () => this.setState({ page: Math.min(pageCount, page + 1) }),
+      quickTabs: quickTabs,
+      query: s.q,
+      onSearch: (e) => this.setState({ q: e.target.value, page: 1 }),
+      publishFilter: s.publish,
+      onPublish: (e) => this.setState({ publish: e.target.value, page: 1 }),
+      saleFilter: s.sale,
+      onSale: (e) => this.setState({ sale: e.target.value, page: 1 }),
+      layoutFilter: s.layout,
+      onLayout: (e) => this.setState({ layout: e.target.value, page: 1 }),
+      hasQuick: s.quick !== "all",
+      hasQuery: !!s.q,
+      hasPublish: s.publish !== "all",
+      hasSale: s.sale !== "all",
+      hasLayout: s.layout !== "all",
+      showClear: s.quick !== "all" || !!s.q || s.publish !== "all" || s.sale !== "all" || s.layout !== "all",
+      quickLabel: quickLabels[s.quick] || "",
+      publishLabel: publishLabels[s.publish] || "",
+      saleLabel: s.sale === "all" ? "" : s.sale,
+      layoutLabel: s.layout === "all" ? "" : s.layout,
+      clearQuick: () => this.setState({ quick: "all", page: 1 }),
+      clearQuery: () => this.setState({ q: "", page: 1 }),
+      clearPublish: () => this.setState({ publish: "all", page: 1 }),
+      clearSale: () => this.setState({ sale: "all", page: 1 }),
+      clearLayout: () => this.setState({ layout: "all", page: 1 }),
+      clearAll: () => this.setState({ quick: "all", q: "", publish: "all", sale: "all", layout: "all", page: 1 }),
+      sortLabel: sortLabels[s.sort],
+      cycleSort: () => {
+        const order = ["recent", "price", "reach"];
+        this.setState({ sort: order[(order.indexOf(s.sort) + 1) % order.length], page: 1 });
+      },
+      isTable: s.view === "table",
+      isGallery: s.view === "gallery",
+      showTable: () => this.setState({ view: "table" }),
+      showGallery: () => this.setState({ view: "gallery" }),
+      tableOnClass: s.view === "table" ? "on" : "",
+      galleryOnClass: s.view === "gallery" ? "on" : "",
+      tableAria: s.view === "table" ? "true" : "false",
+      galleryAria: s.view === "gallery" ? "true" : "false",
+      onExport: () => this.notify("已按当前筛选生成导出文件（演示）"),
+      toast: s.toast
+    };
+  }
+}
+
+const PHOTOS = {
+  living: "/_blob/eef2b5c537e41cef4635ccb4d63f577e",
+  bedroom: "/_blob/c4a6fad37f17151aef3b97c7d3e18320",
+  kitchen: "/_blob/e3ac7e5b293c1710c5fd9e6e352af5a5",
+  bathroom: "/_blob/b63e531b3f9b8651c6c79a4f7fa3abfc",
+  exterior: "/_blob/2402638cc2d41050c476aedcc1f7c939",
+  dining: "/_blob/b6fa178faebe9faa3f4aca7da94452f1"
+};
+
+const LISTINGS = [
+  { id: "298", title: "金杨十街坊 · 南向一居", community: "金杨十街坊", district: "浦东新区", room: "21号102", layout: "1室1厅1卫", area: 26.81, floor: "1/6层", price: 115, publish: "已发布", sale: "在售", isNew: true, priceChange: null, views: 1424, visitors: 968, updated: "今天 09:24", consultant: "唐欣帆", cover: PHOTOS.living, order: 1 },
+  { id: "301", title: "景凤路521弄 · 两居朝南", community: "景凤路521弄", district: "静安区", room: "5号404室", layout: "2室1厅1卫", area: 64.87, floor: "4/6层", price: 230, publish: "已发布", sale: "在途", isNew: false, priceChange: null, views: 776, visitors: 527, updated: "今天 08:50", consultant: "支武平", cover: PHOTOS.bedroom, order: 2 },
+  { id: "296", title: "闻喜路251弄 · 精装一居", community: "闻喜路251弄", district: "静安区", room: "22号102", layout: "1室1厅1卫", area: 36.05, floor: "1/6层", price: 131, publish: "已发布", sale: "在售", isNew: false, priceChange: "-4", priceChangeDate: "10/28", views: 1640, visitors: 1115, updated: "昨天 17:32", consultant: "何义", cover: PHOTOS.kitchen, order: 3 },
+  { id: "288", title: "呼玛二村 · 双南两居", community: "呼玛二村", district: "宝山区", room: "285号103室", layout: "2室1厅1卫", area: 50.74, floor: "1/6层", price: 157, publish: "草稿", sale: "在途", isNew: false, priceChange: null, views: 344, visitors: 233, updated: "昨天 15:08", consultant: "阮文琪", cover: PHOTOS.dining, order: 4 },
+  { id: "284", title: "泗塘三村 · 拎包入住", community: "泗塘三村", district: "宝山区", room: "61号401", layout: "2室1厅1卫", area: 50.76, floor: "4/6层", price: 183, publish: "已发布", sale: "在售", isNew: true, priceChange: null, views: 1172, visitors: 796, updated: "11-06 11:20", consultant: "唐欣帆", cover: PHOTOS.bathroom, order: 5 },
+  { id: "279", title: "泗塘五村 · 南北通透", community: "泗塘五村", district: "宝山区", room: "106号401", layout: "2室1厅1卫", area: 65.11, floor: "4/6层", price: 225, publish: "已发布", sale: "在售", isNew: false, priceChange: null, views: 956, visitors: 650, updated: "11-06 09:12", consultant: "支武平", cover: PHOTOS.exterior, order: 6 },
+  { id: "271", title: "通河一村 · 低总价小两居", community: "通河一村", district: "宝山区", room: "12号303", layout: "2室1厅1卫", area: 54.2, floor: "3/6层", price: 168, publish: "已发布", sale: "在售", isNew: false, priceChange: "-6", priceChangeDate: "11/02", views: 1964, visitors: 1335, updated: "11-05 18:40", consultant: "何义", cover: PHOTOS.bedroom, order: 7 },
+  { id: "263", title: "淞南新村 · 南向一室", community: "淞南新村", district: "宝山区", room: "8号502", layout: "1室1厅1卫", area: 41.5, floor: "5/6层", price: 128, publish: "草稿", sale: "在途", isNew: false, priceChange: null, views: 272, visitors: 184, updated: "11-05 14:26", consultant: "阮文琪", cover: PHOTOS.kitchen, order: 8 },
+  { id: "251", title: "上师大新村 · 学区两居", community: "上师大新村", district: "徐汇区", room: "33号202", layout: "2室1厅1卫", area: 58.6, floor: "2/6层", price: 298, publish: "已发布", sale: "在售", isNew: false, priceChange: null, views: 2432, visitors: 1653, updated: "11-04 16:05", consultant: "唐欣帆", cover: PHOTOS.living, order: 9 },
+  { id: "240", title: "唐家宅 · 电梯三房", community: "唐家宅", district: "黄浦区", room: "6号1802", layout: "3室1厅2卫", area: 88.4, floor: "18/26层", price: 520, publish: "已发布", sale: "在售", isNew: true, priceChange: null, views: 1460, visitors: 992, updated: "11-04 10:18", consultant: "何义", cover: PHOTOS.dining, order: 10 },
+  { id: "228", title: "呼玛三村 · 全明户型", community: "呼玛三村", district: "宝山区", room: "45号501", layout: "2室1厅1卫", area: 62.3, floor: "5/6层", price: 205, publish: "草稿", sale: "在途", isNew: false, priceChange: null, views: 200, visitors: 136, updated: "11-03 09:47", consultant: "支武平", cover: PHOTOS.bathroom, order: 11 },
+  { id: "216", title: "景凤路521弄 · 顶层复式", community: "景凤路521弄", district: "静安区", room: "16号601", layout: "3室2厅2卫", area: 95.2, floor: "6/6层", price: 410, publish: "已发布", sale: "已售", isNew: false, priceChange: "-8", priceChangeDate: "10/21", views: 1244, visitors: 845, updated: "11-02 15:30", consultant: "阮文琪", cover: PHOTOS.exterior, order: 12 }
+];
+</script>
+</body>
+</html>

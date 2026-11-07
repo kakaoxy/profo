@@ -5586,7 +5586,7 @@ export interface paths {
         };
         /**
          * 获取估价详情
-         * @description 获取指定线索的详细信息，仅线索创建人、内部员工或该线索归属经纪人可查看
+         * @description 获取指定线索的详细信息，仅线索创建人、归属员工、内部员工或该线索归属经纪人可查看
          */
         get: operations["get_lead_detail_api_v1_public_leads__lead_id__get"];
         put?: never;
@@ -14678,6 +14678,23 @@ export interface components {
             page_size: number;
         };
         /**
+         * L4MarketingDailyView
+         * @description 营销项目单日浏览统计.
+         */
+        L4MarketingDailyView: {
+            /**
+             * Date
+             * @description 日期 YYYY-MM-DD
+             */
+            date: string;
+            /**
+             * Count
+             * @description 当日浏览次数(PV)
+             * @default 0
+             */
+            count: number;
+        };
+        /**
          * L4MarketingMediaCreate
          * @description 创建媒体请求.
          */
@@ -15243,6 +15260,8 @@ export interface components {
             latest_price_change?: components["schemas"]["L4MarketingPriceChangeSummary"] | null;
             /** @description 订阅通知送达统计（服务层聚合填充） */
             notify_summary?: components["schemas"]["L4MarketingNotifySummary"] | null;
+            /** @description 房源浏览统计（服务层聚合填充） */
+            view_summary?: components["schemas"]["L4MarketingViewSummary"] | null;
         };
         /**
          * L4MarketingProjectSummary
@@ -15285,6 +15304,12 @@ export interface components {
              * @default 0
              */
             in_progress: number;
+            /**
+             * Total Views
+             * @description 筛选范围内累计浏览次数(PV)
+             * @default 0
+             */
+            total_views: number;
         };
         /**
          * L4MarketingProjectUpdate
@@ -15435,6 +15460,29 @@ export interface components {
              * @default 0
              */
             out_of_sync_subscribers: number;
+        };
+        /**
+         * L4MarketingViewSummary
+         * @description 营销项目浏览统计（admin 详情页，累计口径 + 近 7 日曲线）.
+         */
+        L4MarketingViewSummary: {
+            /**
+             * View Count
+             * @description 累计浏览次数(PV)
+             * @default 0
+             */
+            view_count: number;
+            /**
+             * Visitor Count
+             * @description 累计浏览人数(UV，按 visitor_id 去重)
+             * @default 0
+             */
+            visitor_count: number;
+            /**
+             * Daily Views
+             * @description 近 7 日按日浏览次数（仅详情接口填充，列表接口为空数组）
+             */
+            daily_views?: components["schemas"]["L4MarketingDailyView"][];
         };
         /**
          * L4MediaType

@@ -35,7 +35,7 @@ export function MarketingPhotoList({ photos, photoIds, onDelete }: MarketingPhot
         id={CONTAINER_MARKETING}
         data-droppable="true"
         className={cn(
-          "rounded border-2 border-dashed transition-all min-h-25 p-3",
+          "rounded-2xl border-2 border-dashed transition-all min-h-25 max-h-[420px] overflow-y-auto p-3",
           isOver ? "border-rust bg-rust/5 ring-2 ring-rust/20" : "border-rust/30 bg-rust/5",
         )}
       >

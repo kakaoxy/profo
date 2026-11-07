@@ -44,6 +44,7 @@ class L4MarketingProjectSummary(BaseModel):
     for_sale: int = Field(default=0, ge=0, description="在售项目数")
     sold: int = Field(default=0, ge=0, description="已售项目数")
     in_progress: int = Field(default=0, ge=0, description="在途项目数")
+    total_views: int = Field(default=0, ge=0, description="筛选范围内累计浏览次数(PV)")
 
 
 # 统一分页响应格式 - 继承自 PaginatedResponse

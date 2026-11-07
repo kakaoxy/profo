@@ -441,6 +441,8 @@ class ProjectVisit(BaseModel):
         # 「我的分享统计」按来源员工过滤 PV/UV，避免全表扫描
         Index("idx_project_visits_referrer", "referrer_employee_id"),
         Index("idx_project_visits_created_at", "created_at"),
+        # admin 详情页按房源聚合 PV/UV，避免全表扫描
+        Index("idx_project_visits_project_created", "marketing_project_id", "created_at"),
     )
 
 

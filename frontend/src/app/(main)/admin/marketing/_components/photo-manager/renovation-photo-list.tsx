@@ -41,7 +41,7 @@ export function RenovationPhotoList({
         </span>
       </div>
 
-      <div className="space-y-3 min-h-25 max-h-100 overflow-y-auto p-2 bg-card rounded-lg border border-dove/40">
+      <div className="space-y-3 min-h-25 max-h-[420px] overflow-y-auto p-2 bg-card rounded-lg border border-dove/40">
         {/* 拖拽时显示所有阶段，平常只显示有照片的阶段 */}
         {activeId
           ? // 拖拽模式：显示所有阶段作为放置目标

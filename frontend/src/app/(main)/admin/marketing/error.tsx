@@ -1,10 +1,11 @@
 "use client";
 
-import { logger } from "@/lib/logger";
-import { useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { AlertCircle, RefreshCcw, Home } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
+import { AlertTriangle, ArrowLeft, RotateCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { PageContainer } from "@/app/(main)/admin/_components/page-container";
+import { logger } from "@/lib/logger";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -13,49 +14,50 @@ interface ErrorProps {
 
 export default function MarketingProjectsError({ error, reset }: ErrorProps) {
   useEffect(() => {
-    // 记录错误到控制台
     logger.error("Marketing Projects Page Error:", error);
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-fog/60 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg border border-fog p-8 text-center">
-        {/* Error Icon */}
-        <div className="mx-auto w-16 h-16 bg-error-container rounded-full flex items-center justify-center mb-6">
-          <AlertCircle className="h-8 w-8 text-error" />
-        </div>
-
-        {/* Error Title */}
-        <h2 className="text-xl font-semibold text-ink mb-2">页面加载失败</h2>
-
-        {/* Error Message */}
-        <p className="text-sm text-graphite mb-6">
-          {error.message || "获取营销项目列表时发生错误，请稍后重试"}
-        </p>
-
-        {/* Error Digest (for debugging) */}
-        {error.digest && (
-          <p className="text-xs text-graphite mb-6 font-mono">错误代码: {error.digest}</p>
-        )}
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button onClick={reset} variant="default" className="bg-primary hover:bg-primary/90">
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            重试
-          </Button>
-
-          <Link href="/admin/marketing">
-            <Button variant="outline" className="w-full sm:w-auto">
-              <Home className="mr-2 h-4 w-4" />
-              返回列表
+    <div className="min-h-screen bg-fog">
+      <PageContainer className="flex min-h-[calc(100vh-8rem)] items-center justify-center">
+        <div className="w-full max-w-[520px] rounded-cards bg-white p-8 text-center shadow-steep-sm">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-apricot-wash text-rust">
+            <AlertTriangle className="h-6 w-6" />
+          </div>
+          <div className="mt-6 text-[10px] font-medium uppercase tracking-[0.14em] text-graphite">
+            Loading error <span className="text-dove">/</span> 加载异常
+          </div>
+          <h1 className="page-title mt-3 text-[36px] text-ink">数据加载失败</h1>
+          <p className="mx-auto mt-3 max-w-[360px] text-sm leading-relaxed text-graphite">
+            {error.message || "暂时无法获取营销项目数据，请稍后重试。"}
+          </p>
+          {error.digest ? (
+            <div className="mt-5 inline-flex rounded-full bg-fog px-3 py-1.5 font-mono text-[10px] text-dove">
+              ERR_MARKETING_FETCH · {error.digest}
+            </div>
+          ) : null}
+          <div className="mt-7 flex flex-col justify-center gap-2 sm:flex-row">
+            <Button
+              type="button"
+              onClick={reset}
+              className="h-11 rounded-full bg-ink px-5 text-sm font-medium text-white hover:bg-ink/90"
+            >
+              <RotateCcw className="h-4 w-4" />
+              重试加载
             </Button>
-          </Link>
+            <Button
+              asChild
+              variant="outline"
+              className="h-11 rounded-full border-dove bg-white px-5 text-sm text-ink hover:bg-fog"
+            >
+              <Link href="/admin/marketing">
+                <ArrowLeft className="h-4 w-4" />
+                返回列表
+              </Link>
+            </Button>
+          </div>
         </div>
-
-        {/* Help Text */}
-        <p className="text-xs text-graphite mt-6">如果问题持续存在，请联系管理员或稍后重试</p>
-      </div>
+      </PageContainer>
     </div>
   );
 }

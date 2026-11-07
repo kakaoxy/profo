@@ -1,0 +1,108 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Create.dc.html": {
+      "expand": "fill",
+      "h": 1750,
+      "is_interactive": true,
+      "title": "03 · 新建房源",
+      "w": 1440,
+      "x": 0,
+      "y": 2000
+    },
+    "Detail.dc.html": {
+      "expand": "fill",
+      "h": 1880,
+      "is_interactive": true,
+      "title": "02 · 房源详情",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Edit.dc.html": {
+      "expand": "fill",
+      "h": 1830,
+      "is_interactive": true,
+      "title": "04 · 编辑房源",
+      "w": 1440,
+      "x": 1520,
+      "y": 2000
+    },
+    "Main.dc.html": {
+      "expand": "fill",
+      "h": 1580,
+      "is_interactive": true,
+      "title": "01 · 营销总览",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Mobile.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "05 · 移动端房源预览",
+      "w": 390,
+      "x": 0,
+      "y": 3990
+    },
+    "States.dc.html": {
+      "expand": "fill",
+      "h": 900,
+      "is_interactive": true,
+      "title": "06 · 加载 / 空 / 异常",
+      "w": 1440,
+      "x": 470,
+      "y": 3990
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-07T10:25:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "noteOrder": [
+    "intro",
+    "flows",
+    "edge"
+  ],
+  "notes": {
+    "edge": {
+      "kind": "title1",
+      "maxW": 3430,
+      "text": "移动端预览与边界状态",
+      "w": 240,
+      "x": 0,
+      "y": 3780
+    },
+    "flows": {
+      "kind": "title1",
+      "maxW": 3430,
+      "text": "新建与编辑 · 房源编辑室",
+      "w": 240,
+      "x": 0,
+      "y": 1740
+    },
+    "intro": {
+      "kind": "title1",
+      "maxW": 3430,
+      "text": "营销项目 · 重新设计",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Detail.dc.html",
+    "Create.dc.html",
+    "Edit.dc.html",
+    "Mobile.dc.html",
+    "States.dc.html"
+  ],
+  "pages": [],
+  "title": "营销项目 · 重新设计"
+}

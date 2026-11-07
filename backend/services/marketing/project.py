@@ -10,7 +10,13 @@ from sqlalchemy import and_, case, desc, func, not_
 from sqlalchemy.orm import Query, Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from models import L4MarketingMedia, L4MarketingNotifyLog, L4MarketingPriceChange, L4MarketingProject
+from models import (
+    L4MarketingMedia,
+    L4MarketingNotifyLog,
+    L4MarketingPriceChange,
+    L4MarketingProject,
+    ProjectVisit,
+)
 from models.marketing.l4_marketing import MarketingProjectStatus, PublishStatus
 from schemas.l4_marketing import (
     L4MarketingPriceChangeTimelineItem,
@@ -267,6 +273,17 @@ class MarketingProjectService:
             sold = total if project_status == MarketingProjectStatus.SOLD else 0
             in_progress = total if project_status == MarketingProjectStatus.IN_PROGRESS else 0
 
+        # 筛选范围内累计浏览次数（列表概览「累计浏览」指标）
+        project_ids = [row[0] for row in query.with_entities(L4MarketingProject.id).all()]
+        total_views = 0
+        if project_ids:
+            total_views = int(
+                self.db.query(func.count(ProjectVisit.id))
+                .filter(ProjectVisit.marketing_project_id.in_(project_ids))
+                .scalar()
+                or 0
+            )
+
         return L4MarketingProjectSummary(
             total=total,
             published=published,
@@ -274,6 +291,7 @@ class MarketingProjectService:
             for_sale=for_sale,
             sold=sold,
             in_progress=in_progress,
+            total_views=total_views,
         )
 
     def get_price_change_timeline(
