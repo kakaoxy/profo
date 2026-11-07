@@ -39,7 +39,7 @@ export function ProjectPageHeader({ projects }: ProjectPageHeaderProps) {
     link.href = url;
     link.download = `项目台账-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   return (

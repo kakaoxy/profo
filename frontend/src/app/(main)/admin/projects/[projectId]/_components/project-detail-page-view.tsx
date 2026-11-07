@@ -139,7 +139,8 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
           : {}),
       });
       if (!result.success) {
-        toast.error(result.message || "附件保存失败");
+        // 统一由调用方（删除/上传）根据上下文提示，避免重复 toast。
+        throw new Error(result.message || "附件保存失败");
       }
     },
     [project],

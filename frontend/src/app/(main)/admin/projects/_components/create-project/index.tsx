@@ -110,7 +110,7 @@ export function CreateProjectDialog({
                   <p className="text-[11px] font-[430] text-graphite">新建项目档案</p>
                 </div>
               </div>
-              <div className="mt-10 space-y-1">
+              <div className="mt-10 space-y-1" role="tablist" aria-orientation="vertical">
                 {steps.map((step, index) => {
                   const active = index === stepIndex;
                   const done = index < stepIndex;
@@ -118,6 +118,9 @@ export function CreateProjectDialog({
                     <button
                       key={step.value}
                       type="button"
+                      role="tab"
+                      aria-selected={active}
+                      data-state={active ? "active" : "inactive"}
                       onClick={() => setActiveTab(step.value)}
                       className={cn(
                         "flex w-full items-start gap-3 rounded-inputs px-2 py-3 text-left transition-colors",
@@ -228,11 +231,14 @@ export function CreateProjectDialog({
                 className="flex-1 min-h-0 flex flex-col overflow-hidden"
               >
                 {!isEditMode && (
-                  <div className="flex gap-1 overflow-x-auto px-7 pt-4 md:hidden">
+                  <div className="flex gap-1 overflow-x-auto px-7 pt-4 md:hidden" role="tablist">
                     {steps.map((step, index) => (
                       <button
                         key={step.value}
                         type="button"
+                        role="tab"
+                        aria-selected={index === stepIndex}
+                        data-state={index === stepIndex ? "active" : "inactive"}
                         onClick={() => setActiveTab(step.value)}
                         className={cn(
                           "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-[480]",

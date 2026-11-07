@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronRight,
+  DollarSign,
   ImageOff,
   LayoutGrid,
   List,
@@ -19,6 +20,10 @@ import { getFileUrl } from "@/lib/config";
 import { formatArea, formatPrice, formatUnitPrice, safeFormatDate } from "@/lib/formatters";
 import type { L4MarketingProject } from "../types";
 import { MarketingPagination } from "./marketing-pagination";
+import { PricePopover } from "./price-popover";
+import { showPricingEntry } from "./price-change-card";
+import { usePermission } from "@/hooks/use-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
 
 interface MarketingSummary {
   total?: number;
@@ -125,6 +130,8 @@ export function MarketingView({ data, total, summary }: MarketingViewProps) {
   const [layoutFilter, setLayoutFilter] = useState(searchParams.get("layout") || "all");
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
+  const { hasPermission } = usePermission();
+  const canWrite = hasPermission(PERMISSION_CODES.L4_MARKETING_WRITE);
 
   const updateUrlParams = useCallback(
     (updates: Record<string, string | undefined>) => {
@@ -412,6 +419,8 @@ export function MarketingView({ data, total, summary }: MarketingViewProps) {
                   tabIndex={0}
                   onClick={() => handleRowClick(project)}
                   onKeyDown={(event) => {
+                    // 仅行本身获得焦点时响应；行内「调价」等控件自行处理键盘事件。
+                    if (event.target !== event.currentTarget) return;
                     if (event.key === "Enter" || event.key === " ") {
                       event.preventDefault();
                       handleRowClick(project);
@@ -496,7 +505,24 @@ export function MarketingView({ data, total, summary }: MarketingViewProps) {
                     </div>
                   </div>
 
-                  <ChevronRight className="h-4 w-4 text-dove" />
+                  {showPricingEntry(project, canWrite) ? (
+                    <PricePopover
+                      project={project}
+                      trigger={
+                        <button
+                          type="button"
+                          aria-label="调价"
+                          data-testid={`price-entry-${project.id}`}
+                          onClick={(event) => event.stopPropagation()}
+                          className="flex h-6 w-6 items-center justify-center rounded-full text-rust transition-colors hover:bg-apricot-wash"
+                        >
+                          <DollarSign className="h-3.5 w-3.5" />
+                        </button>
+                      }
+                    />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-dove" />
+                  )}
                 </div>
               ))}
             </div>

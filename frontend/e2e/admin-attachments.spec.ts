@@ -42,7 +42,11 @@ test.describe("附件库悬停预览与并发保存修复", () => {
   test("图片附件悬停即预览、点击放大，无预览按钮", async ({ page }) => {
     const projectId = await findProjectId(page);
     await page.goto(`/admin/projects/${projectId}`);
-    await expect(page.getByText("附件库")).toBeVisible({ timeout: 15000 });
+    // 项目详情重构后，文书与附件收进「查看全部」弹窗；附件库在其内部。
+    await expect(page.getByText("文书与附件").first()).toBeVisible({ timeout: 15000 });
+    await page.getByRole("button", { name: "查看全部" }).first().click();
+    const libraryDialog = page.getByRole("dialog").filter({ hasText: "附件库" });
+    await expect(libraryDialog).toBeVisible({ timeout: 15000 });
 
     // 上传一张 PNG（1x1 红点）走真实上传链路（前端 /api/uploads → 后端落盘）
     const PNG_1PX =
@@ -53,12 +57,12 @@ test.describe("附件库悬停预览与并发保存修复", () => {
       buffer: Buffer.from(PNG_1PX, "base64"),
     });
 
-    await page.getByRole("button", { name: "上传附件" }).first().click();
-    const dialog = page.getByRole("dialog");
-    await expect(dialog).toBeVisible();
+    await libraryDialog.getByRole("button", { name: "上传附件" }).first().click();
+    const uploadDialog = page.getByRole("dialog").filter({ hasText: "点击或拖拽文件到此处上传" });
+    await expect(uploadDialog).toBeVisible();
 
     const chooserPromise = page.waitForEvent("filechooser");
-    await dialog.getByText("点击或拖拽文件到此处上传").click();
+    await uploadDialog.getByText("点击或拖拽文件到此处上传").click();
     const chooser = await chooserPromise;
     await chooser.setFiles([file]);
 
@@ -69,7 +73,7 @@ test.describe("附件库悬停预览与并发保存修复", () => {
     // 新交互：多文件上传不自动关弹窗，手动关闭后再验证附件库行为
     // （模态遮罩会拦截背景行的 hover/click，必须先关）
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("dialog")).toBeHidden({ timeout: 5000 });
+    await expect(uploadDialog).toBeHidden({ timeout: 5000 });
 
     // 悬停文件名 → HoverCard 缩略图出现（img[alt=hover-e2e.png] 在卡片内渲染）
     const thumb = page.locator(`img[alt="hover-e2e.png"]`);
@@ -86,9 +90,11 @@ test.describe("附件库悬停预览与并发保存修复", () => {
     // 关闭大图弹窗
     await page.keyboard.press("Escape");
 
-    // 删除该附件（显式删除信号链路）
+    // 删除该附件（显式删除信号链路）；删除按钮必须限定在当前附件行内，
+    // 否则会误删同项目其他历史附件，导致本行仍可见。
     row.hover();
-    const delBtn = page.locator('[title="删除"]').first();
+    const attachmentRow = row.locator("xpath=ancestor::div[contains(@class,'border-b')][1]");
+    const delBtn = attachmentRow.locator('[title="删除"]');
     await delBtn.click();
     await page.getByRole("button", { name: "确认删除" }).click();
     await expect(page.getByText("附件已删除")).toBeVisible({ timeout: 10000 });

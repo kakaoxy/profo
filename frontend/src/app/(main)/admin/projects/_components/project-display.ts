@@ -75,6 +75,15 @@ export function daysBetween(from?: string | null, to?: string | null): number | 
   return Math.max(0, Math.floor((end.getTime() - start.getTime()) / 86_400_000));
 }
 
+/** 距目标日期还剩多少天；已过期返回负数。用于委托到期等“未来截止”提示。 */
+export function daysUntil(value?: string | null): number | null {
+  const date = parseDate(value);
+  if (!date) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.floor((date.getTime() - today.getTime()) / 86_400_000);
+}
+
 export function formatShortDate(value?: string | null): string {
   const date = parseDate(value);
   if (!date) return "—";

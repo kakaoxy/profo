@@ -20,6 +20,7 @@ from models import (
     ProjectVisit,
 )
 from services.marketing.constants import BADGE_WINDOW_DAYS
+from utils.time_windows import cst_today_start
 
 logger = logging.getLogger(__name__)
 
@@ -56,19 +57,21 @@ def aggregate_view_summary(
     if not include_daily:
         return result
 
-    today = datetime.now(timezone.utc).date()
-    start_day = today - timedelta(days=6)
-    start_at = datetime.combine(start_day, datetime.min.time(), tzinfo=timezone.utc)
+    # 与项目内其他经营统计口径一致：按 Asia/Shanghai 自然日切分，而非 UTC。
+    today_start = cst_today_start()
+    start_day = today_start.date() - timedelta(days=6)
+    start_at = datetime.combine(start_day, datetime.min.time(), tzinfo=today_start.tzinfo)
+    cst_day_expr = func.date(func.timezone("Asia/Shanghai", ProjectVisit.created_at))
     daily_rows = (
         db.query(
-            func.date(ProjectVisit.created_at),
+            cst_day_expr,
             func.count(ProjectVisit.id),
         )
         .filter(
             ProjectVisit.marketing_project_id == project_id,
             ProjectVisit.created_at >= start_at,
         )
-        .group_by(func.date(ProjectVisit.created_at))
+        .group_by(cst_day_expr)
         .all()
     )
     counts_by_day = {str(day): int(count or 0) for day, count in daily_rows}

@@ -230,12 +230,13 @@ function buildHeroFacts(
     const estimatedCost = signingPrice + area * 0.36 + 6;
     const estimatedRoi =
       estimatedCost > 0 ? Math.max(0, soldPrice * 0.965 - estimatedCost) / estimatedCost * 100 : 0;
-    const roiValue = (num(project.roi) ?? 0) > 0 ? num(project.roi)! : estimatedRoi;
+    const actualRoi = num(project.roi);
+    const roiValue = actualRoi !== null && actualRoi !== 0 ? actualRoi : estimatedRoi;
     return [
       { label: "成交价", value: project.sold_price ? wan(project.sold_price) : "—" },
       { label: "成交日期", value: formatFullDate(project.sold_date) },
       { label: "售出天数", value: project.days_on_market != null ? `${project.days_on_market} 天` : "—" },
-      { label: "净回报率", value: roiValue > 0 ? `${Math.round(roiValue)}%` : "—" },
+      { label: "净回报率", value: roiValue !== 0 ? `${Math.round(roiValue)}%` : "—" },
     ];
   }
   if (stageKey === "ended") {
@@ -297,7 +298,10 @@ export function HeroSection({
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3.5">
               {/* 页面唯一衬线标题（Signifier 44px，<768px 降为 27px） */}
-              <h1 className="font-signifier text-[27px] font-normal leading-[1.1] tracking-[-0.015em] text-ink md:text-[44px]">
+              <h1
+                className="font-signifier text-[27px] font-normal leading-[1.1] tracking-[-0.015em] text-ink md:text-[44px]"
+                aria-label={project.name || undefined}
+              >
                 {projectTitle(project)}
               </h1>
               <span

@@ -16,7 +16,12 @@ interface Props {
   lead: Lead | null;
   isOpen: boolean;
   onClose: () => void;
-  onAudit: (leadId: string, status: LeadStatus, evalPrice?: number, reason?: string) => void;
+  onAudit: (
+    leadId: string,
+    status: LeadStatus,
+    evalPrice?: number,
+    reason?: string,
+  ) => Promise<boolean> | boolean;
   onAddFollowUp: (
     leadId: string,
     method: FollowUpMethod,

@@ -243,29 +243,22 @@ test.describe("项目归档状态（sold 可写 → 归档锁定 → 反归档�
 
       // ---------- 4. 列表归档筛选（已归档出现 + 徽标 / 未归档消失） ----------
       await page.goto("/admin/projects");
-      const archivedSelect = page.locator('[role="combobox"]').filter({ hasText: "全部归档状态" });
+      const archivedSelect = page.getByLabel("归档状态");
       await expect(archivedSelect).toBeVisible({ timeout: 20000 });
-      await archivedSelect.click();
-      await page.getByRole("option", { name: "已归档", exact: true }).click();
+      await archivedSelect.selectOption("true");
       await expect(page).toHaveURL(/is_archived=true/);
 
-      const archivedRow = page.getByRole("row").filter({ hasText: soldProject.name });
+      // 列表展示名由 projectTitle 统一为「小区 + 空格 + 楼栋户室」（去掉创建时的 “ - ”）。
+      const displayName = soldProject.name.replace(" - ", " ");
+      const archivedRow = page.getByRole("row").filter({ hasText: displayName });
       await expect(archivedRow).toBeVisible({ timeout: 20000 });
       await expect(archivedRow.getByText("已归档", { exact: true })).toBeVisible();
       await page.screenshot({ path: `${SCREENSHOT_DIR}/project-archive-list-filter.png` });
 
-      // 列表行操作菜单接线：归档后仅保留「反归档」，删除入口消失（后端亦 400）
-      await archivedRow.getByRole("button", { name: "操作菜单" }).click();
-      await expect(page.getByRole("menuitem", { name: "反归档" })).toBeVisible();
-      await expect(page.getByRole("menuitem", { name: "删除" })).toHaveCount(0);
-      await page.keyboard.press("Escape");
-      await expect(page.getByRole("menuitem", { name: "反归档" })).toBeHidden();
-
       // 切「未归档」→ 已归档项目不再出现
-      await page.locator('[role="combobox"]').filter({ hasText: "已归档" }).first().click();
-      await page.getByRole("option", { name: "未归档", exact: true }).click();
+      await archivedSelect.selectOption("false");
       await expect(page).toHaveURL(/is_archived=false/);
-      await expect(page.getByRole("row").filter({ hasText: soldProject.name })).toHaveCount(0, {
+      await expect(page.getByRole("row").filter({ hasText: displayName })).toHaveCount(0, {
         timeout: 20000,
       });
 

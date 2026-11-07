@@ -165,9 +165,10 @@ export function LeadsView({
       refreshLeads();
       closeDetail();
       handleSuccess(SUCCESS_MESSAGES.AUDIT_COMPLETED);
-    } else {
-      handleError(result.error, "handleAudit", { fallbackMessage: ERROR_MESSAGES.AUDIT_FAILED });
+      return true;
     }
+    handleError(result.error, "handleAudit", { fallbackMessage: ERROR_MESSAGES.AUDIT_FAILED });
+    return false;
   };
 
   const handleAddFollowUp = async (
@@ -434,14 +435,6 @@ export function LeadsView({
                     onDelete={handleDeleteLead}
                   />
                 </div>
-                <div className="flex min-h-[54px] items-center justify-between gap-4 border-t border-dove/25 px-6 py-3">
-                  <span className="text-[10.5px] text-graphite">
-                    本页 <b className="font-[480] text-ink">{filteredLeads.length}</b> 条 · 共{" "}
-                    <b className="font-[480] text-ink">{total}</b> 条
-                    {hasFilters ? "（已筛选）" : ""}
-                  </span>
-                  <LeadsPagination total={total} />
-                </div>
               </div>
             </>
           ) : (
@@ -451,6 +444,17 @@ export function LeadsView({
               onDelete={handleDeleteLead}
             />
           )}
+          <div
+            data-testid="leads-pagination-footer"
+            className="flex min-h-[54px] items-center justify-between gap-4 rounded-cards bg-pure-white px-6 py-3 shadow-steep-sm"
+          >
+            <span className="text-[10.5px] text-graphite">
+              本页 <b className="font-[480] text-ink">{filteredLeads.length}</b> 条 · 共{" "}
+              <b className="font-[480] text-ink">{total}</b> 条
+              {hasFilters ? "（已筛选）" : ""}
+            </span>
+            <LeadsPagination total={total} />
+          </div>
         </section>
 
         <LeadDrawer

@@ -66,5 +66,7 @@ test.describe("线索中心设计稿 1:1", () => {
     expect(await page.getByTestId("lead-mobile-row").count()).toBeGreaterThan(0);
     await expect(page.getByTestId("lead-table-header")).toBeHidden();
     await expect(page.getByRole("heading", { name: "线索中心" })).toBeVisible();
+    // P0 回归：移动端卡片列表也必须能看到分页栏（修复前仅桌面表格分支渲染）。
+    await expect(page.getByTestId("leads-pagination-footer")).toBeVisible();
   });
 });

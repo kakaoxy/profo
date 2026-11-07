@@ -2,7 +2,7 @@
 
 import { memo, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronRight, Eye, MoreHorizontal, Pencil, Share2 } from "lucide-react";
+import { ArrowLeft, ChevronRight, Eye, Pencil, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -86,8 +86,12 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
                   size="sm"
                   className="h-9 rounded-full border-dove bg-white text-ink hover:bg-fog"
                   onClick={async () => {
-                    await navigator.clipboard?.writeText(window.location.href);
-                    toast.success("详情链接已复制");
+                    try {
+                      await navigator.clipboard.writeText(window.location.href);
+                      toast.success("详情链接已复制");
+                    } catch {
+                      toast.error("复制失败，请手动复制地址栏链接");
+                    }
                   }}
                 >
                   <Share2 className="h-3.5 w-3.5 sm:mr-1.5" />
@@ -107,9 +111,6 @@ export const MarketingDetailHeader = memo(function MarketingDetailHeader({
             {mode === "edit" ? (
               <span className="text-[11px] text-graphite">编辑中 · 保存/取消在表单底部</span>
             ) : null}
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full text-graphite">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
           </div>
         </div>
 

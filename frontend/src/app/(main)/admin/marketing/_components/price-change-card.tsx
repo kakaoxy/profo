@@ -257,13 +257,13 @@ export const PriceChangeCard = memo(function PriceChangeCard({
       case "down":
         return (
           <span className="rounded-full bg-success-container px-3 py-1 text-xs font-medium text-success tabular-nums">
-            ↓ 直降 {(currentPrice - (newPrice ?? 0)).toFixed(2)} 万
+            {`↓ 直降 ${(currentPrice - (newPrice ?? 0)).toFixed(2)} 万`}
           </span>
         );
       case "up":
         return (
           <span className="rounded-full bg-fog px-3 py-1 text-xs font-medium text-graphite tabular-nums">
-            ↑ 上调 {((newPrice ?? 0) - currentPrice).toFixed(2)} 万
+            {`↑ 上调 ${((newPrice ?? 0) - currentPrice).toFixed(2)} 万`}
           </span>
         );
     }
@@ -357,7 +357,7 @@ export const PriceChangeCard = memo(function PriceChangeCard({
   // ── 浏览态 ──
   const browsePane = (
     <div>
-      <div className="text-[10px] text-graphite">当前挂牌总价</div>
+      <div className="text-[10px] text-graphite">当前总价</div>
       <div className="font-display mt-2 text-[52px] leading-none tracking-[-0.035em] text-ink tabular-nums">
         {formatWanDisplay(currentPrice)}
         <span className="ml-1 font-sans text-sm font-normal text-graphite">万</span>
@@ -396,6 +396,7 @@ export const PriceChangeCard = memo(function PriceChangeCard({
             size="sm"
             className="h-10 w-full rounded-full bg-ink text-white hover:bg-ink/90"
             onClick={openPricing}
+            aria-label="调价"
           >
             <Pencil className="mr-1.5 h-3.5 w-3.5" />
             调整价格
@@ -538,7 +539,8 @@ export const PriceChangeCard = memo(function PriceChangeCard({
   );
 
   return (
-    <section className="rounded-cards bg-white p-5 shadow-steep-sm">
+    <div className="rounded-cards bg-white p-5 shadow-steep-sm">
+      <h2 className="sr-only">价格与调价</h2>
       <div className="mb-3 flex items-center justify-between">
         <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-graphite">
           Pricing <span className="text-dove">/</span> 价格
@@ -546,6 +548,6 @@ export const PriceChangeCard = memo(function PriceChangeCard({
         <span className="text-[10px] text-dove">总价 · 万元</span>
       </div>
       {mode === "browse" ? browsePane : mode === "form" ? formPane : successPane}
-    </section>
+    </div>
   );
 });

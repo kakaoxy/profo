@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { Check, Loader2, Star, X } from "lucide-react";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { formatBuildingLabel } from "@/lib/dict-display";
 import { safeFormatDate } from "@/lib/formatters";
@@ -17,7 +16,7 @@ interface LeadAssessmentModalProps {
   lead: Lead | null;
   open: boolean;
   onClose: () => void;
-  onAudit: (leadId: string, status: LeadStatus, evalPrice?: number, reason?: string) => void;
+  onAudit: (leadId: string, status: LeadStatus, evalPrice?: number, reason?: string) => Promise<boolean> | boolean;
 }
 
 const formatPrice = (value?: number | null): string => {
@@ -51,6 +50,8 @@ export const LeadAssessmentModal: React.FC<LeadAssessmentModalProps> = ({
   const [opinion, setOpinion] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // 评估记录已创建但状态流转失败时，重试只补状态，避免重复写入评估历史。
+  const [evaluationSaved, setEvaluationSaved] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -64,6 +65,7 @@ export const LeadAssessmentModal: React.FC<LeadAssessmentModalProps> = ({
     setOpinion("");
     setError(null);
     setSubmitting(false);
+    setEvaluationSaved(false);
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = "";
@@ -98,46 +100,76 @@ export const LeadAssessmentModal: React.FC<LeadAssessmentModalProps> = ({
   const communityLine = [addressLine, lead.district, lead.businessArea].filter(Boolean).join(" · ");
 
   const handleApprove = async () => {
+    if (submitting) return;
     if (!ready) {
       setError(`请先填写${missing.join("、")}`);
       return;
     }
     setError(null);
     setSubmitting(true);
-    const result = await createEvaluationAction(
+    if (!evaluationSaved) {
+      const result = await createEvaluationAction(
+        lead.id,
+        Number(price),
+        Number(score),
+        Number(days),
+        opinion || undefined,
+      );
+      if (!result.success) {
+        setSubmitting(false);
+        setError(result.error);
+        return;
+      }
+      setEvaluationSaved(true);
+    }
+    const audited = await onAudit(
       lead.id,
+      LeadStatus.PENDING_VISIT,
       Number(price),
-      Number(score),
-      Number(days),
       opinion || undefined,
     );
     setSubmitting(false);
-    if (!result.success) {
-      setError(result.error);
+    if (!audited) {
+      setError("评估已保存，但线索状态更新失败，请重试");
       return;
     }
-    onAudit(lead.id, LeadStatus.PENDING_VISIT, Number(price), opinion || undefined);
-    toast.success("评估已提交，已批准约看排期");
     onClose();
   };
 
-  const handleReject = () => {
+  const handleReject = async () => {
     if (submitting) return;
-    onAudit(lead.id, LeadStatus.REJECTED, undefined, opinion || undefined);
-    toast.success("已标记为评估不符，线索已放弃");
+    setSubmitting(true);
+    const audited = await onAudit(lead.id, LeadStatus.REJECTED, undefined, opinion || undefined);
+    setSubmitting(false);
+    if (!audited) {
+      setError("线索状态更新失败，请重试");
+      return;
+    }
     onClose();
   };
 
-  const handleLost = () => {
+  const handleLost = async () => {
     if (submitting) return;
     if (!window.confirm("确认将该线索标记为他司成交？")) return;
-    onAudit(lead.id, LeadStatus.LOST_TO_COMPETITOR, undefined, opinion || undefined);
-    toast.success("已标记为他司成交");
+    setSubmitting(true);
+    const audited = await onAudit(
+      lead.id,
+      LeadStatus.LOST_TO_COMPETITOR,
+      undefined,
+      opinion || undefined,
+    );
+    setSubmitting(false);
+    if (!audited) {
+      setError("线索状态更新失败，请重试");
+      return;
+    }
     onClose();
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-7">
+    // Radix Sheet 打开时会给 body 设置 pointer-events:none；portal 到 body 的弹窗需显式恢复，
+    // 否则按钮可见但点击会穿透到 sheet-overlay。
+    <div className="pointer-events-auto fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-7">
       <button
         type="button"
         aria-label="关闭评估弹窗"
@@ -305,6 +337,7 @@ export const LeadAssessmentModal: React.FC<LeadAssessmentModalProps> = ({
                         aria-label={`${value} 分 ${SCORE_LABELS[value as 1 | 2 | 3 | 4 | 5]}`}
                         aria-pressed={score === value}
                         onClick={() => setScore(value)}
+                        disabled={evaluationSaved || submitting}
                         className={cn(
                           "flex h-9 w-[38px] items-center justify-center rounded-[11px] border transition-colors",
                           on
@@ -352,6 +385,7 @@ export const LeadAssessmentModal: React.FC<LeadAssessmentModalProps> = ({
                     onChange={(event) =>
                       setDays(event.target.value === "" ? "" : Number(event.target.value))
                     }
+                    disabled={evaluationSaved || submitting}
                     aria-label="装修后可售天数"
                     className="min-w-0 flex-1 border-0 bg-transparent text-[24px] font-[480] tabular-nums tracking-[-0.02em] text-ink outline-none"
                   />
@@ -381,6 +415,7 @@ export const LeadAssessmentModal: React.FC<LeadAssessmentModalProps> = ({
                     onChange={(event) =>
                       setPrice(event.target.value === "" ? "" : Number(event.target.value))
                     }
+                    disabled={evaluationSaved || submitting}
                     aria-label="拟收房评估价"
                     className="min-w-0 flex-1 border-0 bg-transparent text-[24px] font-[480] tabular-nums tracking-[-0.02em] text-ink outline-none"
                   />

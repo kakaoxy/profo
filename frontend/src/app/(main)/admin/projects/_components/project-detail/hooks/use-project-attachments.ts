@@ -126,6 +126,7 @@ export function useProjectAttachments({
       mutationQueueRef.current = task.catch((err: unknown) => {
         console.error("[useProjectAttachments] 附件保存失败:", err);
       });
+      return task;
     },
     [onUpdateAttachments],
   );
@@ -148,12 +149,16 @@ export function useProjectAttachments({
         toast.success("开始下载", { description: filename });
       },
       onDelete: onUpdateAttachments
-        ? (url) => {
-            enqueueMutation((current) => ({
-              next: current.filter((att) => att.url !== url),
-              options: { removedUrls: [url] },
-            }));
-            toast.success("附件已删除");
+        ? async (url) => {
+            try {
+              await enqueueMutation((current) => ({
+                next: current.filter((att) => att.url !== url),
+                options: { removedUrls: [url] },
+              }));
+              toast.success("附件已删除");
+            } catch {
+              toast.error("附件删除失败");
+            }
           }
         : undefined,
     }),
@@ -166,7 +171,9 @@ export function useProjectAttachments({
         toast.error("当前无法保存附件");
         return;
       }
-      enqueueMutation((current) => ({ next: [...current, attachment] }));
+      void enqueueMutation((current) => ({ next: [...current, attachment] })).catch(() => {
+        toast.error("附件保存失败");
+      });
     },
     [enqueueMutation, onUpdateAttachments],
   );

@@ -17,6 +17,7 @@ import type { Project } from "../types";
 import {
   daysBetween,
   daysSince,
+  daysUntil,
   formatFullDate,
   getProjectStage,
   getStageMeta,
@@ -99,7 +100,7 @@ function CashValue({ project }: { project: Project }) {
       <p className={`text-[13px] font-[480] tabular-nums ${positive ? "text-rust" : "text-ink"}`}>
         {value === 0 ? "¥0" : `${positive ? "+" : "−"}¥${Math.abs(value).toLocaleString("zh-CN", { maximumFractionDigits: 1 })}万`}
       </p>
-      <p className="mt-1 text-[10px] text-dove">ROI {roi > 0 ? `${Math.round(roi)}%` : "—"}</p>
+      <p className="mt-1 text-[10px] text-dove">ROI {roi !== 0 ? `${Math.round(roi)}%` : "—"}</p>
     </div>
   );
 }
@@ -159,13 +160,12 @@ function TableView({ projects }: { projects: Project[] }) {
             const change = priceChange(project);
             const soldDays = daysBetween(project.signing_date, project.sold_date);
             const holdingDays = daysSince(project.signing_date);
-            const commissionDays = daysSince(project.commission_end_date);
+            const commissionDaysLeft = daysUntil(project.commission_end_date);
             return (
               <tr
                 key={project.id}
                 onClick={() => router.push(`/admin/projects/${project.id}`)}
                 tabIndex={0}
-                role="link"
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
@@ -180,7 +180,14 @@ function TableView({ projects }: { projects: Project[] }) {
                       {(project.community_name ?? project.name).slice(0, 1)}
                     </span>
                     <div className="min-w-0">
-                      <p className="truncate text-[14px] font-[480] leading-5 text-ink">{projectTitle(project)}</p>
+                      <p className="flex items-center gap-2 truncate text-[14px] font-[480] leading-5 text-ink">
+                        {projectTitle(project)}
+                        {project.is_archived && (
+                          <span className="shrink-0 rounded-full bg-fog px-2 py-0.5 text-[10px] font-[480] text-ash">
+                            已归档
+                          </span>
+                        )}
+                      </p>
                       <p className="mt-1 truncate text-[11px] text-graphite">{projectMeta(project)}</p>
                     </div>
                   </div>
@@ -199,7 +206,7 @@ function TableView({ projects }: { projects: Project[] }) {
                         : "未挂牌"}
                     {change ? <span className="ml-1.5 text-rust">{change}</span> : null}
                   </p>
-                  <p className={`mt-1 text-[9.5px] tabular-nums ${commissionDays !== null && commissionDays <= 30 ? "text-rust" : "text-dove"}`}>
+                  <p className={`mt-1 text-[9.5px] tabular-nums ${commissionDaysLeft !== null && commissionDaysLeft <= 30 ? "text-rust" : "text-dove"}`}>
                     委托至 {formatFullDate(project.commission_end_date)}
                   </p>
                 </td>
@@ -244,7 +251,14 @@ function GridView({ projects }: { projects: Project[] }) {
         >
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-[16px] font-[480] leading-5 text-ink">{projectTitle(project)}</p>
+              <p className="flex items-center gap-2 text-[16px] font-[480] leading-5 text-ink">
+                {projectTitle(project)}
+                {project.is_archived && (
+                  <span className="shrink-0 rounded-full bg-fog px-2 py-0.5 text-[10px] font-[480] text-ash">
+                    已归档
+                  </span>
+                )}
+              </p>
               <p className="mt-1.5 text-[10.5px] text-graphite">{projectMeta(project)}</p>
             </div>
             <ProjectStatus project={project} />

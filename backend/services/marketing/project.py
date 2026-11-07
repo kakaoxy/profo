@@ -6,7 +6,7 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
-from sqlalchemy import and_, case, desc, func, not_
+from sqlalchemy import and_, case, desc, func, not_, select
 from sqlalchemy.orm import Query, Session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -273,16 +273,15 @@ class MarketingProjectService:
             sold = total if project_status == MarketingProjectStatus.SOLD else 0
             in_progress = total if project_status == MarketingProjectStatus.IN_PROGRESS else 0
 
-        # 筛选范围内累计浏览次数（列表概览「累计浏览」指标）
-        project_ids = [row[0] for row in query.with_entities(L4MarketingProject.id).all()]
-        total_views = 0
-        if project_ids:
-            total_views = int(
-                self.db.query(func.count(ProjectVisit.id))
-                .filter(ProjectVisit.marketing_project_id.in_(project_ids))
-                .scalar()
-                or 0
-            )
+        # 筛选范围内累计浏览次数（列表概览「累计浏览」指标）。
+        # 用子查询直接在库内聚合，避免把全部项目 ID 拉到 Python 再拼超长 IN 列表。
+        project_id_subquery = query.with_entities(L4MarketingProject.id).subquery()
+        total_views = int(
+            self.db.query(func.count(ProjectVisit.id))
+            .filter(ProjectVisit.marketing_project_id.in_(select(project_id_subquery.c.id)))
+            .scalar()
+            or 0
+        )
 
         return L4MarketingProjectSummary(
             total=total,

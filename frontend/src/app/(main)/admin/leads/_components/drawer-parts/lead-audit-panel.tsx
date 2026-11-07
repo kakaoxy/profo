@@ -108,6 +108,7 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
   const [adjustDays, setAdjustDays] = useState<number | null>(null);
   const [adjustReason, setAdjustReason] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const adjustMissing = !newEvalPrice
     ? "新评估价"
@@ -118,27 +119,33 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
         : null;
 
   const handleAdjustSubmit = async () => {
+    if (submitting) return;
     if (adjustMissing) {
       setError(`请先填写${adjustMissing}`);
       return;
     }
     setError(null);
-    const result = await createEvaluationAction(
-      lead.id,
-      Number(newEvalPrice),
-      Number(adjustScore),
-      Number(adjustDays),
-      adjustReason || undefined,
-    );
-    if (result.success) {
-      setShowAdjustForm(false);
-      setNewEvalPrice("");
-      setAdjustScore(null);
-      setAdjustDays(null);
-      setAdjustReason("");
-      onEvalAdjusted?.(result.data);
-    } else {
-      setError(result.error);
+    setSubmitting(true);
+    try {
+      const result = await createEvaluationAction(
+        lead.id,
+        Number(newEvalPrice),
+        Number(adjustScore),
+        Number(adjustDays),
+        adjustReason || undefined,
+      );
+      if (result.success) {
+        setShowAdjustForm(false);
+        setNewEvalPrice("");
+        setAdjustScore(null);
+        setAdjustDays(null);
+        setAdjustReason("");
+        onEvalAdjusted?.(result.data);
+      } else {
+        setError(result.error);
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -202,9 +209,9 @@ const CurrentEvalPriceSection: React.FC<CurrentEvalPriceSectionProps> = ({
             <Button
               className="h-9 rounded-full bg-ink px-4 text-[10.5px] font-[450] text-white hover:bg-black"
               onClick={handleAdjustSubmit}
-              disabled={adjustMissing != null}
+              disabled={adjustMissing != null || submitting}
             >
-              {adjustMissing ? `还需填写${adjustMissing}` : "保存调整"}
+              {submitting ? "保存中..." : adjustMissing ? `还需填写${adjustMissing}` : "保存调整"}
             </Button>
           </div>
           {error && <p className="text-[10px] text-rust">{error}</p>}

@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export interface DeleteConfirmButtonProps {
-  onDelete: () => Promise<{ success: boolean; message?: string }>;
+  onDelete: () => Promise<{ success: boolean; message?: string; error?: string }>;
   itemName?: string;
   description?: string;
   /** 可选文案；传入后显示图标 + 文案，默认仅图标 */
@@ -45,7 +45,7 @@ export function DeleteConfirmButton({
         toast.success("删除成功");
         setOpen(false);
       } else {
-        toast.error(res.message || "删除失败");
+        toast.error(res.message || res.error || "删除失败");
       }
     } catch (error) {
       toast.error(extractErrorMessage(error));

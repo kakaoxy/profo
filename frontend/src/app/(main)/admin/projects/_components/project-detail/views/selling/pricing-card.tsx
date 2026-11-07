@@ -20,10 +20,13 @@ function showWan(value: number): string {
 
 export function SellingPricingCard({ project, onEdit }: SellingPricingCardProps) {
   const signingPrice = wan(project.signing_price);
-  const listPrice = wan(project.list_price) || signingPrice;
+  const listPrice = wan(project.list_price);
+  const hasListPrice = listPrice > 0;
+  // 未录入挂牌价时，用签约价作为收益预估的展示口径（与列表/成交摘要一致），但不冒充挂牌价。
+  const estimatePrice = hasListPrice ? listPrice : signingPrice;
   const area = wan(project.area);
   const estimatedCost = signingPrice + area * 0.36 + 6;
-  const estimatedNetProfit = listPrice * 0.965 - estimatedCost;
+  const estimatedNetProfit = estimatePrice * 0.965 - estimatedCost;
   const estimatedRoi = estimatedCost > 0 ? Math.round((estimatedNetProfit / estimatedCost) * 100) : 0;
   const priceDiff = listPrice - signingPrice;
   const priceDiffPercent = signingPrice > 0 ? (priceDiff / signingPrice) * 100 : 0;
@@ -34,7 +37,7 @@ export function SellingPricingCard({ project, onEdit }: SellingPricingCardProps)
     return isValid(date) ? Math.max(0, differenceInDays(new Date(), date)) : 0;
   })();
   const holdingCost = Math.max(estimatedCost - signingPrice, 0);
-  const taxAndChannel = listPrice * 0.035;
+  const taxAndChannel = estimatePrice * 0.035;
   const total = Math.max(signingPrice + holdingCost + Math.max(estimatedNetProfit, 0) + taxAndChannel, 1);
   const segments = [
     { label: "签约成本", value: signingPrice, className: "bg-ink" },
@@ -69,18 +72,15 @@ export function SellingPricingCard({ project, onEdit }: SellingPricingCardProps)
         <div>
           <span className="text-[12px] font-[430] text-graphite">当前挂牌价</span>
           <div className="mt-1.5 font-signifier text-[44px] font-[420] leading-none tracking-[-0.03em] text-ink">
-            ¥{showWan(listPrice)}
-            <small className="ml-1 font-sohne text-[18px] font-[430] tracking-normal text-graphite">万</small>
+            {hasListPrice ? `¥${showWan(listPrice)}` : "待录入"}
+            {hasListPrice ? (
+              <small className="ml-1 font-sohne text-[18px] font-[430] tracking-normal text-graphite">万</small>
+            ) : null}
           </div>
           <p className="mt-2 text-[12.5px] font-[430] text-graphite">
-            {listPrice > 0 && signingPrice > 0 ? (
-              <>
-                较签约价 {priceDiff >= 0 ? "+" : "-"}¥{showWan(Math.abs(priceDiff))} 万 · 涨幅{" "}
-                {Math.abs(priceDiffPercent).toFixed(1)}%
-              </>
-            ) : (
-              "待录入挂牌价"
-            )}
+            {hasListPrice && signingPrice > 0
+              ? `较签约价 ${priceDiff >= 0 ? "+" : "-"}¥${showWan(Math.abs(priceDiff))} 万 · 涨幅 ${Math.abs(priceDiffPercent).toFixed(1)}%`
+              : "待录入挂牌价"}
           </p>
         </div>
         <div className="flex min-w-[230px] flex-1 justify-end gap-7">

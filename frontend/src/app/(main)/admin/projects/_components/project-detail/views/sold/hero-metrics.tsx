@@ -21,20 +21,22 @@ export function HeroMetrics({
   const today = useCurrentDate();
 
   // ---- 取数（沿用旧版缓存字段：net_cash_flow / roi / days_on_market） ----
-  const netProfit = Number(project.net_cash_flow) || 0; // 元
+  const rawNetProfit = Number(project.net_cash_flow); // 元
+  const hasActualNetProfit = Number.isFinite(rawNetProfit) && rawNetProfit !== 0;
   const soldPrice = Number(project.sold_price || 0); // 万
   const signingPrice = Number(project.signing_price || 0); // 万
   const area = Number(project.area || 0); // ㎡
   // 财务流水尚未录入时，用与项目列表一致的展示口径估算净收益（不写库）
   const estimatedCost = signingPrice + area * 0.36 + 6;
   const estimatedNetProfitWan = Math.max(0, soldPrice * 0.965 - estimatedCost);
-  const netProfitWan = netProfit > 0 ? netProfit / 10000 : estimatedNetProfitWan;
-  const roi =
-    Number(project.roi) > 0
-      ? Number(project.roi)
-      : estimatedCost > 0
-        ? (estimatedNetProfitWan / estimatedCost) * 100
-        : 0;
+  const netProfitWan = hasActualNetProfit ? rawNetProfit / 10000 : estimatedNetProfitWan;
+  const rawRoi = Number(project.roi);
+  const hasActualRoi = Number.isFinite(rawRoi) && rawRoi !== 0;
+  const roi = hasActualRoi
+    ? rawRoi
+    : estimatedCost > 0
+      ? (estimatedNetProfitWan / estimatedCost) * 100
+      : 0;
 
   const rawSoldDate = project.sold_date;
   const soldDateDisplay = safeFormatDate(rawSoldDate, "yyyy.MM.dd", "--");
@@ -91,7 +93,9 @@ export function HeroMetrics({
   }
 
   // ---- 指标 ④：净回报率（= 原「投资回报率」，delta 融入净利润 + 年化） ----
-  const roiDeltaParts: string[] = [`净利润 ${formatWan(netProfitWan)} 万（估算）`];
+  const roiDeltaParts: string[] = [
+    `净利润 ${formatWan(netProfitWan)} 万${hasActualNetProfit ? "" : "（估算）"}`,
+  ];
   if (annualizedRoR > 0) {
     roiDeltaParts.push(`年化 ${annualizedRoR.toFixed(1)}%`);
   }

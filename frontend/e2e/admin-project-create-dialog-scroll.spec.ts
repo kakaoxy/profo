@@ -42,14 +42,17 @@ async function openCreateDialog(page: Page) {
 async function readLayout(page: Page) {
   return page.evaluate(() => {
     const dialog = document.querySelector('[role="dialog"]') as HTMLElement;
-    const tablist = dialog.querySelector('[role="tablist"]') as HTMLElement;
-    const tabsRoot = tablist.closest(".overflow-hidden") as HTMLElement;
+    const tablists = Array.from(dialog.querySelectorAll('[role="tablist"]')) as HTMLElement[];
+    // 新建模式使用左侧步骤导航（role=tablist），编辑模式使用顶部 TabsList；
+    // 取第一个可见的 tablist。
+    const tablist = tablists.find((el) => el.getBoundingClientRect().height > 0) ?? tablists[0];
+    const tabsRoot = (tablist.closest(".overflow-hidden") ?? tablist.parentElement) as HTMLElement;
     // ⚠️ 必须从 Tabs 祖先链内取 ScrollArea：dict 选择器内部也有 ScrollArea，
     // 用 dialog.querySelector 会取到错的节点。
-    const scrollAreaRoot = tabsRoot.querySelector('[data-slot="scroll-area"]') as HTMLElement;
-    const viewport = scrollAreaRoot.querySelector(
+    const scrollAreaRoot = tabsRoot.querySelector('[data-slot="scroll-area"]') as HTMLElement | null;
+    const viewport = scrollAreaRoot?.querySelector(
       '[data-slot="scroll-area-viewport"]',
-    ) as HTMLElement;
+    ) as HTMLElement | null;
     const dRect = dialog.getBoundingClientRect();
     const tRect = tablist.getBoundingClientRect();
     return {
@@ -57,15 +60,15 @@ async function readLayout(page: Page) {
       dialogBottom: dRect.bottom,
       tablistTop: tRect.top,
       tablistBottom: tRect.bottom,
-      tabsRootScrollTop: tabsRoot.scrollTop,
-      tabsRootScrollHeight: tabsRoot.scrollHeight,
-      tabsRootClientHeight: tabsRoot.clientHeight,
-      scrollAreaScrollTop: scrollAreaRoot.scrollTop,
-      scrollAreaScrollHeight: scrollAreaRoot.scrollHeight,
-      scrollAreaClientHeight: scrollAreaRoot.clientHeight,
-      viewportScrollTop: viewport.scrollTop,
-      viewportScrollHeight: viewport.scrollHeight,
-      viewportClientHeight: viewport.clientHeight,
+      tabsRootScrollTop: tabsRoot?.scrollTop ?? 0,
+      tabsRootScrollHeight: tabsRoot?.scrollHeight ?? 0,
+      tabsRootClientHeight: tabsRoot?.clientHeight ?? 0,
+      scrollAreaScrollTop: scrollAreaRoot?.scrollTop ?? 0,
+      scrollAreaScrollHeight: scrollAreaRoot?.scrollHeight ?? 0,
+      scrollAreaClientHeight: scrollAreaRoot?.clientHeight ?? 0,
+      viewportScrollTop: viewport?.scrollTop ?? 0,
+      viewportScrollHeight: viewport?.scrollHeight ?? 0,
+      viewportClientHeight: viewport?.clientHeight ?? 0,
     };
   });
 }

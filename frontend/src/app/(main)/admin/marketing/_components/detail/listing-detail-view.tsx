@@ -89,20 +89,19 @@ export function ListingDetailView({
   );
 
   const gallery = useMemo(() => {
-    if (marketingPhotos.length > 0) {
-      return marketingPhotos.map((photo) => ({
+    const photos = [
+      ...marketingPhotos.map((photo) => ({
         id: String(photo.id),
         url: getPhotoUrl(photo),
         label: "营销照片",
-      }));
-    }
-    if (renovationPhotos.length > 0) {
-      return renovationPhotos.map((photo) => ({
+      })),
+      ...renovationPhotos.map((photo) => ({
         id: String(photo.id),
         url: getPhotoUrl(photo),
         label: "改造照片",
-      }));
-    }
+      })),
+    ];
+    if (photos.length > 0) return photos;
     return fallbackPhotos.map((photo) => ({
       id: `fallback-${photo.id}`,
       url: getFileUrl(photo.url),
@@ -114,7 +113,8 @@ export function ListingDetailView({
   const [photoTab, setPhotoTab] = useState<"marketing" | "renovation">(
     marketingPhotos.length > 0 ? "marketing" : "renovation",
   );
-  const currentPhoto = gallery[Math.min(activeIndex, Math.max(gallery.length - 1, 0))];
+  const safeActiveIndex = Math.min(activeIndex, Math.max(gallery.length - 1, 0));
+  const currentPhoto = gallery[safeActiveIndex];
   const tabPhotos = photoTab === "marketing" ? marketingPhotos : renovationPhotos;
 
   const stageEntries = useMemo(
@@ -172,7 +172,7 @@ export function ListingDetailView({
               ) : null}
               <div className="absolute right-4 bottom-4 inline-flex items-center gap-1.5 rounded-full bg-ink/65 px-2.5 py-1 text-[10px] text-white backdrop-blur">
                 <Maximize2 className="h-3 w-3" />
-                {activeIndex + 1}/{Math.max(gallery.length, 1)}
+                {safeActiveIndex + 1}/{Math.max(gallery.length, 1)}
               </div>
             </div>
             {gallery.length > 0 ? (
@@ -184,7 +184,7 @@ export function ListingDetailView({
                     onClick={() => setActiveIndex(index)}
                     aria-label={`查看第 ${index + 1} 张图片`}
                     className={`relative h-12 w-[66px] shrink-0 overflow-hidden rounded-images border-2 transition-colors ${
-                      index === activeIndex ? "border-ink" : "border-transparent"
+                      index === safeActiveIndex ? "border-ink" : "border-transparent"
                     }`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}

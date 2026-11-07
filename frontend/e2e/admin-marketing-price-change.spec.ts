@@ -45,8 +45,8 @@ const listUrl = `${FRONTEND_BASE}/admin/marketing`;
 /** 列表页搜索唯一标题后返回目标行（302+ 数据分页，不依赖默认排序）. */
 async function searchRow(page: import("@playwright/test").Page, title: string) {
   await page.goto(listUrl);
-  await page.getByPlaceholder("搜索房源名称...").fill(title);
-  return page.locator("tr", { hasText: title }).first();
+  await page.getByPlaceholder("搜索房源名称、小区、户型...").first().fill(title);
+  return page.locator('div[role="button"]:visible', { hasText: title }).first();
 }
 
 /**
@@ -109,15 +109,16 @@ test("E2E-1 详情页调价：三态流转 + 成功态承诺推送已排队 + �
 
   // 列表行同步：总价 421 + 调价副行「原 428」（用唯一后缀搜索定位，不依赖排序）
   await page.goto(listUrl);
-  const searchBox = page.getByPlaceholder("搜索房源名称...");
+  const searchBox = page.getByPlaceholder("搜索房源名称、小区、户型...").first();
   await searchBox.fill(published.title);
-  const row = page.locator("tr", { hasText: published.title }).first();
+  const row = page.locator('div[role="button"]:visible', { hasText: published.title }).first();
   await expect(row).toBeVisible();
-  await expect(row.getByText(/原 ¥428万/)).toBeVisible();
+  await expect(row.getByText(/421/)).toBeVisible();
+  await expect(row.getByText(/近期调价/)).toBeVisible();
 
   // badge_filter=price 可筛出该行（服务端链路既有）
   await page.goto(`${listUrl}?badge_filter=price&search=${encodeURIComponent(published.title)}`);
-  const rowFiltered = page.locator("tr", { hasText: published.title });
+  const rowFiltered = page.locator('div[role="button"]:visible', { hasText: published.title });
   await expect(rowFiltered).toBeVisible();
 });
 
