@@ -246,12 +246,15 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                 )}
               </div>
 
-              <div className="flex min-w-0 items-center gap-2">
+              <div data-testid="lead-row-owner" className="flex min-w-0 items-center gap-2">
                 <span className="flex h-[25px] w-[25px] shrink-0 items-center justify-center rounded-full bg-fog text-[10px] font-medium text-graphite">
                   {(lead.ownerEmployeeName || "—").charAt(0)}
                 </span>
                 <span className="flex min-w-0 flex-col leading-[1.35]">
-                  <span className="truncate text-[11.5px] font-[450] text-ink">
+                  <span
+                    data-testid="lead-owner-name"
+                    className="truncate text-[11.5px] font-[450] text-ink"
+                  >
                     {lead.ownerEmployeeName || "—"}
                   </span>
                   <span className="truncate text-[9.5px] text-dove">{lead.storeName || "—"}</span>

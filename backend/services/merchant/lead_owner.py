@@ -10,6 +10,7 @@ from models.lead import Lead
 from models.merchant import MerchantBroker, MerchantStore
 from models.user.user import User
 from schemas.lead import LeadListItem, LeadResponse
+from services.growth_center.identity import resolve_backend_employee_ids
 from services.system.exceptions import ResourceNotFoundError, ValidationError
 
 
@@ -235,12 +236,20 @@ class LeadOwnerService:
         return int(owner_update_result.rowcount or 0)
 
     def fill_names(self, items: list[LeadListItem | LeadResponse]) -> None:
-        """批量回填门店/经纪人/归属员工名称（无 N+1）."""
+        """批量回填门店/经纪人/归属员工名称（无 N+1）.
+
+        员工自己提交且无门店/经纪人归属时，对接人展示为创建人本人；
+        C 端客户提交的线索不参与兜底，避免把客户昵称误显示为员工。
+        """
         if not items:
             return
         store_ids = {item.store_id for item in items if item.store_id}
         broker_ids = {item.broker_id for item in items if item.broker_id}
         user_ids = {item.owner_employee_id for item in items if item.owner_employee_id}
+        # 仅对无归属的线索判断创建人是否具备后台身份；批量查询避免 N+1
+        creator_ids = {item.creator_id for item in items if item.creator_id and not item.owner_employee_id}
+        internal_creator_ids = resolve_backend_employee_ids(self.db, list(creator_ids))
+        user_ids |= internal_creator_ids
 
         store_rows = (
             self.db.query(
@@ -279,7 +288,13 @@ class LeadOwnerService:
             item.store_status = store_statuses.get(item.store_id) if item.store_id else None
             item.broker_name = broker_names.get(item.broker_id) if item.broker_id else None
             item.broker_status = broker_statuses.get(item.broker_id) if item.broker_id else None
-            item.owner_employee_name = user_names.get(item.owner_employee_id) if item.owner_employee_id else None
+            # 仅回填展示名称，不写 owner_employee_id，避免改变归属筛选/统计口径
+            if item.owner_employee_id:
+                item.owner_employee_name = user_names.get(item.owner_employee_id)
+            elif item.creator_id and item.creator_id in internal_creator_ids:
+                item.owner_employee_name = user_names.get(item.creator_id)
+            else:
+                item.owner_employee_name = None
 
     def _resolve_owner_employee(
         self,
