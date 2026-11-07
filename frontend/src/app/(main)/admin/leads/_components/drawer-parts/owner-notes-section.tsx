@@ -1,5 +1,5 @@
 import React from "react";
-import { Quote, User } from "lucide-react";
+import { Quote, UserRound } from "lucide-react";
 import { Lead } from "../../types";
 import { safeFormatDate } from "@/lib/formatters";
 
@@ -17,40 +17,37 @@ export const OwnerNotesSection: React.FC<OwnerNotesSectionProps> = ({ lead }) =>
   const hasExpected = lead.expectedPrice != null;
 
   return (
-    <section className="bg-white rounded-cards shadow-steep-sm overflow-hidden">
-      {/* 头部 */}
-      <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Quote className="h-3 w-3 text-graphite shrink-0" />
-          <span className="text-xs font-medium text-graphite">业主补充信息</span>
-          <span className="text-dove">·</span>
-          <span className="text-xs text-graphite truncate">C 端提交评估时填写</span>
+    <section className="overflow-hidden rounded-[16px] border border-dove/35 bg-pure-white">
+      <div className="flex items-center justify-between border-b border-dove/25 px-5 py-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <Quote className="h-3.5 w-3.5 shrink-0 text-graphite" strokeWidth={1.7} />
+          <span className="text-[12px] font-[500] text-ink">业主补充信息</span>
+          <span className="text-[10px] text-dove">C 端提交评估时填写</span>
         </div>
-        <span className="text-xs text-graphite font-medium shrink-0 ml-2">{remarks.length} 字</span>
+        <span className="shrink-0 text-[10px] tabular-nums text-dove">{remarks.length} 字</span>
       </div>
 
-      {/* 主体 */}
-      <div className="p-4">
+      <div className="px-5 py-4">
         {hasNotes ? (
           <div className="space-y-3">
             {hasExpected && (
-              <div className="bg-apricot-wash px-3 py-2 rounded-inputs text-sm font-medium text-rust">
-                心理预期价：¥{lead.expectedPrice} 万
+              <div className="inline-flex items-center rounded-full bg-apricot-wash px-3 py-1 text-[11px] font-[500] text-rust">
+                心理预期价 ¥{lead.expectedPrice} 万
               </div>
             )}
-            <div className="bg-fog border-l-2 border-l-dove rounded-inputs pl-3 pr-3 py-2.5">
-              <p className="text-sm text-ink italic leading-relaxed">{remarks}</p>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 text-xs text-graphite font-medium">
-                <User className="h-3 w-3" />
+            <blockquote className="rounded-[12px] bg-fog px-4 py-3 text-[12px] italic leading-[1.75] text-ash">
+              “{remarks}”
+            </blockquote>
+            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-dove">
+              <span className="inline-flex items-center gap-1">
+                <UserRound className="h-3 w-3" strokeWidth={1.7} />
                 业主提交 · {formatCreatedAt(lead.createdAt)}
               </span>
-              <span className="text-xs text-graphite">来自 C 端估价表单</span>
+              <span>来自 C 端估价表单</span>
             </div>
           </div>
         ) : (
-          <p className="text-xs text-graphite italic">业主未在 C 端提交补充信息</p>
+          <p className="text-[11px] italic text-dove">业主未在 C 端提交补充信息</p>
         )}
       </div>
     </section>

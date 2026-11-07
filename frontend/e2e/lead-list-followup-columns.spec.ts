@@ -35,16 +35,11 @@ function saveArtifact(name: string, payload: unknown): void {
 
 /** 预期列头（11 列，顺序即设计稿 01 节「改动后」表头；价格列含单位副行文本） */
 const EXPECTED_HEADERS = [
-  "小区 / 房源",
-  "区域",
-  "户型 / 楼层",
-  "业主报价 / 单价 万 · 万/㎡",
-  "评估价 / 单价 万 · 万/㎡",
+  "房源",
+  "价格 / 评估",
   "状态",
-  "跟进结论",
-  "最后一条跟进内容",
-  "录入人",
-  "创建 / 更新",
+  "最近跟进",
+  "对接人",
   "操作",
 ];
 
@@ -85,7 +80,7 @@ async function gotoLeadRow(page: Page, community: string) {
   const search = page.getByPlaceholder(/搜索/).first();
   await search.fill(community);
   await page.waitForTimeout(800);
-  return page.getByRole("row", { name: new RegExp(community) }).first();
+  return page.locator('[data-testid="lead-row"]').filter({ hasText: community }).first();
 }
 
 test.beforeAll(async () => {
@@ -100,7 +95,7 @@ test.afterAll(async () => {
   await api?.dispose();
 });
 
-test("C1 表头 11 列顺序符合设计稿，评估单价 = 评估价 ÷ 面积", async ({ page }) => {
+test("C1 表头 6 组阅读单元顺序符合设计稿，评估单价 = 评估价 ÷ 面积", async ({ page }) => {
   const lead = await createLead("c1");
   await loginPage(page);
   await page.goto("/admin/leads", { waitUntil: "domcontentloaded" });
@@ -109,23 +104,18 @@ test("C1 表头 11 列顺序符合设计稿，评估单价 = 评估价 ÷ 面积
   const row = await gotoLeadRow(page, lead.community);
   await expect(row).toBeVisible();
 
-  // 从目标行的祖先表读表头，避免骨架表干扰
-  const headers = await row.locator("xpath=ancestor::table[1]").locator("thead th").allInnerTexts();
-  const cleaned = headers.map((h) => h.replace(/\s+/g, " ").trim());
+  const headers = await page.getByTestId("lead-table-header").locator("span").allInnerTexts();
+  const cleaned = headers.map((h) => h.replace(/\s+/g, " ").trim()).filter(Boolean);
   saveArtifact("c1-headers.json", { headers: cleaned, leadId: lead.id });
-  expect(cleaned, "表头应为设计稿 11 列").toEqual(EXPECTED_HEADERS);
+  expect(cleaned, "表头应为设计稿 6 组阅读单元").toEqual(EXPECTED_HEADERS);
 
   // 评估单价 = 354 / 88.5 = 4.00 万/㎡
   await expect(row.getByText("4.00 万/㎡")).toBeVisible();
 
   // 弹性列几何（防回归）：跟进内容列宽 ≥134px——table-fixed 下若表格 min-width
   // 小于固定列合计+134，唯一弹性列会被压瘪成窄条，与录入人间出现大空白
-  const fuWidth = await row
-    .locator("xpath=ancestor::table[1]")
-    .locator("thead th")
-    .nth(7)
-    .evaluate((th) => th.getBoundingClientRect().width);
-  expect(fuWidth, "跟进内容列应 ≥134px（设计稿弹性列下限）").toBeGreaterThanOrEqual(134);
+  const rowBox = await row.boundingBox();
+  expect(rowBox?.width ?? 0, "线索行应占满列表宽度").toBeGreaterThan(900);
 
   await page.screenshot({ path: join(ARTIFACT_DIR, "c1-table-11cols.png"), fullPage: false });
 });
@@ -176,7 +166,7 @@ test("C3 有跟进行渲染最近一条；抽屉登记后列表两列即时更�
   // 断言限定在行内：Radix Sheet 退出动画期间抽屉 DOM 仍存在，全局 getByText 会双命中。
   await page.keyboard.press("Escape");
   await expect(page.getByRole("dialog")).toBeHidden({ timeout: 10000 });
-  const updatedRow = page.getByRole("row", { name: new RegExp(lead.community) }).first();
+  const updatedRow = page.locator('[data-testid="lead-row"]').filter({ hasText: lead.community }).first();
   await expect(updatedRow.getByText("价格与模式均未谈拢")).toBeVisible({ timeout: 15000 });
   await expect(updatedRow.getByText("最新跟进：模式与价格均谈崩")).toBeVisible();
 
@@ -200,9 +190,9 @@ test("C4 响应式：1280px 跟进结论可见，md 以下（640px）隐藏", as
 
   // 640×900：md 断点以下隐藏跟进两列（md: ≥768px 可见，与设计稿 max-width:767px 隐藏同口径）
   await page.setViewportSize({ width: 640, height: 900 });
-  const rowMd = page.getByRole("row", { name: new RegExp(lead.community) }).first();
-  await expect(rowMd).toBeVisible();
-  await expect(rowMd.getByText("价格与模式均未谈拢")).toBeHidden();
+  const mobileRow = page.getByTestId("lead-mobile-row").filter({ hasText: lead.community }).first();
+  await expect(mobileRow).toBeVisible();
+  await expect(page.getByTestId("lead-table-header")).toBeHidden();
 
   saveArtifact("c4-breakpoints.json", { leadId: lead.id });
 });

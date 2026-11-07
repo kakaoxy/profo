@@ -1,0 +1,63 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-07T04:08:39Z"
+  },
+  "title": "线索中心 · 重新设计",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1450,
+      "title": "01 · 线索总览",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Detail.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 720,
+      "h": 1700,
+      "title": "02 · 线索详情 · 评估",
+      "is_interactive": true
+    },
+    "Mobile.dc.html": {
+      "x": 2320,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "03 · 移动端",
+      "is_interactive": true
+    },
+    "Assess.dc.html": {
+      "x": 0,
+      "y": 1530,
+      "w": 1440,
+      "h": 980,
+      "title": "04 · 评估弹窗",
+      "is_interactive": true
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Detail.dc.html",
+    "Mobile.dc.html",
+    "Assess.dc.html"
+  ],
+  "notes": {
+    "intro": {
+      "x": 0,
+      "y": -300,
+      "text": "线索中心 · 重新设计",
+      "kind": "title1",
+      "maxW": 2960
+    }
+  },
+  "designSystems": []
+}

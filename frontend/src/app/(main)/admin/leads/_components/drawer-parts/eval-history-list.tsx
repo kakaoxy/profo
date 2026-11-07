@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { History, User } from "lucide-react";
+import { History, UserRound } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "@/components/ui/badge";
 import { EvalHistory } from "../../types";
 import { getEvalHistoriesAction } from "../../actions";
 import { safeFormatDate } from "@/lib/formatters";
@@ -33,7 +32,6 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
       if (result.success) {
         setHistories(result.data);
       } else {
-        // 失败时清空，避免显示陈旧数据（如线索被软删后 404）
         toast.error(result.error || "获取评估历史失败");
         setHistories([]);
       }
@@ -42,57 +40,58 @@ export const EvalHistoryList: React.FC<EvalHistoryListProps> = ({
 
   // 服务端已按 evaluated_at DESC 返回，前端无需重复排序
   return (
-    <div className="bg-white rounded-cards shadow-steep overflow-hidden">
-      <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <History className="h-3 w-3" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-graphite">
-            评估历史
-          </span>
-        </div>
-        <span className="text-[10px] text-ash">{histories.length} 条记录</span>
+    <div className="overflow-hidden rounded-[16px] border border-dove/35 bg-pure-white">
+      <div className="flex items-center justify-between border-b border-dove/25 px-5 py-3">
+        <span className="inline-flex items-center gap-2 text-[12px] font-[500] text-ink">
+          <History className="h-3.5 w-3.5 text-graphite" strokeWidth={1.7} />
+          评估历史
+        </span>
+        <span className="text-[10px] tabular-nums text-dove">{histories.length} 条记录</span>
       </div>
-      <div className="p-4 space-y-2">
-        {histories.length === 0 ? (
-          <div className="text-center py-6 text-xs text-graphite italic">暂无评估历史</div>
-        ) : (
-          histories.map((h, idx) => (
-            <div
-              key={h.id}
-              className="flex items-start gap-3 p-3 rounded-inputs border border-dove hover:border-ink/40 transition-colors"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="text-sm font-bold text-ink">¥{h.evalPrice} 万</span>
-                  {/* 评分与周期：存量记录无该事实时显式降级为灰底「未评分 / 周期待补」 */}
-                  <ScoreBadges score={h.conditionScore} days={h.expectedSaleDays} />
-                  {idx === 0 && (
-                    <Badge className="bg-apricot-wash text-rust border-apricot-line hover:bg-apricot-wash">
-                      当前
-                    </Badge>
-                  )}
-                </div>
-                <div className="text-xs text-graphite">{h.remark || "未填写调整说明"}</div>
-                <div className="text-xs text-ash mt-1 flex items-center gap-2 flex-wrap">
-                  <span>
-                    <User className="h-2.5 w-2.5 inline" /> {h.evaluatorName || "未知"}
+      {histories.length === 0 ? (
+        <div className="px-5 py-6 text-center text-[11px] italic text-dove">暂无评估历史</div>
+      ) : (
+        histories.map((h, idx) => (
+          <div
+            key={h.id}
+            className="grid grid-cols-[76px_1fr] gap-4 border-b border-dove/20 px-5 py-4 last:border-b-0"
+          >
+            <div className="pt-0.5 text-[9.5px] leading-[1.55] text-dove tabular-nums">
+              {formatEvalDate(h.evaluatedAt).split(" ").map((part) => (
+                <span key={part} className="block">
+                  {part}
+                </span>
+              ))}
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[16px] font-[480] tracking-[-0.02em] text-ink tabular-nums">
+                  ¥{h.evalPrice.toLocaleString("zh-CN")} 万
+                </span>
+                <ScoreBadges score={h.conditionScore} days={h.expectedSaleDays} compact />
+                {idx === 0 && (
+                  <span className="inline-flex h-[20px] items-center rounded-full bg-apricot-wash px-2 text-[9px] font-medium text-rust">
+                    当前
                   </span>
-                  {idx === 0 && h.evaluatorPhone && (
-                    <>
-                      <span>·</span>
-                      <span className="font-mono text-[11px] tracking-tight">
-                        {h.evaluatorPhone}
-                      </span>
-                    </>
-                  )}
-                  <span>·</span>
-                  <span>{formatEvalDate(h.evaluatedAt)}</span>
-                </div>
+                )}
+              </div>
+              <p className="mt-1.5 text-[10.5px] leading-[1.55] text-graphite">
+                {h.remark || "未填写调整说明"}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[9px] text-dove">
+                <UserRound className="h-2.5 w-2.5" strokeWidth={1.7} />
+                <span>{h.evaluatorName || "未知"}</span>
+                {idx === 0 && h.evaluatorPhone ? (
+                  <>
+                    <span>·</span>
+                    <span className="font-mono tracking-tight">{h.evaluatorPhone}</span>
+                  </>
+                ) : null}
               </div>
             </div>
-          ))
-        )}
-      </div>
+          </div>
+        ))
+      )}
     </div>
   );
 };

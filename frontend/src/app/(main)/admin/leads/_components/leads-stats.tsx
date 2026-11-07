@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, CalendarClock, Eye, CheckCircle2, XCircle } from "lucide-react";
+import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LeadStatus, LeadTabValue } from "../types";
 
@@ -19,65 +19,131 @@ interface LeadsStatsProps {
   onItemSelect?: (tab: LeadTabValue) => void;
 }
 
-interface StatEntry {
+interface StageEntry {
   tab: LeadStatus;
+  no: string;
   label: string;
-  icon: typeof ClipboardList;
-  warm?: boolean;
+  description: string;
 }
 
-const STAT_ENTRIES: StatEntry[] = [
-  { tab: LeadStatus.PENDING_ASSESSMENT, label: "待评估", icon: ClipboardList },
-  { tab: LeadStatus.PENDING_VISIT, label: "待看房", icon: CalendarClock },
-  { tab: LeadStatus.VISITED, label: "已看房", icon: Eye },
-  { tab: LeadStatus.SIGNED, label: "已签约", icon: CheckCircle2, warm: true },
-  { tab: LeadStatus.REJECTED, label: "已放弃", icon: XCircle },
+const STAGES: StageEntry[] = [
+  {
+    tab: LeadStatus.PENDING_ASSESSMENT,
+    no: "01",
+    label: "待评估",
+    description: "等待给出评估结论",
+  },
+  {
+    tab: LeadStatus.PENDING_VISIT,
+    no: "02",
+    label: "待看房",
+    description: "已批准，等待实勘",
+  },
+  {
+    tab: LeadStatus.VISITED,
+    no: "03",
+    label: "已看房",
+    description: "实勘完成，谈判中",
+  },
+  {
+    tab: LeadStatus.SIGNED,
+    no: "04",
+    label: "已签约",
+    description: "合同已签，完成收房",
+  },
 ];
 
+/**
+ * 线索漏斗：用一段连续的收房路径替代五张并列统计卡。
+ * 点击任一阶段即切换列表状态筛选；「已放弃」作为独立出口放在标题右侧。
+ */
 export function LeadsStats({ stats, activeTab, onItemSelect }: LeadsStatsProps) {
-  const isRejectedTabActive =
+  const rejectedCount = (stats.rejected || 0) + (stats.lost_to_competitor || 0);
+  const total = STAGES.reduce((sum, stage) => sum + (stats[stage.tab] || 0), 0) + rejectedCount;
+  const isRejectedActive =
     activeTab === LeadStatus.REJECTED || activeTab === LeadStatus.LOST_TO_COMPETITOR;
 
   return (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-5">
-      {STAT_ENTRIES.map((item) => {
-        const Icon = item.icon;
-        // 「已放弃」卡在 rejected 或 lost_to_competitor 任一激活态下都高亮
-        const isActive =
-          item.tab === LeadStatus.REJECTED ? isRejectedTabActive : activeTab === item.tab;
-        // 已放弃 = rejected + lost_to_competitor（他司成交归属到放弃）
-        const value =
-          item.tab === LeadStatus.REJECTED
-            ? (stats.rejected || 0) + (stats.lost_to_competitor || 0)
-            : (stats[item.tab as keyof LeadStats] ?? 0);
-        return (
-          <button
-            key={item.tab}
-            type="button"
-            aria-label={`${item.label} ${value}`}
-            aria-pressed={isActive}
-            onClick={() => onItemSelect?.(item.tab)}
-            className={cn(
-              "rounded-cards shadow-steep-sm p-5 cursor-pointer text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink",
-              item.warm ? "bg-apricot-wash" : "bg-pure-white",
-              isActive ? "ring-2 ring-ink" : "hover:shadow-steep",
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-graphite">{item.label}</span>
-              <Icon className="h-4 w-4 text-graphite" />
-            </div>
-            <div
+    <section className="mt-7 overflow-hidden rounded-cards bg-pure-white shadow-steep">
+      <div className="flex items-center justify-between gap-4 px-5 py-4 sm:px-7">
+        <div className="flex items-baseline gap-2.5">
+          <h2 className="text-[15px] font-medium text-ink">收房漏斗</h2>
+          <span className="text-[11.5px] tabular-nums text-graphite">{total} 条线索</span>
+        </div>
+        <button
+          type="button"
+          aria-pressed={isRejectedActive}
+          onClick={() => onItemSelect?.(LeadStatus.REJECTED)}
+          className={cn(
+            "inline-flex h-[30px] items-center gap-1.5 rounded-full px-3 text-[11.5px] font-[450] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+            isRejectedActive
+              ? "bg-ink text-white"
+              : "bg-fog text-graphite hover:bg-ink/5 hover:text-ink",
+          )}
+        >
+          <X className="h-3 w-3" />
+          已放弃
+          <b className={cn("font-[480] tabular-nums", isRejectedActive ? "text-white" : "text-ink")}>
+            {rejectedCount}
+          </b>
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 border-t border-dove/25 lg:grid-cols-4">
+        {STAGES.map((stage) => {
+          const isActive = activeTab === stage.tab;
+          const value = stats[stage.tab] || 0;
+          return (
+            <button
+              key={stage.tab}
+              type="button"
+              aria-label={`${stage.label} ${value}`}
+              aria-pressed={isActive}
+              onClick={() => onItemSelect?.(stage.tab)}
               className={cn(
-                "mt-3 text-2xl font-medium tabular-nums",
-                item.warm ? "text-rust" : "text-ink",
+                "relative flex min-h-[112px] flex-col items-start border-dove/25 px-5 py-5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink/20 sm:px-6",
+                "border-b lg:border-b-0 [&:nth-child(2)]:border-l [&:nth-child(4)]:border-l lg:[&:nth-child(3)]:border-l",
+                isActive ? "bg-apricot-wash" : "hover:bg-fog",
               )}
             >
-              {value}
-            </div>
-          </button>
-        );
-      })}
-    </div>
+              <span className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "text-[10.5px] tabular-nums tracking-[0.02em]",
+                    isActive ? "text-rust/55" : "text-dove",
+                  )}
+                >
+                  {stage.no}
+                </span>
+                <span
+                  className={cn(
+                    "text-[12.5px] font-[450]",
+                    isActive ? "text-rust" : "text-graphite",
+                  )}
+                >
+                  {stage.label}
+                </span>
+              </span>
+              <span
+                className={cn(
+                  "mt-2 text-[32px] font-[480] leading-none tracking-[-0.02em] tabular-nums",
+                  isActive ? "text-rust" : "text-ink",
+                )}
+              >
+                {value}
+              </span>
+              <span
+                className={cn(
+                  "mt-2 text-[10.5px] leading-none",
+                  isActive ? "text-rust/70" : "text-graphite",
+                )}
+              >
+                {stage.description}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }

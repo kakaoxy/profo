@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
-import { Home } from "lucide-react";
+import { ChevronRight, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatBuildingLabel } from "@/lib/dict-display";
 import { isValidUrl } from "@/lib/validators";
@@ -31,66 +31,75 @@ interface LeadsTableProps {
   onDelete: (id: string) => void;
 }
 
+const GRID_COLUMNS =
+  "grid-cols-[minmax(0,1.32fr)_176px_96px_minmax(0,1.05fr)_128px_52px]";
+
+const THUMB_CLASS: Record<string, string> = {
+  pending_assessment: "bg-apricot-wash text-rust",
+  pending_visit: "bg-sky-wash text-ink",
+  visited: "bg-fog text-graphite",
+  signed: "bg-ink text-white",
+  rejected: "bg-fog text-graphite",
+  lost_to_competitor: "bg-fog text-rust",
+};
+
 /**
- * 线索列表（列宽用 table-fixed + th 宽度类：断点隐藏 th 后剩余列按宽度类重排，
- * 容器 overflow-x-auto，窄屏横向滚动不挤压文字列）。
+ * 线索列表：把原来 12 个碎列收成 6 个阅读单元。
+ * 房源是第一阅读入口；价格与评估放在同一列比较；跟进结论和最近内容合并为
+ * 一次扫描；对接人和箭头只承担「找谁 / 打开」。
  */
 export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onDelete }) => {
   return (
-    <table className="w-full min-w-[1224px] table-fixed border-collapse">
-      <thead className="border-b border-dove">
-        <tr className="text-left align-bottom text-[12.5px] font-medium tracking-wide text-graphite">
-          <th className="w-[196px] whitespace-nowrap px-2.5 py-3 pl-5 font-medium">小区 / 房源</th>
-          <th className="hidden w-[84px] whitespace-nowrap px-2.5 py-3 font-medium lg:table-cell">
-            区域
-          </th>
-          <th className="w-[120px] whitespace-nowrap px-2.5 py-3 font-medium">户型 / 楼层</th>
-          <th className="w-[102px] whitespace-nowrap px-2.5 py-3 text-right font-medium">
-            业主报价 / 单价
-            <span className="mt-0.5 block text-[11px] font-normal text-dove">万 · 万/㎡</span>
-          </th>
-          <th className="w-[102px] whitespace-nowrap px-2.5 py-3 text-right font-medium">
-            评估价 / 单价
-            <span className="mt-0.5 block text-[11px] font-normal text-dove">万 · 万/㎡</span>
-          </th>
-          <th className="w-[82px] whitespace-nowrap px-2.5 py-3 font-medium">状态</th>
-          <th className="hidden w-[142px] whitespace-nowrap px-2.5 py-3 font-medium md:table-cell">
-            跟进结论
-          </th>
-          <th className="hidden whitespace-nowrap px-2.5 py-3 font-medium md:table-cell">
-            最后一条跟进内容
-          </th>
-          <th className="hidden w-[96px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
-            录入人
-          </th>
-          <th className="hidden w-[96px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
-            对接人
-          </th>
-          <th className="hidden w-[88px] whitespace-nowrap px-2.5 py-3 font-medium xl:table-cell">
-            创建 / 更新
-          </th>
-          <th className="w-[78px] whitespace-nowrap px-2.5 py-3 pr-4 text-right font-medium">
-            操作
-          </th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-dove/30">
+    <div className="min-w-[1080px]">
+      <div
+        data-testid="lead-table-header"
+        className={cn(
+          "grid h-[42px] items-center gap-5 border-b border-dove/30 px-6 text-[10.5px] font-medium tracking-[0.02em] text-dove",
+          GRID_COLUMNS,
+        )}
+      >
+        <span>房源</span>
+        <span>价格 / 评估</span>
+        <span>状态</span>
+        <span>最近跟进</span>
+        <span>对接人</span>
+        <span className="sr-only">操作</span>
+      </div>
+
+      <div className="divide-y divide-dove/20">
         {leads.map((lead) => {
-          const config = LEAD_STATUS_META[lead.status];
+          const statusMeta = LEAD_STATUS_META[lead.status];
           const conclusionMeta = getFollowUpConclusionMeta(lead.latestFollowUp?.conclusion);
           const fu = lead.latestFollowUp ?? null;
-          // 单价派生：评估价 ÷ 面积（两者均有效才算，保留 2 位；缺失显示 —，不猜）
           const evalUnitPrice =
             lead.evalPrice != null && lead.area > 0
               ? (lead.evalPrice / lead.area).toFixed(2)
               : null;
+          const deltaPct =
+            lead.evalPrice != null && lead.totalPrice > 0
+              ? (lead.evalPrice / lead.totalPrice - 1) * 100
+              : null;
+          const address = [
+            lead.buildingNo ? formatBuildingLabel(lead.buildingNo) : "",
+            lead.roomNo ? `${lead.roomNo}室` : "",
+          ]
+            .filter(Boolean)
+            .join(" ");
+          const location = [lead.district, lead.businessArea].filter(Boolean).join(" · ");
+          const hasImage =
+            lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]);
 
           return (
-            <tr
+            <div
               key={lead.id}
+              role="button"
               tabIndex={0}
+              data-testid="lead-row"
               aria-label={`打开 ${lead.communityName} 线索详情`}
-              className="cursor-pointer transition-colors hover:bg-fog focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-rust"
+              className={cn(
+                "group grid min-h-[86px] cursor-pointer items-center gap-5 px-6 py-4 text-left transition-colors hover:bg-[#fbfbfc] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink/20",
+                GRID_COLUMNS,
+              )}
               onClick={() => onOpenDetail(lead.id)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
@@ -101,231 +110,193 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                 }
               }}
             >
-              {/* 小区 / 房源 */}
-              <td className="whitespace-nowrap px-2.5 py-2.5 pl-5 align-middle">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-9 w-11 shrink-0 items-center justify-center rounded-[9px] bg-fog shadow-[inset_0_0_0_1px_rgba(163,166,175,0.18)]">
-                    {lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]) ? (
-                      <Image
-                        src={lead.images[0]}
-                        alt={lead.communityName}
-                        width={44}
-                        height={36}
-                        className="h-9 w-11 rounded-[9px] object-cover"
-                        sizes="44px"
-                        unoptimized={
-                          lead.images[0]?.includes("127.0.0.1") ||
-                          lead.images[0]?.includes("localhost")
-                        }
-                      />
-                    ) : (
-                      <Home className="h-3.5 w-3.5 text-dove" />
-                    )}
+              <div className="flex min-w-0 items-start gap-3.5">
+                <div
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[12px] font-display text-[18px] font-[480] transition-colors",
+                    hasImage ? "bg-fog" : THUMB_CLASS[lead.status] || "bg-fog text-graphite",
+                  )}
+                >
+                  {hasImage ? (
+                    <Image
+                      src={lead.images[0]}
+                      alt=""
+                      width={44}
+                      height={44}
+                      className="h-11 w-11 object-cover"
+                      sizes="44px"
+                      unoptimized={
+                        lead.images[0]?.includes("127.0.0.1") ||
+                        lead.images[0]?.includes("localhost")
+                      }
+                    />
+                  ) : (
+                    lead.communityName.charAt(0)
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-[14px] font-medium leading-[1.35] text-ink">
+                      {lead.communityName}
+                    </span>
+                    {lead.dictStatus === "pending" ? (
+                      <span className="shrink-0 rounded-full bg-apricot-wash px-1.5 py-0.5 text-[9px] font-medium text-rust">
+                        未审核
+                      </span>
+                    ) : null}
                   </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="block truncate max-w-[120px] text-sm font-medium leading-tight text-ink">
-                        {lead.communityName}
-                      </span>
-                      {lead.dictStatus === "pending" ? (
-                        <span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
-                          未审核
-                        </span>
-                      ) : null}
-                    </div>
-                    {/* 字典地址行（surface-dict-binding-info）：楼栋/户室缺失静默回退 ID */}
-                    {lead.buildingNo || lead.roomNo ? (
-                      <span className="mt-0.5 block truncate max-w-[120px] text-xs leading-tight text-graphite">
-                        {[
-                          lead.buildingNo && formatBuildingLabel(lead.buildingNo),
-                          lead.roomNo && `${lead.roomNo}室`,
-                        ]
-                          .filter(Boolean)
-                          .join(" ")}
-                      </span>
-                    ) : (
-                      <span className="mt-0.5 block truncate max-w-[120px] font-mono text-xs leading-tight text-graphite">
-                        ID: {lead.id.slice(0, 8)}
-                      </span>
-                    )}
+                  <div className="mt-0.5 truncate text-[11px] text-graphite">
+                    {address || `ID: ${lead.id.slice(0, 8)}`}
+                    {location ? ` · ${location}` : ""}
+                  </div>
+                  <div className="mt-0.5 truncate text-[10.5px] tabular-nums text-dove">
+                    {lead.layout || "—"} · {lead.area > 0 ? `${lead.area}㎡` : "—"} ·{" "}
+                    {lead.floorInfo || "—"}
                   </div>
                 </div>
-              </td>
+              </div>
 
-              {/* 区域 */}
-              <td className="hidden whitespace-nowrap px-2.5 py-2.5 align-middle lg:table-cell">
-                <span className="block text-[13px] leading-tight text-ash">
-                  {lead.district || "—"}
-                </span>
-                <span className="mt-0.5 block text-xs leading-tight text-graphite">
-                  {lead.businessArea || "—"}
-                </span>
-              </td>
+              <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex items-baseline gap-1 whitespace-nowrap">
+                  <span className="text-[16.5px] font-[480] tracking-[-0.02em] tabular-nums text-ink">
+                    {lead.totalPrice > 0 ? lead.totalPrice.toLocaleString("zh-CN") : "—"}
+                  </span>
+                  <span className="text-[10px] text-graphite">万</span>
+                  <span className="ml-1 text-[10px] tabular-nums text-dove">
+                    {lead.unitPrice > 0 ? `${lead.unitPrice.toFixed(2)} 万/㎡` : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 whitespace-nowrap text-[10.5px] text-graphite">
+                  <span>评估</span>
+                  {lead.evalPrice != null ? (
+                    <>
+                      <span className="font-medium tabular-nums text-ash">
+                        {lead.evalPrice.toLocaleString("zh-CN")} 万
+                      </span>
+                      {evalUnitPrice ? (
+                        <span className="text-dove">/ {evalUnitPrice} 万/㎡</span>
+                      ) : null}
+                      {deltaPct != null ? (
+                        <span
+                          className={cn(
+                            "font-medium tabular-nums",
+                            deltaPct < 0 ? "text-rust" : "text-graphite",
+                          )}
+                        >
+                          {deltaPct > 0 ? "+" : ""}
+                          {deltaPct.toFixed(1)}%
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <span className="text-dove">待评估</span>
+                  )}
+                </div>
+              </div>
 
-              {/* 户型 / 楼层 */}
-              <td className="whitespace-nowrap px-2.5 py-2.5 align-middle">
-                <span className="block text-[13.5px] font-normal leading-tight text-ink">
-                  {lead.layout || "—"}
-                </span>
-                <span className="mt-0.5 block truncate text-xs tabular-nums leading-tight text-graphite">
-                  {lead.area > 0 ? `${lead.area}㎡` : "—"} · {lead.floorInfo || "—"}
-                </span>
-              </td>
-
-              {/* 业主报价 / 单价 */}
-              <td className="whitespace-nowrap px-2.5 py-2.5 text-right align-middle">
-                <span className="block text-sm font-medium tabular-nums leading-tight text-ink">
-                  {lead.totalPrice > 0 ? lead.totalPrice.toLocaleString("zh-CN") : "—"}
-                </span>
-                <span className="mt-0.5 block text-xs tabular-nums leading-tight text-graphite">
-                  {lead.unitPrice > 0 ? `${lead.unitPrice.toFixed(2)} 万/㎡` : "—"}
-                </span>
-              </td>
-
-              {/* 评估价 / 单价（①前移 + 评估单价） */}
-              <td className="whitespace-nowrap px-2.5 py-2.5 text-right align-middle">
-                <span className="block text-sm font-medium tabular-nums leading-tight text-ink">
-                  {lead.evalPrice != null ? lead.evalPrice.toLocaleString("zh-CN") : "—"}
-                </span>
-                <span className="mt-0.5 block text-xs tabular-nums leading-tight text-graphite">
-                  {evalUnitPrice != null ? `${evalUnitPrice} 万/㎡` : "—"}
-                </span>
-              </td>
-
-              {/* 状态 */}
-              <td className="whitespace-nowrap px-2.5 py-2.5 align-middle">
+              <div>
                 <Badge
                   variant="secondary"
-                  className={cn("px-2.5 py-0.5 text-xs", config.badgeClass)}
+                  className={cn("px-2.5 py-1 text-[10.5px] font-medium", statusMeta.badgeClass)}
                 >
-                  {config.label}
+                  {statusMeta.label}
                 </Badge>
-              </td>
+              </div>
 
-              {/* 跟进结论（③） */}
-              <td className="hidden whitespace-nowrap px-2.5 py-2.5 align-middle md:table-cell">
-                <Badge
-                  variant="secondary"
-                  className={cn("px-2.5 py-0.5 text-[11.5px]", conclusionMeta.badgeClass)}
-                >
-                  {conclusionMeta.label}
-                </Badge>
-              </td>
-
-              {/* 最后一条跟进内容（③）：正文 2 行截断 + title 全文；无跟进不伪造 */}
-              <td className="hidden px-2.5 py-2.5 align-middle md:table-cell">
+              <div className="min-w-0">
                 {fu ? (
                   <>
+                    <div className="flex min-w-0 items-center gap-1.5">
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "h-[18px] shrink-0 px-2 py-0 text-[9.5px] font-medium",
+                          conclusionMeta.badgeClass,
+                        )}
+                      >
+                        {conclusionMeta.label}
+                      </Badge>
+                      <span className="truncate text-[9.5px] tabular-nums text-dove">
+                        {getFollowUpMethodShort(fu.method)} · {safeFormatDate(fu.followedAt, "MM-dd")}
+                      </span>
+                    </div>
                     <p
                       title={fu.content}
-                      className="line-clamp-2 whitespace-normal text-[12.5px] leading-normal text-ash"
+                      className="mt-1 line-clamp-2 text-[11px] leading-[1.45] text-ash"
                     >
                       {fu.content}
                     </p>
-                    <p className="mt-0.5 text-[11px] tabular-nums text-dove">
-                      {safeFormatDate(fu.followedAt, "MM-dd")} · {fu.createdByName || "—"} ·{" "}
-                      {getFollowUpMethodShort(fu.method)}
+                    <p className="mt-0.5 truncate text-[9.5px] text-dove">
+                      {fu.createdByName || "—"}
                     </p>
                   </>
                 ) : (
                   <>
-                    <p className="min-h-[38px] text-[12.5px] leading-normal text-dove">—</p>
-                    <p className="mt-0.5 text-[11px] text-dove">尚未跟进</p>
+                    <Badge
+                      variant="secondary"
+                      className={cn(
+                        "h-[18px] px-2 py-0 text-[9.5px] font-medium",
+                        conclusionMeta.badgeClass,
+                      )}
+                    >
+                      {conclusionMeta.label}
+                    </Badge>
+                    <p className="mt-1 text-[11px] leading-[1.45] text-dove">尚未跟进</p>
                   </>
                 )}
-              </td>
+              </div>
 
-              {/* 录入人（BR-M07-013：与「分享员工」语义分开，不得 referrerName || creatorName 混用） */}
-              <td className="hidden whitespace-nowrap px-2.5 py-2.5 align-middle xl:table-cell">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-fog text-[11px] font-medium text-ink">
-                    {(lead.creatorName || "—").charAt(0)}
-                  </span>
-                  <span className="block truncate max-w-[56px] text-[13px] text-ash">
-                    {lead.creatorName || "—"}
-                  </span>
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="flex h-[25px] w-[25px] shrink-0 items-center justify-center rounded-full bg-fog text-[10px] font-medium text-graphite">
+                  {(lead.ownerEmployeeName || "—").charAt(0)}
                 </span>
-              </td>
-
-              {/* 对接人（门店负责人）：与录入人、分享员工语义分开 */}
-              <td className="hidden whitespace-nowrap px-2.5 py-2.5 align-middle xl:table-cell">
-                <span className="block truncate max-w-[80px] text-[13px] text-ash">
-                  {lead.ownerEmployeeName || "—"}
+                <span className="flex min-w-0 flex-col leading-[1.35]">
+                  <span className="truncate text-[11.5px] font-[450] text-ink">
+                    {lead.ownerEmployeeName || "—"}
+                  </span>
+                  <span className="truncate text-[9.5px] text-dove">{lead.storeName || "—"}</span>
                 </span>
-              </td>
+              </div>
 
-              {/* 创建 / 更新（②合并一列）：年内 MM-DD，跨年 YYYY-MM-DD，title 恒为完整时间 */}
-              <td className="hidden whitespace-nowrap px-2.5 py-2.5 align-middle xl:table-cell">
-                <div className="flex flex-col gap-0.5">
-                  <span className="flex items-baseline gap-1 text-xs leading-tight text-ash">
-                    <span className="text-[10.5px] tracking-wide text-dove">创建</span>
-                    <span
-                      className="tabular-nums"
-                      title={`创建 ${safeFormatDate(lead.createdAt, "yyyy-MM-dd HH:mm")}`}
-                    >
-                      {safeFormatDate(lead.createdAt, "MM-dd")}
-                    </span>
-                  </span>
-                  <span className="flex items-baseline gap-1 text-xs leading-tight text-ash">
-                    <span className="text-[10.5px] tracking-wide text-dove">更新</span>
-                    <span
-                      className="tabular-nums"
-                      title={`更新 ${safeFormatDate(lead.updatedAt, "yyyy-MM-dd HH:mm")}`}
-                    >
-                      {safeFormatDate(lead.updatedAt, "MM-dd")}
-                    </span>
-                  </span>
-                </div>
-              </td>
-
-              {/* 操作（设计稿：文字链「查看 / 删除」） */}
-              <td className="whitespace-nowrap px-2.5 py-2.5 pr-4 text-right align-middle">
-                <div
-                  className="flex items-center justify-end gap-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    className="rounded text-[12.5px] text-graphite transition-colors hover:text-ink"
-                    onClick={() => onOpenDetail(lead.id)}
-                  >
-                    查看
-                  </button>
-                  <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <button
-                          type="button"
-                          className="rounded text-[12.5px] text-graphite transition-colors hover:text-ink"
+              <div className="flex items-center justify-end gap-0.5">
+                <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label={`删除 ${lead.communityName}`}
+                        className="hidden h-7 w-7 items-center justify-center rounded-full text-dove transition-colors hover:bg-apricot-wash hover:text-rust group-hover:flex focus-visible:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>确认删除线索？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          此操作将永久删除该线索，无法恢复。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => onDelete(lead.id)}
+                          className="bg-error hover:bg-red-700"
                         >
-                          删除
-                        </button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>确认删除线索？</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            此操作将永久删除该线索，无法恢复。
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>取消</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => onDelete(lead.id)}
-                            className="bg-error hover:bg-red-700"
-                          >
-                            确认删除
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </HasPermission>
-                </div>
-              </td>
-            </tr>
+                          确认删除
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </HasPermission>
+                <ChevronRight className="h-[15px] w-[15px] text-dove transition-all group-hover:translate-x-px group-hover:text-ink" />
+              </div>
+              <span className="sr-only">录入人 {lead.creatorName || "—"}</span>
+            </div>
           );
         })}
-      </tbody>
-    </table>
+      </div>
+    </div>
   );
 };

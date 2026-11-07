@@ -8,74 +8,81 @@ interface Props {
   lead: Lead;
 }
 
-const LIFECYCLE_PILL_STEPS = [
+const LIFECYCLE_STEPS = [
   { status: LeadStatus.PENDING_ASSESSMENT, label: "初筛评估", step: 0 },
   { status: LeadStatus.PENDING_VISIT, label: "上门实勘", step: 1 },
   { status: LeadStatus.VISITED, label: "商务谈判", step: 2 },
   { status: LeadStatus.SIGNED, label: "签约收房", step: 3 },
 ] as const;
 
+/** 详情抽屉生命周期：细线节点，已完成 Ink、当前 Apricot、未到达 Fog。 */
 export const LifecycleStepper: React.FC<Props> = ({ lead }) => {
   const isTerminalClosed =
     lead.status === LeadStatus.REJECTED || lead.status === LeadStatus.LOST_TO_COMPETITOR;
 
   const currentStep = useMemo(() => {
-    if (!lead) return 0;
     if (lead.status === LeadStatus.REJECTED || lead.status === LeadStatus.LOST_TO_COMPETITOR) {
       return -1;
     }
-    const stepConfig = LIFECYCLE_PILL_STEPS.find((s) => s.status === lead.status);
-    return stepConfig?.step ?? 0;
-  }, [lead]);
+    return LIFECYCLE_STEPS.find((item) => item.status === lead.status)?.step ?? 0;
+  }, [lead.status]);
 
   return (
     <div
       className={cn(
-        "px-4 py-3 bg-white border-b border-dove overflow-x-auto no-scrollbar relative",
-        isTerminalClosed && "opacity-70 saturate-50",
+        "relative flex shrink-0 items-center px-6 pt-5 sm:px-7",
+        isTerminalClosed && "opacity-65 saturate-50",
       )}
+      aria-label="线索阶段"
     >
       {isTerminalClosed && (
         <span
           className={cn(
-            "absolute right-6 top-2.5 text-[10px] font-bold px-2 py-0.5",
+            "absolute right-6 top-1 text-[9px] font-medium",
             LEAD_STATUS_META[lead.status].badgeClass,
           )}
         >
           {LEAD_STATUS_META[lead.status].label}
         </span>
       )}
-      <div className="flex items-center gap-1 min-w-[500px]">
-        {LIFECYCLE_PILL_STEPS.map((step, idx) => {
-          const isActive = currentStep === idx;
-          const isCompleted = currentStep > idx || currentStep === 3; // 3 implies completed/signed
-
-          return (
-            <React.Fragment key={step.status}>
+      {LIFECYCLE_STEPS.map((step, index) => {
+        const isActive = currentStep === index;
+        const isDone = currentStep > index || currentStep === 3;
+        return (
+          <React.Fragment key={step.status}>
+            <div className="flex min-w-0 items-center gap-[7px]">
               <span
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 rounded-full py-1 pl-2 pr-3 text-xs transition-colors",
-                  isCompleted
+                  "flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[9px]",
+                  isDone
                     ? "bg-ink text-white"
                     : isActive
-                      ? "bg-apricot-wash text-rust font-medium"
-                      : "bg-fog text-graphite",
+                      ? "bg-apricot-wash text-rust"
+                      : "bg-fog text-dove",
                 )}
               >
-                {isCompleted ? (
-                  <Check className="h-3 w-3" />
-                ) : (
-                  <span className="text-[10px] font-bold">{idx + 1}</span>
+                {isDone ? <Check className="h-2.5 w-2.5" strokeWidth={2.2} /> : index + 1}
+              </span>
+              <span
+                className={cn(
+                  "whitespace-nowrap text-[10px]",
+                  isDone ? "text-graphite" : isActive ? "font-medium text-rust" : "text-dove",
                 )}
+              >
                 {step.label}
               </span>
-              {idx < LIFECYCLE_PILL_STEPS.length - 1 && (
-                <span className="h-px w-8 shrink-0 bg-dove" />
-              )}
-            </React.Fragment>
-          );
-        })}
-      </div>
+            </div>
+            {index < LIFECYCLE_STEPS.length - 1 && (
+              <span
+                className={cn(
+                  "mx-[7px] h-px min-w-3 flex-1",
+                  isDone ? "bg-ink/20" : "bg-dove/30",
+                )}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 };

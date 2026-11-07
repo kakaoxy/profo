@@ -1,0 +1,1366 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线索中心 · 线索总览</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face {
+    font-family: "InterLocal";
+    src: url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "SourceSerifLocal";
+    src: url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --ink: #17191c;
+    --white: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --slate: #8b8c8d;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-edge: #e6b088;
+    --apricot-soft: #f7d0b4;
+    --sky: #d3e3fc;
+    --hair: rgba(163, 166, 175, 0.32);
+    --hair-soft: rgba(163, 166, 175, 0.18);
+    --font-ui: "InterLocal", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --font-display: "SourceSerifLocal", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --r-card: 24px;
+    --r-input: 16px;
+    --r-pill: 9999px;
+    --shadow-card: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.10) 0 20px 25px -5px, rgba(0, 0, 0, 0.10) 0 8px 10px -6px;
+    --shadow-sm: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.06) 0 10px 20px -8px, rgba(0, 0, 0, 0.05) 0 3px 6px -4px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    margin: 0;
+    background: var(--fog);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 430;
+    letter-spacing: -0.009em;
+    line-height: 1.5;
+  }
+  button, input, select, textarea { font: inherit; letter-spacing: inherit; color: inherit; }
+  button { background: none; border: 0; padding: 0; cursor: pointer; }
+  h1, h2, h3, p { margin: 0; }
+  a { color: inherit; }
+  svg { display: block; }
+  .ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .app { display: flex; min-height: 100vh; background: var(--fog); }
+
+  /* ---------- left rail ---------- */
+  .rail {
+    width: 76px; flex: none; align-self: flex-start; position: sticky; top: 0;
+    height: 100vh; padding: 20px 0 18px; display: flex; flex-direction: column; align-items: center;
+    background: var(--fog); border-right: 1px solid var(--hair-soft);
+  }
+  .logo {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--ink); color: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 17px; font-weight: 500; letter-spacing: 0;
+  }
+  .rail-nav { margin-top: 30px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .rail-btn {
+    width: 42px; height: 42px; border-radius: 13px; color: var(--graphite);
+    display: flex; align-items: center; justify-content: center; position: relative;
+    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  }
+  .rail-btn .ic { width: 19px; height: 19px; stroke-width: 1.6; }
+  .rail-btn:hover { background: rgba(23, 25, 28, 0.05); color: var(--ink); }
+  .rail-btn[aria-current="page"] { background: var(--white); color: var(--ink); box-shadow: var(--shadow-sm); }
+  .rail-btn[aria-current="page"]::after {
+    content: ""; position: absolute; bottom: 5px; left: 50%; width: 3px; height: 3px;
+    margin-left: -1.5px; border-radius: 50%; background: var(--rust);
+  }
+  .rail-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .rail-btn.small { width: 38px; height: 38px; border-radius: 11px; color: var(--dove); }
+  .rail-btn.small .ic { width: 18px; height: 18px; }
+
+  /* ---------- page frame ---------- */
+  .main { flex: 1; min-width: 0; }
+  .wrap { max-width: 1288px; margin: 0 auto; padding: 22px 44px 48px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 30px; }
+  .crumb { display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--graphite); }
+  .crumb .slash { color: var(--dove); }
+  .crumb .here { color: var(--ash); }
+  .topbar-right { display: flex; align-items: center; gap: 14px; }
+  .sync { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--graphite); }
+  .sync .ic { width: 13px; height: 13px; color: var(--dove); }
+  .avatar-btn {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--white);
+    font-size: 12px; font-weight: 500; display: flex; align-items: center; justify-content: center;
+  }
+  .avatar-btn:hover { background: #000; }
+
+  .page-head { margin-top: 20px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+  .page-title h1 {
+    font-family: var(--font-display); font-size: 44px; font-weight: 480; line-height: 1.08;
+    letter-spacing: -0.025em; color: var(--ink);
+  }
+  .flow { margin-top: 10px; display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--graphite); }
+  .flow .arrow { color: var(--dove); font-size: 12px; }
+  .page-actions { display: flex; align-items: center; gap: 16px; padding-bottom: 2px; }
+  .text-action {
+    display: inline-flex; align-items: center; gap: 7px; height: 44px; padding: 0 2px;
+    font-size: 13px; font-weight: 450; color: var(--graphite);
+  }
+  .text-action:hover { color: var(--ink); }
+  .text-action .ic { width: 15px; height: 15px; }
+  .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    height: 44px; padding: 0 20px; border-radius: var(--r-pill);
+    background: var(--ink); color: var(--white); font-size: 13.5px; font-weight: 450;
+    transition: background 160ms ease, transform 160ms ease;
+  }
+  .btn-primary:hover { background: #000; }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-primary .ic { width: 15px; height: 15px; }
+
+  /* ---------- funnel ---------- */
+  .funnel {
+    margin-top: 28px; background: var(--white); border-radius: var(--r-card);
+    box-shadow: var(--shadow-card); overflow: hidden;
+  }
+  .funnel-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 17px 28px 15px;
+  }
+  .funnel-title { font-size: 15px; font-weight: 500; display: flex; align-items: baseline; gap: 10px; }
+  .funnel-title span { font-size: 11.5px; font-weight: 400; color: var(--graphite); }
+  .abandon-btn {
+    display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px;
+    border-radius: var(--r-pill); background: var(--fog); color: var(--graphite);
+    font-size: 11.5px; font-weight: 450;
+  }
+  .abandon-btn b { font-weight: 480; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .abandon-btn .ic { width: 13px; height: 13px; }
+  .abandon-btn:hover { color: var(--ink); background: rgba(23, 25, 28, 0.06); }
+  .abandon-btn.on { background: var(--ink); color: var(--white); }
+  .abandon-btn.on b { color: var(--white); }
+  .stages { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--hair-soft); }
+  .stage {
+    min-height: 112px; padding: 19px 26px 17px; text-align: left; position: relative;
+    display: flex; flex-direction: column; align-items: flex-start;
+    transition: background 160ms ease;
+  }
+  .stage + .stage { border-left: 1px solid var(--hair-soft); }
+  .stage:hover { background: var(--fog); }
+  .stage.on { background: var(--apricot); }
+  .stage.on:hover { background: var(--apricot); }
+  .stage-top { display: flex; align-items: center; gap: 8px; }
+  .stage-no { font-size: 10.5px; color: var(--dove); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+  .stage-label { font-size: 12.5px; color: var(--graphite); font-weight: 450; }
+  .stage.on .stage-label, .stage.on .stage-desc { color: var(--rust); }
+  .stage.on .stage-no { color: var(--apricot-edge); }
+  .stage-count {
+    margin-top: 8px; font-size: 32px; line-height: 1; font-weight: 480;
+    letter-spacing: -0.035em; font-variant-numeric: tabular-nums;
+  }
+  .stage.on .stage-count { color: var(--rust); }
+  .stage-count em { font-style: normal; font-size: 10.5px; font-weight: 400; color: var(--dove); margin-left: 5px; letter-spacing: 0; }
+  .stage.on .stage-count em { color: var(--apricot-edge); }
+  .stage-desc { margin-top: 9px; font-size: 11px; line-height: 1.4; color: var(--graphite); }
+
+  /* ---------- list heading ---------- */
+  .list-section { margin-top: 30px; }
+  .list-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .list-heading { display: flex; align-items: baseline; gap: 11px; }
+  .list-heading h2 { font-size: 22px; font-weight: 480; letter-spacing: -0.02em; }
+  .list-count { font-size: 12px; color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .list-tools { display: flex; align-items: center; gap: 10px; }
+  .sort-btn {
+    display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 4px;
+    font-size: 12px; color: var(--graphite); font-weight: 450;
+  }
+  .sort-btn:hover { color: var(--ink); }
+  .sort-btn .ic { width: 13px; height: 13px; color: var(--dove); }
+  .view-toggle {
+    display: flex; align-items: center; gap: 2px; height: 40px; padding: 4px;
+    background: var(--white); border-radius: var(--r-pill); box-shadow: var(--shadow-sm);
+  }
+  .view-btn {
+    width: 32px; height: 32px; border-radius: var(--r-pill); color: var(--dove);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .view-btn .ic { width: 15px; height: 15px; }
+  .view-btn:hover { color: var(--ink); }
+  .view-btn.on { background: var(--ink); color: var(--white); }
+
+  .filters { margin-top: 14px; display: flex; align-items: center; gap: 10px; }
+  .search-box {
+    flex: 0 1 318px; min-width: 220px; height: 44px; display: flex; align-items: center; gap: 9px;
+    padding: 0 14px; background: var(--white); border-radius: var(--r-pill); box-shadow: var(--shadow-sm);
+  }
+  .search-box .ic { width: 16px; height: 16px; color: var(--dove); }
+  .search-box input {
+    flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent;
+    font-size: 13px; color: var(--ink);
+  }
+  .search-box input::placeholder { color: var(--dove); }
+  .search-clear {
+    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--dove);
+  }
+  .search-clear:hover { background: var(--fog); color: var(--ink); }
+  .search-clear .ic { width: 12px; height: 12px; }
+  .select-wrap { position: relative; flex: none; }
+  .select-wrap select {
+    height: 44px; padding: 0 34px 0 15px; border: 0; border-radius: var(--r-pill);
+    appearance: none; -webkit-appearance: none; background: var(--white); box-shadow: var(--shadow-sm);
+    font-size: 12.5px; color: var(--ink); cursor: pointer;
+  }
+  .select-wrap select:hover { box-shadow: var(--shadow-card); }
+  .select-wrap .chev { position: absolute; right: 14px; top: 50%; width: 13px; height: 13px; margin-top: -6.5px; color: var(--dove); pointer-events: none; }
+  .filter-tail { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .filter-tail .summary { font-size: 11.5px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .clear-btn { font-size: 12px; color: var(--graphite); text-decoration: underline; text-underline-offset: 3px; height: 32px; }
+  .clear-btn:hover { color: var(--ink); }
+
+  /* ---------- table ---------- */
+  .list-card {
+    margin-top: 14px; background: var(--white); border-radius: var(--r-card);
+    box-shadow: var(--shadow-card); overflow: hidden;
+  }
+  .table-scroll { overflow-x: auto; }
+  .table-inner { min-width: 1080px; }
+  .table-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.32fr) 176px 96px minmax(0, 1.05fr) 128px 28px;
+    column-gap: 20px; align-items: center;
+  }
+  .thead { padding: 0 24px; height: 42px; border-bottom: 1px solid var(--hair); }
+  .thead span { font-size: 10.5px; font-weight: 500; color: var(--dove); letter-spacing: 0.02em; }
+  .lead-row {
+    width: 100%; padding: 16px 24px; text-align: left; display: grid; min-height: 86px;
+    transition: background 140ms ease; border-radius: 0;
+  }
+  .lead-row + .lead-row { box-shadow: inset 0 1px 0 var(--hair-soft); }
+  .lead-row:hover { background: #fbfbfc; }
+  .lead-row:hover .row-arrow { color: var(--ink); transform: translateX(1px); }
+  .lead-row:hover .thumb { background: var(--apricot-soft); }
+
+  .prop { display: flex; align-items: flex-start; gap: 13px; min-width: 0; }
+  .thumb {
+    width: 44px; height: 44px; flex: none; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 18px; font-weight: 480; letter-spacing: 0;
+    transition: background 140ms ease;
+  }
+  .thumb.warm { background: var(--apricot); color: var(--rust); }
+  .thumb.sky { background: var(--sky); color: var(--ink); }
+  .thumb.fog { background: var(--fog); color: var(--graphite); }
+  .thumb.ink { background: var(--ink); color: var(--white); }
+  .prop-text { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .name-line { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .new-tag {
+    flex: none; height: 17px; padding: 0 6px; border-radius: var(--r-pill); background: var(--apricot);
+    color: var(--rust); font-size: 9.5px; font-weight: 500; display: inline-flex; align-items: center;
+  }
+  .addr { font-size: 11.5px; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prop-meta { font-size: 10.5px; color: var(--dove); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .price { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .price-line { display: flex; align-items: baseline; gap: 2px; white-space: nowrap; }
+  .price-num { font-size: 16.5px; font-weight: 480; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .price-unit { font-size: 10px; color: var(--graphite); margin-right: 5px; }
+  .psf { font-size: 10px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .price-empty { font-size: 12px; color: var(--dove); }
+  .price-sub { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--graphite); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .gap { font-size: 10px; font-weight: 500; }
+  .gap.neg { color: var(--rust); }
+  .gap.pos { color: var(--graphite); }
+
+  .status {
+    display: inline-flex; align-items: center; justify-content: center; height: 23px; padding: 0 9px;
+    border-radius: var(--r-pill); font-size: 10.5px; font-weight: 500; white-space: nowrap;
+  }
+  .st-pending-assessment { background: var(--apricot); color: var(--rust); }
+  .st-pending-visit { background: var(--sky); color: var(--ink); }
+  .st-visited { background: var(--white); color: var(--ink); box-shadow: inset 0 0 0 1px var(--hair); }
+  .st-signed { background: var(--ink); color: var(--white); }
+  .st-rejected { background: var(--fog); color: var(--graphite); }
+
+  .fu { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .fu-line { display: flex; align-items: flex-start; gap: 6px; min-width: 0; }
+  .concl {
+    flex: none; height: 18px; padding: 0 7px; border-radius: var(--r-pill); font-size: 9.5px; font-weight: 500;
+    display: inline-flex; align-items: center; margin-top: 1px; white-space: nowrap;
+  }
+  .concl.price { background: var(--apricot); color: var(--rust); }
+  .concl.mode { background: var(--white); color: var(--rust); box-shadow: inset 0 0 0 1px var(--apricot-edge); }
+  .concl.both { background: var(--ink); color: var(--white); }
+  .concl.none { background: var(--fog); color: var(--graphite); }
+  .fu-text {
+    font-size: 11.5px; line-height: 1.55; color: var(--ash);
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .fu-meta { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--dove); white-space: nowrap; }
+  .fu-meta .dot { color: var(--hair); }
+  .urgent { color: var(--rust); font-weight: 500; }
+
+  .owner { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .owner-avatar {
+    width: 25px; height: 25px; border-radius: 50%; background: var(--fog); color: var(--graphite);
+    display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; flex: none;
+  }
+  .owner-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
+  .owner-name { font-size: 11.5px; font-weight: 450; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .owner-store { font-size: 9.5px; color: var(--dove); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row-arrow { color: var(--dove); display: flex; justify-content: flex-end; transition: color 140ms ease, transform 140ms ease; }
+  .row-arrow .ic { width: 15px; height: 15px; }
+
+  .tfoot {
+    display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    height: 54px; padding: 0 24px; border-top: 1px solid var(--hair-soft);
+  }
+  .tfoot .range { font-size: 11px; color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .tfoot .range b { font-weight: 480; color: var(--ink); }
+  .pager { display: flex; align-items: center; gap: 4px; }
+  .page-btn {
+    width: 30px; height: 30px; border-radius: 50%; color: var(--graphite); font-size: 11px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .page-btn .ic { width: 13px; height: 13px; }
+  .page-btn:hover { background: var(--fog); color: var(--ink); }
+  .page-btn[disabled] { opacity: 0.35; cursor: default; }
+  .page-btn[disabled]:hover { background: transparent; }
+  .page-now { min-width: 54px; text-align: center; font-size: 11px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .page-now em { font-style: normal; color: var(--dove); }
+  .page-size { font-size: 10.5px; color: var(--dove); }
+
+  /* ---------- empty state ---------- */
+  .empty { padding: 64px 24px 68px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .empty-icon { width: 42px; height: 42px; border-radius: 50%; background: var(--fog); color: var(--graphite); display: flex; align-items: center; justify-content: center; }
+  .empty-icon .ic { width: 18px; height: 18px; }
+  .empty h3 { margin-top: 15px; font-size: 14px; font-weight: 500; }
+  .empty p { margin-top: 6px; font-size: 11.5px; color: var(--graphite); }
+  .empty button { margin-top: 16px; font-size: 12px; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; height: 32px; }
+
+  /* ---------- grid view ---------- */
+  .lead-grid { margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  .lead-card {
+    text-align: left; background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-sm);
+    padding: 20px 20px 18px; display: flex; flex-direction: column; gap: 13px;
+    transition: transform 160ms ease, box-shadow 160ms ease;
+  }
+  .lead-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .card-monogram { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 21px; font-weight: 480; }
+  .card-title-wrap { min-width: 0; }
+  .card-title { font-size: 17px; font-weight: 500; letter-spacing: -0.015em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-addr { margin-top: 2px; font-size: 11px; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-price { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+  .card-price-main { display: flex; align-items: baseline; gap: 3px; }
+  .card-price-main b { font-size: 24px; font-weight: 480; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .card-price-main span { font-size: 10px; color: var(--graphite); }
+  .card-eval { text-align: right; font-size: 10px; color: var(--graphite); line-height: 1.5; }
+  .card-eval b { display: block; font-size: 11.5px; font-weight: 450; color: var(--ash); font-variant-numeric: tabular-nums; }
+  .card-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 11px 0; border-top: 1px solid var(--hair-soft); border-bottom: 1px solid var(--hair-soft); }
+  .card-fact { font-size: 10.5px; color: var(--graphite); line-height: 1.4; }
+  .card-fact b { display: block; font-size: 11.5px; font-weight: 450; color: var(--ink); margin-top: 1px; }
+  .card-fu { display: flex; align-items: flex-start; gap: 6px; min-height: 36px; }
+  .card-fu .fu-text { -webkit-line-clamp: 2; font-size: 11px; }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 1px; }
+  .card-foot .owner-name { font-size: 11px; }
+  .card-foot .owner-store { font-size: 9px; }
+  .card-time { font-size: 9.5px; color: var(--dove); }
+
+  /* ---------- drawer ---------- */
+  .scrim {
+    position: fixed; inset: 0; z-index: 60; width: 100%; height: 100%;
+    background: rgba(23, 25, 28, 0.24); cursor: default; animation: fadeIn 180ms ease both;
+  }
+  .drawer {
+    position: fixed; z-index: 61; top: 12px; right: 12px; bottom: 12px;
+    width: min(720px, calc(100vw - 24px)); background: var(--white); border-radius: var(--r-card);
+    box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.45), rgba(4, 23, 43, 0.08) 0 0 0 1px;
+    display: flex; flex-direction: column; overflow: hidden; animation: slideIn 240ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 21px 26px 0; }
+  .drawer-crumb { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: var(--dove); }
+  .drawer-crumb b { font-weight: 400; color: var(--graphite); font-family: "SF Mono", ui-monospace, Menlo, monospace; letter-spacing: 0; }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    color: var(--graphite);
+  }
+  .icon-btn:hover { background: var(--fog); color: var(--ink); }
+  .icon-btn .ic { width: 17px; height: 17px; }
+  .drawer-scroll { flex: 1; overflow-y: auto; padding: 16px 26px 26px; }
+  .drawer-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .drawer-title-row h2 { font-size: 26px; font-weight: 480; letter-spacing: -0.025em; line-height: 1.2; }
+  .drawer-addr { margin-top: 7px; font-size: 12.5px; color: var(--graphite); }
+  .drawer-meta { margin-top: 5px; font-size: 10.5px; color: var(--dove); }
+  .price-band {
+    margin-top: 20px; background: var(--apricot); border-radius: var(--r-input);
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .price-cell { padding: 15px 18px 14px; }
+  .price-cell + .price-cell { border-left: 1px solid rgba(93, 42, 26, 0.13); }
+  .price-cell .lbl { font-size: 10px; color: var(--rust); opacity: 0.72; }
+  .price-cell .val { margin-top: 5px; font-size: 20px; font-weight: 480; line-height: 1.1; color: var(--rust); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .price-cell .val small { font-size: 10px; font-weight: 400; opacity: 0.7; margin-left: 2px; }
+  .price-cell .psf { margin-top: 3px; font-size: 9.5px; color: rgba(93, 42, 26, 0.62); }
+  .drawer-section { margin-top: 24px; }
+  .section-label { font-size: 11px; font-weight: 500; color: var(--graphite); }
+  .assess-strip { margin-top: 8px; display: grid; grid-template-columns: 1.05fr 1.05fr .95fr .8fr; background: var(--fog); border-radius: 14px; }
+  .assess-cell { padding: 12px 14px; min-width: 0; }
+  .assess-cell + .assess-cell { border-left: 1px solid var(--hair); }
+  .assess-k { font-size: 9.5px; color: var(--graphite); }
+  .assess-v { margin-top: 4px; font-size: 15px; font-weight: 480; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1.2; }
+  .assess-v small { font-size: 9px; font-weight: 400; color: var(--graphite); }
+  .assess-meta { margin-top: 3px; font-size: 9px; color: var(--dove); }
+  .assess-v.good { color: var(--rust); }
+  .eval-history { margin-top: 10px; border-top: 1px solid var(--hair); }
+  .eval-history-head { display: flex; justify-content: space-between; padding-top: 9px; font-size: 10px; color: var(--graphite); }
+  .eval-history-head span { color: var(--dove); font-variant-numeric: tabular-nums; }
+  .eval-row { display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--hair-soft); }
+  .eval-row:last-child { border-bottom: 0; }
+  .eval-date { font-size: 9px; color: var(--dove); font-variant-numeric: tabular-nums; line-height: 1.55; white-space: pre-line; }
+  .eval-main { min-width: 0; }
+  .eval-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .eval-price { font-size: 12px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .eval-now { height: 16px; padding: 0 6px; border-radius: 9999px; background: var(--ink); color: var(--white); font-size: 8px; display: inline-flex; align-items: center; }
+  .eval-chip { height: 17px; padding: 0 7px; border-radius: 9999px; display: inline-flex; align-items: center; font-size: 8.5px; white-space: nowrap; }
+  .eval-chip.score { background: var(--apricot); color: var(--rust); }
+  .eval-chip.days { background: var(--white); color: var(--rust); box-shadow: inset 0 0 0 1px var(--apricot-edge); }
+  .eval-note { margin-top: 3px; font-size: 9.5px; color: var(--graphite); line-height: 1.55; }
+  .eval-by { margin-top: 2px; font-size: 8.5px; color: var(--dove); }
+  .eval-empty { padding: 12px 0 2px; font-size: 10px; color: var(--dove); font-style: italic; }
+  .facts-grid { margin-top: 8px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; border-top: 1px solid var(--hair); }
+  .fact { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--hair-soft); }
+  .fact .k { font-size: 11px; color: var(--graphite); }
+  .fact .v { font-size: 12px; color: var(--ink); text-align: right; }
+  .remark-box { margin-top: 8px; padding: 12px 14px; background: var(--fog); border-radius: 12px; font-size: 11.5px; line-height: 1.7; color: var(--ash); }
+  .owner-price { display: inline-flex; align-items: center; margin-top: 8px; height: 24px; padding: 0 9px; border-radius: 9999px; background: var(--apricot); color: var(--rust); font-size: 10.5px; font-weight: 500; }
+  .audit-card { margin-top: 8px; border: 1px solid var(--hair); border-radius: 14px; overflow: hidden; }
+  .audit-head { display: flex; align-items: center; gap: 7px; padding: 10px 13px; background: var(--fog); border-bottom: 1px solid var(--hair); }
+  .audit-head .ic { width: 13px; height: 13px; color: var(--graphite); }
+  .audit-head span { font-size: 9px; font-weight: 600; letter-spacing: .08em; color: var(--graphite); }
+  .audit-body { padding: 12px 13px 13px; }
+  .audit-alert { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--fog); }
+  .audit-alert.sky { background: var(--sky); }
+  .audit-alert.apricot { background: var(--apricot); }
+  .audit-alert b { display: block; font-size: 10.5px; font-weight: 500; color: var(--ink); }
+  .audit-alert p { margin-top: 2px; font-size: 9.5px; line-height: 1.55; color: var(--ash); }
+  .audit-alert .time { flex: none; font-size: 10px; color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .audit-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 11px; }
+  .audit-actions .link-danger { font-size: 10px; color: var(--graphite); text-decoration: underline; text-underline-offset: 2px; }
+  .audit-actions .link-danger:hover { color: var(--rust); }
+  .section-label-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .section-label-row .count { font-size: 10px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .timeline { margin-top: 4px; }
+  .tl-item { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--hair-soft); }
+  .tl-item:last-child { border-bottom: 0; }
+  .tl-date { font-size: 10px; color: var(--dove); font-variant-numeric: tabular-nums; line-height: 1.6; }
+  .tl-main { min-width: 0; }
+  .tl-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .tl-method { font-size: 10.5px; font-weight: 500; color: var(--ink); }
+  .tl-by { font-size: 10px; color: var(--dove); }
+  .tl-content { margin-top: 5px; font-size: 12px; line-height: 1.65; color: var(--ash); }
+  .drawer-empty { margin-top: 8px; padding: 20px; background: var(--fog); border-radius: 14px; font-size: 11.5px; color: var(--graphite); }
+  .drawer-foot { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 26px; border-top: 1px solid var(--hair); background: var(--white); }
+  .drawer-foot .btn-primary { height: 40px; padding: 0 18px; font-size: 12.5px; }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 90;
+    background: var(--ink); color: var(--white); border-radius: var(--r-pill);
+    height: 40px; padding: 0 18px; display: flex; align-items: center; gap: 8px;
+    font-size: 12px; box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.55);
+  }
+  .toast .ic { width: 14px; height: 14px; color: var(--apricot-soft); }
+
+  @keyframes slideIn { from { transform: translateX(18px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  @media (max-width: 1160px) {
+    .wrap { padding: 20px 28px 40px; }
+    .table-grid { grid-template-columns: minmax(0, 1.32fr) 160px 92px minmax(0, 1fr) 116px 24px; column-gap: 14px; }
+    .lead-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 940px) {
+    .rail { display: none; }
+    .stages { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stage:nth-child(3) { border-left: 0; border-top: 1px solid var(--hair-soft); }
+    .stage:nth-child(4) { border-top: 1px solid var(--hair-soft); }
+    .filters { flex-wrap: wrap; }
+    .filter-tail { width: 100%; margin-left: 0; }
+    .lead-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v16"/><path d="M15 9h3a2 2 0 0 1 2 2v10"/><path d="M2 21h20"/><path d="M8 7h3M8 11h3M8 15h3"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h4l2 2.5h8a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.4"/><path d="M2.8 20a6.2 6.2 0 0 1 12.4 0"/><path d="M16.4 5.2a3.2 3.2 0 0 1 0 5.9"/><path d="M17.6 14.1A5.6 5.6 0 0 1 21.4 19.4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18"/><path d="M16 15h2"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4 5.3 5.3"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 0 1 4.8 1c0 1.6-2.4 1.9-2.4 3.4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v11"/><path d="M7.5 10.5 12 15l4.5-4.5"/><path d="M4 20h16"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></symbol>
+  <symbol id="i-grid2" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-arrow-r" viewBox="0 0 24 24"><path d="M4 12h15"/><path d="M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-gavel" viewBox="0 0 24 24"><path d="M14 3l7 7M9 8l7 7M4 21l7-7M3 14l7-7M5 12l7 7"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13l2.2-7A2 2 0 0 1 8.1 4.5h7.8a2 2 0 0 1 1.9 1.5L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M4 13h4l1 2h6l1-2h4"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="rail" aria-label="主导航">
+    <div class="logo" aria-label="P">P</div>
+    <nav class="rail-nav">
+      <button class="rail-btn" type="button" aria-label="工作台"><svg class="ic"><use href="#i-grid"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="房源管理"><svg class="ic"><use href="#i-building"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="项目管理"><svg class="ic"><use href="#i-folder"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="线索中心" aria-current="page"><svg class="ic"><use href="#i-target"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="客户管理"><svg class="ic"><use href="#i-users"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="数据报表"><svg class="ic"><use href="#i-chart"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="财务结算"><svg class="ic"><use href="#i-wallet"></use></svg></button>
+    </nav>
+    <div class="rail-bottom">
+      <button class="rail-btn small" type="button" aria-label="帮助中心"><svg class="ic"><use href="#i-help"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="系统设置"><svg class="ic"><use href="#i-settings"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="收起导航"><svg class="ic"><use href="#i-panel"></use></svg></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="crumb"><span>经营中心</span><span class="slash">/</span><span class="here">线索中心</span></div>
+        <div class="topbar-right">
+          <span class="sync"><svg class="ic"><use href="#i-refresh"></use></svg>数据同步于 12:04</span>
+          <button class="avatar-btn" type="button" aria-label="账户菜单">N</button>
+        </div>
+      </div>
+
+      <header class="page-head">
+        <div class="page-title">
+          <h1>线索中心</h1>
+          <div class="flow">
+            <span>初筛评估</span><span class="arrow">→</span>
+            <span>上门实勘</span><span class="arrow">→</span>
+            <span>商务谈判</span><span class="arrow">→</span>
+            <span>签约收房</span>
+          </div>
+        </div>
+        <div class="page-actions">
+          <button class="text-action" type="button" onClick="{{onExport}}"><svg class="ic"><use href="#i-download"></use></svg>导出</button>
+          <button class="btn-primary" type="button" onClick="{{onAdd}}"><svg class="ic"><use href="#i-plus"></use></svg>录入新线索</button>
+        </div>
+      </header>
+
+      <section class="funnel" aria-label="收房漏斗">
+        <div class="funnel-head">
+          <div class="funnel-title">收房漏斗<span>565 条线索 · 点击阶段筛选</span></div>
+          <button class="abandon-btn {{abandonClass}}" type="button" onClick="{{onAbandon}}" aria-pressed="{{abandonAria}}">
+            <svg class="ic"><use href="#i-x-circle"></use></svg>已放弃 <b>141</b>
+          </button>
+        </div>
+        <div class="stages">
+          <sc-for list="{{stages}}" as="s" hint-placeholder-count="4">
+            <button class="stage {{s.onClass}}" type="button" onClick="{{s.onClick}}" aria-pressed="{{s.aria}}">
+              <span class="stage-top"><span class="stage-no">{{s.no}}</span><span class="stage-label">{{s.label}}</span></span>
+              <span class="stage-count">{{s.count}}<em>条</em></span>
+              <span class="stage-desc">{{s.desc}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </section>
+
+      <section class="list-section" aria-label="线索列表">
+        <div class="list-head">
+          <div class="list-heading">
+            <h2>{{listTitle}}</h2>
+            <span class="list-count">{{listCount}}</span>
+          </div>
+          <div class="list-tools">
+            <button class="sort-btn" type="button" onClick="{{cycleSort}}">{{sortLabel}}<svg class="ic"><use href="#i-chev-d"></use></svg></button>
+            <div class="view-toggle" role="group" aria-label="视图切换">
+              <button class="view-btn {{tableOnClass}}" type="button" aria-label="列表视图" aria-pressed="{{tableAria}}" onClick="{{showTable}}"><svg class="ic"><use href="#i-list"></use></svg></button>
+              <button class="view-btn {{gridOnClass}}" type="button" aria-label="卡片视图" aria-pressed="{{gridAria}}" onClick="{{showGrid}}"><svg class="ic"><use href="#i-grid2"></use></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="filters">
+          <div class="search-box">
+            <svg class="ic"><use href="#i-search"></use></svg>
+            <label class="sr-only" for="lead-search">搜索线索</label>
+            <input id="lead-search" type="search" placeholder="搜索小区、区域或对接人" value="{{query}}" onInput="{{onSearch}}" />
+            <sc-if value="{{hasQuery}}">
+              <button class="search-clear" type="button" aria-label="清除搜索" onClick="{{clearQuery}}"><svg class="ic"><use href="#i-close"></use></svg></button>
+            </sc-if>
+          </div>
+          <div class="select-wrap">
+            <label class="sr-only" for="store-filter">门店</label>
+            <select id="store-filter" value="{{storeFilter}}" onChange="{{onStore}}">
+              <option value="all">全部门店</option>
+              <option value="静安店">静安店</option>
+              <option value="浦东店">浦东店</option>
+              <option value="宝山店">宝山店</option>
+              <option value="普陀店">普陀店</option>
+              <option value="黄浦店">黄浦店</option>
+              <option value="长宁店">长宁店</option>
+              <option value="杨浦店">杨浦店</option>
+            </select>
+            <svg class="ic chev"><use href="#i-chev-d"></use></svg>
+          </div>
+          <div class="select-wrap">
+            <label class="sr-only" for="broker-filter">经纪人</label>
+            <select id="broker-filter" value="{{brokerFilter}}" onChange="{{onBroker}}">
+              <option value="all">全部经纪人</option>
+              <option value="周航">周航</option>
+              <option value="李敏">李敏</option>
+              <option value="陈曦">陈曦</option>
+              <option value="王倩">王倩</option>
+              <option value="唐悦">唐悦</option>
+            </select>
+            <svg class="ic chev"><use href="#i-chev-d"></use></svg>
+          </div>
+          <div class="select-wrap">
+            <label class="sr-only" for="owner-filter">对接人</label>
+            <select id="owner-filter" value="{{ownerFilter}}" onChange="{{onOwner}}">
+              <option value="all">全部对接人</option>
+              <option value="唐悦">唐悦</option>
+              <option value="李敏">李敏</option>
+              <option value="周航">周航</option>
+              <option value="陈曦">陈曦</option>
+              <option value="王倩">王倩</option>
+            </select>
+            <svg class="ic chev"><use href="#i-chev-d"></use></svg>
+          </div>
+          <div class="filter-tail">
+            <span class="summary">{{filterSummary}}</span>
+            <sc-if value="{{showClear}}"><button class="clear-btn" type="button" onClick="{{clearAll}}">清空筛选</button></sc-if>
+          </div>
+        </div>
+
+        <sc-if value="{{isTable}}">
+          <div class="list-card">
+            <div class="table-scroll">
+              <div class="table-inner">
+                <div class="table-grid thead">
+                  <span>房源</span><span>价格 / 评估</span><span>状态</span><span>最近跟进</span><span>对接人</span><span></span>
+                </div>
+                <sc-for list="{{rows}}" as="row" hint-placeholder-count="8">
+                  <button class="lead-row table-grid" type="button" aria-label="查看{{row.community}}{{row.addr}}线索详情" onClick="{{row.onOpen}}">
+                    <span class="prop">
+                      <span class="thumb {{row.thumbClass}}">{{row.initial}}</span>
+                      <span class="prop-text">
+                        <span class="name-line"><span class="name">{{row.community}}</span><sc-if value="{{row.isNew}}"><span class="new-tag">新录</span></sc-if></span>
+                        <span class="addr">{{row.addr}} · {{row.district}} {{row.biz}}</span>
+                        <span class="prop-meta">{{row.layout}} · {{row.area}}㎡ · {{row.floor}}</span>
+                      </span>
+                    </span>
+                    <span class="price">
+                      <sc-if value="{{row.hasPrice}}">
+                        <span class="price-line"><span class="price-num">{{row.priceMain}}</span><span class="price-unit">万</span><span class="psf">{{row.psf}}</span></span>
+                        <span class="price-sub"><span>{{row.evalText}}</span><sc-if value="{{row.hasGap}}"><span class="gap {{row.gapClass}}">{{row.gapText}}</span></sc-if></span>
+                      </sc-if>
+                      <sc-if value="{{row.noPrice}}">
+                        <span class="price-empty">价格待录入</span>
+                        <span class="price-sub"><span>评估中</span></span>
+                      </sc-if>
+                    </span>
+                    <span><span class="status {{row.statusClass}}">{{row.statusLabel}}</span></span>
+                    <span class="fu">
+                      <span class="fu-line">
+                        <span class="concl {{row.conclusionClass}}">{{row.conclusionLabel}}</span>
+                        <span class="fu-text">{{row.fuText}}</span>
+                      </span>
+                      <span class="fu-meta"><span>{{row.fuMeta}}</span><sc-if value="{{row.hasUrgency}}"><span class="dot">·</span><span class="urgent">{{row.urgency}}</span></sc-if></span>
+                    </span>
+                    <span class="owner">
+                      <span class="owner-avatar">{{row.ownerInitial}}</span>
+                      <span class="owner-text"><span class="owner-name">{{row.owner}}</span><span class="owner-store">{{row.store}}</span></span>
+                    </span>
+                    <span class="row-arrow"><svg class="ic"><use href="#i-arrow-r"></use></svg></span>
+                  </button>
+                </sc-for>
+                <sc-if value="{{noRows}}">
+                  <div class="empty">
+                    <span class="empty-icon"><svg class="ic"><use href="#i-inbox"></use></svg></span>
+                    <h3>这个筛选下没有线索</h3>
+                    <p>换一个阶段或清空筛选条件再看看。</p>
+                    <button type="button" onClick="{{clearAll}}">清空筛选</button>
+                  </div>
+                </sc-if>
+              </div>
+            </div>
+            <sc-if value="{{hasRows}}">
+              <div class="tfoot">
+                <span class="range">第 <b>1–{{visibleCount}}</b> 条 · 共 <b>{{totalLabel}}</b> 条</span>
+                <div class="pager">
+                  <button class="page-btn" type="button" aria-label="上一页" disabled><svg class="ic"><use href="#i-chev-l"></use></svg></button>
+                  <span class="page-now">1 <em>/ {{pageCount}}</em></span>
+                  <button class="page-btn" type="button" aria-label="下一页" onClick="{{onNextPage}}"><svg class="ic"><use href="#i-chev-r"></use></svg></button>
+                  <span class="page-size">每页 9 条</span>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isGrid}}">
+          <div class="lead-grid">
+            <sc-for list="{{rows}}" as="row" hint-placeholder-count="6">
+              <button class="lead-card" type="button" aria-label="查看{{row.community}}{{row.addr}}线索详情" onClick="{{row.onOpen}}">
+                <span class="card-top">
+                  <span class="card-monogram thumb {{row.thumbClass}}">{{row.initial}}</span>
+                  <span class="status {{row.statusClass}}">{{row.statusLabel}}</span>
+                </span>
+                <span class="card-title-wrap">
+                  <span class="card-title">{{row.community}}</span>
+                  <span class="card-addr">{{row.addr}} · {{row.district}} {{row.biz}}</span>
+                </span>
+                <span class="card-price">
+                  <span class="card-price-main"><b>{{row.priceDisplay}}</b><span>{{row.priceUnit}}</span></span>
+                  <span class="card-eval">评估价<b>{{row.evalDisplay}}</b></span>
+                </span>
+                <span class="card-facts">
+                  <span class="card-fact">户型<b>{{row.layout}}</b></span>
+                  <span class="card-fact">面积<b>{{row.area}}㎡</b></span>
+                  <span class="card-fact">楼层<b>{{row.floor}}</b></span>
+                </span>
+                <span class="card-fu">
+                  <span class="concl {{row.conclusionClass}}">{{row.conclusionLabel}}</span>
+                  <span class="fu-text">{{row.fuText}}</span>
+                </span>
+                <span class="card-foot">
+                  <span class="owner">
+                    <span class="owner-avatar">{{row.ownerInitial}}</span>
+                    <span class="owner-text"><span class="owner-name">{{row.owner}}</span><span class="owner-store">{{row.store}}</span></span>
+                  </span>
+                  <span class="card-time">{{row.fuMetaShort}}</span>
+                </span>
+              </button>
+            </sc-for>
+          </div>
+          <sc-if value="{{noRows}}">
+            <div class="list-card"><div class="empty">
+              <span class="empty-icon"><svg class="ic"><use href="#i-inbox"></use></svg></span>
+              <h3>这个筛选下没有线索</h3>
+              <p>换一个阶段或清空筛选条件再看看。</p>
+              <button type="button" onClick="{{clearAll}}">清空筛选</button>
+            </div></div>
+          </sc-if>
+        </sc-if>
+      </section>
+    </div>
+  </div>
+</div>
+
+<sc-if value="{{drawerOpen}}">
+  <button class="scrim" type="button" aria-label="关闭线索详情" onClick="{{closeDrawer}}"></button>
+  <aside class="drawer" aria-label="线索详情">
+    <div class="drawer-head">
+      <div class="drawer-crumb">线索详情 <b>{{drawer.idLabel}}</b></div>
+      <button class="icon-btn" type="button" aria-label="关闭" onClick="{{closeDrawer}}"><svg class="ic"><use href="#i-close"></use></svg></button>
+    </div>
+    <div class="drawer-scroll">
+      <div class="drawer-title-row">
+        <h2>{{drawer.community}}</h2>
+        <span class="status {{drawer.statusClass}}">{{drawer.statusLabel}}</span>
+      </div>
+      <div class="drawer-addr">{{drawer.addr}} · {{drawer.district}} {{drawer.biz}}</div>
+      <div class="drawer-meta">创建 {{drawer.created}} · 更新 {{drawer.updated}} · 录入人 {{drawer.broker}}</div>
+
+      <div class="price-band">
+        <div class="price-cell">
+          <div class="lbl">业主报价</div>
+          <div class="val">{{drawer.priceDisplay}}<small>{{drawer.priceUnit}}</small></div>
+          <div class="psf">{{drawer.psfText}}</div>
+        </div>
+        <div class="price-cell">
+          <div class="lbl">授权评估价</div>
+          <div class="val">{{drawer.evalDisplay}}<small>{{drawer.evalUnit}}</small></div>
+          <div class="psf">{{drawer.evalPsfText}}</div>
+        </div>
+        <div class="price-cell">
+          <div class="lbl">报价偏离</div>
+          <div class="val">{{drawer.gapDisplay}}</div>
+          <div class="psf">{{drawer.gapHint}}</div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="section-label-row"><span class="section-label">评估结论</span><span class="count">{{drawer.evalTimeText}}</span></div>
+        <div class="assess-strip">
+          <div class="assess-cell">
+            <div class="assess-k">授权评估价</div>
+            <div class="assess-v">{{drawer.evalDisplay}}<small>{{drawer.evalUnit}}</small></div>
+            <div class="assess-meta">{{drawer.evalPsfText}}</div>
+          </div>
+          <div class="assess-cell">
+            <div class="assess-k">房源条件分</div>
+            <div class="assess-v good">{{drawer.conditionScoreText}}</div>
+            <div class="assess-meta">{{drawer.conditionHint}}</div>
+          </div>
+          <div class="assess-cell">
+            <div class="assess-k">装修后可售周期</div>
+            <div class="assess-v">{{drawer.saleDaysText}}</div>
+            <div class="assess-meta">{{drawer.saleDaysHint}}</div>
+          </div>
+          <div class="assess-cell">
+            <div class="assess-k">评估人</div>
+            <div class="assess-v">{{drawer.evaluatorName}}</div>
+            <div class="assess-meta">{{drawer.evaluatorPhone}}</div>
+          </div>
+        </div>
+        <div class="eval-history">
+          <div class="eval-history-head"><span>评估历史</span><span>{{drawer.evalCount}} 条记录</span></div>
+          <sc-if value="{{drawerHasEvalHistory}}">
+            <sc-for list="{{drawerEvalHistory}}" as="h" hint-placeholder-count="2">
+              <div class="eval-row">
+                <div class="eval-date">{{h.dateLine}}</div>
+                <div class="eval-main">
+                  <div class="eval-line"><span class="eval-price">{{h.priceText}}</span><sc-if value="{{h.isCurrent}}"><span class="eval-now">当前</span></sc-if><span class="eval-chip score">{{h.scoreText}}</span><span class="eval-chip days">{{h.daysText}}</span></div>
+                  <div class="eval-note">{{h.note}}</div>
+                  <div class="eval-by">{{h.byline}}</div>
+                </div>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{drawerNoEvalHistory}}"><div class="eval-empty">暂无评估历史</div></sc-if>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="section-label">房源信息</div>
+        <div class="facts-grid">
+          <div class="fact"><span class="k">户型</span><span class="v">{{drawer.layout}}</span></div>
+          <div class="fact"><span class="k">面积</span><span class="v">{{drawer.area}}㎡</span></div>
+          <div class="fact"><span class="k">楼层</span><span class="v">{{drawer.floor}}</span></div>
+          <div class="fact"><span class="k">区域</span><span class="v">{{drawer.district}} · {{drawer.biz}}</span></div>
+          <div class="fact"><span class="k">对接人</span><span class="v">{{drawer.owner}} · {{drawer.store}}</span></div>
+          <div class="fact"><span class="k">经纪人</span><span class="v">{{drawer.broker}}</span></div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="section-label-row"><span class="section-label">业主补充信息</span><span class="count">C 端提交评估时填写</span></div>
+        <sc-if value="{{drawerHasExpectedPrice}}"><div class="owner-price">{{drawer.expectedPriceText}}</div></sc-if>
+        <div class="remark-box">{{drawer.remarks}}</div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="section-label">管理决策终端</div>
+        <div class="audit-card">
+          <div class="audit-head"><svg class="ic"><use href="#i-gavel"></use></svg><span>MANAGEMENT DECISION</span></div>
+          <div class="audit-body">
+            <div class="audit-alert {{drawer.auditTone}}">
+              <div><b>{{drawer.auditTitle}}</b><p>{{drawer.auditDesc}}</p></div>
+              <span class="time">{{drawer.auditTime}}</span>
+            </div>
+            <sc-if value="{{drawer.auditShowActions}}">
+              <div class="audit-actions">
+                <button class="btn-primary" type="button" onClick="{{onConfirmStage}}">{{drawer.auditPrimary}}</button>
+                <sc-if value="{{drawer.auditShowLost}}"><button class="link-danger" type="button" onClick="{{onMarkLost}}">标记为他司成交</button></sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+      </div>
+
+      <div class="drawer-section">
+        <div class="section-label-row"><span class="section-label">跟进记录</span><span class="count">{{drawer.followCount}} 条</span></div>
+        <sc-if value="{{drawerHasFollowUps}}">
+          <div class="timeline">
+            <sc-for list="{{drawerFollowUps}}" as="f" hint-placeholder-count="3">
+              <div class="tl-item">
+                <div class="tl-date">{{f.dateLine}}</div>
+                <div class="tl-main">
+                  <div class="tl-top"><span class="tl-method">{{f.method}}</span><span class="tl-by">{{f.by}}</span><sc-if value="{{f.hasConclusion}}"><span class="concl {{f.conclusionClass}}">{{f.conclusionLabel}}</span></sc-if></div>
+                  <div class="tl-content">{{f.content}}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{drawerNoFollowUps}}">
+          <div class="drawer-empty">还没有跟进记录。先完成首次触达，再回来记录结论。</div>
+        </sc-if>
+      </div>
+    </div>
+    <div class="drawer-foot">
+      <button class="text-action" type="button" onClick="{{onEdit}}">编辑线索</button>
+      <button class="btn-primary" type="button" onClick="{{onRecord}}">记录跟进</button>
+    </div>
+  </aside>
+</sc-if>
+
+<sc-if value="{{toast}}">
+  <div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div>
+</sc-if>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1450}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      status: "all",
+      q: "",
+      store: "all",
+      broker: "all",
+      owner: "all",
+      view: "table",
+      sort: "follow",
+      drawerId: null,
+      toast: null
+    };
+    this._toastTimer = null;
+  }
+
+  componentWillUnmount() {
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+  }
+
+  pickStatus(id) {
+    this.setState({ status: this.state.status === id ? "all" : id });
+  }
+
+  showToast(text) {
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this.setState({ toast: text });
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+
+  fmtDate(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    const p = (n) => (n < 10 ? "0" + n : "" + n);
+    return d.getFullYear() === 2026 ? p(d.getMonth() + 1) + "-" + p(d.getDate()) : d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+
+  fmtTime(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const p = (n) => (n < 10 ? "0" + n : "" + n);
+    return p(d.getHours()) + ":" + p(d.getMinutes());
+  }
+
+  daysSince(iso) {
+    if (!iso) return 999;
+    return Math.floor((NOW - new Date(iso)) / 86400000);
+  }
+
+  rowVals(l) {
+    const fu = l.followUps[l.followUps.length - 1] || null;
+    const status = STATUS[l.status];
+    const concl = fu ? CONCLUSION[fu.conclusion || "none"] : CONCLUSION.none;
+    const days = this.daysSince(fu ? fu.followedAt : l.createdAt);
+    const active = ["pending_assessment", "pending_visit", "visited"].indexOf(l.status) >= 0;
+    const hasUrgency = !!fu && active && days >= 3;
+    const unit = l.totalPrice && l.area ? (l.totalPrice / l.area) : null;
+    const evalUnit = l.evalPrice && l.area ? (l.evalPrice / l.area) : null;
+    const gap = l.totalPrice && l.evalPrice ? ((l.evalPrice - l.totalPrice) / l.totalPrice) * 100 : null;
+    const gapText = gap == null ? "" : (gap > 0 ? "+" : "−") + Math.abs(gap).toFixed(1) + "%";
+    const psf = unit ? unit.toFixed(1) + " 万/㎡" : "";
+    const isNew = this.daysSince(l.createdAt) <= 1;
+    const fuMeta = fu
+      ? this.fmtDate(fu.followedAt) + " " + this.fmtTime(fu.followedAt) + " · " + METHOD[fu.method] + " · " + fu.by
+      : "录入 " + this.fmtDate(l.createdAt) + " · 待首次触达";
+    return {
+      id: l.id,
+      community: l.community,
+      addr: l.addr,
+      district: l.district,
+      biz: l.biz,
+      layout: l.layout,
+      area: l.area,
+      floor: l.floor,
+      initial: l.community.slice(0, 1),
+      thumbClass: status.thumb,
+      statusLabel: status.label,
+      statusClass: status.cls,
+      isNew: isNew,
+      hasPrice: !!l.totalPrice,
+      noPrice: !l.totalPrice,
+      priceMain: l.totalPrice ? String(l.totalPrice) : "",
+      priceDisplay: l.totalPrice ? String(l.totalPrice) : "待录入",
+      priceUnit: l.totalPrice ? "万" : "",
+      psf: psf,
+      evalText: l.evalPrice ? "评估 " + l.evalPrice + " 万" : "评估中",
+      evalDisplay: l.evalPrice ? String(l.evalPrice) : "—",
+      hasGap: gap != null,
+      gapText: gapText,
+      gapClass: gap != null && gap < 0 ? "neg" : "pos",
+      conclusionLabel: concl.label,
+      conclusionClass: concl.cls,
+      fuText: fu ? fu.content : "尚未跟进，等待首次触达",
+      fuMeta: fuMeta,
+      fuMetaShort: fu ? this.fmtDate(fu.followedAt) + " · " + fu.by : "录入 " + this.fmtDate(l.createdAt),
+      hasUrgency: hasUrgency,
+      urgency: days + " 天未跟进",
+      owner: l.owner,
+      ownerInitial: l.owner.slice(0, 1),
+      store: l.store,
+      onOpen: () => this.setState({ drawerId: l.id })
+    };
+  }
+
+  drawerVals() {
+    const l = LEADS.filter((x) => x.id === this.state.drawerId)[0];
+    if (!l) return { drawerOpen: false };
+    const status = STATUS[l.status];
+    const unit = l.totalPrice && l.area ? (l.totalPrice / l.area).toFixed(1) + " 万/㎡" : "—";
+    const evalUnit = l.evalPrice && l.area ? (l.evalPrice / l.area).toFixed(1) + " 万/㎡" : "—";
+    const gap = l.totalPrice && l.evalPrice ? ((l.evalPrice - l.totalPrice) / l.totalPrice) * 100 : null;
+    const followUps = l.followUps.slice().reverse().map((f) => {
+      const c = CONCLUSION[f.conclusion || "none"];
+      return {
+        dateLine: this.fmtDate(f.followedAt) + "\n" + this.fmtTime(f.followedAt),
+        method: METHOD[f.method],
+        by: f.by,
+        content: f.content,
+        hasConclusion: !!f.conclusion,
+        conclusionLabel: c.label,
+        conclusionClass: c.cls
+      };
+    });
+    const histories = (l.evalHistories || []).slice().sort((a, b) => new Date(b.evaluatedAt) - new Date(a.evaluatedAt));
+    const latestEval = histories[0];
+    const auditMap = {
+      pending_assessment: { tone: "apricot", title: "当前阶段：待评估", desc: "补齐房源条件分、装修后可售周期与拟收房评估价，完成后批准约看排期。", time: "待处理", primary: "批准约看排期", actions: true, lost: true },
+      pending_visit: { tone: "sky", title: "当前阶段：实勘核验", desc: "请在 48 小时内完成上门实勘，重点核验漏水、结构改动及物业欠费。", time: "48h 内", primary: "确认已完成现场实勘", actions: true, lost: true },
+      visited: { tone: "", title: "实勘通过 · 等待签约", desc: "实勘已完成，等待商务谈判与合同签署。", time: "待签约", primary: "确认合同签署并收房", actions: true, lost: true },
+      signed: { tone: "", title: "合同已签署 · 等待收房", desc: "合同已签署，等待收房，流程即将完成。", time: "已签约", primary: "", actions: false, lost: false },
+      rejected: { tone: "", title: "已放弃", desc: "该线索已放弃，流程已结束。", time: "已关闭", primary: "", actions: false, lost: false },
+      lost_to_competitor: { tone: "", title: "他司已成交", desc: "该线索已在他司成交，流程已结束。", time: "已关闭", primary: "", actions: false, lost: false }
+    };
+    const audit = auditMap[l.status] || auditMap.pending_visit;
+    const evalRows = histories.map((h, idx) => ({
+      dateLine: this.fmtDate(h.evaluatedAt) + "\n" + this.fmtTime(h.evaluatedAt),
+      priceText: "¥" + h.evalPrice + " 万",
+      isCurrent: idx === 0,
+      scoreText: h.conditionScore != null ? Number(h.conditionScore).toFixed(1) + " " + (SCORE_LABEL[h.conditionScore] || "") : "未评分",
+      daysText: h.expectedSaleDays != null ? h.expectedSaleDays + " 天 · " + saleDaysTier(h.expectedSaleDays) : "周期待补",
+      note: h.remark || "未填写调整说明",
+      byline: h.evaluatorName ? h.evaluatorName + (idx === 0 && h.evaluatorPhone ? " · " + h.evaluatorPhone : "") : "—"
+    }));
+    return {
+      drawerOpen: true,
+      drawer: {
+        idLabel: l.id.replace("ld_", "LD-").toUpperCase(),
+        community: l.community,
+        addr: l.addr,
+        district: l.district,
+        biz: l.biz,
+        statusLabel: status.label,
+        statusClass: status.cls,
+        created: this.fmtDate(l.createdAt),
+        updated: this.fmtDate(l.updatedAt),
+        broker: l.broker,
+        priceDisplay: l.totalPrice ? String(l.totalPrice) : "待录入",
+        priceUnit: l.totalPrice ? "万" : "",
+        evalDisplay: l.evalPrice ? String(l.evalPrice) : "待评估",
+        evalUnit: l.evalPrice ? "万" : "",
+        psfText: unit === "—" ? "单价待录入" : "单价 " + unit,
+        evalPsfText: evalUnit === "—" ? "评估中" : "单价 " + evalUnit,
+        gapDisplay: gap == null ? "—" : (gap > 0 ? "+" : "−") + Math.abs(gap).toFixed(1) + "%",
+        gapHint: gap == null ? "待评估" : gap < 0 ? "评估低于报价" : "评估高于报价",
+        layout: l.layout,
+        area: l.area,
+        floor: l.floor,
+        owner: l.owner,
+        store: l.store,
+        conditionScoreText: l.conditionScore != null ? Number(l.conditionScore).toFixed(1) + " / 5" : "未评分",
+        conditionHint: l.conditionScore != null ? (SCORE_LABEL[l.conditionScore] || "") : "完成评估后可打分",
+        saleDaysText: l.expectedSaleDays ? l.expectedSaleDays + " 天" : "周期待补",
+        saleDaysHint: l.expectedSaleDays ? "约 " + Math.max(1, Math.round(l.expectedSaleDays / 30)) + " 个月 · " + saleDaysTier(l.expectedSaleDays) : "完成评估后可预估",
+        evalTimeText: latestEval ? "最近 " + this.fmtDate(latestEval.evaluatedAt) + " " + this.fmtTime(latestEval.evaluatedAt) : "尚未评估",
+        evaluatorName: latestEval && latestEval.evaluatorName ? latestEval.evaluatorName : "—",
+        evaluatorPhone: latestEval && latestEval.evaluatorPhone ? latestEval.evaluatorPhone : "暂无联系方式",
+        evalCount: histories.length,
+        expectedPriceText: l.expectedPrice != null ? "心理预期价 ¥" + l.expectedPrice + " 万" : "",
+        remarks: l.remarks || "业主未在 C 端提交补充信息",
+        followCount: l.followUps.length,
+        auditTone: audit.tone,
+        auditTitle: audit.title,
+        auditDesc: audit.desc,
+        auditTime: audit.time,
+        auditPrimary: audit.primary,
+        auditShowActions: audit.actions,
+        auditShowLost: audit.lost
+      },
+      drawerHasFollowUps: followUps.length > 0,
+      drawerNoFollowUps: followUps.length === 0,
+      drawerFollowUps: followUps,
+      drawerHasEvalHistory: evalRows.length > 0,
+      drawerNoEvalHistory: evalRows.length === 0,
+      drawerEvalHistory: evalRows,
+      drawerHasExpectedPrice: l.expectedPrice != null
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const statusCount = s.status === "all" ? 565 : STATS[s.status];
+    let list = LEADS.filter((l) => {
+      if (s.status !== "all") {
+        if (s.status === "rejected") {
+          if (l.status !== "rejected" && l.status !== "lost_to_competitor") return false;
+        } else if (l.status !== s.status) return false;
+      }
+      if (s.store !== "all" && l.store !== s.store) return false;
+      if (s.broker !== "all" && l.broker !== s.broker) return false;
+      if (s.owner !== "all" && l.owner !== s.owner) return false;
+      if (s.q) {
+        const q = s.q.toLowerCase();
+        const hay = (l.community + " " + l.addr + " " + l.district + " " + l.biz + " " + l.owner + " " + l.broker).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    list.sort((a, b) => {
+      if (s.sort === "newest") return new Date(b.createdAt) - new Date(a.createdAt);
+      if (s.sort === "price") return (b.totalPrice || 0) - (a.totalPrice || 0);
+      const at = a.followUps.length ? a.followUps[a.followUps.length - 1].followedAt : a.createdAt;
+      const bt = b.followUps.length ? b.followUps[b.followUps.length - 1].followedAt : b.createdAt;
+      return new Date(bt) - new Date(at);
+    });
+    const rows = list.map((l) => this.rowVals(l));
+    const stages = [
+      { id: "pending_assessment", no: "01", label: "待评估", count: 3, desc: "等待初筛与定价" },
+      { id: "pending_visit", no: "02", label: "待看房", count: 397, desc: "已排期，待上门实勘" },
+      { id: "visited", no: "03", label: "已看房", count: 7, desc: "实勘完成，进入谈判" },
+      { id: "signed", no: "04", label: "已签约", count: 17, desc: "合同签署，待收房" }
+    ].map((x) => ({
+      ...x,
+      onClass: s.status === x.id ? "on" : "",
+      aria: s.status === x.id ? "true" : "false",
+      onClick: () => this.pickStatus(x.id)
+    }));
+    const sortLabels = { follow: "按最近跟进", newest: "按最新录入", price: "按报价从高到低" };
+    const statusTitles = { all: "全部线索", pending_assessment: "待评估线索", pending_visit: "待看房线索", visited: "已看房线索", signed: "已签约线索", rejected: "已放弃线索" };
+    const hasQuery = !!s.q;
+    const pageCount = Math.max(1, Math.ceil((hasQuery ? rows.length : statusCount) / 9));
+    const drawerVals = this.drawerVals();
+    const filterSummary = s.status === "all" ? "565 条线索" : STATS[s.status] + " 条线索";
+    return {
+      ...drawerVals,
+      stages: stages,
+      rows: rows,
+      hasRows: rows.length > 0,
+      noRows: rows.length === 0,
+      listTitle: statusTitles[s.status],
+      listCount: hasQuery ? rows.length + " 条匹配" : statusCount + " 条",
+      totalLabel: hasQuery ? rows.length : statusCount,
+      visibleCount: rows.length,
+      pageCount: pageCount,
+      sortLabel: sortLabels[s.sort],
+      cycleSort: () => {
+        const order = ["follow", "newest", "price"];
+        const next = order[(order.indexOf(s.sort) + 1) % order.length];
+        this.setState({ sort: next });
+      },
+      query: s.q,
+      hasQuery: hasQuery,
+      onSearch: (e) => this.setState({ q: e.target.value }),
+      clearQuery: () => this.setState({ q: "" }),
+      storeFilter: s.store,
+      brokerFilter: s.broker,
+      ownerFilter: s.owner,
+      onStore: (e) => this.setState({ store: e.target.value }),
+      onBroker: (e) => this.setState({ broker: e.target.value }),
+      onOwner: (e) => this.setState({ owner: e.target.value }),
+      filterSummary: filterSummary,
+      showClear: hasQuery || s.store !== "all" || s.broker !== "all" || s.owner !== "all" || s.status !== "all",
+      clearAll: () => this.setState({ status: "all", q: "", store: "all", broker: "all", owner: "all" }),
+      isTable: s.view === "table",
+      isGrid: s.view === "grid",
+      tableOnClass: s.view === "table" ? "on" : "",
+      gridOnClass: s.view === "grid" ? "on" : "",
+      tableAria: s.view === "table" ? "true" : "false",
+      gridAria: s.view === "grid" ? "true" : "false",
+      showTable: () => this.setState({ view: "table" }),
+      showGrid: () => this.setState({ view: "grid" }),
+      abandonClass: s.status === "rejected" ? "on" : "",
+      abandonAria: s.status === "rejected" ? "true" : "false",
+      onAbandon: () => this.setState({ status: s.status === "rejected" ? "all" : "rejected" }),
+      onExport: () => this.showToast("已按当前筛选导出（演示）"),
+      onAdd: () => this.showToast("演示稿：打开「录入新线索」"),
+      onNextPage: () => this.showToast("演示稿：加载下一页"),
+      onEdit: () => this.showToast("演示稿：打开线索编辑"),
+      onRecord: () => this.showToast("演示稿：记录一条新跟进"),
+      onConfirmStage: () => this.showToast("演示稿：推进至下一阶段"),
+      onMarkLost: () => this.showToast("演示稿：打开「标记为他司成交」确认"),
+      closeDrawer: () => this.setState({ drawerId: null }),
+      toast: s.toast
+    };
+  }
+}
+
+const NOW = new Date("2026-11-07T12:00:00+08:00");
+const METHOD = { phone: "电话", wechat: "微信", face: "面谈", visit: "实勘" };
+const STATUS = {
+  pending_assessment: { label: "待评估", cls: "st-pending-assessment", thumb: "warm" },
+  pending_visit: { label: "待看房", cls: "st-pending-visit", thumb: "sky" },
+  visited: { label: "已看房", cls: "st-visited", thumb: "fog" },
+  signed: { label: "已签约", cls: "st-signed", thumb: "ink" },
+  rejected: { label: "已放弃", cls: "st-rejected", thumb: "fog" },
+  lost_to_competitor: { label: "他司成交", cls: "st-rejected", thumb: "fog" }
+};
+const CONCLUSION = {
+  price_disagree: { label: "价格未谈拢", cls: "price" },
+  mode_disagree: { label: "合作模式未谈拢", cls: "mode" },
+  both_disagree: { label: "价格与模式均未谈拢", cls: "both" },
+  none: { label: "未记录", cls: "none" }
+};
+const SCORE_LABEL = { 1: "难售", 2: "偏弱", 3: "一般", 4: "良好", 5: "优质" };
+const saleDaysTier = (d) => d <= 30 ? "快" : d <= 60 ? "正常" : d <= 90 ? "偏慢" : "慢";
+const STATS = { pending_assessment: 3, pending_visit: 397, visited: 7, signed: 17, rejected: 141 };
+
+const LEADS = [
+  {
+    id: "ld_2a08f685",
+    community: "通河二村", addr: "128号 0201室", district: "宝山", biz: "张庙",
+    layout: "2室1厅", area: 55, floor: "1/6层",
+    totalPrice: null, evalPrice: null, status: "pending_assessment",
+    store: "宝山店", broker: "唐悦", owner: "唐悦",
+    createdAt: "2026-11-07T10:12:00+08:00", updatedAt: "2026-11-07T10:12:00+08:00", followUps: []
+  },
+  {
+    id: "ld_6b31c042",
+    community: "通河二村", addr: "56号 1102室", district: "宝山", biz: "张庙",
+    layout: "2室1厅", area: 62, floor: "11/18层",
+    totalPrice: 315, evalPrice: null, status: "pending_assessment",
+    store: "宝山店", broker: "唐悦", owner: "唐悦",
+    createdAt: "2026-11-06T16:40:00+08:00", updatedAt: "2026-11-06T16:40:00+08:00", followUps: []
+  },
+  {
+    id: "ld_8f3a21",
+    community: "大宁金茂府", addr: "3栋 1802室", district: "静安", biz: "大宁",
+    layout: "3室2厅", area: 128.6, floor: "18/24层",
+    totalPrice: 1180, evalPrice: 1050, status: "pending_visit",
+    expectedPrice: 1180, expectedSaleDays: 60, conditionScore: 4,
+    evalHistories: [
+      { evalPrice: 1050, conditionScore: 4, expectedSaleDays: 60, remark: "同户型近三月成交价 1020–1070 万，按中间值取 1050 万。", evaluatorName: "李敏", evaluatorPhone: "138****6210", evaluatedAt: "2026-09-23T15:40:00+08:00" },
+      { evalPrice: 1080, conditionScore: 3, expectedSaleDays: 90, remark: "首次评估，按挂牌价与楼层折价测算。", evaluatorName: "周航", evaluatedAt: "2026-09-15T10:20:00+08:00" }
+    ],
+    remarks: "业主自住三年，装修保持良好，满五唯一、无贷款。希望保留部分家具家电，可随时配合实勘与签约。",
+    store: "静安店", broker: "周航", owner: "李敏",
+    createdAt: "2026-09-12T10:24:00+08:00", updatedAt: "2026-11-06T16:10:00+08:00",
+    followUps: [
+      { method: "phone", content: "首次电话，业主自住三年，装修保持良好，愿意配合实勘。", conclusion: null, followedAt: "2026-09-13T09:12:00+08:00", by: "李敏" },
+      { method: "face", content: "面谈：业主心理价 1180 万，我方按同户型近三月成交给出 1050 万评估，业主认为低了约 8%。", conclusion: "price_disagree", followedAt: "2026-09-28T15:40:00+08:00", by: "李敏" },
+      { method: "wechat", content: "微信回访：业主同意先带看再谈价，约本周六上午到店。", conclusion: null, followedAt: "2026-11-06T16:10:00+08:00", by: "周航" }
+    ]
+  },
+  {
+    id: "ld_3cd158",
+    community: "绿地海珀外滩", addr: "2栋 3305室", district: "黄浦", biz: "滨江",
+    layout: "3室2厅", area: 142.8, floor: "33/40层",
+    totalPrice: 2380, evalPrice: 2260, status: "pending_visit",
+    store: "黄浦店", broker: "李敏", owner: "李敏",
+    createdAt: "2026-10-08T11:15:00+08:00", updatedAt: "2026-11-05T09:30:00+08:00",
+    followUps: [
+      { method: "wechat", content: "微信沟通：业主关注装修周期是否影响自住，需要确认 3 个月内可交付。", conclusion: "mode_disagree", followedAt: "2026-11-05T09:30:00+08:00", by: "李敏" }
+    ]
+  },
+  {
+    id: "ld_5c90b7",
+    community: "明园森林都市", addr: "12栋 902室", district: "静安", biz: "南京西路",
+    layout: "2室1厅", area: 89.2, floor: "9/18层",
+    totalPrice: 920, evalPrice: 880, status: "pending_assessment",
+    store: "静安店", broker: "周航", owner: "周航",
+    createdAt: "2026-10-21T14:02:00+08:00", updatedAt: "2026-11-04T11:30:00+08:00",
+    followUps: [
+      { method: "phone", content: "业主人在外地，希望先线上评估；房屋无贷款，产权清晰，可随时过户。", conclusion: null, followedAt: "2026-10-21T14:05:00+08:00", by: "周航" },
+      { method: "phone", content: "再次沟通：业主希望我方先给到 900 万以上再谈合作方式，暂不接受代理美化的分成比例。", conclusion: "both_disagree", followedAt: "2026-11-04T11:30:00+08:00", by: "周航" }
+    ]
+  },
+  {
+    id: "ld_9be302",
+    community: "碧云国际社区晓园", addr: "5栋 601室", district: "浦东", biz: "碧云",
+    layout: "4室2厅", area: 168.0, floor: "6/11层",
+    totalPrice: 2150, evalPrice: 2080, status: "signed",
+    store: "浦东店", broker: "王倩", owner: "王倩",
+    createdAt: "2026-07-14T16:20:00+08:00", updatedAt: "2026-10-30T17:20:00+08:00",
+    followUps: [
+      { method: "visit", content: "带看后客户确认意向，业主同意按代理美化合作，佣金 2.4%。", conclusion: null, followedAt: "2026-08-02T14:00:00+08:00", by: "王倩" },
+      { method: "face", content: "签约完成，约定 11 月进场装修；业主保留家具家电。", conclusion: null, followedAt: "2026-10-30T17:20:00+08:00", by: "王倩" }
+    ]
+  },
+  {
+    id: "ld_1a77e4",
+    community: "中远两湾城四期", addr: "7栋 2201室", district: "普陀", biz: "长寿路",
+    layout: "3室2厅", area: 116.4, floor: "22/28层",
+    totalPrice: 860, evalPrice: 812, status: "visited",
+    store: "普陀店", broker: "陈曦", owner: "陈曦",
+    createdAt: "2026-08-30T09:41:00+08:00", updatedAt: "2026-10-23T10:05:00+08:00",
+    followUps: [
+      { method: "visit", content: "带看两组客户上门，反映南向采光好、次卧偏小；业主全程配合，愿意议价 3% 以内。", conclusion: null, followedAt: "2026-10-18T10:20:00+08:00", by: "陈曦" },
+      { method: "face", content: "到店面谈合同条款：业主接受收购美化，但要求保底 860 万，与评估价差 48 万，未谈拢。", conclusion: "both_disagree", followedAt: "2026-10-23T10:05:00+08:00", by: "陈曦" }
+    ]
+  },
+  {
+    id: "ld_b41d77",
+    community: "古北国际花园", addr: "4栋 2001室", district: "长宁", biz: "古北",
+    layout: "3室2厅", area: 121.0, floor: "20/25层",
+    totalPrice: 1280, evalPrice: 1240, status: "visited",
+    store: "长宁店", broker: "李敏", owner: "李敏",
+    createdAt: "2026-09-02T15:44:00+08:00", updatedAt: "2026-10-20T13:26:00+08:00",
+    followUps: [
+      { method: "visit", content: "带看两组，其中一组复看；业主坚持 1280 万不议价，但接受装修后分成。", conclusion: "price_disagree", followedAt: "2026-10-20T13:26:00+08:00", by: "李敏" }
+    ]
+  },
+  {
+    id: "ld_62f4d1",
+    community: "仁恒河滨城二期", addr: "9栋 1503室", district: "浦东", biz: "联洋",
+    layout: "3室2厅", area: 134.2, floor: "15/30层",
+    totalPrice: 1420, evalPrice: 1350, status: "rejected",
+    store: "浦东店", broker: "陈曦", owner: "陈曦",
+    createdAt: "2026-06-19T13:10:00+08:00", updatedAt: "2026-08-11T15:48:00+08:00",
+    followUps: [
+      { method: "face", content: "业主已与隔壁中介签独家，报价高出市场 5%，多次沟通不接受调整。", conclusion: "price_disagree", followedAt: "2026-08-11T15:48:00+08:00", by: "陈曦" }
+    ]
+  }
+];
+</script>
+</body>
+</html>

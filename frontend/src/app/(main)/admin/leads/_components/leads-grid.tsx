@@ -2,16 +2,14 @@
 
 import React from "react";
 import Image from "next/image";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MapPin, Home, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatBuildingLabel } from "@/lib/dict-display";
 import { isValidUrl } from "@/lib/validators";
 import { Lead } from "../types";
 import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
-import { getFollowUpConclusionMeta } from "../_lib/follow-up-meta";
+import { getFollowUpConclusionMeta, getFollowUpMethodShort } from "../_lib/follow-up-meta";
 import { safeFormatDate } from "@/lib/formatters";
 import {
   AlertDialog,
@@ -33,62 +31,94 @@ interface LeadsGridProps {
   onDelete: (id: string) => void;
 }
 
+const THUMB_CLASS: Record<string, string> = {
+  pending_assessment: "bg-apricot-wash text-rust",
+  pending_visit: "bg-sky-wash text-ink",
+  visited: "bg-fog text-graphite",
+  signed: "bg-ink text-white",
+  rejected: "bg-fog text-graphite",
+  lost_to_competitor: "bg-fog text-rust",
+};
+
+/**
+ * 列表的卡片视图与表格共用同一套取数口径：
+ * 房源识别 → 价格与评估 → 关键参数 → 最近跟进 → 对接人。
+ */
 export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onDelete }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {leads.map((lead) => {
-        const config = LEAD_STATUS_META[lead.status];
+        const statusMeta = LEAD_STATUS_META[lead.status];
+        const conclusionMeta = getFollowUpConclusionMeta(lead.latestFollowUp?.conclusion);
+        const address = [
+          lead.buildingNo ? formatBuildingLabel(lead.buildingNo) : "",
+          lead.roomNo ? `${lead.roomNo}室` : "",
+        ]
+          .filter(Boolean)
+          .join(" ");
+        const location = [lead.district, lead.businessArea].filter(Boolean).join(" · ");
+        const hasImage =
+          lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]);
 
         return (
-          <Card
+          <div
             key={lead.id}
-            className="overflow-hidden border-none bg-white rounded-cards shadow-steep-sm hover:-translate-y-0.5 hover:shadow-steep transition-all duration-200 cursor-pointer group"
+            role="button"
+            tabIndex={0}
+            aria-label={`查看 ${lead.communityName} 线索详情`}
             onClick={() => onOpenDetail(lead.id)}
+            onKeyDown={(e) => {
+              if ((e.key === "Enter" || e.key === " ") && e.target === e.currentTarget) {
+                e.preventDefault();
+                onOpenDetail(lead.id);
+              }
+            }}
+            className="group flex cursor-pointer flex-col gap-3.5 rounded-cards bg-pure-white p-5 text-left shadow-steep-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-steep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
           >
-            {/* Image Area */}
-            <div className="relative aspect-4/3 flex items-center justify-center bg-fog overflow-hidden">
-              {lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]) ? (
-                <Image
-                  src={lead.images[0]}
-                  alt={lead.communityName}
-                  fill
-                  className="object-cover rounded-[12px] transition-transform group-hover:scale-105"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  unoptimized={
-                    lead.images[0]?.includes("127.0.0.1") || lead.images[0]?.includes("localhost")
-                  }
-                />
-              ) : (
-                <div className="flex flex-col items-center gap-2 text-graphite/30">
-                  <Home className="h-10 w-10" />
-                </div>
-              )}
-
-              {/* Status Badge */}
-              <div className="absolute top-3 left-3">
-                <Badge className={cn("text-xs px-2.5 py-1", config.badgeClass)}>
-                  {config.label}
-                </Badge>
-              </div>
-
-              {/* Action Buttons */}
+            <div className="flex items-start justify-between gap-2.5">
               <div
-                className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
+                className={cn(
+                  "flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-[14px] font-display text-[21px] font-[480]",
+                  hasImage ? "bg-fog" : THUMB_CLASS[lead.status] || "bg-fog text-graphite",
+                )}
               >
+                {hasImage ? (
+                  <Image
+                    src={lead.images[0]}
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 object-cover"
+                    sizes="48px"
+                    unoptimized={
+                      lead.images[0]?.includes("127.0.0.1") ||
+                      lead.images[0]?.includes("localhost")
+                    }
+                  />
+                ) : (
+                  lead.communityName.charAt(0)
+                )}
+              </div>
+              <div className="flex min-w-0 items-center gap-1.5">
+                <Badge
+                  variant="secondary"
+                  className={cn("px-2.5 py-1 text-[10.5px] font-medium", statusMeta.badgeClass)}
+                >
+                  {statusMeta.label}
+                </Badge>
                 <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 bg-pure-white/90 backdrop-blur-sm rounded-full text-graphite hover:text-error hover:bg-error-container"
-                        aria-label="删除线索"
+                      <button
+                        type="button"
+                        aria-label={`删除 ${lead.communityName}`}
+                        className="hidden h-7 w-7 items-center justify-center rounded-full text-dove transition-colors hover:bg-apricot-wash hover:text-rust group-hover:flex focus-visible:flex focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      </button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent>
+                    <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                       <AlertDialogHeader>
                         <AlertDialogTitle>确认删除线索？</AlertDialogTitle>
                         <AlertDialogDescription>
@@ -110,110 +140,96 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onDel
               </div>
             </div>
 
-            {/* Content Area */}
-            <div className="p-4">
-              {/* Title & Location */}
-              <div className="mb-3">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="font-medium text-ink text-base line-clamp-1">
-                    {lead.communityName}
-                  </h3>
-                  {lead.dictStatus === "pending" ? (
-                    <span className="shrink-0 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
-                      未审核
-                    </span>
-                  ) : null}
-                </div>
-                {/* 字典地址行（surface-dict-binding-info）：楼栋/户室缺失静默省略 */}
-                {lead.buildingNo || lead.roomNo ? (
-                  <p className="text-xs text-ink mt-1">
-                    {[
-                      lead.buildingNo && formatBuildingLabel(lead.buildingNo),
-                      lead.roomNo && `${lead.roomNo}室`,
-                    ]
-                      .filter(Boolean)
-                      .join(" ")}
-                  </p>
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <h3 className="truncate text-[17px] font-[480] tracking-[-0.015em] text-ink">
+                  {lead.communityName}
+                </h3>
+                {lead.dictStatus === "pending" ? (
+                  <span className="shrink-0 rounded-full bg-apricot-wash px-1.5 py-0.5 text-[9px] font-medium text-rust">
+                    未审核
+                  </span>
                 ) : null}
-                <div className="flex items-center gap-1 text-xs text-graphite mt-1">
-                  <MapPin className="h-3 w-3" />
-                  <span className="line-clamp-1">
-                    {lead.district || "-"}
-                    {lead.businessArea ? ` · ${lead.businessArea}` : ""}
-                  </span>
-                </div>
               </div>
+              <p className="mt-0.5 truncate text-[11px] text-graphite">
+                {address || `ID: ${lead.id.slice(0, 8)}`}
+                {location ? ` · ${location}` : ""}
+              </p>
+            </div>
 
-              {/* Info Grid */}
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="bg-fog rounded-inputs p-2">
-                  <span className="text-[10px] text-graphite/60 uppercase tracking-wider block mb-0.5">
-                    户型
-                  </span>
-                  <span className="text-sm font-medium text-ink">{lead.layout || "-"}</span>
-                </div>
-                <div className="bg-fog rounded-inputs p-2">
-                  <span className="text-[10px] text-graphite/60 uppercase tracking-wider block mb-0.5">
-                    面积
-                  </span>
-                  <span className="text-sm font-medium text-ink">
-                    {lead.area > 0 ? `${lead.area}㎡` : "-"}
-                  </span>
-                </div>
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div className="flex items-baseline gap-1">
+                <span className="text-[24px] font-[480] leading-none tracking-[-0.03em] tabular-nums text-ink">
+                  {lead.totalPrice > 0 ? lead.totalPrice.toLocaleString("zh-CN") : "—"}
+                </span>
+                <span className="text-[10px] text-graphite">万</span>
               </div>
-
-              {/* Price & Floor */}
-              <div className="flex items-end justify-between pt-3 border-t border-dove">
-                <div>
-                  <span className="text-[10px] text-graphite/60 uppercase tracking-wider block mb-0.5">
-                    总价
-                  </span>
-                  <span className="text-lg font-medium text-ink tabular-nums">
-                    {lead.totalPrice > 0 ? `¥${lead.totalPrice}万` : "-"}
-                  </span>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs text-graphite">{lead.floorInfo || "-"}</span>
-                  {lead.unitPrice > 0 && (
-                    <span className="text-xs text-graphite/60 block tabular-nums">
-                      {lead.unitPrice.toFixed(2)}万/㎡
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {/* 跟进摘要（设计稿②增量：卡片视图与表格取数口径一致） */}
-              <div className="mt-3 border-t border-dove pt-3">
-                <div className="mb-1.5">
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "px-2.5 py-0.5 text-[11.5px]",
-                      getFollowUpConclusionMeta(lead.latestFollowUp?.conclusion).badgeClass,
-                    )}
-                  >
-                    {getFollowUpConclusionMeta(lead.latestFollowUp?.conclusion).label}
-                  </Badge>
-                </div>
-                {lead.latestFollowUp ? (
-                  <>
-                    <p
-                      title={lead.latestFollowUp.content}
-                      className="line-clamp-2 text-xs leading-relaxed text-ash"
-                    >
-                      {lead.latestFollowUp.content}
-                    </p>
-                    <p className="mt-1 text-[11px] tabular-nums text-dove">
-                      {safeFormatDate(lead.latestFollowUp.followedAt, "MM-dd")} ·{" "}
-                      {lead.latestFollowUp.createdByName || "—"}
-                    </p>
-                  </>
-                ) : (
-                  <p className="text-xs leading-relaxed text-dove">尚未跟进</p>
-                )}
+              <div className="text-right text-[10px] leading-[1.5] text-graphite">
+                评估价
+                <b className="block text-[11.5px] font-[450] tabular-nums text-ash">
+                  {lead.evalPrice != null ? `${lead.evalPrice.toLocaleString("zh-CN")} 万` : "待评估"}
+                </b>
               </div>
             </div>
-          </Card>
+
+            <div className="grid grid-cols-3 gap-2 border-y border-dove/25 py-2.5">
+              <div className="text-[10.5px] leading-[1.4] text-graphite">
+                户型
+                <b className="mt-px block text-[11.5px] font-[450] text-ink">
+                  {lead.layout || "—"}
+                </b>
+              </div>
+              <div className="text-[10.5px] leading-[1.4] text-graphite">
+                面积
+                <b className="mt-px block text-[11.5px] font-[450] text-ink">
+                  {lead.area > 0 ? `${lead.area}㎡` : "—"}
+                </b>
+              </div>
+              <div className="min-w-0 text-[10.5px] leading-[1.4] text-graphite">
+                楼层
+                <b className="mt-px block truncate text-[11.5px] font-[450] text-ink">
+                  {lead.floorInfo || "—"}
+                </b>
+              </div>
+            </div>
+
+            <div className="flex min-h-9 items-start gap-1.5">
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "h-[18px] shrink-0 px-2 py-0 text-[9.5px] font-medium",
+                  conclusionMeta.badgeClass,
+                )}
+              >
+                {conclusionMeta.label}
+              </Badge>
+              <p
+                title={lead.latestFollowUp?.content}
+                className="line-clamp-2 text-[11px] leading-[1.45] text-ash"
+              >
+                {lead.latestFollowUp?.content || "尚未跟进"}
+              </p>
+            </div>
+
+            <div className="mt-px flex items-center justify-between gap-2.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="flex h-[25px] w-[25px] shrink-0 items-center justify-center rounded-full bg-fog text-[10px] font-medium text-graphite">
+                  {(lead.ownerEmployeeName || "—").charAt(0)}
+                </span>
+                <span className="flex min-w-0 flex-col leading-[1.35]">
+                  <span className="truncate text-[11px] font-[450] text-ink">
+                    {lead.ownerEmployeeName || "—"}
+                  </span>
+                  <span className="truncate text-[9px] text-dove">{lead.storeName || "—"}</span>
+                </span>
+              </div>
+              <span className="shrink-0 text-[9.5px] tabular-nums text-dove">
+                {lead.latestFollowUp
+                  ? `${safeFormatDate(lead.latestFollowUp.followedAt, "MM-dd")} · ${getFollowUpMethodShort(lead.latestFollowUp.method)}`
+                  : "—"}
+              </span>
+            </div>
+          </div>
         );
       })}
     </div>

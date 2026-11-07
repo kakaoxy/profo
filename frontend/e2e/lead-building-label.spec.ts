@@ -66,7 +66,7 @@ async function gotoLeadRow(page: Page, community: string) {
   const search = page.getByPlaceholder(/搜索/).first();
   await search.fill(community);
   await page.waitForTimeout(800);
-  return page.getByRole("row", { name: new RegExp(community) }).first();
+  return page.locator('[data-testid="lead-row"]').filter({ hasText: community }).first();
 }
 
 test("线索列表/抽屉/详情的楼栋量词统一为「号」", async ({ page }) => {
@@ -102,7 +102,7 @@ test("线索列表/抽屉/详情的楼栋量词统一为「号」", async ({ pag
   // ② 详情抽屉（InfoTab）：楼栋格子显示「285号」
   await row.click();
   const drawer = page.getByRole("dialog");
-  await expect(drawer.getByText("285号")).toBeVisible({ timeout: 15000 });
+  await expect(drawer.getByText("285号").first()).toBeVisible({ timeout: 15000 });
   await expect(drawer.getByText("285栋")).toHaveCount(0);
   await page.screenshot({ path: join(ARTIFACT_DIR, "drawer.png"), fullPage: false });
   await page.keyboard.press("Escape");

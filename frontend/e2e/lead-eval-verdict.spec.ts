@@ -210,7 +210,7 @@ test.describe("V8 · 存量降级（老记录无新字段时不得伪造）", ()
   });
 });
 
-test.describe("V1(UI) · admin 抽屉表单闸门", () => {
+test.describe("V1(UI) · admin 评估弹窗表单闸门", () => {
   test("未选评分时「批准约看排期」按钮禁用", async ({ page }) => {
     const lead = await createPendingLead("v1ui");
     await loginPage(page);
@@ -231,16 +231,25 @@ test.describe("V1(UI) · admin 抽屉表单闸门", () => {
     await row.click();
     await page.waitForTimeout(800);
 
-    const approveBtn = page.getByRole("button", { name: /批准约看排期/ }).first();
-    if ((await approveBtn.count()) === 0) {
+    const openAssessment = page.getByRole("button", { name: "给出收房评估" }).first();
+    if ((await openAssessment.count()) === 0) {
       test.skip(true, "抽屉未打开或该线索非待评估态");
+      return;
+    }
+    await openAssessment.click();
+    await page.waitForTimeout(300);
+
+    const assessmentDialog = page.getByRole("dialog").filter({ hasText: "评估录入" });
+    const approveBtn = assessmentDialog.getByRole("button", { name: /批准约看排期/ }).first();
+    if ((await approveBtn.count()) === 0) {
+      test.skip(true, "评估弹窗未打开");
       return;
     }
     // 三项皆空 → 禁用
     await expect(approveBtn).toBeDisabled();
 
     // 只填价格 → 仍禁用（这是本迭代的核心闸门）
-    const priceInput = page.getByPlaceholder(/输入评估价/).first();
+    const priceInput = assessmentDialog.getByLabel("拟收房评估价").first();
     await priceInput.fill("486");
     await expect(approveBtn).toBeDisabled();
 

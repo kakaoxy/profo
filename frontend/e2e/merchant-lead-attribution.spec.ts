@@ -170,14 +170,14 @@ test("线索列表/详情展示归属三要素，存量线索显示无归属", a
   const search = encodeURIComponent(`${MARK}商圈小区`);
   await page.goto(`/admin/leads?search=${search}`);
 
-  const headers = await page.locator("thead th").allTextContents();
-  expect(headers).toContain("区域");
+  const headers = await page.getByTestId("lead-table-header").innerText();
+  expect(headers).toContain("房源");
   expect(headers).toContain("对接人");
   expect(headers).not.toContain("归属（门店 / 经纪人 / 分享）");
   expect(headers).not.toContain("员工归因（门店归属 / 邀请）");
 
   const row = page
-    .locator("tr")
+    .locator('[data-testid="lead-row"]')
     .filter({ hasText: `${MARK}商圈小区` })
     .first();
   await expect(row).toBeVisible({ timeout: 15_000 });
@@ -202,7 +202,7 @@ test("线索列表/详情展示归属三要素，存量线索显示无归属", a
   // AC-V06-008：存量线索无归属字段，列表正常渲染，详情显示无归属
   await page.goto(`/admin/leads?search=${encodeURIComponent(`${MARK}存量小区`)}`);
   const legacyRow = page
-    .locator("tr")
+    .locator('[data-testid="lead-row"]')
     .filter({ hasText: `${MARK}存量小区` })
     .first();
   await expect(legacyRow).toBeVisible({ timeout: 15_000 });
@@ -238,7 +238,7 @@ test("录入线索：门店→经纪人二级联动，切换门店清空经纪�
 test("按门店/经纪人/对接人筛选线索", async ({ page }) => {
   await page.goto("/admin/leads");
   const row = page
-    .locator("tr")
+    .locator('[data-testid="lead-row"]')
     .filter({ hasText: `${MARK}商圈小区` })
     .first();
 

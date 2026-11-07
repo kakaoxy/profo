@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线索中心 · 移动端</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face {
+    font-family: "InterLocal";
+    src: url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "SourceSerifLocal";
+    src: url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --ink: #17191c;
+    --white: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-edge: #e6b088;
+    --sky: #d3e3fc;
+    --hair: rgba(163, 166, 175, 0.32);
+    --hair-soft: rgba(163, 166, 175, 0.18);
+    --font-ui: "InterLocal", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --font-display: "SourceSerifLocal", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --shadow-sm: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.06) 0 10px 20px -8px, rgba(0, 0, 0, 0.05) 0 3px 6px -4px;
+    --shadow-card: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.08) 0 18px 30px -12px, rgba(0, 0, 0, 0.05) 0 6px 10px -6px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body { margin: 0; background: var(--fog); color: var(--ink); font-family: var(--font-ui); font-size: 13px; font-weight: 430; letter-spacing: -0.009em; line-height: 1.5; }
+  button, input, select { font: inherit; letter-spacing: inherit; color: inherit; }
+  button { background: none; border: 0; padding: 0; cursor: pointer; }
+  h1, h2, h3, p { margin: 0; }
+  svg { display: block; }
+  .ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  .phone { width: 390px; height: 844px; background: var(--fog); position: relative; overflow: hidden; }
+  .m-head { height: 54px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid var(--hair-soft); }
+  .m-crumb { display: flex; align-items: center; gap: 7px; font-size: 10.5px; color: var(--dove); }
+  .m-crumb b { font-weight: 400; color: var(--graphite); }
+  .m-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--white); font-size: 10.5px; font-weight: 500; display: flex; align-items: center; justify-content: center; }
+  .m-scroll { height: calc(100% - 54px); overflow-y: auto; padding: 18px 16px 106px; scrollbar-width: none; }
+  .m-scroll::-webkit-scrollbar { display: none; }
+
+  .m-hero h1 { font-family: var(--font-display); font-size: 40px; font-weight: 480; line-height: 1.06; letter-spacing: -0.03em; }
+  .m-flow { margin-top: 9px; display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--graphite); white-space: nowrap; }
+  .m-flow .ar { color: var(--dove); font-size: 9px; }
+
+  .funnel-block { margin-top: 22px; }
+  .funnel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .funnel-title { font-size: 12.5px; font-weight: 500; }
+  .funnel-title span { font-size: 10px; color: var(--graphite); font-weight: 400; margin-left: 6px; }
+  .abandon { display: inline-flex; align-items: center; gap: 5px; height: 26px; padding: 0 9px; border-radius: 9999px; background: var(--white); box-shadow: var(--shadow-sm); font-size: 9.5px; color: var(--graphite); }
+  .abandon b { color: var(--ink); font-weight: 480; }
+  .abandon .ic { width: 11px; height: 11px; }
+  .abandon.on { background: var(--ink); color: var(--white); }
+  .abandon.on b { color: var(--white); }
+  .chips { margin-top: 10px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; width: 64px; height: 58px; border-radius: 16px; background: var(--white); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: center; align-items: flex-start; padding: 0 10px; text-align: left; }
+  .chip .cn { font-size: 9px; color: var(--graphite); }
+  .chip .cv { margin-top: 2px; font-size: 17px; line-height: 1; font-weight: 480; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .chip:hover { background: #fbfbfc; }
+  .chip.on { background: var(--apricot); }
+  .chip.on .cn { color: var(--rust); }
+  .chip.on .cv { color: var(--rust); }
+
+  .m-search { margin-top: 16px; height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 13px; background: var(--white); border-radius: 9999px; box-shadow: var(--shadow-sm); }
+  .m-search .ic { width: 15px; height: 15px; color: var(--dove); }
+  .m-search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font-size: 12px; }
+  .m-search input::placeholder { color: var(--dove); }
+  .m-filter-row { margin-top: 10px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+  .m-filter-row::-webkit-scrollbar { display: none; }
+  .m-select { flex: none; height: 34px; padding: 0 12px; border-radius: 9999px; background: var(--white); box-shadow: var(--shadow-sm); display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--ink); white-space: nowrap; }
+  .m-select .ic { width: 11px; height: 11px; color: var(--dove); }
+  .m-filter-icon { flex: none; width: 34px; height: 34px; border-radius: 50%; background: var(--white); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; color: var(--graphite); }
+  .m-filter-icon .ic { width: 14px; height: 14px; }
+
+  .m-list-head { margin-top: 20px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .m-list-left { display: flex; align-items: baseline; gap: 7px; }
+  .m-list-left h2 { font-size: 18px; font-weight: 480; letter-spacing: -0.02em; }
+  .m-list-left span { font-size: 10px; color: var(--graphite); }
+  .m-sort { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--graphite); height: 28px; }
+  .m-sort .ic { width: 10px; height: 10px; color: var(--dove); }
+
+  .m-cards { margin-top: 10px; display: flex; flex-direction: column; gap: 12px; }
+  .m-card { width: 100%; text-align: left; background: var(--white); border-radius: 22px; box-shadow: var(--shadow-sm); padding: 15px 15px 13px; display: flex; flex-direction: column; gap: 10px; }
+  .m-card:hover { box-shadow: var(--shadow-card); }
+  .m-card-top { display: flex; align-items: flex-start; gap: 10px; }
+  .m-thumb { width: 38px; height: 38px; flex: none; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 16px; font-weight: 480; }
+  .m-thumb.warm { background: var(--apricot); color: var(--rust); }
+  .m-thumb.sky { background: var(--sky); color: var(--ink); }
+  .m-thumb.fog { background: var(--fog); color: var(--graphite); }
+  .m-thumb.ink { background: var(--ink); color: var(--white); }
+  .m-title-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding-top: 1px; }
+  .m-name { display: flex; align-items: center; gap: 5px; min-width: 0; }
+  .m-name b { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-new { flex: none; height: 15px; padding: 0 5px; border-radius: 9999px; background: var(--apricot); color: var(--rust); font-size: 8px; font-weight: 500; display: inline-flex; align-items: center; }
+  .m-addr { font-size: 10px; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .status { flex: none; display: inline-flex; align-items: center; justify-content: center; height: 21px; padding: 0 8px; border-radius: 9999px; font-size: 9px; font-weight: 500; white-space: nowrap; margin-top: 1px; }
+  .st-pending-assessment { background: var(--apricot); color: var(--rust); }
+  .st-pending-visit { background: var(--sky); color: var(--ink); }
+  .st-visited { background: var(--white); color: var(--ink); box-shadow: inset 0 0 0 1px var(--hair); }
+  .st-signed { background: var(--ink); color: var(--white); }
+  .st-rejected { background: var(--fog); color: var(--graphite); }
+  .m-price-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+  .m-price { display: flex; align-items: baseline; gap: 2px; }
+  .m-price b { font-size: 22px; line-height: 1; font-weight: 480; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .m-price i { font-style: normal; font-size: 9px; color: var(--graphite); }
+  .m-price.muted b { font-size: 12px; color: var(--dove); font-weight: 400; letter-spacing: 0; }
+  .m-eval { text-align: right; font-size: 9px; color: var(--graphite); line-height: 1.45; }
+  .m-eval b { display: block; font-size: 10px; font-weight: 450; color: var(--ash); font-variant-numeric: tabular-nums; }
+  .m-eval .neg { color: var(--rust); font-weight: 500; }
+  .m-facts { display: flex; align-items: center; gap: 6px; font-size: 9.5px; color: var(--dove); padding-top: 2px; border-top: 1px solid var(--hair-soft); }
+  .m-facts .sep { color: var(--hair); }
+  .m-fu { display: flex; align-items: flex-start; gap: 6px; }
+  .concl { flex: none; height: 17px; padding: 0 6px; border-radius: 9999px; font-size: 8px; font-weight: 500; display: inline-flex; align-items: center; white-space: nowrap; margin-top: 1px; }
+  .concl.price { background: var(--apricot); color: var(--rust); }
+  .concl.mode { background: var(--white); color: var(--rust); box-shadow: inset 0 0 0 1px var(--apricot-edge); }
+  .concl.both { background: var(--ink); color: var(--white); }
+  .concl.none { background: var(--fog); color: var(--graphite); }
+  .m-fu-text { font-size: 10px; line-height: 1.55; color: var(--ash); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .m-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .m-owner { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .m-owner-av { width: 20px; height: 20px; border-radius: 50%; background: var(--fog); color: var(--graphite); font-size: 8px; font-weight: 500; display: flex; align-items: center; justify-content: center; flex: none; }
+  .m-owner span { font-size: 9.5px; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-time { font-size: 8.5px; color: var(--dove); white-space: nowrap; }
+
+  .m-empty { padding: 50px 20px; text-align: center; }
+  .m-empty h3 { font-size: 13px; font-weight: 500; }
+  .m-empty p { margin-top: 5px; font-size: 10px; color: var(--graphite); }
+  .m-empty button { margin-top: 12px; font-size: 10.5px; text-decoration: underline; text-underline-offset: 3px; }
+
+  .fab { position: absolute; right: 18px; bottom: 26px; width: 52px; height: 52px; border-radius: 50%; background: var(--ink); color: var(--white); display: flex; align-items: center; justify-content: center; box-shadow: 0 14px 30px -12px rgba(0,0,0,.45); z-index: 30; }
+  .fab:hover { background: #000; }
+  .fab .ic { width: 20px; height: 20px; }
+
+  .sheet-scrim { position: absolute; inset: 0; z-index: 40; background: rgba(23,25,28,.25); border: 0; }
+  .sheet { position: absolute; z-index: 41; left: 0; right: 0; bottom: 0; max-height: 78%; background: var(--white); border-radius: 24px 24px 0 0; box-shadow: 0 -20px 50px -20px rgba(0,0,0,.28); display: flex; flex-direction: column; padding: 8px 18px 18px; animation: up 220ms cubic-bezier(.22,1,.36,1) both; }
+  .grab { width: 34px; height: 4px; border-radius: 9999px; background: var(--hair); margin: 0 auto 14px; }
+  .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .sheet-head h2 { font-size: 22px; font-weight: 480; letter-spacing: -0.025em; line-height: 1.2; }
+  .sheet-close { width: 30px; height: 30px; border-radius: 50%; background: var(--fog); color: var(--graphite); display: flex; align-items: center; justify-content: center; }
+  .sheet-close .ic { width: 14px; height: 14px; }
+  .sheet-addr { margin-top: 5px; font-size: 10.5px; color: var(--graphite); }
+  .sheet-band { margin-top: 14px; background: var(--apricot); border-radius: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .sheet-cell { padding: 11px 10px; }
+  .sheet-cell + .sheet-cell { border-left: 1px solid rgba(93,42,26,.13); }
+  .sheet-cell .l { font-size: 8px; color: rgba(93,42,26,.72); }
+  .sheet-cell .v { margin-top: 3px; font-size: 15px; font-weight: 480; color: var(--rust); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .sheet-cell .v small { font-size: 8px; font-weight: 400; opacity: .7; }
+  .sheet-fu { margin-top: 14px; padding: 12px; border-radius: 14px; background: var(--fog); }
+  .sheet-fu .top { display: flex; align-items: center; gap: 6px; }
+  .sheet-fu .t { font-size: 9px; color: var(--graphite); }
+  .sheet-fu p { margin-top: 5px; font-size: 10.5px; line-height: 1.6; color: var(--ash); }
+  .sheet-foot { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .sheet-foot .link { font-size: 11px; color: var(--graphite); height: 40px; }
+  .sheet-foot .primary { height: 40px; padding: 0 18px; border-radius: 9999px; background: var(--ink); color: var(--white); font-size: 11.5px; display: inline-flex; align-items: center; gap: 6px; }
+  .sheet-foot .primary .ic { width: 13px; height: 13px; }
+
+  .toast { position: absolute; left: 50%; bottom: 94px; transform: translateX(-50%); z-index: 60; background: var(--ink); color: var(--white); border-radius: 9999px; height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 6px; font-size: 10.5px; white-space: nowrap; box-shadow: 0 18px 40px -18px rgba(0,0,0,.55); }
+  .toast .ic { width: 12px; height: 12px; color: #f7d0b4; }
+
+  @keyframes up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-x-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+</svg>
+
+<div class="phone">
+  <header class="m-head">
+    <div class="m-crumb"><span>经营中心</span><span>/</span><b>线索中心</b></div>
+    <button class="m-avatar" type="button" aria-label="账户菜单">N</button>
+  </header>
+
+  <div class="m-scroll">
+    <section class="m-hero">
+      <h1>线索中心</h1>
+      <div class="m-flow"><span>初筛评估</span><span class="ar">→</span><span>上门实勘</span><span class="ar">→</span><span>商务谈判</span><span class="ar">→</span><span>签约收房</span></div>
+    </section>
+
+    <section class="funnel-block" aria-label="收房漏斗">
+      <div class="funnel-head">
+        <div class="funnel-title">收房漏斗<span>565 条线索</span></div>
+        <button class="abandon {{abandonClass}}" type="button" onClick="{{onAbandon}}" aria-pressed="{{abandonAria}}"><svg class="ic"><use href="#i-x-circle"></use></svg>已放弃 <b>141</b></button>
+      </div>
+      <div class="chips">
+        <sc-for list="{{chips}}" as="c" hint-placeholder-count="5">
+          <button class="chip {{c.onClass}}" type="button" onClick="{{c.onClick}}" aria-pressed="{{c.aria}}"><span class="cn">{{c.label}}</span><span class="cv">{{c.count}}</span></button>
+        </sc-for>
+      </div>
+    </section>
+
+    <div class="m-search">
+      <svg class="ic"><use href="#i-search"></use></svg>
+      <label class="sr-only" for="m-search-input">搜索线索</label>
+      <input id="m-search-input" type="search" placeholder="搜索小区、区域或对接人" value="{{query}}" onInput="{{onSearch}}" />
+    </div>
+
+    <div class="m-filter-row">
+      <button class="m-select" type="button" onClick="{{onFilterStub}}">全部门店<svg class="ic"><use href="#i-chev-d"></use></svg></button>
+      <button class="m-select" type="button" onClick="{{onFilterStub}}">全部经纪人<svg class="ic"><use href="#i-chev-d"></use></svg></button>
+      <button class="m-filter-icon" type="button" aria-label="更多筛选" onClick="{{onFilterStub}}"><svg class="ic"><use href="#i-sliders"></use></svg></button>
+    </div>
+
+    <div class="m-list-head">
+      <div class="m-list-left"><h2>{{listTitle}}</h2><span>{{listCount}}</span></div>
+      <button class="m-sort" type="button" onClick="{{cycleSort}}">{{sortLabel}}<svg class="ic"><use href="#i-chev-d"></use></svg></button>
+    </div>
+
+    <div class="m-cards">
+      <sc-for list="{{rows}}" as="row" hint-placeholder-count="4">
+        <button class="m-card" type="button" aria-label="查看{{row.community}}线索详情" onClick="{{row.onOpen}}">
+          <span class="m-card-top">
+            <span class="m-thumb {{row.thumbClass}}">{{row.initial}}</span>
+            <span class="m-title-wrap"><span class="m-name"><b>{{row.community}}</b><sc-if value="{{row.isNew}}"><span class="m-new">新录</span></sc-if></span><span class="m-addr">{{row.addr}} · {{row.district}} {{row.biz}}</span></span>
+            <span class="status {{row.statusClass}}">{{row.statusLabel}}</span>
+          </span>
+          <span class="m-price-row">
+            <span class="m-price {{row.priceMuted}}"><b>{{row.priceDisplay}}</b><i>{{row.priceUnit}}</i></span>
+            <span class="m-eval">评估价<b>{{row.evalDisplay}}</b><sc-if value="{{row.hasGap}}"><span class="{{row.gapClass}}">{{row.gapText}}</span></sc-if></span>
+          </span>
+          <span class="m-facts"><span>{{row.layout}}</span><span class="sep">·</span><span>{{row.area}}㎡</span><span class="sep">·</span><span>{{row.floor}}</span></span>
+          <span class="m-fu"><span class="concl {{row.conclusionClass}}">{{row.conclusionLabel}}</span><span class="m-fu-text">{{row.fuText}}</span></span>
+          <span class="m-card-foot"><span class="m-owner"><span class="m-owner-av">{{row.ownerInitial}}</span><span>{{row.owner}} · {{row.store}}</span></span><span class="m-time">{{row.fuMetaShort}}</span></span>
+        </button>
+      </sc-for>
+      <sc-if value="{{noRows}}"><div class="m-empty"><h3>这个筛选下没有线索</h3><p>换一个阶段或清空搜索再试试。</p><button type="button" onClick="{{clearAll}}">清空筛选</button></div></sc-if>
+    </div>
+  </div>
+
+  <button class="fab" type="button" aria-label="录入新线索" onClick="{{onAdd}}"><svg class="ic"><use href="#i-plus"></use></svg></button>
+
+  <sc-if value="{{sheetOpen}}">
+    <button class="sheet-scrim" type="button" aria-label="关闭线索详情" onClick="{{closeSheet}}"></button>
+    <section class="sheet" aria-label="线索详情">
+      <div class="grab"></div>
+      <div class="sheet-head">
+        <div><h2>{{sheet.community}}</h2><div class="sheet-addr">{{sheet.addr}} · {{sheet.district}} {{sheet.biz}}</div></div>
+        <button class="sheet-close" type="button" aria-label="关闭" onClick="{{closeSheet}}"><svg class="ic"><use href="#i-close"></use></svg></button>
+      </div>
+      <div class="sheet-band">
+        <div class="sheet-cell"><div class="l">业主报价</div><div class="v">{{sheet.priceDisplay}}<small>万</small></div></div>
+        <div class="sheet-cell"><div class="l">评估价</div><div class="v">{{sheet.evalDisplay}}<small>万</small></div></div>
+        <div class="sheet-cell"><div class="l">价差</div><div class="v">{{sheet.gapDisplay}}</div></div>
+      </div>
+      <div class="sheet-fu"><div class="top"><span class="concl {{sheet.conclusionClass}}">{{sheet.conclusionLabel}}</span><span class="t">{{sheet.fuMeta}}</span></div><p>{{sheet.fuText}}</p></div>
+      <div class="sheet-foot"><button class="link" type="button" onClick="{{onEdit}}">查看完整详情</button><button class="primary" type="button" onClick="{{onRecord}}"><svg class="ic"><use href="#i-plus"></use></svg>记录跟进</button></div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { status: "all", q: "", sort: "follow", sheetId: null, toast: null };
+    this._timer = null;
+  }
+  componentWillUnmount() { if (this._timer) clearTimeout(this._timer); }
+  fmtDate(iso) {
+    const d = new Date(iso);
+    const p = (n) => (n < 10 ? "0" + n : "" + n);
+    return p(d.getMonth() + 1) + "-" + p(d.getDate());
+  }
+  daysSince(iso) { return Math.floor((NOW - new Date(iso)) / 86400000); }
+  showToast(t) {
+    if (this._timer) clearTimeout(this._timer);
+    this.setState({ toast: t });
+    this._timer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+  pickStatus(id) { this.setState({ status: this.state.status === id ? "all" : id }); }
+  rowVals(l) {
+    const fu = l.followUps[l.followUps.length - 1] || null;
+    const st = STATUS[l.status];
+    const c = fu ? CONCLUSION[fu.conclusion || "none"] : CONCLUSION.none;
+    const gap = l.totalPrice && l.evalPrice ? ((l.evalPrice - l.totalPrice) / l.totalPrice) * 100 : null;
+    return {
+      id: l.id, community: l.community, addr: l.addr, district: l.district, biz: l.biz,
+      initial: l.community.slice(0, 1), thumbClass: st.thumb, statusLabel: st.label, statusClass: st.cls,
+      isNew: this.daysSince(l.createdAt) <= 1,
+      hasPrice: !!l.totalPrice, priceMuted: l.totalPrice ? "" : "muted",
+      priceDisplay: l.totalPrice ? String(l.totalPrice) : "价格待录入", priceUnit: l.totalPrice ? "万" : "",
+      evalDisplay: l.evalPrice ? l.evalPrice + " 万" : "—",
+      hasGap: gap != null,
+      gapText: gap == null ? "" : (gap > 0 ? "+" : "−") + Math.abs(gap).toFixed(1) + "%",
+      gapClass: gap != null && gap < 0 ? "neg" : "",
+      layout: l.layout, area: l.area, floor: l.floor,
+      conclusionLabel: c.label, conclusionClass: c.cls,
+      fuText: fu ? fu.content : "尚未跟进，等待首次触达",
+      fuMeta: fu ? this.fmtDate(fu.followedAt) + " · " + METHOD[fu.method] + " · " + fu.by : "录入 " + this.fmtDate(l.createdAt),
+      fuMetaShort: fu ? this.fmtDate(fu.followedAt) + " · " + fu.by : "录入 " + this.fmtDate(l.createdAt),
+      owner: l.owner, ownerInitial: l.owner.slice(0, 1), store: l.store,
+      onOpen: () => this.setState({ sheetId: l.id })
+    };
+  }
+  sheetVals() {
+    const l = LEADS.filter((x) => x.id === this.state.sheetId)[0];
+    if (!l) return { sheetOpen: false };
+    const fu = l.followUps[l.followUps.length - 1] || null;
+    const c = fu ? CONCLUSION[fu.conclusion || "none"] : CONCLUSION.none;
+    const gap = l.totalPrice && l.evalPrice ? ((l.evalPrice - l.totalPrice) / l.totalPrice) * 100 : null;
+    return {
+      sheetOpen: true,
+      sheet: {
+        community: l.community, addr: l.addr, district: l.district, biz: l.biz,
+        priceDisplay: l.totalPrice ? String(l.totalPrice) : "—",
+        evalDisplay: l.evalPrice ? String(l.evalPrice) : "—",
+        gapDisplay: gap == null ? "—" : (gap > 0 ? "+" : "−") + Math.abs(gap).toFixed(1) + "%",
+        conclusionLabel: c.label, conclusionClass: c.cls,
+        fuText: fu ? fu.content : "尚未跟进，等待首次触达。",
+        fuMeta: fu ? this.fmtDate(fu.followedAt) + " · " + METHOD[fu.method] + " · " + fu.by : "录入 " + this.fmtDate(l.createdAt)
+      }
+    };
+  }
+  renderVals() {
+    const s = this.state;
+    let list = LEADS.filter((l) => {
+      if (s.status !== "all") {
+        if (s.status === "rejected") { if (l.status !== "rejected" && l.status !== "lost_to_competitor") return false; }
+        else if (l.status !== s.status) return false;
+      }
+      if (s.q) {
+        const q = s.q.toLowerCase();
+        const hay = (l.community + " " + l.addr + " " + l.district + " " + l.biz + " " + l.owner).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    list.sort((a, b) => {
+      if (s.sort === "price") return (b.totalPrice || 0) - (a.totalPrice || 0);
+      const at = a.followUps.length ? a.followUps[a.followUps.length - 1].followedAt : a.createdAt;
+      const bt = b.followUps.length ? b.followUps[b.followUps.length - 1].followedAt : b.createdAt;
+      return new Date(bt) - new Date(at);
+    });
+    const rows = list.map((x) => this.rowVals(x));
+    const chips = [
+      { id: "pending_assessment", label: "待评估", count: 3 },
+      { id: "pending_visit", label: "待看房", count: 397 },
+      { id: "visited", label: "已看房", count: 7 },
+      { id: "signed", label: "已签约", count: 17 },
+      { id: "rejected", label: "已放弃", count: 141 }
+    ].map((x) => ({ ...x, onClass: s.status === x.id ? "on" : "", aria: s.status === x.id ? "true" : "false", onClick: () => this.pickStatus(x.id) }));
+    const titles = { all: "全部线索", pending_assessment: "待评估", pending_visit: "待看房", visited: "已看房", signed: "已签约", rejected: "已放弃" };
+    const statusCount = s.q ? rows.length : s.status === "all" ? 565 : chips.filter((c) => c.id === s.status)[0].count;
+    return {
+      ...this.sheetVals(),
+      chips: chips,
+      rows: rows,
+      noRows: rows.length === 0,
+      query: s.q,
+      onSearch: (e) => this.setState({ q: e.target.value }),
+      clearAll: () => this.setState({ status: "all", q: "" }),
+      listTitle: titles[s.status],
+      listCount: statusCount + " 条",
+      sortLabel: s.sort === "follow" ? "最近跟进" : "报价从高到低",
+      cycleSort: () => this.setState({ sort: s.sort === "follow" ? "price" : "follow" }),
+      abandonClass: s.status === "rejected" ? "on" : "",
+      abandonAria: s.status === "rejected" ? "true" : "false",
+      onAbandon: () => this.pickStatus("rejected"),
+      onFilterStub: () => this.showToast("演示稿：更多筛选"),
+      onAdd: () => this.showToast("演示稿：录入新线索"),
+      closeSheet: () => this.setState({ sheetId: null }),
+      onEdit: () => this.showToast("演示稿：打开完整线索详情"),
+      onRecord: () => this.showToast("演示稿：记录跟进"),
+      toast: s.toast
+    };
+  }
+}
+
+const NOW = new Date("2026-11-07T12:00:00+08:00");
+const METHOD = { phone: "电话", wechat: "微信", face: "面谈", visit: "实勘" };
+const STATUS = {
+  pending_assessment: { label: "待评估", cls: "st-pending-assessment", thumb: "warm" },
+  pending_visit: { label: "待看房", cls: "st-pending-visit", thumb: "sky" },
+  visited: { label: "已看房", cls: "st-visited", thumb: "fog" },
+  signed: { label: "已签约", cls: "st-signed", thumb: "ink" },
+  rejected: { label: "已放弃", cls: "st-rejected", thumb: "fog" },
+  lost_to_competitor: { label: "他司成交", cls: "st-rejected", thumb: "fog" }
+};
+const CONCLUSION = {
+  price_disagree: { label: "价格未谈拢", cls: "price" },
+  mode_disagree: { label: "模式未谈拢", cls: "mode" },
+  both_disagree: { label: "价格与模式", cls: "both" },
+  none: { label: "未记录", cls: "none" }
+};
+const LEADS = [
+  { id: "ld_2a08f685", community: "通河二村", addr: "128号 0201室", district: "宝山", biz: "张庙", layout: "2室1厅", area: 55, floor: "1/6层", totalPrice: null, evalPrice: null, status: "pending_assessment", store: "宝山店", broker: "唐悦", owner: "唐悦", createdAt: "2026-11-07T10:12:00+08:00", followUps: [] },
+  { id: "ld_8f3a21", community: "大宁金茂府", addr: "3栋 1802室", district: "静安", biz: "大宁", layout: "3室2厅", area: 128.6, floor: "18/24层", totalPrice: 1180, evalPrice: 1050, status: "pending_visit", store: "静安店", broker: "周航", owner: "李敏", createdAt: "2026-09-12T10:24:00+08:00", followUps: [{ method: "wechat", content: "微信回访：业主同意先带看再谈价，约本周六上午到店。", conclusion: null, followedAt: "2026-11-06T16:10:00+08:00", by: "周航" }] },
+  { id: "ld_3cd158", community: "绿地海珀外滩", addr: "2栋 3305室", district: "黄浦", biz: "滨江", layout: "3室2厅", area: 142.8, floor: "33/40层", totalPrice: 2380, evalPrice: 2260, status: "pending_visit", store: "黄浦店", broker: "李敏", owner: "李敏", createdAt: "2026-10-08T11:15:00+08:00", followUps: [{ method: "wechat", content: "微信沟通：业主关注装修周期是否影响自住，需要确认 3 个月内可交付。", conclusion: "mode_disagree", followedAt: "2026-11-05T09:30:00+08:00", by: "李敏" }] },
+  { id: "ld_5c90b7", community: "明园森林都市", addr: "12栋 902室", district: "静安", biz: "南京西路", layout: "2室1厅", area: 89.2, floor: "9/18层", totalPrice: 920, evalPrice: 880, status: "pending_assessment", store: "静安店", broker: "周航", owner: "周航", createdAt: "2026-10-21T14:02:00+08:00", followUps: [{ method: "phone", content: "再次沟通：业主希望我方先给到 900 万以上再谈合作方式。", conclusion: "both_disagree", followedAt: "2026-11-04T11:30:00+08:00", by: "周航" }] },
+  { id: "ld_1a77e4", community: "中远两湾城四期", addr: "7栋 2201室", district: "普陀", biz: "长寿路", layout: "3室2厅", area: 116.4, floor: "22/28层", totalPrice: 860, evalPrice: 812, status: "visited", store: "普陀店", broker: "陈曦", owner: "陈曦", createdAt: "2026-08-30T09:41:00+08:00", followUps: [{ method: "face", content: "到店面谈合同条款：业主接受收购美化，但要求保底 860 万。", conclusion: "both_disagree", followedAt: "2026-10-23T10:05:00+08:00", by: "陈曦" }] },
+  { id: "ld_9be302", community: "碧云国际社区晓园", addr: "5栋 601室", district: "浦东", biz: "碧云", layout: "4室2厅", area: 168.0, floor: "6/11层", totalPrice: 2150, evalPrice: 2080, status: "signed", store: "浦东店", broker: "王倩", owner: "王倩", createdAt: "2026-07-14T16:20:00+08:00", followUps: [{ method: "face", content: "签约完成，约定 11 月进场装修；业主保留家具家电。", conclusion: null, followedAt: "2026-10-30T17:20:00+08:00", by: "王倩" }] }
+];
+</script>
+</body>
+</html>

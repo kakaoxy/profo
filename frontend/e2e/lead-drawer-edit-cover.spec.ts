@@ -176,7 +176,7 @@ test("抽屉编辑切换小区后清空旧楼栋/户室并持久化", async ({ p
   const { ctx, dispose } = await createApiContext();
   try {
     await page.goto(`/admin/leads?search=${encodeURIComponent(seeded.community_a_name)}`);
-    const row = page.locator("tr").filter({ hasText: seeded.community_a_name }).first();
+    const row = page.locator('[data-testid="lead-row"]').filter({ hasText: seeded.community_a_name }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
     await row.click();
 
@@ -269,7 +269,7 @@ test("影像库可将第二张图片设为标题图并持久化", async ({ page 
   const { ctx, dispose } = await createApiContext();
   try {
     await page.goto(`/admin/leads?search=${encodeURIComponent(seeded.cover_community_name)}`);
-    const row = page.locator("tr").filter({ hasText: seeded.cover_community_name }).first();
+    const row = page.locator('[data-testid="lead-row"]').filter({ hasText: seeded.cover_community_name }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
     await expect(row.locator("img").first()).toHaveAttribute("src", /dashboard\.png/);
     await row.click();
@@ -319,7 +319,7 @@ test("编辑旧线索时回显原小区名称，不要求重新填写", async ({
   const { ctx, dispose } = await createApiContext();
   try {
     await page.goto(`/admin/leads?search=${encodeURIComponent(seeded.legacy_community_name)}`);
-    const row = page.locator("tr").filter({ hasText: seeded.legacy_community_name }).first();
+    const row = page.locator('[data-testid="lead-row"]').filter({ hasText: seeded.legacy_community_name }).first();
     await expect(row).toBeVisible({ timeout: 15_000 });
     await row.click();
 

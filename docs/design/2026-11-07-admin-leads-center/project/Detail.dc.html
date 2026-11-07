@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线索中心 · 线索详情 · 评估</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face {
+    font-family: "InterLocal";
+    src: url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "SourceSerifLocal";
+    src: url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --ink: #17191c;
+    --white: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-edge: #e6b088;
+    --sky: #d3e3fc;
+    --hair: rgba(163, 166, 175, 0.32);
+    --hair-soft: rgba(163, 166, 175, 0.18);
+    --font-ui: "InterLocal", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --font-display: "SourceSerifLocal", "Songti SC", "Noto Serif SC", Georgia, serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body { margin: 0; background: var(--fog); color: var(--ink); font-family: var(--font-ui); font-size: 14px; font-weight: 430; letter-spacing: -0.009em; line-height: 1.5; }
+  button, input, select { font: inherit; letter-spacing: inherit; color: inherit; }
+  button { background: none; border: 0; padding: 0; cursor: pointer; }
+  h1, h2, h3, p { margin: 0; }
+  svg { display: block; }
+  .ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .board { width: 720px; min-height: 1700px; padding: 12px; background: var(--fog); }
+  .drawer {
+    width: 100%; height: 1676px; background: var(--white); border-radius: 24px;
+    box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.35), rgba(4, 23, 43, 0.06) 0 0 0 1px;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 22px 28px 0; }
+  .drawer-crumb { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: var(--dove); }
+  .drawer-crumb b { font-weight: 400; color: var(--graphite); font-family: "SF Mono", ui-monospace, Menlo, monospace; letter-spacing: 0; }
+  .icon-btn { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--graphite); }
+  .icon-btn:hover { background: var(--fog); color: var(--ink); }
+  .icon-btn .ic { width: 17px; height: 17px; }
+  .drawer-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 16px 28px 28px; scrollbar-width: thin; scrollbar-color: var(--hair) transparent; }
+  .drawer-title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .drawer-title-row h2 { font-size: 30px; font-weight: 480; letter-spacing: -0.028em; line-height: 1.18; }
+  .status { display: inline-flex; align-items: center; justify-content: center; height: 25px; padding: 0 10px; border-radius: 9999px; font-size: 10.5px; font-weight: 500; white-space: nowrap; }
+  .st-pending-visit { background: var(--sky); color: var(--ink); }
+  .drawer-addr { margin-top: 6px; font-size: 12.5px; color: var(--graphite); }
+  .drawer-meta { margin-top: 4px; font-size: 10.5px; color: var(--dove); }
+
+  .stepper { display: flex; align-items: center; gap: 0; margin-top: 20px; }
+  .step { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; }
+  .step:last-child { flex: 0 0 auto; }
+  .step-dot { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--fog); color: var(--dove); font-size: 9px; flex: none; }
+  .step.done .step-dot { background: var(--ink); color: var(--white); }
+  .step.current .step-dot { background: var(--apricot); color: var(--rust); }
+  .step-label { font-size: 10px; color: var(--dove); white-space: nowrap; }
+  .step.done .step-label { color: var(--graphite); }
+  .step.current .step-label { color: var(--rust); font-weight: 500; }
+  .step-line { height: 1px; flex: 1; background: var(--hair); margin: 0 7px; }
+  .step.done .step-line { background: var(--ink); opacity: .22; }
+
+  .tabs { display: flex; gap: 24px; margin-top: 20px; border-bottom: 1px solid var(--hair); }
+  .tab { position: relative; padding: 0 0 10px; font-size: 12px; color: var(--graphite); }
+  .tab.active { color: var(--ink); font-weight: 500; }
+  .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--ink); border-radius: 2px; }
+
+  .price-band { margin-top: 16px; background: var(--apricot); border-radius: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .price-cell { padding: 16px 18px 14px; }
+  .price-cell + .price-cell { border-left: 1px solid rgba(93, 42, 26, 0.13); }
+  .price-cell .lbl { font-size: 10px; color: var(--rust); opacity: .72; }
+  .price-cell .val { margin-top: 5px; font-size: 23px; font-weight: 480; line-height: 1.1; color: var(--rust); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .price-cell .val small { font-size: 10px; font-weight: 400; opacity: .7; margin-left: 2px; }
+  .price-cell .psf { margin-top: 4px; font-size: 9.5px; color: rgba(93, 42, 26, .62); }
+
+  .drawer-section { margin-top: 24px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .section-label { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .section-hint { margin-top: 3px; font-size: 9.5px; color: var(--dove); }
+  .section-count { font-size: 10px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .text-action { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 450; color: var(--graphite); }
+  .text-action:hover { color: var(--ink); }
+
+  .assess-card { margin-top: 9px; padding: 16px 18px 15px; border-radius: 16px; background: var(--fog); }
+  .assess-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .assess-top-left { display: flex; align-items: center; gap: 7px; }
+  .assess-icon { width: 24px; height: 24px; border-radius: 8px; background: var(--apricot); color: var(--rust); display: flex; align-items: center; justify-content: center; }
+  .assess-icon .ic { width: 13px; height: 13px; }
+  .assess-title { font-size: 11px; font-weight: 500; color: var(--ink); }
+  .assess-time { font-size: 9.5px; color: var(--dove); }
+  .assess-grid { display: grid; grid-template-columns: 1.05fr 1.05fr .75fr; gap: 0; margin-top: 13px; border-top: 1px solid var(--hair); }
+  .assess-cell { padding: 13px 14px 0 0; min-width: 0; }
+  .assess-cell + .assess-cell { border-left: 1px solid var(--hair); padding-left: 16px; }
+  .assess-k { font-size: 9.5px; color: var(--graphite); }
+  .assess-v { margin-top: 4px; display: flex; align-items: baseline; gap: 3px; font-size: 20px; font-weight: 480; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1.1; }
+  .assess-v small { font-size: 9.5px; font-weight: 400; color: var(--graphite); }
+  .assess-meta { margin-top: 5px; font-size: 9.5px; color: var(--dove); }
+  .assess-good { color: var(--rust); }
+  .stars { display: inline-flex; gap: 2px; margin-top: 5px; color: var(--apricot-edge); }
+  .stars svg { width: 10px; height: 10px; fill: currentColor; stroke: none; }
+  .stars .off { color: #dedfe2; }
+  .assess-note { margin-top: 13px; padding: 10px 12px; background: var(--white); border-radius: 10px; font-size: 10.5px; line-height: 1.65; color: var(--ash); }
+  .assess-note b { font-weight: 500; color: var(--ink); }
+
+  .history { margin-top: 14px; }
+  .history-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .history-title { font-size: 10.5px; font-weight: 500; color: var(--graphite); }
+  .history-row { display: grid; grid-template-columns: 86px minmax(0, 1fr) auto; gap: 13px; padding: 12px 0 11px; border-top: 1px solid var(--hair-soft); }
+  .history-date { font-size: 9.5px; color: var(--dove); font-variant-numeric: tabular-nums; line-height: 1.55; }
+  .history-main { min-width: 0; }
+  .history-price-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .history-price { font-size: 13px; font-weight: 500; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .tag-now { height: 17px; padding: 0 6px; border-radius: 9999px; background: var(--ink); color: var(--white); font-size: 8.5px; display: inline-flex; align-items: center; }
+  .vchip { height: 18px; padding: 0 7px; border-radius: 9999px; display: inline-flex; align-items: center; font-size: 9px; white-space: nowrap; }
+  .vchip.score { background: var(--apricot); color: var(--rust); }
+  .vchip.days { background: var(--white); color: var(--rust); box-shadow: inset 0 0 0 1px var(--apricot-edge); }
+  .history-note { margin-top: 4px; font-size: 10px; color: var(--graphite); line-height: 1.55; }
+  .history-by { margin-top: 3px; font-size: 9px; color: var(--dove); }
+  .history-by b { font-weight: 450; color: var(--graphite); }
+  .history-empty { margin-top: 8px; padding: 14px 12px; border-radius: 10px; background: var(--fog); font-size: 10.5px; color: var(--dove); font-style: italic; }
+
+  .params-grid { margin-top: 9px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px 16px; padding: 14px 16px; border: 1px solid var(--hair); border-radius: 14px; }
+  .param-k { font-size: 9.5px; color: var(--dove); }
+  .param-v { margin-top: 3px; font-size: 11.5px; color: var(--ink); font-weight: 450; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .owner-card { margin-top: 9px; padding: 14px 16px; border: 1px solid var(--hair); border-radius: 14px; }
+  .owner-top { display: flex; gap: 9px; align-items: center; flex-wrap: wrap; }
+  .owner-price { height: 24px; padding: 0 9px; border-radius: 9999px; background: var(--apricot); color: var(--rust); font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; }
+  .owner-quote { margin-top: 9px; padding: 9px 11px; background: var(--fog); border-left: 2px solid var(--dove); border-radius: 8px; font-size: 11px; font-style: italic; color: var(--ash); line-height: 1.7; }
+  .owner-foot { margin-top: 8px; display: flex; justify-content: space-between; gap: 10px; font-size: 9.5px; color: var(--dove); }
+
+  .owner-rows { margin-top: 9px; border-top: 1px solid var(--hair); }
+  .owner-row { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; padding: 9px 1px; border-bottom: 1px solid var(--hair-soft); }
+  .owner-row .k { font-size: 10.5px; color: var(--graphite); }
+  .owner-row .v { font-size: 11.5px; color: var(--ink); text-align: right; }
+
+  .photos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 9px; }
+  .photo { height: 76px; border-radius: 10px; overflow: hidden; position: relative; background: #eeeae4; }
+  .photo:nth-child(1) { background: linear-gradient(135deg, #e8e0d6, #d8d0c6); }
+  .photo:nth-child(2) { background: linear-gradient(135deg, #dfe4e8, #cbd2d8); }
+  .photo:nth-child(3) { background: linear-gradient(135deg, #e8ddd2, #d4c5b6); }
+  .photo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 55%, rgba(0,0,0,.14)); }
+  .photo-label { position: absolute; left: 8px; bottom: 6px; z-index: 1; color: rgba(255,255,255,.9); font-size: 8.5px; }
+
+  .audit-card { margin-top: 9px; border: 1px solid var(--hair); border-radius: 14px; overflow: hidden; }
+  .audit-head { display: flex; align-items: center; gap: 7px; padding: 10px 14px; background: var(--fog); border-bottom: 1px solid var(--hair); }
+  .audit-head .ic { width: 13px; height: 13px; color: var(--graphite); }
+  .audit-head span { font-size: 9px; font-weight: 600; letter-spacing: .08em; color: var(--graphite); }
+  .audit-body { padding: 12px 14px 14px; }
+  .stage-alert { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 10px; background: var(--sky); }
+  .stage-alert b { display: block; font-size: 10.5px; font-weight: 500; color: var(--ink); }
+  .stage-alert p { margin-top: 2px; font-size: 9.5px; line-height: 1.55; color: var(--ash); }
+  .stage-alert .time { flex: none; font-size: 10px; color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .audit-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 11px; }
+  .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 36px; padding: 0 16px; border-radius: 9999px; background: var(--ink); color: var(--white); font-size: 11px; font-weight: 450; }
+  .btn-primary:hover { background: #000; }
+  .btn-primary .ic { width: 13px; height: 13px; }
+  .link-danger { font-size: 10px; color: var(--graphite); text-decoration: underline; text-underline-offset: 2px; }
+  .link-danger:hover { color: var(--rust); }
+  .adjust-form { margin-top: 12px; padding: 12px; background: var(--fog); border-radius: 12px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .field label { display: block; margin: 0 0 5px 2px; font-size: 9.5px; color: var(--graphite); }
+  .field input { width: 100%; height: 34px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--hair); background: var(--white); font-size: 11px; outline: none; }
+  .field input:focus { border-color: var(--ink); box-shadow: 0 0 0 2px rgba(23,25,28,.08); }
+  .score-picks { display: flex; gap: 5px; }
+  .score-pick { width: 27px; height: 30px; border-radius: 8px; border: 1px solid var(--hair); background: var(--white); font-size: 10px; color: var(--graphite); }
+  .score-pick.on { background: var(--ink); color: var(--white); border-color: var(--ink); }
+  .form-note { margin-top: 9px; font-size: 9.5px; line-height: 1.6; color: var(--dove); }
+
+  .timeline { margin-top: 6px; }
+  .tl-item { display: grid; grid-template-columns: 78px minmax(0, 1fr); gap: 14px; padding: 13px 0; border-bottom: 1px solid var(--hair-soft); }
+  .tl-item:last-child { border-bottom: 0; }
+  .tl-date { font-size: 9.5px; color: var(--dove); font-variant-numeric: tabular-nums; line-height: 1.6; white-space: pre-line; }
+  .tl-main { min-width: 0; }
+  .tl-top { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .tl-method { font-size: 10px; font-weight: 500; color: var(--ink); }
+  .tl-by { font-size: 9.5px; color: var(--dove); }
+  .tl-content { margin-top: 4px; font-size: 11px; line-height: 1.65; color: var(--ash); }
+  .concl { flex: none; height: 18px; padding: 0 7px; border-radius: 9999px; font-size: 9px; font-weight: 500; display: inline-flex; align-items: center; white-space: nowrap; }
+  .concl.price { background: var(--apricot); color: var(--rust); }
+  .drawer-foot { flex: none; display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; border-top: 1px solid var(--hair); background: var(--white); }
+  .foot-actions { display: flex; align-items: center; gap: 12px; }
+  .btn-ghost { height: 36px; padding: 0 12px; border-radius: 9999px; font-size: 10.5px; color: var(--graphite); }
+  .btn-ghost:hover { background: var(--fog); color: var(--ink); }
+  .toast { position: absolute; left: 50%; bottom: 82px; transform: translateX(-50%); background: var(--ink); color: var(--white); border-radius: 9999px; height: 36px; padding: 0 15px; display: flex; align-items: center; gap: 7px; font-size: 10.5px; white-space: nowrap; box-shadow: 0 18px 40px -18px rgba(0,0,0,.55); }
+  .toast .ic { width: 12px; height: 12px; color: #f7d0b4; }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><path d="M9 5h6M9 5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2M9 12h6M9 16h4"/></symbol>
+  <symbol id="i-gavel" viewBox="0 0 24 24"><path d="M14 3l7 7M9 8l7 7M4 21l7-7M3 14l7-7M5 12l7 7"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.5c.8.3 1.7.5 2.6.6a2 2 0 0 1 1.7 2z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2.6l2.9 6.1 6.6.9-4.8 4.7 1.2 6.6L12 17.7 6.1 20.9l1.2-6.6L2.5 9.6l6.6-.9L12 2.6z"/></symbol>
+</svg>
+
+<div class="board" style="position:relative">
+  <aside class="drawer" aria-label="线索详情">
+    <div class="drawer-head">
+      <div class="drawer-crumb">线索详情 <b>LD-8F3A21</b></div>
+      <button class="icon-btn" type="button" aria-label="返回线索列表" onClick="{{onClose}}"><svg class="ic"><use href="#i-close"></use></svg></button>
+    </div>
+
+    <div class="drawer-scroll">
+      <div class="drawer-title-row">
+        <h2>大宁金茂府</h2>
+        <span class="status st-pending-visit">待看房</span>
+      </div>
+      <div class="drawer-addr">3栋 1802室 · 静安 大宁</div>
+      <div class="drawer-meta">创建 2026-09-12 10:24 · 更新 2026-11-06 16:10 · 录入人 周航</div>
+
+      <div class="stepper" aria-label="线索阶段">
+        <div class="step done"><span class="step-dot">✓</span><span class="step-label">初筛评估</span><span class="step-line"></span></div>
+        <div class="step current"><span class="step-dot">2</span><span class="step-label">上门实勘</span><span class="step-line"></span></div>
+        <div class="step"><span class="step-dot">3</span><span class="step-label">商务谈判</span><span class="step-line"></span></div>
+        <div class="step"><span class="step-dot">4</span><span class="step-label">签约收房</span></div>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="线索详情页签">
+        <button class="tab active" type="button" role="tab" aria-selected="true">信息与审核</button>
+        <button class="tab" type="button" role="tab" aria-selected="false" onClick="{{onMonitor}}">监控看板</button>
+      </div>
+
+      <div class="price-band">
+        <div class="price-cell">
+          <div class="lbl">业主报价</div>
+          <div class="val">1180<small>万</small></div>
+          <div class="psf">单价 9.2 万/㎡</div>
+        </div>
+        <div class="price-cell">
+          <div class="lbl">授权评估价</div>
+          <div class="val">1050<small>万</small></div>
+          <div class="psf">单价 8.2 万/㎡</div>
+        </div>
+        <div class="price-cell">
+          <div class="lbl">报价偏离</div>
+          <div class="val">−11.0%</div>
+          <div class="psf">评估低于报价</div>
+        </div>
+      </div>
+
+      <section class="drawer-section">
+        <div class="section-head">
+          <div>
+            <div class="section-label">评估结论</div>
+            <div class="section-hint">最近评估 2026-09-23 15:40 · 李敏</div>
+          </div>
+          <button class="text-action" type="button" onClick="{{onAdjustToggle}}">{{adjustLabel}} <span aria-hidden="true">→</span></button>
+        </div>
+
+        <div class="assess-card">
+          <div class="assess-top">
+            <div class="assess-top-left">
+              <span class="assess-icon"><svg class="ic"><use href="#i-clipboard"></use></svg></span>
+              <span class="assess-title">收房评估已通过</span>
+            </div>
+            <span class="assess-time">09-23 15:40</span>
+          </div>
+          <div class="assess-grid">
+            <div class="assess-cell">
+              <div class="assess-k">授权评估价</div>
+              <div class="assess-v">1050<small>万</small></div>
+              <div class="assess-meta">评估单价 8.2 万/㎡</div>
+            </div>
+            <div class="assess-cell">
+              <div class="assess-k">房源条件分</div>
+              <div class="assess-v assess-good">4.0<small>/ 5</small></div>
+              <div class="stars" aria-label="4 星，良好">
+                <svg><use href="#i-star"></use></svg><svg><use href="#i-star"></use></svg><svg><use href="#i-star"></use></svg><svg><use href="#i-star"></use></svg><svg class="off"><use href="#i-star"></use></svg>
+              </div>
+            </div>
+            <div class="assess-cell">
+              <div class="assess-k">装修后可售周期</div>
+              <div class="assess-v">60<small>天</small></div>
+              <div class="assess-meta">约 2 个月 · 正常</div>
+            </div>
+          </div>
+          <div class="assess-note"><b>评估说明：</b>同户型近三月成交价 1020–1070 万，按中间值取 1050 万。</div>
+        </div>
+
+        <div class="history">
+          <div class="history-head"><span class="history-title">评估历史</span><span class="section-count">2 条记录</span></div>
+          <div class="history-row">
+            <div class="history-date">2026-09-23<br>15:40</div>
+            <div class="history-main">
+              <div class="history-price-line"><span class="history-price">¥1050 万</span><span class="tag-now">当前</span><span class="vchip score">4.0 良好</span><span class="vchip days">60 天 · 约 2 月</span></div>
+              <div class="history-note">同户型近三月成交价 1020–1070 万，按中间值取 1050 万。</div>
+              <div class="history-by"><b>李敏</b> · 138****6210</div>
+            </div>
+          </div>
+          <div class="history-row">
+            <div class="history-date">2026-09-15<br>10:20</div>
+            <div class="history-main">
+              <div class="history-price-line"><span class="history-price">¥1080 万</span><span class="vchip score">3.0 一般</span><span class="vchip days">90 天 · 偏慢</span></div>
+              <div class="history-note">首次评估，按挂牌价与楼层折价测算。</div>
+              <div class="history-by"><b>周航</b></div>
+            </div>
+          </div>
+        </div>
+
+        <sc-if value="{{adjustOpen}}">
+          <div class="adjust-form">
+            <div class="form-grid">
+              <div class="field"><label>房源条件分（必填）</label><div class="score-picks"><button class="{{score1}}" type="button" onClick="{{onScore1}}">1</button><button class="{{score2}}" type="button" onClick="{{onScore2}}">2</button><button class="{{score3}}" type="button" onClick="{{onScore3}}">3</button><button class="{{score4}}" type="button" onClick="{{onScore4}}">4</button><button class="{{score5}}" type="button" onClick="{{onScore5}}">5</button></div></div>
+              <div class="field"><label>装修后可售周期（天，必填）</label><input type="number" placeholder="如 60" aria-label="装修后可售周期"></div>
+              <div class="field"><label>新评估价（万，必填）</label><input type="number" placeholder="输入新评估价" aria-label="新评估价"></div>
+              <div class="field"><label>调整说明</label><input placeholder="如：市场行情变化、二次议价" aria-label="调整说明"></div>
+            </div>
+            <p class="form-note">调整将追加一条评估记录（不改线索状态）；评分与周期每次都要重填。</p>
+            <div class="audit-actions"><button class="text-action" type="button" onClick="{{onAdjustToggle}}">取消</button><button class="btn-primary" type="button" onClick="{{onSaveAdjust}}">保存调整</button></div>
+          </div>
+        </sc-if>
+      </section>
+
+      <section class="drawer-section">
+        <div class="section-head"><span class="section-label">房屋参数</span><span class="section-count">10 项</span></div>
+        <div class="params-grid">
+          <div><div class="param-k">面积</div><div class="param-v">128.6㎡</div></div>
+          <div><div class="param-k">户型</div><div class="param-v">3室2厅</div></div>
+          <div><div class="param-k">朝向</div><div class="param-v">南北</div></div>
+          <div><div class="param-k">楼层</div><div class="param-v">18/24层</div></div>
+          <div><div class="param-k">楼栋</div><div class="param-v">3栋</div></div>
+          <div><div class="param-k">户室</div><div class="param-v">1802室</div></div>
+          <div><div class="param-k">商圈</div><div class="param-v">静安 · 大宁</div></div>
+          <div><div class="param-k">录入人</div><div class="param-v">周航</div></div>
+          <div><div class="param-k">建档时间</div><div class="param-v">2026-09-12 10:24</div></div>
+          <div><div class="param-k">最近跟进</div><div class="param-v">2026-11-06 16:10</div></div>
+        </div>
+      </section>
+
+      <section class="drawer-section">
+        <div class="section-head"><span class="section-label">业主补充信息</span><span class="section-count">C 端提交评估时填写</span></div>
+        <div class="owner-card">
+          <div class="owner-top"><span class="owner-price">心理预期价 ¥1180 万</span></div>
+          <div class="owner-quote">业主自住三年，装修保持良好，满五唯一、无贷款。希望保留部分家具家电，可随时配合实勘与签约。</div>
+          <div class="owner-foot"><span>业主提交 · 2026-09-12 10:24</span><span>来自 C 端估价表单</span></div>
+        </div>
+      </section>
+
+      <section class="drawer-section">
+        <div class="section-head"><span class="section-label">归属信息</span></div>
+        <div class="owner-rows">
+          <div class="owner-row"><span class="k">推荐经纪人</span><span class="v">周航（静安店）</span></div>
+          <div class="owner-row"><span class="k">对接人</span><span class="v">李敏</span></div>
+          <div class="owner-row"><span class="k">分享员工</span><span class="v">—</span></div>
+        </div>
+      </section>
+
+      <section class="drawer-section">
+        <div class="section-head"><span class="section-label">房源照片</span><span class="section-count">3 张</span></div>
+        <div class="photos">
+          <div class="photo"><span class="photo-label">客厅</span></div>
+          <div class="photo"><span class="photo-label">主卧</span></div>
+          <div class="photo"><span class="photo-label">厨房</span></div>
+        </div>
+      </section>
+
+      <section class="drawer-section">
+        <div class="audit-card">
+          <div class="audit-head"><svg class="ic"><use href="#i-gavel"></use></svg><span>管理决策终端</span></div>
+          <div class="audit-body">
+            <div class="stage-alert">
+              <div><b>当前阶段：实勘核验</b><p>请在 48 小时内完成上门实勘，重点核验漏水、结构改动及物业欠费。</p></div>
+              <span class="time">48h 内</span>
+            </div>
+            <div class="audit-actions">
+              <button class="btn-primary" type="button" onClick="{{onConfirmVisit}}"><svg class="ic"><use href="#i-check"></use></svg>确认已完成现场实勘</button>
+              <button class="link-danger" type="button" onClick="{{onMarkLost}}">标记为他司成交</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="drawer-section">
+        <div class="section-head"><span class="section-label">跟进记录</span><span class="section-count">3 条</span></div>
+        <div class="timeline">
+          <div class="tl-item">
+            <div class="tl-date">11-06
+16:10</div>
+            <div class="tl-main">
+              <div class="tl-top"><span class="tl-method">微信</span><span class="tl-by">周航</span></div>
+              <div class="tl-content">微信回访：业主同意先带看再谈价，约本周六上午到店。</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-date">09-28
+15:40</div>
+            <div class="tl-main">
+              <div class="tl-top"><span class="tl-method">面谈</span><span class="tl-by">李敏</span><span class="concl price">价格未谈拢</span></div>
+              <div class="tl-content">业主心理价 1180 万，我方按同户型近三月成交给出 1050 万评估，业主认为低了约 8%。</div>
+            </div>
+          </div>
+          <div class="tl-item">
+            <div class="tl-date">09-13
+09:12</div>
+            <div class="tl-main">
+              <div class="tl-top"><span class="tl-method">电话</span><span class="tl-by">李敏</span></div>
+              <div class="tl-content">首次电话，业主自住三年，装修保持良好，愿意配合实勘。</div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="drawer-foot">
+      <button class="btn-ghost" type="button" onClick="{{onEdit}}">编辑线索</button>
+      <div class="foot-actions">
+        <button class="text-action" type="button" onClick="{{onRecord}}">记录一条跟进</button>
+        <button class="btn-primary" type="button" onClick="{{onRecord}}"><svg class="ic"><use href="#i-plus"></use></svg>记录跟进</button>
+      </div>
+    </div>
+  </aside>
+  <sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":720,"height":1700}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { toast: null, adjustOpen: false, score: 4 };
+    this._timer = null;
+  }
+  componentWillUnmount() {
+    if (this._timer) clearTimeout(this._timer);
+  }
+  showToast(t) {
+    if (this._timer) clearTimeout(this._timer);
+    this.setState({ toast: t });
+    this._timer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+  renderVals() {
+    return {
+      toast: this.state.toast,
+      adjustOpen: this.state.adjustOpen,
+      score1: this.state.score === 1 ? "score-pick on" : "score-pick",
+      score2: this.state.score === 2 ? "score-pick on" : "score-pick",
+      score3: this.state.score === 3 ? "score-pick on" : "score-pick",
+      score4: this.state.score === 4 ? "score-pick on" : "score-pick",
+      score5: this.state.score === 5 ? "score-pick on" : "score-pick",
+      onScore1: () => this.setState({ score: 1 }),
+      onScore2: () => this.setState({ score: 2 }),
+      onScore3: () => this.setState({ score: 3 }),
+      onScore4: () => this.setState({ score: 4 }),
+      onScore5: () => this.setState({ score: 5 }),
+      adjustLabel: this.state.adjustOpen ? "收起调整表单" : "调整评估价",
+      onAdjustToggle: () => this.setState({ adjustOpen: !this.state.adjustOpen }),
+      onSaveAdjust: () => this.setState({ adjustOpen: false, toast: "演示稿：评估调整已保存（追加一条评估记录）" }),
+      onClose: () => this.showToast("演示稿：返回线索列表"),
+      onMonitor: () => this.showToast("演示稿：切换到监控看板"),
+      onEdit: () => this.showToast("演示稿：打开线索编辑"),
+      onRecord: () => this.showToast("演示稿：记录一条新跟进"),
+      onConfirmVisit: () => this.showToast("演示稿：确认实勘完成，进入商务谈判"),
+      onMarkLost: () => this.showToast("演示稿：打开标记他司成交确认")
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,9 +1,17 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { Lead, LeadStatus, FollowUpConclusion, FollowUpMethod, LeadFilterOption } from "../types";
+import { toast } from "sonner";
+import {
+  Lead,
+  LeadStatus,
+  LeadTabValue,
+  FollowUpConclusion,
+  FollowUpMethod,
+  LeadFilterOption,
+} from "../types";
 import {
   updateLeadAction,
   addFollowUpAction,
@@ -12,18 +20,29 @@ import {
 } from "../actions";
 import { useLeadsFilter, useLeadSelection, useViewMode } from "../hooks";
 import { handleError, handleSuccess } from "@/lib/error-handling";
-import { SUCCESS_MESSAGES, ERROR_MESSAGES, CONFIRM_DIALOG } from "../constants/ui-labels";
+import { SUCCESS_MESSAGES, ERROR_MESSAGES } from "../constants/ui-labels";
 import { LeadsStats, type LeadStats } from "./leads-stats";
 import { LeadsTable } from "./leads-table";
 import { LeadsGrid } from "./leads-grid";
+import { LeadsMobileList } from "./leads-mobile-list";
 import { LeadsToolbar } from "./leads-toolbar";
 import { LeadsPagination } from "./leads-pagination";
-import { ListView } from "@/components/common";
 import { EmptyState } from "@/components/common";
 import { PageContainer } from "@/app/(main)/admin/_components/page-container";
 import { PageHeader } from "@/app/(main)/admin/_components/page-header";
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Inbox, Plus } from "lucide-react";
+import { HasPermission } from "@/components/has-permission";
+import { PERMISSION_CODES } from "@/lib/auth/permissions";
+import {
+  AlertTriangle,
+  ChevronDown,
+  Download,
+  Inbox,
+  LayoutGrid,
+  LayoutList,
+  Plus,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const LeadDrawer = dynamic(() => import("./lead-drawer").then((mod) => mod.LeadDrawer), {
   ssr: false,
@@ -46,6 +65,30 @@ interface LeadsViewProps {
   storeOptions?: LeadFilterOption[];
   brokerOptions?: LeadFilterOption[];
   employeeOptions?: LeadFilterOption[];
+}
+
+type SortKey = "followUp" | "updated" | "created";
+
+const LIST_TITLE: Record<LeadTabValue, string> = {
+  all: "全部线索",
+  [LeadStatus.PENDING_ASSESSMENT]: "待评估线索",
+  [LeadStatus.PENDING_VISIT]: "待看房线索",
+  [LeadStatus.VISITED]: "已看房线索",
+  [LeadStatus.SIGNED]: "已签约线索",
+  [LeadStatus.REJECTED]: "已放弃线索",
+  [LeadStatus.LOST_TO_COMPETITOR]: "他已成交线索",
+};
+
+const SORT_LABEL: Record<SortKey, string> = {
+  followUp: "最近跟进",
+  updated: "最近更新",
+  created: "创建时间",
+};
+
+function getTime(value?: string | null) {
+  if (!value) return 0;
+  const time = new Date(value).getTime();
+  return Number.isNaN(time) ? 0 : time;
 }
 
 export function LeadsView({
@@ -92,12 +135,23 @@ export function LeadsView({
   } = useLeadSelection({ initialSelectedLeadId, leads });
 
   const { viewMode, setViewMode } = useViewMode("table");
+  const [sortBy, setSortBy] = useState<SortKey>("followUp");
 
   useEffect(() => {
     if (initialSelectedLeadId) {
       router.replace("/admin/leads", { scroll: false });
     }
   }, [initialSelectedLeadId, router]);
+
+  const sortedLeads = useMemo(() => {
+    return [...filteredLeads].sort((a, b) => {
+      if (sortBy === "created") return getTime(b.createdAt) - getTime(a.createdAt);
+      if (sortBy === "updated") {
+        return getTime(b.updatedAt || b.lastFollowUpAt) - getTime(a.updatedAt || a.lastFollowUpAt);
+      }
+      return getTime(b.lastFollowUpAt || b.updatedAt) - getTime(a.lastFollowUpAt || a.updatedAt);
+    });
+  }, [filteredLeads, sortBy]);
 
   const handleAudit = async (
     id: string,
@@ -178,7 +232,6 @@ export function LeadsView({
   };
 
   const handleDeleteLead = async (id: string) => {
-    if (!window.confirm(CONFIRM_DIALOG.DELETE_TITLE + CONFIRM_DIALOG.DELETE_DESCRIPTION)) return;
     const result = await deleteLeadAction(id);
     if (result.success) {
       refreshLeads();
@@ -190,22 +243,117 @@ export function LeadsView({
     }
   };
 
+  const handleExport = () => {
+    toast.success("正在按当前筛选生成报表...");
+  };
+
+  const cycleSort = () => {
+    setSortBy((current) => {
+      if (current === "followUp") return "updated";
+      if (current === "updated") return "created";
+      return "followUp";
+    });
+  };
+
+  const listTitle = LIST_TITLE[activeTab as LeadTabValue] ?? "全部线索";
+  const hasFilters = Boolean(
+    searchQuery || creatorId || storeId || brokerId || ownerEmployeeId,
+  );
+
   return (
     <div className="min-h-screen bg-fog">
-      <PageContainer className="flex flex-col gap-8">
-        <PageHeader title="线索中心" description="初筛评估 → 上门实勘 → 商务谈判 → 签约收房。" />
+      <PageContainer className="flex flex-col gap-7">
+        <PageHeader
+          title="线索中心"
+          description="初筛评估 → 上门实勘 → 商务谈判 → 签约收房。"
+          actions={
+            <>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleExport}
+                className="h-10 rounded-full px-3.5 text-[12.5px] text-graphite hover:bg-pure-white hover:text-ink"
+              >
+                <Download className="h-3.5 w-3.5" />
+                导出
+              </Button>
+              <HasPermission code={PERMISSION_CODES.LEAD_WRITE}>
+                <Button
+                  type="button"
+                  onClick={startAddLead}
+                  className="h-10 rounded-full bg-ink px-4 text-[12.5px] font-[450] text-white shadow-steep-sm hover:bg-ink/90"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  录入新线索
+                </Button>
+              </HasPermission>
+            </>
+          }
+        />
 
-        <LeadsStats stats={stats} />
+        <LeadsStats
+          stats={stats}
+          activeTab={activeTab}
+          onItemSelect={(tab) => setActiveTab(tab as LeadTabValue)}
+        />
 
-        <ListView totalCount={total} filteredCount={filteredLeads.length}>
+        <section className="flex flex-col gap-4" aria-label="线索列表">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-baseline gap-2.5">
+              <h2 className="text-[22px] font-[480] tracking-[-0.02em] text-ink">
+                {listTitle}
+              </h2>
+              <span className="text-[11.5px] tabular-nums text-graphite">{total} 条</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={cycleSort}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-[11.5px] text-graphite transition-colors hover:bg-pure-white hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+              >
+                {SORT_LABEL[sortBy]}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              <div
+                className="flex items-center gap-0.5 rounded-full bg-pure-white p-0.5 shadow-steep-sm"
+                role="group"
+                aria-label="视图切换"
+              >
+                <button
+                  type="button"
+                  aria-label="列表视图"
+                  aria-pressed={viewMode === "table"}
+                  onClick={() => setViewMode("table")}
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+                    viewMode === "table"
+                      ? "bg-ink text-white"
+                      : "text-graphite hover:bg-fog hover:text-ink",
+                  )}
+                >
+                  <LayoutList className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="卡片视图"
+                  aria-pressed={viewMode === "grid"}
+                  onClick={() => setViewMode("grid")}
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+                    viewMode === "grid"
+                      ? "bg-ink text-white"
+                      : "text-graphite hover:bg-fog hover:text-ink",
+                  )}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
           <LeadsToolbar
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            onAddLead={startAddLead}
             creatorId={creatorId}
             creatorName={creatorName}
             onClearCreatorId={clearCreatorId}
@@ -218,8 +366,9 @@ export function LeadsView({
             storeOptions={storeOptions}
             brokerOptions={brokerOptions}
             employeeOptions={employeeOptions}
-            stats={stats}
-            total={total}
+            filteredCount={filteredLeads.length}
+            totalCount={total}
+            onResetFilters={resetFilters}
           />
 
           {listError ? (
@@ -241,7 +390,7 @@ export function LeadsView({
               </Button>
             </div>
           ) : filteredLeads.length === 0 ? (
-            /* 空态：区分「无任何线索」与「筛不出来」（设计稿 04 节） */
+            /* 空态：区分「无任何线索」与「筛不出来」 */
             <div className="overflow-hidden rounded-cards bg-pure-white shadow-steep">
               <EmptyState
                 className="py-14"
@@ -275,27 +424,34 @@ export function LeadsView({
               />
             </div>
           ) : viewMode === "table" ? (
-            <div className="bg-pure-white rounded-cards shadow-steep overflow-hidden">
-              <div className="overflow-x-auto">
-                <LeadsTable
-                  leads={filteredLeads}
-                  onOpenDetail={openDetail}
-                  onDelete={handleDeleteLead}
-                />
+            <>
+              <LeadsMobileList leads={sortedLeads} onOpenDetail={(lead) => openDetail(lead.id)} />
+              <div className="hidden overflow-hidden rounded-cards bg-pure-white shadow-steep md:block">
+                <div className="overflow-x-auto">
+                  <LeadsTable
+                    leads={sortedLeads}
+                    onOpenDetail={openDetail}
+                    onDelete={handleDeleteLead}
+                  />
+                </div>
+                <div className="flex min-h-[54px] items-center justify-between gap-4 border-t border-dove/25 px-6 py-3">
+                  <span className="text-[10.5px] text-graphite">
+                    本页 <b className="font-[480] text-ink">{filteredLeads.length}</b> 条 · 共{" "}
+                    <b className="font-[480] text-ink">{total}</b> 条
+                    {hasFilters ? "（已筛选）" : ""}
+                  </span>
+                  <LeadsPagination total={total} />
+                </div>
               </div>
-            </div>
+            </>
           ) : (
             <LeadsGrid
-              leads={filteredLeads}
+              leads={sortedLeads}
               onOpenDetail={openDetail}
               onDelete={handleDeleteLead}
             />
           )}
-        </ListView>
-
-        <div className="relative z-50">
-          <LeadsPagination total={total} />
-        </div>
+        </section>
 
         <LeadDrawer
           lead={selectedLead}

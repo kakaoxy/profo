@@ -1,7 +1,6 @@
 import React from "react";
-import { Target, LineChart, Maximize2, Minimize2 } from "lucide-react";
+import { Maximize2, Minimize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 
 export type TabId = "info" | "monitor";
 
@@ -12,54 +11,55 @@ interface Props {
   onToggleFullscreen?: () => void;
 }
 
+/** 详情抽屉页签：细下划线，不使用胶囊。 */
 export const TabsNav: React.FC<Props> = ({
   activeTab,
   onTabChange,
   isMonitorFullscreen,
   onToggleFullscreen,
 }) => {
-  const tabs: { id: TabId; label: string; icon: React.ReactNode }[] = [
-    { id: "info", label: "线索信息", icon: <Target className="h-3.5 w-3.5" /> },
-    { id: "monitor", label: "数据大盘", icon: <LineChart className="h-3.5 w-3.5" /> },
+  const tabs: { id: TabId; label: string }[] = [
+    { id: "info", label: "信息与审核" },
+    { id: "monitor", label: "监控看板" },
   ];
 
   return (
-    <div className="px-6 bg-white border-b">
-      <div className="flex h-12 items-center justify-between">
-        <div className="flex h-12">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-6 text-xs font-medium tracking-wide transition-all relative",
-                activeTab === tab.id ? "text-ink" : "text-graphite hover:text-ink",
-              )}
-            >
-              {tab.icon}
-              {tab.label}
-              {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-ink rounded-full"></div>
-              )}
-            </button>
-          ))}
-        </div>
-        {activeTab === "monitor" && onToggleFullscreen && (
-          <Button variant="outline" size="sm" onClick={onToggleFullscreen}>
-            {isMonitorFullscreen ? (
-              <>
-                <Minimize2 className="h-3.5 w-3.5" />
-                退出全屏
-              </>
-            ) : (
-              <>
-                <Maximize2 className="h-3.5 w-3.5" />
-                全屏
-              </>
+    <div className="mt-5 flex shrink-0 items-end justify-between border-b border-dove/30 px-6 sm:px-7">
+      <div className="flex gap-6" role="tablist" aria-label="线索详情页签">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={cn(
+              "relative pb-2.5 text-[12px] transition-colors",
+              activeTab === tab.id
+                ? "font-medium text-ink after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-ink"
+                : "text-graphite hover:text-ink",
             )}
-          </Button>
-        )}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
+      {activeTab === "monitor" && onToggleFullscreen ? (
+        <button
+          type="button"
+          onClick={onToggleFullscreen}
+          className="mb-2 inline-flex items-center gap-1.5 text-[10px] text-graphite hover:text-ink"
+        >
+          {isMonitorFullscreen ? (
+            <>
+              <Minimize2 className="h-3 w-3" /> 退出全屏
+            </>
+          ) : (
+            <>
+              <Maximize2 className="h-3 w-3" /> 全屏
+            </>
+          )}
+        </button>
+      ) : null}
     </div>
   );
 };

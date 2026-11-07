@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线索中心 · 评估弹窗</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face {
+    font-family: "InterLocal";
+    src: url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "SourceSerifLocal";
+    src: url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --ink: #17191c;
+    --white: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-edge: #e6b088;
+    --sky: #d3e3fc;
+    --hair: rgba(163, 166, 175, 0.32);
+    --hair-soft: rgba(163, 166, 175, 0.18);
+    --font-ui: "InterLocal", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --font-display: "SourceSerifLocal", "Songti SC", "Noto Serif SC", Georgia, serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body { margin: 0; background: var(--fog); color: var(--ink); font-family: var(--font-ui); font-size: 14px; font-weight: 430; letter-spacing: -0.009em; line-height: 1.5; }
+  button, input, textarea { font: inherit; letter-spacing: inherit; color: inherit; }
+  button { background: none; border: 0; padding: 0; cursor: pointer; }
+  h1, h2, h3, p { margin: 0; }
+  svg { display: block; }
+  .ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .board { position: relative; width: 1440px; min-height: 980px; overflow: hidden; background: var(--fog); }
+  .bg-app { position: absolute; inset: 0; filter: blur(2.2px); opacity: .98; }
+  .rail { position: absolute; left: 0; top: 0; bottom: 0; width: 76px; background: var(--fog); border-right: 1px solid var(--hair-soft); display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 28px; }
+  .brand { width: 32px; height: 32px; border-radius: 9px; background: var(--ink); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 520; }
+  .rail-icons { display: flex; flex-direction: column; align-items: center; gap: 23px; color: var(--graphite); }
+  .rail-icons .ic { width: 17px; height: 17px; }
+  .rail-icons .active { width: 32px; height: 32px; border-radius: 10px; background: var(--white); color: var(--ink); display: flex; align-items: center; justify-content: center; box-shadow: 0 1px 3px rgba(23,25,28,.06); }
+  .page { margin-left: 76px; padding: 23px 40px 40px; }
+  .topbar { display: flex; justify-content: space-between; align-items: center; color: var(--graphite); font-size: 10px; }
+  .crumb { display: flex; gap: 6px; align-items: center; }
+  .crumb b { font-weight: 400; color: var(--dove); }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--ink); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .page-head { margin-top: 29px; }
+  .page-head h1 { font-family: var(--font-display); font-size: 44px; line-height: 1.05; font-weight: 400; letter-spacing: -.03em; }
+  .page-head p { margin-top: 10px; color: var(--graphite); font-size: 13px; }
+  .funnel { display: grid; grid-template-columns: repeat(4, 1fr) 130px; gap: 8px; margin-top: 26px; }
+  .f-card { background: var(--white); border-radius: 16px; padding: 13px 16px 12px; box-shadow: 0 8px 20px -14px rgba(23,25,28,.16), rgba(4,23,43,.05) 0 0 0 1px; }
+  .f-card .k { color: var(--graphite); font-size: 10px; }
+  .f-card .v { margin-top: 4px; color: var(--ink); font-size: 27px; font-weight: 450; font-variant-numeric: tabular-nums; letter-spacing: -.025em; }
+  .f-card.warm { background: var(--apricot); }
+  .f-card.warm .k, .f-card.warm .v { color: var(--rust); }
+  .list-head { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; color: var(--graphite); font-size: 11px; }
+  .list-head b { color: var(--ink); font-weight: 500; }
+  .list-card { margin-top: 9px; background: var(--white); border-radius: 20px; overflow: hidden; box-shadow: 0 8px 20px -14px rgba(23,25,28,.16), rgba(4,23,43,.05) 0 0 0 1px; }
+  .list-row { display: grid; grid-template-columns: 1.6fr .8fr 1.5fr .8fr 1.1fr; gap: 18px; padding: 15px 22px; align-items: center; border-bottom: 1px solid var(--hair-soft); }
+  .list-row:last-child { border-bottom: 0; }
+  .lr-title { display: flex; align-items: center; gap: 10px; }
+  .lr-thumb { width: 36px; height: 30px; border-radius: 8px; background: var(--apricot); color: var(--rust); display: flex; align-items: center; justify-content: center; font-size: 11px; }
+  .lr-name { font-size: 12.5px; font-weight: 500; color: var(--ink); }
+  .lr-sub { margin-top: 2px; font-size: 9.5px; color: var(--dove); }
+  .lr-meta { font-size: 10px; color: var(--graphite); }
+  .lr-price { font-size: 12px; font-weight: 500; color: var(--ink); }
+  .lr-status { justify-self: start; height: 21px; padding: 0 9px; border-radius: 9999px; display: inline-flex; align-items: center; background: var(--apricot); color: var(--rust); font-size: 9.5px; }
+  .lr-status.sky { background: var(--sky); color: var(--ink); }
+  .lr-status.fog { background: var(--fog); color: var(--graphite); }
+  .scrim { position: absolute; inset: 0; background: rgba(23, 25, 28, 0.42); }
+
+  .modal-layer { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 28px; }
+  .modal { width: min(960px, calc(100vw - 56px)); border-radius: 24px; background: var(--white); box-shadow: 0 40px 100px -36px rgba(0,0,0,.55), rgba(4,23,43,.08) 0 0 0 1px; overflow: hidden; }
+  .modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding: 21px 26px 18px; border-bottom: 1px solid var(--hair); }
+  .eyebrow { display: flex; align-items: center; gap: 7px; color: var(--dove); font-size: 9.5px; }
+  .eyebrow .mono { font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 9px; letter-spacing: 0; color: var(--graphite); }
+  .eyebrow .sep { width: 2px; height: 2px; border-radius: 50%; background: var(--dove); }
+  .status-pill { height: 20px; padding: 0 8px; border-radius: 9999px; background: var(--apricot); color: var(--rust); display: inline-flex; align-items: center; font-size: 9px; font-weight: 500; }
+  .modal-head h1 { margin-top: 8px; font-size: 27px; line-height: 1.15; font-weight: 480; letter-spacing: -.03em; }
+  .modal-head p { margin-top: 5px; color: var(--graphite); font-size: 11.5px; }
+  .close { width: 32px; height: 32px; border-radius: 50%; color: var(--graphite); display: flex; align-items: center; justify-content: center; flex: none; }
+  .close:hover { background: var(--fog); color: var(--ink); }
+  .close .ic { width: 17px; height: 17px; }
+
+  .modal-body { display: grid; grid-template-columns: 318px minmax(0, 1fr); }
+  .context { background: var(--fog); border-right: 1px solid var(--hair); padding: 22px 22px 24px; }
+  .property { display: flex; align-items: center; gap: 11px; }
+  .property-thumb { width: 44px; height: 44px; border-radius: 12px; background: var(--apricot); color: var(--rust); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 500; flex: none; }
+  .property-name { font-size: 16px; font-weight: 500; letter-spacing: -.02em; }
+  .property-addr { margin-top: 3px; color: var(--graphite); font-size: 10px; }
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-top: 20px; border-top: 1px solid var(--hair); }
+  .metric { padding: 14px 0 0; min-width: 0; }
+  .metric:nth-child(even) { padding-left: 16px; border-left: 1px solid var(--hair); }
+  .metric:nth-child(n+3) { margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--hair); }
+  .metric-k { color: var(--dove); font-size: 9.5px; }
+  .metric-v { margin-top: 3px; color: var(--ink); font-size: 19px; font-weight: 480; line-height: 1.1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .metric-v small { margin-left: 2px; color: var(--graphite); font-size: 9.5px; font-weight: 400; }
+  .metric-meta { margin-top: 4px; color: var(--dove); font-size: 9px; }
+  .context-title { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; color: var(--graphite); font-size: 10px; font-weight: 500; }
+  .context-title span { color: var(--dove); font-size: 8.5px; font-weight: 400; }
+  .owner { margin-top: 22px; padding-top: 17px; border-top: 1px solid var(--hair); }
+  .owner-price { display: inline-flex; align-items: center; height: 23px; padding: 0 9px; margin-top: 9px; border-radius: 9999px; background: var(--apricot); color: var(--rust); font-size: 10px; font-weight: 500; }
+  .owner-quote { margin-top: 9px; padding: 10px 11px; border-left: 2px solid var(--apricot-edge); border-radius: 0 8px 8px 0; background: var(--white); color: var(--ash); font-size: 10.5px; font-style: italic; line-height: 1.65; }
+  .context-note { margin-top: 18px; color: var(--dove); font-size: 9.5px; line-height: 1.65; }
+  .last { margin-top: 18px; padding-top: 15px; border-top: 1px solid var(--hair); color: var(--dove); font-size: 9px; line-height: 1.6; }
+  .last b { color: var(--graphite); font-weight: 450; }
+
+  .form { padding: 21px 26px 20px; }
+  .form-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .form-head h2 { font-size: 13px; font-weight: 500; }
+  .form-head span { color: var(--dove); font-size: 9px; }
+  .field { margin-top: 18px; }
+  .field-head { display: flex; align-items: baseline; gap: 7px; }
+  .step-num { color: var(--dove); font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 9px; letter-spacing: 0; }
+  .field-label { color: var(--ink); font-size: 11px; font-weight: 500; }
+  .required { color: var(--rust); font-size: 8.5px; }
+  .field-hint { margin-left: auto; color: var(--dove); font-size: 9px; }
+  .score-row { display: flex; align-items: center; gap: 6px; margin-top: 9px; }
+  .score-star { width: 38px; height: 36px; border-radius: 11px; border: 1px solid var(--hair); background: var(--white); color: var(--dove); display: flex; align-items: center; justify-content: center; }
+  .score-star .ic { width: 16px; height: 16px; fill: transparent; }
+  .score-star.on { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .score-star.on .ic { fill: currentColor; }
+  .score-word { margin-left: 5px; color: var(--ink); font-size: 12px; font-weight: 500; }
+  .score-hint { margin-top: 7px; color: var(--graphite); font-size: 9.5px; line-height: 1.45; }
+  .input-shell { display: flex; align-items: center; gap: 8px; margin-top: 9px; height: 46px; padding: 0 14px; border: 1px solid var(--hair); border-radius: 13px; background: var(--white); }
+  .input-shell:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23,25,28,.07); }
+  .input-shell .pre { color: var(--graphite); font-size: 11px; }
+  .input-shell input { width: 100%; border: 0; outline: 0; background: transparent; color: var(--ink); font-size: 24px; font-weight: 480; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .input-shell .suf { color: var(--graphite); font-size: 11px; white-space: nowrap; }
+  .days-meta { display: flex; align-items: center; gap: 7px; margin-top: 7px; color: var(--graphite); font-size: 9.5px; }
+  .tier { display: inline-flex; align-items: center; height: 20px; padding: 0 8px; border-radius: 9999px; background: var(--apricot); color: var(--rust); font-size: 9px; font-weight: 500; }
+  .price-meta { margin-top: 7px; color: var(--dove); font-size: 9.5px; }
+  .opinion-shell { margin-top: 9px; padding: 10px 12px; border: 1px solid var(--hair); border-radius: 13px; background: var(--white); }
+  .opinion-shell:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23,25,28,.07); }
+  .opinion-shell textarea { display: block; width: 100%; min-height: 52px; resize: none; border: 0; outline: 0; background: transparent; color: var(--ash); font-size: 10.5px; line-height: 1.65; }
+  .opinion-shell textarea::placeholder { color: var(--dove); }
+  .validation { display: flex; align-items: flex-start; gap: 8px; margin-top: 16px; padding: 10px 12px; border-radius: 12px; background: var(--fog); color: var(--graphite); font-size: 9.5px; line-height: 1.5; }
+  .validation .dot { width: 5px; height: 5px; margin-top: 5px; border-radius: 50%; background: var(--rust); flex: none; }
+  .validation b { color: var(--ink); font-weight: 500; }
+  .validation.warn { background: #fdf4ee; color: var(--rust); }
+  .validation.warn .dot { background: var(--rust); }
+  .validation.warn b { color: var(--rust); }
+  .modal-foot { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 26px; border-top: 1px solid var(--hair); }
+  .danger-actions { display: flex; align-items: center; gap: 16px; }
+  .text-btn { color: var(--graphite); font-size: 10px; }
+  .text-btn:hover { color: var(--ink); }
+  .text-btn.reject { color: var(--rust); }
+  .foot-right { display: flex; align-items: center; gap: 10px; }
+  .btn-cancel { height: 38px; padding: 0 17px; border-radius: 9999px; color: var(--graphite); font-size: 10.5px; }
+  .btn-cancel:hover { background: var(--fog); color: var(--ink); }
+  .btn-primary { height: 40px; padding: 0 20px; border-radius: 9999px; background: var(--ink); color: var(--white); font-size: 10.5px; font-weight: 500; display: inline-flex; align-items: center; gap: 7px; }
+  .btn-primary:hover { background: #2a2e33; }
+  .btn-primary .ic { width: 14px; height: 14px; }
+  .reopen { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); height: 44px; padding: 0 20px; border-radius: 9999px; background: var(--ink); color: var(--white); font-size: 12px; box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+  .toast { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; border-radius: 9999px; background: var(--ink); color: var(--white); font-size: 11px; box-shadow: 0 10px 30px rgba(0,0,0,.22); }
+  .toast .ic { width: 14px; height: 14px; }
+</style>
+</helmet>
+
+<div class="board">
+  <div class="bg-app" aria-hidden="true">
+    <aside class="rail">
+      <div class="brand">P</div>
+      <div class="rail-icons">
+        <span><svg class="ic"><use href="#i-grid"></use></svg></span>
+        <span class="active"><svg class="ic"><use href="#i-building"></use></svg></span>
+        <span><svg class="ic"><use href="#i-phone"></use></svg></span>
+        <span><svg class="ic"><use href="#i-list"></use></svg></span>
+        <span><svg class="ic"><use href="#i-chart"></use></svg></span>
+      </div>
+    </aside>
+    <main class="page">
+      <div class="topbar"><div class="crumb"><span>经营中心</span><b>/</b><span>线索中心</span></div><div class="avatar">N</div></div>
+      <header class="page-head"><h1>线索中心</h1><p>初筛评估 → 上门实勘 → 商务谈判 → 签约收房。</p></header>
+      <div class="funnel">
+        <div class="f-card"><div class="k">待评估</div><div class="v">3</div></div>
+        <div class="f-card"><div class="k">待看房</div><div class="v">397</div></div>
+        <div class="f-card"><div class="k">已看房</div><div class="v">7</div></div>
+        <div class="f-card warm"><div class="k">已签约</div><div class="v">17</div></div>
+        <div class="f-card"><div class="k">已放弃</div><div class="v">141</div></div>
+      </div>
+      <div class="list-head"><span>全部线索 <b>565</b></span><span>最近跟进</span></div>
+      <div class="list-card">
+        <div class="list-row"><div class="lr-title"><span class="lr-thumb">明</span><div><div class="lr-name">明园森林都市</div><div class="lr-sub">3栋 1802室 · 静安 大宁</div></div></div><div class="lr-meta">3室2厅 · 118.6㎡</div><div class="lr-price">920 万 <span style="color:var(--dove);font-weight:400">· 7.76 万/㎡</span></div><div class="lr-status">待评估</div><div class="lr-meta">11-07 · 周航</div></div>
+        <div class="list-row"><div class="lr-title"><span class="lr-thumb" style="background:var(--fog);color:var(--graphite)">通</span><div><div class="lr-name">通河二村</div><div class="lr-sub">128号 0201室 · 宝山 张庙</div></div></div><div class="lr-meta">2室1厅 55㎡</div><div class="lr-price" style="color:var(--dove);font-weight:400">价格待录入</div><div class="lr-status">待评估</div><div class="lr-meta">11-07 · 唐悦</div></div>
+        <div class="list-row"><div class="lr-title"><span class="lr-thumb" style="background:var(--sky);color:var(--ink)">大</span><div><div class="lr-name">大宁金茂府</div><div class="lr-sub">3栋 1802室 · 静安 大宁</div></div></div><div class="lr-meta">3室2厅 128.6㎡</div><div class="lr-price">1180 万 <span style="color:var(--dove);font-weight:400">· 9.18 万/㎡</span></div><div class="lr-status sky">待看房</div><div class="lr-meta">11-06 · 李敏</div></div>
+        <div class="list-row"><div class="lr-title"><span class="lr-thumb" style="background:var(--fog);color:var(--graphite)">中</span><div><div class="lr-name">中远两湾城四期</div><div class="lr-sub">12号 1102室 · 普陀 长寿</div></div></div><div class="lr-meta">3室2厅 112㎡</div><div class="lr-price">860 万 <span style="color:var(--dove);font-weight:400">· 7.68 万/㎡</span></div><div class="lr-status fog">已看房</div><div class="lr-meta">11-05 · 周航</div></div>
+      </div>
+    </main>
+    <div class="scrim"></div>
+  </div>
+
+  <sc-if value="{{isOpen}}">
+    <div class="modal-layer">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="assess-title">
+        <header class="modal-head">
+          <div>
+            <div class="eyebrow"><span class="status-pill">待评估</span><span class="sep"></span><span class="mono">LD-2A08F685</span><span class="sep"></span><span>明园森林都市 · 3栋 1802室</span></div>
+            <h1 id="assess-title">给出收房评估</h1>
+            <p>一次填完「好不好、多久、多少钱」，提交后生成评估记录并批准约看。</p>
+          </div>
+          <button class="close" type="button" aria-label="关闭评估弹窗" onClick="{{onClose}}"><svg class="ic"><use href="#i-x"></use></svg></button>
+        </header>
+
+        <div class="modal-body">
+          <aside class="context">
+            <div class="property">
+              <div class="property-thumb">明</div>
+              <div><div class="property-name">明园森林都市</div><div class="property-addr">3栋 1802室 · 静安 大宁</div></div>
+            </div>
+            <div class="metrics">
+              <div class="metric"><div class="metric-k">业主报价</div><div class="metric-v">920<small>万</small></div><div class="metric-meta">7.76 万/㎡</div></div>
+              <div class="metric"><div class="metric-k">当前评估价</div><div class="metric-v" style="font-size:14px;color:var(--dove)">待评估</div><div class="metric-meta">本次给出授权价</div></div>
+              <div class="metric"><div class="metric-k">面积 / 户型</div><div class="metric-v">118.6<small>㎡</small></div><div class="metric-meta">3室2厅 · 18/24层</div></div>
+              <div class="metric"><div class="metric-k">当前状态</div><div class="metric-v" style="font-size:14px;color:var(--rust)">待评估</div><div class="metric-meta">等待给出结论</div></div>
+            </div>
+            <div class="owner">
+              <div class="context-title">业主补充信息<span>C 端提交评估时填写</span></div>
+              <div class="owner-price">心理预期价 ¥950 万</div>
+              <p class="owner-quote">“希望 950 万以上；如果价格合适，愿意配合先实勘后面谈，家具可以留下。”</p>
+            </div>
+            <p class="context-note">评估三项会同步到 C 端结论和小程序卡片，请按实勘结果填写；三项齐全后才可提交。</p>
+            <div class="last"><b>最近跟进 · 11-06 16:10</b><br>周航 · 微信：约本周六上午实勘。</div>
+          </aside>
+
+          <section class="form">
+            <div class="form-head"><h2>评估录入</h2><span>3 项必填</span></div>
+
+            <div class="field">
+              <div class="field-head"><span class="step-num">01</span><span class="field-label">房源条件分</span><span class="required">必填</span><span class="field-hint">判断好不好</span></div>
+              <div class="score-row">
+                <button class="{{score1}}" type="button" aria-label="1 分 难售" onClick="{{onScore1}}"><svg class="ic"><use href="#i-star"></use></svg></button>
+                <button class="{{score2}}" type="button" aria-label="2 分 偏弱" onClick="{{onScore2}}"><svg class="ic"><use href="#i-star"></use></svg></button>
+                <button class="{{score3}}" type="button" aria-label="3 分 一般" onClick="{{onScore3}}"><svg class="ic"><use href="#i-star"></use></svg></button>
+                <button class="{{score4}}" type="button" aria-label="4 分 良好" onClick="{{onScore4}}"><svg class="ic"><use href="#i-star"></use></svg></button>
+                <button class="{{score5}}" type="button" aria-label="5 分 优质" onClick="{{onScore5}}"><svg class="ic"><use href="#i-star"></use></svg></button>
+                <span class="score-word">{{scoreWord}}</span>
+              </div>
+              <p class="score-hint">{{scoreHint}}</p>
+            </div>
+
+            <div class="field">
+              <div class="field-head"><span class="step-num">02</span><span class="field-label">装修后可售周期</span><span class="required">必填</span><span class="field-hint">判断多久</span></div>
+              <div class="input-shell"><span class="pre">约</span><input type="number" min="1" max="365" value="{{days}}" onInput="{{onDays}}" aria-label="装修后可售天数" /><span class="suf">天</span></div>
+              <div class="days-meta"><span class="tier">{{daysTierText}}</span><span>{{daysMonths}}</span></div>
+            </div>
+
+            <div class="field">
+              <div class="field-head"><span class="step-num">03</span><span class="field-label">拟收房评估价</span><span class="required">必填</span><span class="field-hint">判断多少钱</span></div>
+              <div class="input-shell"><span class="pre">¥</span><input type="number" min="0" value="{{price}}" onInput="{{onPrice}}" aria-label="拟收房评估价" /><span class="suf">万</span></div>
+              <p class="price-meta">提交后作为当前授权评估价，写入评估历史；不改变业主报价。</p>
+            </div>
+
+            <div class="field">
+              <div class="field-head"><span class="step-num">04</span><span class="field-label">评估意见摘要</span><span class="field-hint">选填 · 会同步给 C 端</span></div>
+              <div class="opinion-shell"><textarea value="{{opinion}}" onInput="{{onOpinion}}" placeholder="如：同户型近三月成交均价 7.4 万/㎡，装修中等，按 7.42 万/㎡ 给出。"></textarea></div>
+            </div>
+
+            <sc-if value="{{ready}}"><div class="validation"><span class="dot"></span><span><b>三项齐全，可提交。</b> 提交后会生成一条评估记录，并将线索推进到待看房阶段。</span></div></sc-if>
+            <sc-if value="{{notReady}}"><div class="validation warn"><span class="dot"></span><span><b>还需填写：{{missingText}}</b></span></div></sc-if>
+          </section>
+        </div>
+
+        <footer class="modal-foot">
+          <div class="danger-actions">
+            <button class="text-btn reject" type="button" onClick="{{onReject}}">评估不符 · 放弃</button>
+            <button class="text-btn" type="button" onClick="{{onLost}}">标记为他司成交</button>
+          </div>
+          <div class="foot-right">
+            <button class="btn-cancel" type="button" onClick="{{onClose}}">取消</button>
+            <button class="btn-primary" type="button" onClick="{{onSubmit}}"><svg class="ic"><use href="#i-check"></use></svg>批准约看排期</button>
+          </div>
+        </footer>
+      </section>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{closed}}"><button class="reopen" type="button" onClick="{{onOpen}}">评估弹窗已关闭 · 重新打开</button></sc-if>
+  <sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-grid" viewBox="0 0 16 16"><rect x="2" y="2" width="4.5" height="4.5" rx="1"/><rect x="9.5" y="2" width="4.5" height="4.5" rx="1"/><rect x="2" y="9.5" width="4.5" height="4.5" rx="1"/><rect x="9.5" y="9.5" width="4.5" height="4.5" rx="1"/></symbol>
+    <symbol id="i-building" viewBox="0 0 16 16"><path d="M3 14V3.2c0-.7.5-1.2 1.2-1.2h7.6c.7 0 1.2.5 1.2 1.2V14"/><path d="M2 14h12M6 5h1M9 5h1M6 8h1M9 8h1M6 11h1M9 11h1"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 16 16"><path d="M5.3 2.5 6.8 5c.2.4.1.8-.2 1.1L5.3 7.2a11 11 0 0 0 3.5 3.5l1.1-1.3c.3-.3.7-.4 1.1-.2l2.5 1.5c.4.2.5.7.3 1.1-.7 1.4-2.2 2-3.7 1.4A14 14 0 0 1 3.6 6.1c-.6-1.5 0-3 1.4-3.7.1 0 .2-.1.3 0Z"/></symbol>
+    <symbol id="i-list" viewBox="0 0 16 16"><path d="M6 4h8M6 8h8M6 12h8"/><path d="M3 4h.01M3 8h.01M3 12h.01"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 16 16"><path d="M2 14V2M2 14h12"/><path d="M5 11V7M8 11V4M11 11V6M14 11V3"/></symbol>
+    <symbol id="i-x" viewBox="0 0 16 16"><path d="m4 4 8 8M12 4l-8 8"/></symbol>
+    <symbol id="i-check" viewBox="0 0 16 16"><path d="m3 8.5 3.2 3.2L13 5"/></symbol>
+    <symbol id="i-star" viewBox="0 0 16 16"><path d="m8 1.8 1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6L8 1.8Z"/></symbol>
+  </svg>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { isOpen: true, score: 4, days: "60", price: "880", opinion: "同户型近三月成交均价 7.4 万/㎡，装修中等，按 7.42 万/㎡ 给出。", toast: null };
+    this._timer = null;
+  }
+  componentWillUnmount() {
+    if (this._timer) clearTimeout(this._timer);
+  }
+  showToast(t) {
+    if (this._timer) clearTimeout(this._timer);
+    this.setState({ toast: t });
+    this._timer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+  renderVals() {
+    const words = { 1: "难售", 2: "偏弱", 3: "一般", 4: "良好", 5: "优质" };
+    const anchors = {
+      1: "结构性难卖：暗厅暗卫 / 一层 / 产权复杂",
+      2: "户型与楼层同时偏弱，或存在硬伤需重装化解",
+      3: "户型或楼层有一项明显折价，需要靠价格补",
+      4: "主流户型、有 1 项需在带看时说清的短板",
+      5: "户型方正通透、当前楼层段在小区里最好卖"
+    };
+    const daysNum = Number(this.state.days);
+    const daysValid = Number.isFinite(daysNum) && daysNum > 0;
+    const daysTierText = !daysValid ? "周期待填" : daysNum <= 30 ? "≤30 天 · 快" : daysNum <= 60 ? "31–60 天 · 正常" : daysNum <= 90 ? "61–90 天 · 偏慢" : ">90 天 · 慢";
+    const months = daysValid ? Math.round((daysNum / 30) * 10) / 10 : null;
+    const daysMonths = months === null ? "—" : `约 ${Number.isInteger(months) ? months.toFixed(0) : months.toFixed(1)} 个月`;
+    const missing = [];
+    if (!this.state.score) missing.push("房源条件分");
+    if (!daysValid) missing.push("装修后可售周期");
+    if (!(Number(this.state.price) > 0)) missing.push("拟收房评估价");
+    const ready = missing.length === 0;
+    return {
+      isOpen: this.state.isOpen,
+      closed: !this.state.isOpen,
+      toast: this.state.toast,
+      score1: this.state.score >= 1 ? "score-star on" : "score-star",
+      score2: this.state.score >= 2 ? "score-star on" : "score-star",
+      score3: this.state.score >= 3 ? "score-star on" : "score-star",
+      score4: this.state.score >= 4 ? "score-star on" : "score-star",
+      score5: this.state.score >= 5 ? "score-star on" : "score-star",
+      scoreWord: this.state.score + " 分 · " + words[this.state.score],
+      scoreHint: anchors[this.state.score],
+      days: this.state.days,
+      daysTierText: daysTierText,
+      daysMonths: daysMonths,
+      price: this.state.price,
+      opinion: this.state.opinion,
+      ready: ready,
+      notReady: !ready,
+      missingText: missing.join("、"),
+      onDays: (e) => this.setState({ days: e.target.value }),
+      onPrice: (e) => this.setState({ price: e.target.value }),
+      onOpinion: (e) => this.setState({ opinion: e.target.value }),
+      onScore1: () => this.setState({ score: 1 }),
+      onScore2: () => this.setState({ score: 2 }),
+      onScore3: () => this.setState({ score: 3 }),
+      onScore4: () => this.setState({ score: 4 }),
+      onScore5: () => this.setState({ score: 5 }),
+      onOpen: () => this.setState({ isOpen: true }),
+      onClose: () => this.setState({ isOpen: false }),
+      onSubmit: () => {
+        if (!ready) return;
+        this.setState({ isOpen: false, toast: "演示稿：评估已提交，已批准约看排期" });
+      },
+      onReject: () => this.setState({ isOpen: false, toast: "演示稿：已标记为评估不符，线索放弃" }),
+      onLost: () => this.setState({ isOpen: false, toast: "演示稿：已标记为他司成交" })
+    };
+  }
+}
+</script>
+</body>
+</html>

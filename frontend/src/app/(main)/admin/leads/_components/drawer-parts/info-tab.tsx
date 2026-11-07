@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import React, { useState } from "react";
 import {
   Ruler,
   Home,
@@ -14,6 +16,7 @@ import { Lead, LeadStatus, FollowUp, FollowUpConclusion, FollowUpMethod } from "
 import { formatBuildingLabel } from "@/lib/dict-display";
 import { safeFormatDate } from "@/lib/formatters";
 import { KpiRow } from "./kpi-row";
+import { AssessmentSummary } from "./assessment-summary";
 import { OwnerNotesSection } from "./owner-notes-section";
 import { ImagesStrip } from "./images-strip";
 import { LeadAuditPanel } from "./lead-audit-panel";
@@ -32,6 +35,7 @@ interface InfoTabProps {
   ) => void;
   onRefreshFollowUps: (updated: FollowUp[]) => void;
   onImagesUpdate?: (images: string[]) => void;
+  onOpenAssessment?: () => void;
 }
 
 const formatDateTime = (raw?: string): string => {
@@ -44,14 +48,8 @@ interface ParamCell {
   value: string;
 }
 
-interface ParamsSectionProps {
-  lead: Lead;
-}
-
-const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
+const ParamsSection: React.FC<{ lead: Lead }> = ({ lead }) => {
   const pending = lead.dictStatus === "pending";
-  // 楼盘字典四级地址（surface-dict-binding-info）：非强制字段，
-  // 有录入才追加格子；pending 加「未审核」标记；名称缺失回退裸 ID
   const dictCells: ParamCell[] = [];
   if (lead.buildingNo || lead.buildingId) {
     dictCells.push({
@@ -66,23 +64,20 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
     dictCells.push({
       icon: Building,
       label: "户室",
-      value: lead.roomNo
-        ? `${lead.roomNo}室${pending ? "（未审核）" : ""}`
-        : `ID:${lead.roomId}`,
+      value: lead.roomNo ? `${lead.roomNo}室${pending ? "（未审核）" : ""}` : `ID:${lead.roomId}`,
     });
   }
   const baseCells: ParamCell[] = [
-    { icon: Ruler, label: "面积", value: `${lead.area}㎡` },
-    { icon: Home, label: "户型", value: lead.layout },
-    { icon: ArrowRightLeft, label: "朝向", value: lead.orientation },
-    { icon: Building, label: "楼层", value: lead.floorInfo },
+    { icon: Ruler, label: "面积", value: lead.area > 0 ? `${lead.area}㎡` : "—" },
+    { icon: Home, label: "户型", value: lead.layout || "—" },
+    { icon: ArrowRightLeft, label: "朝向", value: lead.orientation || "—" },
+    { icon: Building, label: "楼层", value: lead.floorInfo || "—" },
     {
       icon: MapPin,
       label: "商圈",
-      value: `${lead.district} · ${lead.businessArea}`,
+      value: [lead.district, lead.businessArea].filter(Boolean).join(" · ") || "—",
     },
   ];
-  // 楼栋/户室紧跟楼层之后（面积/户型/朝向/楼层/楼栋/户室/商圈…）
   const params: ParamCell[] = [
     ...baseCells.slice(0, 4),
     ...dictCells,
@@ -97,22 +92,27 @@ const ParamsSection: React.FC<ParamsSectionProps> = ({ lead }) => {
   ];
 
   return (
-    <section className="bg-white rounded-cards shadow-steep-sm overflow-hidden">
-      <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <Layers className="h-3 w-3 text-graphite" />
-          <span className="text-xs font-medium text-graphite">房屋参数</span>
-        </div>
-        <span className="text-xs text-graphite font-medium">{params.length} 项</span>
+    <section className="overflow-hidden rounded-[16px] border border-dove/35 bg-pure-white">
+      <div className="flex items-center justify-between border-b border-dove/25 px-5 py-3">
+        <span className="inline-flex items-center gap-2 text-[12px] font-[500] text-ink">
+          <Layers className="h-3.5 w-3.5 text-graphite" strokeWidth={1.7} />
+          房屋参数
+        </span>
+        <span className="text-[10px] text-dove">{params.length} 项</span>
       </div>
-      <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4">
         {params.map((p) => (
-          <div key={p.label} className="flex flex-col gap-1 min-w-0">
-            <span className="text-xs text-graphite flex items-center gap-1">
-              <p.icon className="h-3 w-3 shrink-0" />
+          <div
+            key={p.label}
+            className="min-w-0 border-b border-r border-dove/15 px-4 py-3 last:border-r-0 sm:px-5"
+          >
+            <span className="flex items-center gap-1 text-[9.5px] text-dove">
+              <p.icon className="h-3 w-3 shrink-0" strokeWidth={1.6} />
               {p.label}
             </span>
-            <span className="text-sm text-ink font-medium tabular-nums truncate">{p.value}</span>
+            <span className="mt-1 block truncate text-[11.5px] font-[450] tabular-nums text-ink">
+              {p.value}
+            </span>
           </div>
         ))}
       </div>
@@ -127,19 +127,36 @@ export const InfoTab: React.FC<InfoTabProps> = ({
   onAddFollowUp,
   onRefreshFollowUps,
   onImagesUpdate,
-}) => (
-  <div className="space-y-4 animate-in fade-in duration-300">
-    <KpiRow lead={lead} />
-    <LeadAttributionCard lead={lead} />
-    <ParamsSection lead={lead} />
-    <OwnerNotesSection lead={lead} />
-    <ImagesStrip images={lead.images} onImagesChange={onImagesUpdate} />
-    <LeadAuditPanel lead={lead} onAudit={onAudit} />
-    <FollowUpTimeline
-      lead={lead}
-      followUps={followUps}
-      onAddFollowUp={onAddFollowUp}
-      onRefreshFollowUps={onRefreshFollowUps}
-    />
-  </div>
-);
+  onOpenAssessment,
+}) => {
+  const [evalRefreshKey, setEvalRefreshKey] = useState(0);
+
+  return (
+    <div className="space-y-5 animate-in fade-in duration-300">
+      <KpiRow lead={lead} />
+      <AssessmentSummary
+        lead={lead}
+        refreshKey={evalRefreshKey}
+        onOpenAssessment={onOpenAssessment}
+      />
+      <ParamsSection lead={lead} />
+      <OwnerNotesSection lead={lead} />
+      <LeadAttributionCard lead={lead} />
+      <ImagesStrip images={lead.images} onImagesChange={onImagesUpdate} />
+      {lead.status !== LeadStatus.PENDING_ASSESSMENT ? (
+        <LeadAuditPanel
+          lead={lead}
+          onAudit={onAudit}
+          onOpenAssessment={onOpenAssessment}
+          onEvalAdjusted={() => setEvalRefreshKey((value) => value + 1)}
+        />
+      ) : null}
+      <FollowUpTimeline
+        lead={lead}
+        followUps={followUps}
+        onAddFollowUp={onAddFollowUp}
+        onRefreshFollowUps={onRefreshFollowUps}
+      />
+    </div>
+  );
+};

@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
+import { ChevronDown, History } from "lucide-react";
 import { Lead, FollowUpMethod, FollowUp, FollowUpConclusion, LeadStatus } from "../../types";
-import { Button } from "@/components/ui/button";
-import { History, Eye, Plus, Gavel, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { safeParseDate } from "@/lib/validators";
+import { safeFormatDate } from "@/lib/formatters";
 import { getLeadFollowUpsAction } from "../../actions";
 import { FOLLOW_UP_CONCLUSIONS } from "../../constants/ui-labels";
+import { getFollowUpConclusionMeta, getFollowUpMethodShort } from "../../_lib/follow-up-meta";
 
 interface FollowUpTimelineProps {
   lead: Lead;
@@ -27,11 +28,18 @@ type TrailEvent = {
   desc: string;
   time: string;
   sortTime: number;
-  icon: React.ElementType;
   user?: string;
-  /** 跟进结论（仅跟进事件有；展示为琥珀色徽标） */
   conclusion?: FollowUpConclusion | null;
 };
+
+const METHOD_TITLE: Record<FollowUpMethod, string> = {
+  phone: "电话",
+  wechat: "微信",
+  face: "面谈",
+  visit: "带看",
+};
+
+const timelineDate = (raw?: string): string => safeFormatDate(raw, "MM-dd HH:mm", "—");
 
 export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
   lead,
@@ -42,104 +50,76 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
   const [open, setOpen] = useState(true);
   const [followUpMethod, setFollowUpMethod] = useState<FollowUpMethod>("phone");
   const [followUpContent, setFollowUpContent] = useState("");
-  /** 跟进结论（选填）：空串=未选，提交时转 null */
   const [followUpConclusion, setFollowUpConclusion] = useState<FollowUpConclusion | "">("");
 
   const handleAddFollowUpSubmit = async () => {
-    if (!lead || !followUpContent) return;
-    await onAddFollowUp(lead.id, followUpMethod, followUpContent, followUpConclusion || null);
+    if (!lead || !followUpContent.trim()) return;
+    await onAddFollowUp(lead.id, followUpMethod, followUpContent.trim(), followUpConclusion || null);
     const result = await getLeadFollowUpsAction(lead.id);
     if (result.success) onRefreshFollowUps(result.data);
     setFollowUpContent("");
     setFollowUpConclusion("");
   };
 
-  // 合并「收房评估 + 跟进记录」按时间倒序，"线索初始录入"恒为最末（创建最早）
-  // 评估事件触发条件：存在任意评估信息（评估价/评估意见/审核时间）
-  // auditTime 是评估发生的最可靠信号（后端在评估流转时写入）；存量无 audit_time 时回退到 evalPrice/auditReason
-  const hasAssessment = lead.evalPrice != null || !!lead.auditReason || !!lead.auditTime;
   const trailEvents: TrailEvent[] = [];
+  const hasAssessment = lead.evalPrice != null || !!lead.auditReason || !!lead.auditTime;
   if (hasAssessment) {
-    const raw = lead.auditTime ?? lead.updatedAt;
-    const d = safeParseDate(raw);
-    const isFallback = !lead.auditTime;
+    const d = safeParseDate(lead.auditTime ?? lead.updatedAt);
     const isRejected = lead.status === LeadStatus.REJECTED;
-    const approvalDesc =
-      lead.evalPrice != null
-        ? `拟收房评估价 ¥${lead.evalPrice} 万${lead.auditReason ? " · " + lead.auditReason : ""}`
-        : lead.auditReason
-          ? `评估意见：${lead.auditReason}`
-          : "评估通过，未填写评估价";
     trailEvents.push({
       key: "audit",
-      title: isRejected ? "评估不符 · 已放弃" : "收房评估通过",
-      desc: isRejected ? `评估意见：${lead.auditReason || "未填写具体原因"}` : approvalDesc,
-      time: d ? `${isFallback ? "约 " : ""}${d.toLocaleString()}` : "-",
+      title: isRejected ? "评估不符 · 已放弃" : "收房评估",
+      desc: isRejected
+        ? `评估意见：${lead.auditReason || "未填写具体原因"}`
+        : `拟收房评估价 ¥${lead.evalPrice ?? "-"} 万${lead.auditReason ? ` · ${lead.auditReason}` : ""}`,
+      time: timelineDate(lead.auditTime ?? lead.updatedAt),
       sortTime: d?.getTime() ?? 0,
-      icon: Gavel,
     });
   }
   followUps.forEach((f) => {
     const d = safeParseDate(f.followedAt);
     trailEvents.push({
       key: f.id,
-      title:
-        f.method === "visit"
-          ? "阶段：带看实勘"
-          : f.method === "phone"
-            ? "沟通：电话访谈"
-            : "流转更新",
+      title: METHOD_TITLE[f.method] ?? getFollowUpMethodShort(f.method),
       desc: f.content,
-      time: f.followUpTime,
+      time: timelineDate(f.followedAt),
       sortTime: d?.getTime() ?? 0,
-      icon: f.method === "visit" ? Eye : History,
       user: f.createdBy,
       conclusion: f.conclusion ?? null,
     });
   });
   trailEvents.sort((a, b) => b.sortTime - a.sortTime);
+  const createdTime = timelineDate(lead.createdAt);
 
   return (
-    <section className="bg-white rounded-cards shadow-steep overflow-hidden">
-      {/* 可折叠头部 */}
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-fog border-b border-dove text-left"
-      >
-        <div className="flex items-center gap-1.5 min-w-0">
-          <History className="h-3 w-3 text-graphite shrink-0" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-graphite">
-            跟进记录
-          </span>
-          <span className="text-slate/40">·</span>
-          <span className="text-[10px] text-ash truncate">{trailEvents.length} 条事件</span>
+    <section className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <History className="h-3.5 w-3.5 text-graphite" strokeWidth={1.7} />
+          <span className="text-[12px] font-[500] text-ink">跟进记录</span>
+          <span className="text-[9.5px] text-dove">{trailEvents.length + 1} 条事件</span>
         </div>
-        <ChevronDown
-          className={cn(
-            "h-3.5 w-3.5 text-graphite transition-transform shrink-0 ml-2",
-            open && "rotate-180",
-          )}
-        />
-      </button>
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          aria-expanded={open}
+          aria-label={open ? "收起跟进记录" : "展开跟进记录"}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-graphite transition-colors hover:bg-fog hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
+        >
+          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", open && "rotate-180")} />
+        </button>
+      </div>
 
-      {/* 主体 */}
-      {open && (
-        <div className="p-4 space-y-5">
-          {/* 登记最新动态 快速录入区 */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-1.5">
-              <History className="h-3 w-3 text-rust" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-graphite">
-                登记最新动态
-              </span>
-            </div>
-            <div className="flex gap-2">
+      {open ? (
+        <>
+          <div className="rounded-[14px] border border-dove/30 bg-pure-white px-3.5 py-3">
+            <div className="text-[10px] font-[500] text-graphite">登记最新动态</div>
+            <div className="mt-2.5 flex flex-col gap-2 sm:flex-row">
               <select
-                className="h-11 px-3 rounded-inputs border border-dove bg-fog text-xs font-bold outline-none focus:border-ink/40 shrink-0"
+                className="h-9 shrink-0 rounded-full border border-dove/30 bg-fog px-3 text-[10px] text-ink outline-none focus:border-ink/40"
                 value={followUpMethod}
-                onChange={(e) => setFollowUpMethod(e.target.value as FollowUpMethod)}
+                onChange={(event) => setFollowUpMethod(event.target.value as FollowUpMethod)}
+                aria-label="跟进方式"
               >
                 <option value="phone">电话沟通</option>
                 <option value="wechat">微信联络</option>
@@ -147,24 +127,21 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
                 <option value="visit">带看实勘</option>
               </select>
               <input
-                placeholder="输入跟进摘要..."
-                className="flex-1 min-w-0 h-11 px-4 border border-dove rounded-inputs text-xs placeholder:text-graphite outline-none focus:ring-2 focus:ring-ink/20 focus:border-ink/40 bg-fog"
+                id="follow-up-content" placeholder="输入跟进摘要..."
+                className="h-9 min-w-0 flex-1 rounded-full border border-dove/30 bg-fog px-3.5 text-[10px] text-ink outline-none placeholder:text-dove focus:border-ink/40 focus:ring-2 focus:ring-ink/10"
                 value={followUpContent}
-                onChange={(e) => setFollowUpContent(e.target.value)}
+                onChange={(event) => setFollowUpContent(event.target.value)}
               />
-              <Button
-                className="rounded-full h-11 px-6 bg-ink text-white hover:bg-ink/90 font-bold shrink-0"
+              <button
+                type="button"
                 onClick={handleAddFollowUpSubmit}
+                className="h-9 shrink-0 rounded-full bg-ink px-4 text-[10px] font-[500] text-white transition-colors hover:bg-[#2a2e33] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30"
               >
                 记录
-              </Button>
+              </button>
             </div>
-            {/* 跟进结论（选填）：与业主未谈拢的分歧点；不选即「本次未记录」 */}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-graphite shrink-0">
-                跟进结论
-              </span>
-              <span className="text-[10px] text-dove shrink-0">选填</span>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <span className="text-[9px] text-dove">跟进结论</span>
               {(Object.keys(FOLLOW_UP_CONCLUSIONS) as FollowUpConclusion[]).map((key) => {
                 const active = followUpConclusion === key;
                 return (
@@ -174,10 +151,10 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
                     aria-pressed={active}
                     onClick={() => setFollowUpConclusion(active ? "" : key)}
                     className={cn(
-                      "h-7 rounded-full border px-2.5 text-[11px] font-medium transition-colors",
+                      "h-6 rounded-full border px-2 text-[9px] transition-colors",
                       active
                         ? "border-ink bg-ink text-white"
-                        : "border-dove/60 bg-fog text-graphite hover:border-ash hover:text-ink",
+                        : "border-dove/30 bg-pure-white text-graphite hover:border-dove hover:text-ink",
                     )}
                   >
                     {FOLLOW_UP_CONCLUSIONS[key]}
@@ -187,29 +164,25 @@ export const FollowUpTimeline: React.FC<FollowUpTimelineProps> = ({
             </div>
           </div>
 
-          {/* 时间线 */}
-          <div className="relative pl-8 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-dove">
-            {trailEvents.map((e, i) => (
+          <div className="border-t border-dove/25">
+            {trailEvents.map((event) => (
               <TimelineItem
-                key={e.key}
-                title={e.title}
-                desc={e.desc}
-                time={e.time}
-                icon={e.icon}
-                isNewest={i === 0}
-                user={e.user}
-                conclusion={e.conclusion}
+                key={event.key}
+                title={event.title}
+                desc={event.desc}
+                time={event.time}
+                user={event.user}
+                conclusion={event.conclusion}
               />
             ))}
             <TimelineItem
-              title="线索初始录入"
-              desc={`由 ${lead.creatorName} 首次采集并建档`}
-              time={safeParseDate(lead.createdAt)?.toLocaleString() ?? "-"}
-              icon={Plus}
+              title="初始录入"
+              desc={`由 ${lead.creatorName || "—"} 首次采集并建档`}
+              time={createdTime}
             />
           </div>
-        </div>
-      )}
+        </>
+      ) : null}
     </section>
   );
 };
@@ -218,60 +191,34 @@ interface TimelineItemProps {
   title: string;
   desc: string;
   time: string;
-  icon: React.ElementType;
-  isNewest?: boolean;
   user?: string;
   conclusion?: FollowUpConclusion | null;
 }
 
-const TimelineItem: React.FC<TimelineItemProps> = ({
-  title,
-  desc,
-  time,
-  icon: Icon,
-  isNewest,
-  user,
-  conclusion,
-}) => (
-  <div className="relative group">
-    <div
-      className={cn(
-        "absolute -left-[31px] top-0 h-6 w-6 rounded-full border-4 border-dove flex items-center justify-center transition-all",
-        isNewest ? "bg-ink scale-110" : "bg-fog",
-      )}
-    >
-      <Icon className={cn("h-2.5 w-2.5", isNewest ? "text-white" : "text-graphite")} />
-    </div>
-    <div className="flex flex-col">
-      <div className="flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            "text-xs font-black uppercase tracking-tight truncate",
-            isNewest ? "text-ink" : "text-graphite",
-          )}
-        >
-          {title}
-        </span>
-        <span className="text-xs text-ash shrink-0">{time}</span>
+const TimelineItem: React.FC<TimelineItemProps> = ({ title, desc, time, user, conclusion }) => {
+  const conclusionMeta = conclusion ? getFollowUpConclusionMeta(conclusion) : null;
+  return (
+    <div className="grid grid-cols-[78px_minmax(0,1fr)] gap-3.5 border-b border-dove/15 py-3 last:border-b-0">
+      <div className="whitespace-pre-line pt-0.5 text-[9.5px] leading-[1.6] tabular-nums text-dove">
+        {time}
       </div>
-      <div className="mt-1.5 p-3 bg-white rounded-inputs shadow-steep text-xs text-graphite leading-relaxed italic group-hover:border-ink/40 transition-colors">
-        {/* 跟进结论徽标：Apricot 暖色（图纸「需关注」语义），存量记录不渲染 */}
-        {conclusion && (
-          <div className="mb-1.5 not-italic">
-            <span className="inline-flex items-center gap-1 rounded-full bg-apricot-wash px-2 py-0.5 text-[10px] font-medium text-rust">
-              {FOLLOW_UP_CONCLUSIONS[conclusion]}
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-[10px] font-[500] text-ink">{title}</span>
+          {user ? <span className="text-[9.5px] text-dove">{user}</span> : null}
+          {conclusionMeta ? (
+            <span
+              className={cn(
+                "inline-flex h-[18px] items-center rounded-full px-1.5 text-[9px] font-medium",
+                conclusionMeta.badgeClass,
+              )}
+            >
+              {conclusionMeta.label}
             </span>
-          </div>
-        )}
-        {desc}
-        {user && (
-          <div className="mt-1 flex justify-end">
-            <span className="text-[9px] px-1.5 py-0.5 bg-fog rounded text-ash font-bold">
-              {user}
-            </span>
-          </div>
-        )}
+          ) : null}
+        </div>
+        <p className="mt-1 text-[10.5px] leading-[1.65] text-ash">{desc}</p>
       </div>
     </div>
-  </div>
-);
+  );
+};

@@ -64,83 +64,76 @@ export const ImagesStrip: React.FC<ImagesStripProps> = ({ images, onImagesChange
   };
 
   return (
-    <section className="bg-white rounded-cards shadow-steep-sm overflow-hidden">
-      {/* 头部 */}
-      <div className="bg-fog px-4 py-2.5 border-b border-dove flex items-center justify-between">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <ImageIcon className="h-3 w-3 text-graphite shrink-0" />
-          <span className="text-xs font-medium text-graphite">影像库</span>
-          <span className="text-dove">·</span>
-          <span className="text-xs text-graphite truncate">户型图 / 实勘 / 产证</span>
+    <section className="space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <ImageIcon className="h-3.5 w-3.5 text-graphite" strokeWidth={1.7} />
+          <span className="text-[12px] font-[500] text-ink">房源照片</span>
+          <span className="text-[9.5px] text-dove">
+            {images.length} / {MAX_COUNT}
+          </span>
         </div>
-        <span className="text-xs text-graphite font-medium shrink-0 ml-2">
-          {images.length} / {MAX_COUNT}
-        </span>
       </div>
 
-      {/* 主体：横向缩略图条 */}
-      <div className="p-4">
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-          {images.map((url, idx) => (
-            <div
-              key={`${idx}-${url}`}
-              className="relative shrink-0 w-24 h-24 rounded-[12px] overflow-hidden border border-dove cursor-pointer hover:border-ink transition-colors"
-              onClick={() => setSelectedIdx(idx)}
-              title={`图片 ${idx + 1}`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={url}
-                alt={`图片 ${idx + 1}`}
-                className="w-full h-full object-cover rounded-[12px]"
-                loading="lazy"
-              />
-              {idx === 0 ? (
-                <span className="pointer-events-none absolute left-1.5 top-1.5 rounded-full bg-ink/85 px-2 py-0.5 text-[10px] font-medium text-white">
-                  标题图
-                </span>
-              ) : null}
-              {idx > 0 && onImagesChange ? (
-                <button
-                  type="button"
-                  aria-label={`将第 ${idx + 1} 张图片设为标题图`}
-                  title="设为标题图"
-                  className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition-colors hover:bg-white"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const next = [images[idx], ...images.filter((_, i) => i !== idx)];
-                    onImagesChange(next);
-                  }}
-                >
-                  <Star className="h-3.5 w-3.5" />
-                </button>
-              ) : null}
-            </div>
-          ))}
+      <div className="grid grid-cols-3 gap-2">
+        {images.map((url, idx) => (
+          <div
+            key={`${idx}-${url}`}
+            className="relative h-[88px] w-full cursor-pointer overflow-hidden rounded-[10px] border border-dove/30 transition-colors hover:border-ink"
+            onClick={() => setSelectedIdx(idx)}
+            title={`图片 ${idx + 1}`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt={`图片 ${idx + 1}`}
+              className="h-full w-full object-cover"
+              loading="lazy"
+            />
+            {idx === 0 ? (
+              <span className="pointer-events-none absolute left-1.5 top-1.5 rounded-full bg-ink/85 px-2 py-0.5 text-[9px] font-[500] text-white">
+                标题图
+              </span>
+            ) : null}
+            {idx > 0 && onImagesChange ? (
+              <button
+                type="button"
+                aria-label={`将第 ${idx + 1} 张图片设为标题图`}
+                title="设为标题图"
+                className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-white/90 text-ink shadow-sm transition-colors hover:bg-white"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const next = [images[idx], ...images.filter((_, i) => i !== idx)];
+                  onImagesChange(next);
+                }}
+              >
+                <Star className="h-3 w-3" />
+              </button>
+            ) : null}
+          </div>
+        ))}
 
-          {/* 添加按钮：仅当父组件传入 onImagesChange 时可点击 */}
-          {canAdd && (
-            <button
-              type="button"
-              disabled={isUploading}
-              onClick={() => !isUploading && fileInputRef.current?.click()}
-              className={cn(
-                "shrink-0 w-24 h-24 rounded-inputs border border-dashed border-dove/40 hover:border-ink flex flex-col items-center justify-center gap-1 text-graphite",
-                isUploading && "opacity-50 cursor-not-allowed hover:border-dove",
-              )}
-              title={isUploading ? "上传中..." : "上传新图片"}
-            >
-              {isUploading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <>
-                  <Plus className="h-4 w-4" />
-                  <span className="text-[10px] font-medium">添加</span>
-                </>
-              )}
-            </button>
-          )}
-        </div>
+        {canAdd && (
+          <button
+            type="button"
+            disabled={isUploading}
+            onClick={() => !isUploading && fileInputRef.current?.click()}
+            className={cn(
+              "flex h-[88px] w-full flex-col items-center justify-center gap-1 rounded-[10px] border border-dashed border-dove/40 text-graphite hover:border-ink",
+              isUploading && "cursor-not-allowed opacity-50 hover:border-dove",
+            )}
+            title={isUploading ? "上传中..." : "上传新图片"}
+          >
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <>
+                <Plus className="h-4 w-4" strokeWidth={1.6} />
+                <span className="text-[9.5px] font-[500]">添加</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* 隐藏的文件输入 */}
