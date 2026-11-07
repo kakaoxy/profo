@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { formatBuildingLabel } from "@/lib/dict-display";
 import { isValidUrl } from "@/lib/validators";
 import { Lead } from "../types";
-import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
+import { isClosedWithoutAssessment, LEAD_STATUS_META } from "../_lib/lead-status-meta";
 import { getFollowUpConclusionMeta, getFollowUpMethodShort } from "../_lib/follow-up-meta";
 import { safeFormatDate } from "@/lib/formatters";
 import {
@@ -57,8 +57,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onDel
           .filter(Boolean)
           .join(" ");
         const location = [lead.district, lead.businessArea].filter(Boolean).join(" · ");
-        const hasImage =
-          lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]);
+        const hasImage = lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]);
 
         return (
           <div
@@ -91,8 +90,7 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onDel
                     className="h-12 w-12 object-cover"
                     sizes="48px"
                     unoptimized={
-                      lead.images[0]?.includes("127.0.0.1") ||
-                      lead.images[0]?.includes("localhost")
+                      lead.images[0]?.includes("127.0.0.1") || lead.images[0]?.includes("localhost")
                     }
                   />
                 ) : (
@@ -167,7 +165,11 @@ export const LeadsGrid: React.FC<LeadsGridProps> = ({ leads, onOpenDetail, onDel
               <div className="text-right text-[10px] leading-[1.5] text-graphite">
                 评估价
                 <b className="block text-[11.5px] font-[450] tabular-nums text-ash">
-                  {lead.evalPrice != null ? `${lead.evalPrice.toLocaleString("zh-CN")} 万` : "待评估"}
+                  {lead.evalPrice != null
+                    ? `${lead.evalPrice.toLocaleString("zh-CN")} 万`
+                    : isClosedWithoutAssessment(lead)
+                      ? "—"
+                      : "待评估"}
                 </b>
               </div>
             </div>

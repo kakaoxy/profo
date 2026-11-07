@@ -51,6 +51,18 @@ test("评估不符 · 放弃 按钮可点击并流转为已放弃", async ({ pag
   const dialog = page.getByRole("dialog").filter({ hasText: "评估录入" });
   await expect(dialog).toBeVisible();
 
+  // 回归：点击评分/输入框时 Sheet 不能把弹窗内的交互当成“点击外部”而关闭。
+  await dialog.getByRole("button", { name: /5 分/ }).click();
+  const daysInput = dialog.getByLabel("装修后可售天数");
+  await daysInput.click();
+  await daysInput.pressSequentially("30", { delay: 30 });
+  await expect(daysInput).toHaveValue("30");
+  const priceInput = dialog.getByLabel("拟收房评估价");
+  await priceInput.click();
+  await priceInput.pressSequentially("300", { delay: 30 });
+  await expect(priceInput).toHaveValue("300");
+  await expect(dialog).toBeVisible();
+
   const reject = dialog.getByRole("button", { name: "评估不符 · 放弃" });
   await expect(reject).toBeVisible();
   await expect(reject).toBeEnabled();
@@ -68,4 +80,14 @@ test("评估不符 · 放弃 按钮可点击并流转为已放弃", async ({ pag
       { timeout: 10000, message: "线索状态未流转为 REJECTED" },
     )
     .toBe("rejected");
+
+  // 已放弃且无评估记录时，授权评估价必须显示「—」，不能继续显示「未评估」或「待评估」。
+  const drawer = page.getByRole("dialog").filter({ hasText: community });
+  await expect(drawer).toBeHidden({ timeout: 10000 });
+  await row.click();
+  await expect(drawer).toBeVisible({ timeout: 10000 });
+  const evalPriceCell = drawer.getByTestId("kpi-eval-price");
+  await expect(evalPriceCell).toContainText("—");
+  await expect(evalPriceCell).not.toContainText("未评估");
+  await expect(drawer.getByText("待评估", { exact: true })).toHaveCount(0);
 });

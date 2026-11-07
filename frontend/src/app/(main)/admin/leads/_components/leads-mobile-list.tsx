@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { Lead } from "../types";
-import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
+import { isClosedWithoutAssessment, LEAD_STATUS_META } from "../_lib/lead-status-meta";
 import { getFollowUpConclusionMeta, getFollowUpMethodShort } from "../_lib/follow-up-meta";
 import { cn } from "@/lib/utils";
 import { safeFormatDate } from "@/lib/formatters";
@@ -96,7 +96,7 @@ export const LeadsMobileList: React.FC<LeadsMobileListProps> = ({ leads, onOpenD
                 <div className="border-l border-dove/25 pl-3">
                   <div className="text-[9.5px] text-dove">评估价</div>
                   <div className="mt-0.5 text-[15px] font-[480] text-ink tabular-nums">
-                    {evalPrice ?? "待评估"}
+                    {evalPrice ?? (isClosedWithoutAssessment(lead) ? "—" : "待评估")}
                     {evalPrice ? <small className="ml-0.5 text-[9px] font-normal text-graphite">万</small> : null}
                   </div>
                   <div className="mt-0.5 text-[9px] text-graphite">

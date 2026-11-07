@@ -1,4 +1,4 @@
-import { LeadStatus } from "../types";
+import { LeadStatus, type Lead } from "../types";
 
 /**
  * 线索状态徽章公共基类（Steep 语言）：
@@ -45,3 +45,8 @@ export const LEAD_STATUS_META: Record<LeadStatus, LeadStatusMeta> = {
     badgeClass: `${LEAD_BADGE_BASE} bg-fog text-rust`,
   },
 };
+
+/** 已终结且从未给出评估结论的线索：放弃/他司成交，不应再显示「待评估」。 */
+export const isClosedWithoutAssessment = (lead: Pick<Lead, "status" | "evalPrice">): boolean =>
+  lead.evalPrice == null &&
+  (lead.status === LeadStatus.REJECTED || lead.status === LeadStatus.LOST_TO_COMPETITOR);

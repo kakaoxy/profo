@@ -1,6 +1,7 @@
 import React from "react";
-import { Lead } from "../../types";
+import { Lead, LeadStatus } from "../../types";
 import { cn } from "@/lib/utils";
+import { isClosedWithoutAssessment } from "../../_lib/lead-status-meta";
 
 interface KpiRowProps {
   lead: Lead;
@@ -9,12 +10,20 @@ interface KpiRowProps {
 /** 详情首屏价格带：只保留三个决策数字，评分与周期由评估结论卡承接。 */
 export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
   const hasEval = lead.evalPrice != null;
+  const closedWithoutEval = isClosedWithoutAssessment(lead);
+  const closedLabel = lead.status === LeadStatus.REJECTED ? "线索已放弃" : "线索已他司成交";
+  const evalPlaceholder = closedWithoutEval ? "—" : "待评估";
   const hasPrice = lead.totalPrice > 0;
   const unitPrice = lead.unitPrice || (hasPrice && lead.area > 0 ? lead.totalPrice / lead.area : 0);
   const evalUnitPrice = hasEval && lead.area > 0 ? lead.evalPrice! / lead.area : null;
   const deltaPct =
     hasEval && lead.totalPrice > 0 ? (lead.evalPrice! / lead.totalPrice - 1) * 100 : null;
-  const deltaText = deltaPct == null ? "待评估" : `${deltaPct > 0 ? "+" : ""}${deltaPct.toFixed(1)}%`;
+  const deltaText =
+    deltaPct == null
+      ? closedWithoutEval
+        ? "—"
+        : "待评估"
+      : `${deltaPct > 0 ? "+" : ""}${deltaPct.toFixed(1)}%`;
 
   return (
     <div className="mt-4 grid grid-cols-3 overflow-hidden rounded-[16px] bg-apricot-wash">
@@ -25,10 +34,17 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
         meta={`单价 ${unitPrice > 0 ? unitPrice.toFixed(2) : "—"} 万/㎡`}
       />
       <PriceCell
+        testId="kpi-eval-price"
         label="授权评估价"
-        value={hasEval ? lead.evalPrice!.toLocaleString("zh-CN") : "待评估"}
+        value={hasEval ? lead.evalPrice!.toLocaleString("zh-CN") : evalPlaceholder}
         unit={hasEval ? "万" : ""}
-        meta={evalUnitPrice ? `单价 ${evalUnitPrice.toFixed(2)} 万/㎡` : "等待给出评估结论"}
+        meta={
+          evalUnitPrice
+            ? `单价 ${evalUnitPrice.toFixed(2)} 万/㎡`
+            : closedWithoutEval
+              ? closedLabel
+              : "等待给出评估结论"
+        }
         muted={!hasEval}
       />
       <PriceCell
@@ -37,7 +53,9 @@ export const KpiRow: React.FC<KpiRowProps> = ({ lead }) => {
         unit=""
         meta={
           deltaPct == null
-            ? "完成评估后计算"
+            ? closedWithoutEval
+              ? closedLabel
+              : "完成评估后计算"
             : deltaPct < 0
               ? "评估低于报价"
               : "评估不低于报价"
@@ -53,14 +71,19 @@ const PriceCell = ({
   unit,
   meta,
   muted,
+  testId,
 }: {
   label: string;
   value: string;
   unit: string;
   meta: string;
   muted?: boolean;
+  testId?: string;
 }) => (
-  <div className="min-w-0 border-l border-rust/10 px-[18px] py-4 first:border-l-0">
+  <div
+    data-testid={testId}
+    className="min-w-0 border-l border-rust/10 px-[18px] py-4 first:border-l-0"
+  >
     <div className="text-[10px] text-rust/70">{label}</div>
     <div
       className={cn(

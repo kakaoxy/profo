@@ -9,7 +9,7 @@ import { formatBuildingLabel } from "@/lib/dict-display";
 import { isValidUrl } from "@/lib/validators";
 import { safeFormatDate } from "@/lib/formatters";
 import { Lead } from "../types";
-import { LEAD_STATUS_META } from "../_lib/lead-status-meta";
+import { isClosedWithoutAssessment, LEAD_STATUS_META } from "../_lib/lead-status-meta";
 import { getFollowUpConclusionMeta, getFollowUpMethodShort } from "../_lib/follow-up-meta";
 import {
   AlertDialog,
@@ -31,8 +31,7 @@ interface LeadsTableProps {
   onDelete: (id: string) => void;
 }
 
-const GRID_COLUMNS =
-  "grid-cols-[minmax(0,1.32fr)_176px_96px_minmax(0,1.05fr)_128px_52px]";
+const GRID_COLUMNS = "grid-cols-[minmax(0,1.32fr)_176px_96px_minmax(0,1.05fr)_128px_52px]";
 
 const THUMB_CLASS: Record<string, string> = {
   pending_assessment: "bg-apricot-wash text-rust",
@@ -86,8 +85,7 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
             .filter(Boolean)
             .join(" ");
           const location = [lead.district, lead.businessArea].filter(Boolean).join(" · ");
-          const hasImage =
-            lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]);
+          const hasImage = lead.images && lead.images.length > 0 && isValidUrl(lead.images[0]);
 
           return (
             <div
@@ -189,7 +187,9 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                       ) : null}
                     </>
                   ) : (
-                    <span className="text-dove">待评估</span>
+                    <span className="text-dove">
+                      {isClosedWithoutAssessment(lead) ? "—" : "待评估"}
+                    </span>
                   )}
                 </div>
               </div>
@@ -217,7 +217,8 @@ export const LeadsTable: React.FC<LeadsTableProps> = ({ leads, onOpenDetail, onD
                         {conclusionMeta.label}
                       </Badge>
                       <span className="truncate text-[9.5px] tabular-nums text-dove">
-                        {getFollowUpMethodShort(fu.method)} · {safeFormatDate(fu.followedAt, "MM-dd")}
+                        {getFollowUpMethodShort(fu.method)} ·{" "}
+                        {safeFormatDate(fu.followedAt, "MM-dd")}
                       </span>
                     </div>
                     <p

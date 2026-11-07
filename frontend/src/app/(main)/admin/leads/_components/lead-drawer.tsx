@@ -102,12 +102,22 @@ export const LeadDrawer: React.FC<Props> = ({
 
   if (!lead) return null;
 
+  // 评估弹窗 portal 到 body，且 Sheet 的焦点陷阱会把输入框焦点抢回抽屉；
+  // 弹窗打开时临时关闭 Sheet 模态，关闭后恢复，避免输入框无法输入。
   return (
-    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+    <Sheet open={isOpen} onOpenChange={handleOpenChange} modal={!assessmentOpen}>
+      {/* 评估弹窗 portal 到 body，DOM 上位于 Sheet 之外；弹窗打开时不能让 Sheet
+          把弹窗内的点击/聚焦识别为“点击外部”而关闭整个抽屉。 */}
       <SheetContent
         side="right"
         showCloseButton={false}
         className="z-[60] flex w-full flex-col gap-0 border-l-0 bg-pure-white p-0 max-sm:inset-y-0 max-sm:right-0 max-sm:h-full sm:inset-y-3 sm:right-3 sm:h-auto sm:w-[720px] sm:max-w-[720px] sm:rounded-cards"
+        onInteractOutside={(event) => {
+          if (assessmentOpen) event.preventDefault();
+        }}
+        onEscapeKeyDown={(event) => {
+          if (assessmentOpen) event.preventDefault();
+        }}
       >
         <SheetTitle className="sr-only">客户详情</SheetTitle>
         <DrawerHeader

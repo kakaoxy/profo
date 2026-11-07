@@ -38,13 +38,12 @@ test.describe("线索中心设计稿 1:1", () => {
     page.on("pageerror", (error) => errors.push(`PAGEERROR: ${error.message}`));
 
     await loginPage(page);
-    await page.goto("http://127.0.0.1:3000/admin/leads", { waitUntil: "networkidle" });
+    // 只筛待评估线索，避免其他用例/人工把「通河二村」首批线索流转后导致用例失效。
+    await page.goto("http://127.0.0.1:3000/admin/leads?statuses=pending_assessment", {
+      waitUntil: "networkidle",
+    });
 
-    await page
-      .getByTestId("lead-row")
-      .filter({ hasText: "通河二村" })
-      .first()
-      .click();
+    await page.getByTestId("lead-row").first().click();
     await expect(page.locator("[data-slot=sheet-content]")).toBeVisible();
     await expect(page.getByRole("button", { name: "编辑线索" })).toBeVisible();
 
@@ -52,7 +51,9 @@ test.describe("线索中心设计稿 1:1", () => {
     const assessmentDialog = page.getByRole("dialog").filter({ hasText: "评估录入" });
     await expect(assessmentDialog).toBeVisible();
     await expect(assessmentDialog.getByText("房源条件分", { exact: false }).first()).toBeVisible();
-    await expect(assessmentDialog.getByText("装修后可售周期", { exact: false }).first()).toBeVisible();
+    await expect(
+      assessmentDialog.getByText("装修后可售周期", { exact: false }).first(),
+    ).toBeVisible();
     await expect(assessmentDialog.getByRole("button", { name: "批准约看排期" })).toBeDisabled();
     expect(errors).toEqual([]);
   });
