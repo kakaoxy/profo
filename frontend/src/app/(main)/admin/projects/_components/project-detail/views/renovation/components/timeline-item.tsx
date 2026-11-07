@@ -323,14 +323,16 @@ export function TimelineItem({
 
         {/* 照片墙 + 操作区（photos mt-12px / actions mt-10px，设计稿 .photos / .tl-actions） */}
         <div className="mt-3 space-y-2.5">
-          <PhotoGrid
-            photos={photos}
-            uploadingPhotos={uploadQueue}
-            isLoading={isSubmittingStage}
-            canEditRenovation={canEditRenovation}
-            onUpload={handleUpload}
-            onDelete={handleDelete}
-          />
+          {(photos.length > 0 || isCurrent) && (
+            <PhotoGrid
+              photos={photos}
+              uploadingPhotos={uploadQueue}
+              isLoading={isSubmittingStage}
+              canEditRenovation={canEditRenovation}
+              onUpload={handleUpload}
+              onDelete={handleDelete}
+            />
+          )}
           <ActionBar
             isCompleted={isCompleted}
             selectedDate={selectedDate}

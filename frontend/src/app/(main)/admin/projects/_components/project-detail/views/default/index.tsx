@@ -8,13 +8,11 @@ import type { UploadResponse } from "@/components/common/upload";
 
 import { ProjectSummary } from "./summary";
 import { InfoTab } from "./tabs/info-tab";
-import { DocumentsTab } from "./tabs/documents-tab";
-import { AttachmentsTab } from "./tabs/attachments-tab";
+import { DocumentsSummary } from "./documents-summary";
 import { ALLOWED_MIME_TYPES, attachmentValidateFile, getFileType } from "../../attachment-types";
 import { CATEGORY_LABELS } from "../../constants";
 import type { DocumentResponse } from "../../../../actions/documents";
 import type { Project, AttachmentInfo, AttachmentHandlers } from "../../../../types";
-import { PROJECT_SECTION_IDS } from "../../../../[projectId]/_components/page-shell/config";
 
 interface DefaultViewProps {
   project: Project;
@@ -33,11 +31,6 @@ interface DefaultViewProps {
   usersById?: Map<string, string>;
   /** 外部触发进入项目信息卡编辑态（顶栏「编辑」：递增计数 + 滚动锚点） */
   editRequest?: number;
-  /**
-   * 交房成功回调（历史 prop）：交房 CTA 已由页面级 flowbar 驱动页面级受控弹窗实例，
-   * 视图内不再消费；保留此 prop 兼容页面层传参。
-   */
-  onHandoverSuccess?: () => void;
 }
 
 /**
@@ -136,21 +129,14 @@ export function DefaultView({
         editRequest={editRequest}
       />
 
-      {/* 文书签收清单卡（分区导航「文书与附件」锚点；已归档时只读） */}
-      <section id={PROJECT_SECTION_IDS.documents} className="scroll-mt-28 md:scroll-mt-24">
-        <DocumentsTab
-          project={project}
-          readOnly={isArchived}
-          onUploadAttachment={isArchived ? undefined : uploadHandler}
-          attachments={attachments}
-          onOpenUpload={openUploadDialog}
-        />
-      </section>
-
-      {/* 附件库卡（已归档时隐藏「上传附件」入口） */}
-      <AttachmentsTab
+      {/* 文书与附件：首屏紧凑摘要，完整清单/附件库在弹窗内查看 */}
+      <DocumentsSummary
+        project={project}
         attachments={attachments}
         handlers={attachmentHandlers}
+        readOnly={isArchived}
+        onUploadAttachment={isArchived ? undefined : uploadHandler}
+        onOpenUpload={openUploadDialog}
         onUpload={!isArchived && uploadHandler ? () => openUploadDialog(null) : undefined}
       />
 

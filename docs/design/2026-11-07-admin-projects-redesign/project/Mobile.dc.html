@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>项目管理 · 移动端</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face {
+    font-family: "InterLocal";
+    src: url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --ink: #17191c; --white: #ffffff; --fog: #f7f7f8; --ash: #4c4c4c; --graphite: #777b86; --dove: #a3a6af;
+    --rust: #5d2a1a; --apricot: #fbe1d1; --sky: #d3e3fc;
+    --hair: rgba(163,166,175,.32); --hair-soft: rgba(163,166,175,.18);
+    --font-ui: "InterLocal", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --shadow-card: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.10) 0 20px 25px -5px, rgba(0,0,0,.10) 0 8px 10px -6px;
+    --shadow-sm: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 10px 20px -8px, rgba(0,0,0,.05) 0 3px 6px -4px;
+    --r-card: 22px; --r-input: 15px; --r-pill: 9999px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body { margin: 0; width: 390px; height: 844px; overflow: hidden; background: var(--fog); color: var(--ink); font-family: var(--font-ui); font-size: 14px; font-weight: 430; letter-spacing: -0.009em; line-height: 1.5; }
+  button, input { font: inherit; letter-spacing: inherit; color: inherit; }
+  button { background: none; border: 0; padding: 0; cursor: pointer; }
+  h1, h2, h3, p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  svg { display: block; }
+  .ic { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+  .screen { position: relative; width: 390px; height: 844px; overflow: hidden; background: var(--fog); }
+
+  .content { height: calc(844px - 64px); overflow-y: auto; padding: 6px 16px 24px; scrollbar-width: none; }
+  .content::-webkit-scrollbar { display: none; }
+  .app-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; padding: 14px 0 14px; }
+  .crumb { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--dove); }
+  .app-head h1 { margin-top: 5px; font-size: 23px; line-height: 1.1; font-weight: 480; letter-spacing: -0.025em; }
+  .head-actions { display: flex; align-items: center; gap: 9px; padding-bottom: 2px; }
+  .head-btn { width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--hair); display: flex; align-items: center; justify-content: center; color: var(--graphite); background: var(--white); }
+  .head-btn .ic { width: 14px; height: 14px; }
+  .head-btn.ink { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--apricot); color: var(--rust); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 480; }
+
+  .kpi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 14px 16px; }
+  .kpi-item { padding: 0 12px; border-left: 1px solid var(--hair-soft); }
+  .kpi-item:first-child { padding-left: 0; border-left: 0; }
+  .kpi-item > span { display: block; font-size: 9px; color: var(--dove); white-space: nowrap; }
+  .kpi-item b { display: block; margin-top: 3px; font-size: 20px; line-height: 1.1; font-weight: 450; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+  .kpi-item b small { margin-left: 2px; font-size: 8.5px; color: var(--graphite); font-weight: 430; letter-spacing: 0; }
+  .kpi-item b.rust { color: var(--rust); }
+
+  .search-row { display: flex; gap: 8px; margin-top: 12px; }
+  .search { flex: 1; height: 42px; padding: 0 12px; border: 1px solid var(--hair); border-radius: var(--r-input); background: var(--white); display: flex; align-items: center; gap: 8px; color: var(--dove); }
+  .search:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23,25,28,.06); }
+  .search .ic { width: 15px; height: 15px; flex: none; }
+  .search input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; font-size: 12px; color: var(--ink); }
+  .search input::placeholder { color: var(--dove); }
+  .filter-btn { width: 42px; height: 42px; flex: none; border: 1px solid var(--hair); border-radius: var(--r-input); background: var(--white); display: flex; align-items: center; justify-content: center; color: var(--graphite); position: relative; }
+  .filter-btn .ic { width: 16px; height: 16px; }
+  .filter-btn.has-dot::after { content: ""; position: absolute; top: 10px; right: 10px; width: 5px; height: 5px; border-radius: 50%; background: var(--rust); }
+
+  .chips { display: flex; gap: 6px; margin: 14px -16px 0; padding: 0 16px 2px; overflow-x: auto; scrollbar-width: none; }
+  .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: none; height: 32px; padding: 0 12px; border-radius: var(--r-pill); border: 1px solid var(--hair); background: var(--white); display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--graphite); }
+  .chip b { font-size: 9px; font-weight: 480; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .chip.on { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .chip.on b { color: rgba(255,255,255,.6); }
+
+  .list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 16px 2px 9px; }
+  .list-head h2 { font-size: 13px; font-weight: 480; }
+  .list-head h2 > span { margin-left: 5px; font-size: 10px; color: var(--dove); font-weight: 430; }
+  .sort { display: flex; align-items: center; gap: 3px; font-size: 10px; color: var(--graphite); }
+  .sort .ic { width: 11px; height: 11px; color: var(--dove); }
+
+  .cards { display: flex; flex-direction: column; gap: 9px; }
+  .m-card { display: block; background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 14px; transition: transform 160ms ease; }
+  .m-card:active { transform: scale(.992); }
+  .mc-top { display: flex; align-items: flex-start; gap: 10px; }
+  .m-mono { width: 38px; height: 38px; flex: none; border-radius: 11px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 500; }
+  .m-mono.warm { background: var(--apricot); color: var(--rust); }
+  .m-mono.sky { background: var(--sky); color: var(--ink); }
+  .m-mono.ink { background: var(--ink); color: var(--white); }
+  .m-mono.fog { background: var(--fog); color: var(--graphite); }
+  .mc-title { flex: 1; min-width: 0; padding-top: 1px; }
+  .mc-title b { display: block; font-size: 12.5px; font-weight: 480; letter-spacing: -0.012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mc-title > span { display: block; margin-top: 3px; font-size: 9.5px; color: var(--dove); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-status { flex: none; display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: var(--r-pill); font-size: 9.5px; font-weight: 450; white-space: nowrap; }
+  .m-status::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: currentColor; opacity: .85; }
+  .st-signing { background: var(--sky); color: var(--ink); }
+  .st-renovating { background: var(--apricot); color: var(--rust); }
+  .st-selling { background: var(--ink); color: var(--white); }
+  .st-sold { background: var(--fog); color: var(--ash); }
+  .st-ended { background: rgba(163,166,175,.18); color: var(--graphite); }
+  .mc-stats { display: grid; grid-template-columns: 1.05fr 1fr 1fr auto; align-items: end; gap: 8px; margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--hair-soft); }
+  .mc-stat > span { display: block; font-size: 8.5px; color: var(--dove); }
+  .mc-stat b { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 480; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .mc-stat b.rust { color: var(--rust); }
+  .mc-stat b small { font-size: 8px; color: var(--graphite); font-weight: 430; }
+  .mc-owner { width: 24px; height: 24px; border-radius: 50%; background: var(--fog); color: var(--graphite); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 480; }
+
+  .empty { padding: 50px 16px; text-align: center; }
+  .empty-icon { width: 42px; height: 42px; margin: 0 auto 10px; border-radius: 13px; background: var(--white); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; color: var(--dove); }
+  .empty h3 { font-size: 13px; font-weight: 480; }
+  .empty p { margin-top: 4px; font-size: 10.5px; color: var(--graphite); }
+
+  .tabbar { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; padding: 8px 22px 16px; background: rgba(255,255,255,.96); border-top: 1px solid var(--hair-soft); backdrop-filter: blur(14px); display: flex; justify-content: space-between; align-items: flex-start; }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 52px; color: var(--dove); font-size: 8.5px; }
+  .tab .ic { width: 19px; height: 19px; }
+  .tab.on { color: var(--ink); }
+  .tab.on .ic { stroke-width: 2; }
+  .tab.on::after { content: ""; width: 3px; height: 3px; border-radius: 50%; background: var(--rust); margin-top: 1px; }
+
+  .scrim { position: absolute; inset: 0; z-index: 50; background: rgba(23,25,28,.34); display: flex; align-items: flex-end; }
+  .sheet { width: 100%; background: var(--white); border-radius: 24px 24px 0 0; padding: 20px 18px 26px; box-shadow: 0 -20px 50px -20px rgba(0,0,0,.3); }
+  .sheet-grab { width: 32px; height: 4px; border-radius: 999px; background: rgba(163,166,175,.35); margin: 0 auto 16px; }
+  .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .sheet-head h3 { font-size: 15px; font-weight: 480; }
+  .sheet-close { width: 28px; height: 28px; border-radius: 50%; background: var(--fog); display: flex; align-items: center; justify-content: center; color: var(--graphite); }
+  .sheet-close .ic { width: 12px; height: 12px; }
+  .sheet-group { margin-bottom: 16px; }
+  .sheet-label { display: block; margin-bottom: 7px; font-size: 10px; color: var(--graphite); }
+  .sheet-pills { display: flex; gap: 7px; }
+  .sheet-pill { height: 34px; padding: 0 13px; border: 1px solid var(--hair); border-radius: var(--r-pill); font-size: 11px; color: var(--graphite); display: inline-flex; align-items: center; }
+  .sheet-pill.on { background: var(--ink); border-color: var(--ink); color: var(--white); }
+  .sheet-actions { display: flex; gap: 8px; margin-top: 6px; }
+  .sheet-reset { height: 44px; flex: 0 0 96px; border: 1px solid var(--hair); border-radius: var(--r-pill); font-size: 12px; color: var(--graphite); }
+  .sheet-apply { height: 44px; flex: 1; background: var(--ink); color: var(--white); border-radius: var(--r-pill); font-size: 12px; font-weight: 480; }
+
+  .toast { position: absolute; left: 50%; bottom: 82px; transform: translateX(-50%); z-index: 90; display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border-radius: var(--r-pill); background: var(--ink); color: var(--white); font-size: 10.5px; white-space: nowrap; box-shadow: 0 14px 30px -12px rgba(23,25,28,.4); }
+  .toast .ic { width: 12px; height: 12px; }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 21v-7h6v7"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M8 21v-2h4v2"/><path d="M2 21h20"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 4.8a3.2 3.2 0 0 1 0 6.4M18 14.4a6 6 0 0 1 3 5.6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-10"/></symbol>
+</svg>
+
+<div class="screen">
+  <div class="content">
+    <header class="app-head">
+      <div><div class="crumb">经营中心 / Projects</div><h1>项目管理</h1></div>
+      <div class="head-actions">
+        <a class="head-btn ink" href="Create.dc.html" aria-label="新建项目"><svg class="ic"><use href="#i-plus"></use></svg></a>
+        <button class="avatar" type="button" aria-label="账户菜单：唐欣帆">唐</button>
+      </div>
+    </header>
+
+    <section class="kpi" aria-label="资产概览">
+      <div class="kpi-item"><span>在管资产</span><b>{{activeCount}}<small>套</small></b></div>
+      <div class="kpi-item"><span>累计签约</span><b>7,420<small>万</small></b></div>
+      <div class="kpi-item"><span>10 月回款</span><b class="rust">763<small>万</small></b></div>
+    </section>
+
+    <div class="search-row">
+      <label class="search" for="m-search"><svg class="ic"><use href="#i-search"></use></svg><input id="m-search" type="search" placeholder="搜索小区、地址或合同编号" value="{{query}}" onInput="{{onSearch}}" /></label>
+      <button class="filter-btn {{filterDot}}" type="button" onClick="{{openSheet}}" aria-label="筛选项目"><svg class="ic"><use href="#i-filter"></use></svg></button>
+    </div>
+
+    <div class="chips" aria-label="阶段筛选">
+      <sc-for list="{{stageChips}}" as="c" hint-placeholder-count="6">
+        <button class="chip {{c.onClass}}" type="button" onClick="{{c.onClick}}">{{c.label}}<b>{{c.count}}</b></button>
+      </sc-for>
+    </div>
+
+    <div class="list-head"><h2>{{listTitle}}<span>{{listCount}}</span></h2><button class="sort" type="button" onClick="{{cycleSort}}">{{sortLabel}}<svg class="ic"><use href="#i-chevron-down"></use></svg></button></div>
+
+    <sc-if value="{{hasRows}}">
+      <div class="cards">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+          <a class="m-card" href="Detail.dc.html" aria-label="查看 {{r.title}} 项目详情">
+            <div class="mc-top">
+              <span class="m-mono {{r.monoClass}}">{{r.initial}}</span>
+              <span class="mc-title"><b>{{r.title}}</b><span>{{r.meta}}</span></span>
+              <span class="m-status {{r.statusClass}}">{{r.statusLabel}}</span>
+            </div>
+            <div class="mc-stats">
+              <div class="mc-stat"><span>签约价</span><b>¥{{r.signing}}<small>万</small></b></div>
+              <div class="mc-stat"><span>{{r.priceLabel}}</span><b>¥{{r.price}}<small>万</small></b></div>
+              <div class="mc-stat"><span>预计收益</span><b class="rust">{{r.cash}}</b></div>
+              <span class="mc-owner">{{r.ownerInitial}}</span>
+            </div>
+          </a>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{noRows}}">
+      <div class="empty"><div class="empty-icon"><svg class="ic"><use href="#i-search"></use></svg></div><h3>没有匹配的项目</h3><p>换个关键词，或调整筛选条件。</p></div>
+    </sc-if>
+  </div>
+
+  <nav class="tabbar" aria-label="移动端主导航">
+    <button class="tab" type="button"><svg class="ic"><use href="#i-home"></use></svg>工作台</button>
+    <button class="tab" type="button"><svg class="ic"><use href="#i-building"></use></svg>房源</button>
+    <button class="tab on" type="button" aria-current="page"><svg class="ic"><use href="#i-folder"></use></svg>项目</button>
+    <button class="tab" type="button"><svg class="ic"><use href="#i-users"></use></svg>我的</button>
+  </nav>
+
+  <sc-if value="{{sheetOpen}}">
+    <div class="scrim" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <div class="sheet">
+        <div class="sheet-grab"></div>
+        <div class="sheet-head"><h3 id="sheet-title">筛选项目</h3><button class="sheet-close" type="button" onClick="{{closeSheet}}" aria-label="关闭筛选"><svg class="ic"><use href="#i-x"></use></svg></button></div>
+        <div class="sheet-group"><span class="sheet-label">业务形式</span><div class="sheet-pills">
+          <button class="sheet-pill {{bizAll}}" type="button" onClick="{{setBizAll}}">全部</button>
+          <button class="sheet-pill {{bizAgent}}" type="button" onClick="{{setBizAgent}}">代理美化</button>
+          <button class="sheet-pill {{bizWholesale}}" type="button" onClick="{{setBizWholesale}}">收购美化</button>
+        </div></div>
+        <div class="sheet-group"><span class="sheet-label">归档状态</span><div class="sheet-pills">
+          <button class="sheet-pill {{arcAll}}" type="button" onClick="{{setArcAll}}">全部</button>
+          <button class="sheet-pill {{arcActive}}" type="button" onClick="{{setArcActive}}">未归档</button>
+          <button class="sheet-pill {{arcArchived}}" type="button" onClick="{{setArcArchived}}">已归档</button>
+        </div></div>
+        <div class="sheet-actions"><button class="sheet-reset" type="button" onClick="{{resetSheet}}">重置</button><button class="sheet-apply" type="button" onClick="{{applySheet}}">查看 {{filteredCount}} 个项目</button></div>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { stage: "all", query: "", biz: "all", archive: "all", sort: "recent", sheetOpen: false, toast: null };
+    this._toastTimer = null;
+  }
+  componentWillUnmount() { if (this._toastTimer) clearTimeout(this._toastTimer); }
+  notify(text) {
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this.setState({ toast: text });
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 2000);
+  }
+  renderVals() {
+    const s = this.state;
+    const ALL = [
+      { title: "景凤路521弄 5号404室", community: "景凤路521弄", status: "selling", statusLabel: "在售", statusClass: "st-selling", monoClass: "ink", initial: "景", meta: "静安区 · 彭浦 · 2室1厅 · 50.34㎡", signing: "149.5", priceLabel: "挂牌", price: "255", cash: "+72.5 万", owner: "唐", business: "wholesale", archived: false },
+      { title: "泗塘三村 61号401", community: "泗塘三村", status: "selling", statusLabel: "在售", statusClass: "st-selling", monoClass: "ink", initial: "泗", meta: "宝山区 · 泗塘 · 2室1厅 · 50.76㎡", signing: "142", priceLabel: "挂牌", price: "183", cash: "+30.9 万", owner: "何", business: "agent", archived: false },
+      { title: "呼玛二村 285号103室", community: "呼玛二村", status: "sold", statusLabel: "已售", statusClass: "st-sold", monoClass: "fog", initial: "呼", meta: "宝山区 · 呼玛 · 2室1厅 · 50.74㎡", signing: "157", priceLabel: "成交", price: "216", cash: "+44.9 万", owner: "唐", business: "wholesale", archived: false },
+      { title: "共康八村 弄101号301室", community: "共康八村", status: "renovating", statusLabel: "装修", statusClass: "st-renovating", monoClass: "warm", initial: "共", meta: "静安区 · 彭浦 · 2室1厅 · 63.97㎡", signing: "207.07", priceLabel: "待挂牌", price: "—", cash: "—", owner: "支", business: "agent", archived: false },
+      { title: "金杨十街坊 金杨路660弄21号 102", community: "金杨十街坊", status: "signing", statusLabel: "签约", statusClass: "st-signing", monoClass: "sky", initial: "金", meta: "浦东新区 · 金杨 · 1室0厅 · 26.81㎡", signing: "115", priceLabel: "待挂牌", price: "—", cash: "—", owner: "阮", business: "wholesale", archived: false },
+      { title: "唐家宅小区 西藏南路1566弄13号502室", community: "唐家宅小区", status: "ended", statusLabel: "已下架", statusClass: "st-ended", monoClass: "fog", initial: "唐", meta: "黄浦区 · 老西门 · 46.6㎡", signing: "435", priceLabel: "挂牌", price: "440", cash: "—", owner: "唐", business: "agent", archived: true }
+    ];
+    let list = ALL.filter((p) => {
+      if (s.stage !== "all" && p.status !== s.stage) return false;
+      if (s.biz !== "all" && p.business !== s.biz) return false;
+      if (s.archive === "active" && p.archived) return false;
+      if (s.archive === "archived" && !p.archived) return false;
+      if (s.query) {
+        const q = s.query.toLowerCase();
+        if ((p.title + " " + p.meta).toLowerCase().indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    if (s.sort === "price") list = list.slice().sort((a, b) => parseFloat(b.signing) - parseFloat(a.signing));
+    const stageDefs = [
+      { id: "all", label: "全部" }, { id: "signing", label: "签约" }, { id: "renovating", label: "装修" }, { id: "selling", label: "在售" }, { id: "sold", label: "已售" }, { id: "ended", label: "下架" }
+    ];
+    const stageChips = stageDefs.map((x) => ({
+      label: x.label,
+      count: x.id === "all" ? ALL.length : ALL.filter((p) => p.status === x.id).length,
+      onClass: s.stage === x.id ? "on" : "",
+      onClick: () => this.setState({ stage: x.id })
+    }));
+    const activeCount = ALL.filter((p) => ["signing", "renovating", "selling"].indexOf(p.status) >= 0).length;
+    const labels = { signing: "签约", renovating: "装修", selling: "在售", sold: "已售", ended: "已下架" };
+    return {
+      activeCount: activeCount,
+      stageChips: stageChips,
+      rows: list.slice(0, 6),
+      hasRows: list.length > 0,
+      noRows: list.length === 0,
+      listTitle: s.stage === "all" ? "全部项目" : labels[s.stage] + "项目",
+      listCount: list.length + " 个",
+      query: s.query,
+      onSearch: (e) => this.setState({ query: e.target.value }),
+      sortLabel: s.sort === "recent" ? "最近更新" : "签约金额",
+      cycleSort: () => this.setState({ sort: s.sort === "recent" ? "price" : "recent" }),
+      filterDot: (s.biz !== "all" || s.archive !== "all") ? "has-dot" : "",
+      sheetOpen: s.sheetOpen,
+      openSheet: () => this.setState({ sheetOpen: true }),
+      closeSheet: () => this.setState({ sheetOpen: false }),
+      bizAll: s.biz === "all" ? "on" : "",
+      bizAgent: s.biz === "agent" ? "on" : "",
+      bizWholesale: s.biz === "wholesale" ? "on" : "",
+      setBizAll: () => this.setState({ biz: "all" }),
+      setBizAgent: () => this.setState({ biz: "agent" }),
+      setBizWholesale: () => this.setState({ biz: "wholesale" }),
+      arcAll: s.archive === "all" ? "on" : "",
+      arcActive: s.archive === "active" ? "on" : "",
+      arcArchived: s.archive === "archived" ? "on" : "",
+      setArcAll: () => this.setState({ archive: "all" }),
+      setArcActive: () => this.setState({ archive: "active" }),
+      setArcArchived: () => this.setState({ archive: "archived" }),
+      resetSheet: () => this.setState({ biz: "all", archive: "all" }),
+      applySheet: () => { this.setState({ sheetOpen: false }); this.notify("已应用筛选（演示）"); },
+      filteredCount: list.length,
+      toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

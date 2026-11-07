@@ -31,7 +31,10 @@ export function FinancialLifecycle({
   const signingPrice = Number(project.signing_price || 0);
   const listPrice = Number(project.list_price || 0);
   const soldPrice = Number(project.sold_price || 0);
-  const totalInvestment = Number(project.total_expense ?? 0) || 0; // 元
+  const actualInvestment = Number(project.total_expense ?? 0) || 0; // 元
+  const area = Number(project.area ?? 0) || 0;
+  // 财务流水未录入时，用与列表/成交摘要一致的展示口径估算装修与持有投入（不写库）
+  const totalInvestment = actualInvestment > 0 ? actualInvestment : (area * 0.36 + 6) * 10000;
   const totalIncome = Number(project.total_income) || 0; // 元
 
   const rawSoldDate = project.sold_date;

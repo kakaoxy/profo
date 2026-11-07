@@ -99,7 +99,7 @@ export function TopToolbar({
           href="/admin/projects"
           className="shrink-0 font-[450] transition-colors hover:text-ink"
         >
-          项目列表
+          项目管理
         </Link>
         <span className="shrink-0 text-dove">/</span>
         <span className="truncate font-[480] text-ink">{project.name}</span>

@@ -1,0 +1,867 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>项目管理 · 项目总览</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face {
+    font-family: "InterLocal";
+    src: url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "SourceSerifLocal";
+    src: url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2");
+    font-weight: 200 900;
+    font-style: normal;
+    font-display: swap;
+  }
+
+  :root {
+    --ink: #17191c;
+    --white: #ffffff;
+    --fog: #f7f7f8;
+    --ash: #4c4c4c;
+    --graphite: #777b86;
+    --dove: #a3a6af;
+    --rust: #5d2a1a;
+    --apricot: #fbe1d1;
+    --apricot-edge: rgba(93,42,26,.18);
+    --sky: #d3e3fc;
+    --hair: rgba(163, 166, 175, 0.32);
+    --hair-soft: rgba(163, 166, 175, 0.18);
+    --font-ui: "InterLocal", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --font-display: "SourceSerifLocal", "Songti SC", "Noto Serif SC", Georgia, serif;
+    --shadow-card: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.10) 0 20px 25px -5px, rgba(0, 0, 0, 0.10) 0 8px 10px -6px;
+    --shadow-sm: rgba(4, 23, 43, 0.05) 0 0 0 1px, rgba(0, 0, 0, 0.06) 0 10px 20px -8px, rgba(0, 0, 0, 0.05) 0 3px 6px -4px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body {
+    margin: 0;
+    background: var(--fog);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    font-weight: 430;
+    letter-spacing: -0.009em;
+    line-height: 1.5;
+  }
+  button, input, select { font: inherit; letter-spacing: inherit; color: inherit; }
+  button { background: none; border: 0; padding: 0; cursor: pointer; }
+  h1, h2, h3, p { margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  svg { display: block; }
+  .ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .app { display: flex; min-height: 100vh; background: var(--fog); }
+
+  /* ---------- rail ---------- */
+  .rail {
+    width: 76px; flex: none; align-self: flex-start; position: sticky; top: 0;
+    height: 100vh; padding: 20px 0 18px; display: flex; flex-direction: column; align-items: center;
+    background: var(--fog); border-right: 1px solid var(--hair-soft);
+  }
+  .logo {
+    width: 34px; height: 34px; border-radius: 9px; background: var(--ink); color: var(--white);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-ui); font-size: 17px; font-weight: 480; letter-spacing: 0;
+  }
+  .rail-nav { margin-top: 30px; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+  .rail-btn {
+    width: 42px; height: 42px; border-radius: 13px; color: var(--graphite);
+    display: flex; align-items: center; justify-content: center; position: relative;
+    transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  }
+  .rail-btn .ic { width: 19px; height: 19px; stroke-width: 1.6; }
+  .rail-btn:hover { background: rgba(23, 25, 28, 0.05); color: var(--ink); }
+  .rail-btn[aria-current="page"] { background: var(--white); color: var(--ink); box-shadow: var(--shadow-sm); }
+  .rail-btn[aria-current="page"]::after {
+    content: ""; position: absolute; bottom: 5px; left: 50%; width: 3px; height: 3px;
+    margin-left: -1.5px; border-radius: 50%; background: var(--rust);
+  }
+  .rail-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+  .rail-btn.small { width: 38px; height: 38px; border-radius: 11px; color: var(--dove); }
+  .rail-btn.small .ic { width: 18px; height: 18px; }
+
+  /* ---------- page frame ---------- */
+  .main { flex: 1; min-width: 0; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 44px 48px; }
+  .topbar { height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--hair-soft); }
+  .crumb { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--dove); }
+  .crumb .slash { color: var(--hair); }
+  .crumb .here { color: var(--ink); font-weight: 450; }
+  .topbar-right { display: flex; align-items: center; gap: 18px; }
+  .sync { display: flex; align-items: center; gap: 7px; font-size: 11.5px; color: var(--graphite); }
+  .sync .ic { width: 14px; height: 14px; color: var(--dove); }
+  .sync .live { width: 5px; height: 5px; border-radius: 50%; background: var(--rust); box-shadow: 0 0 0 3px rgba(93, 42, 26, 0.08); }
+  .avatar-btn {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--apricot); color: var(--rust);
+    display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 480;
+  }
+
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; padding: 30px 0 24px; }
+  .eyebrow { display: flex; align-items: center; gap: 9px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--graphite); font-weight: 480; }
+  .eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--rust); }
+  .page-title h1 { margin-top: 10px; font-family: var(--font-display); font-size: 44px; line-height: 1.06; font-weight: 400; letter-spacing: -0.022em; }
+  .page-desc { max-width: 610px; margin-top: 10px; font-size: 13.5px; line-height: 1.55; color: var(--graphite); }
+  .page-actions { display: flex; align-items: center; gap: 18px; padding-bottom: 4px; flex: none; }
+  .text-action { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--graphite); transition: color 150ms ease; }
+  .text-action:hover { color: var(--ink); }
+  .text-action .ic { width: 15px; height: 15px; }
+  .btn-primary {
+    height: 46px; padding: 0 22px; border-radius: var(--r-pill); background: var(--ink); color: var(--white);
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 13.5px; font-weight: 480; letter-spacing: -0.01em; box-shadow: 0 10px 22px -12px rgba(23, 25, 28, 0.6);
+    transition: background 160ms ease, transform 160ms ease;
+  }
+  .btn-primary:hover { background: #000; }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-primary .ic { width: 15px; height: 15px; }
+
+  /* ---------- portfolio ---------- */
+  .portfolio { background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-card); overflow: hidden; }
+  .pf-head { display: grid; grid-template-columns: minmax(340px, 1.1fr) minmax(520px, 1fr); gap: 52px; align-items: end; padding: 27px 30px 25px; }
+  .pf-kicker { display: flex; align-items: center; gap: 9px; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--graphite); font-weight: 480; }
+  .pf-kicker::before { content: ""; width: 18px; height: 1px; background: var(--rust); }
+  .pf-number { display: flex; align-items: baseline; gap: 10px; margin-top: 7px; }
+  .pf-num { font-family: var(--font-display); font-size: 64px; line-height: 0.94; font-weight: 400; letter-spacing: -0.035em; font-variant-numeric: lining-nums tabular-nums; }
+  .pf-unit { font-size: 13.5px; color: var(--graphite); letter-spacing: -0.01em; }
+  .pf-sub { margin-top: 9px; font-size: 12px; color: var(--graphite); }
+  .pf-sub b { font-weight: 450; color: var(--ink); }
+  .pf-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pf-metric { min-width: 0; padding: 0 22px; border-left: 1px solid var(--hair-soft); }
+  .pf-metric:first-child { padding-left: 0; border-left: 0; }
+  .m-label { display: block; font-size: 11px; color: var(--dove); letter-spacing: 0.02em; white-space: nowrap; }
+  .m-value { margin-top: 5px; font-size: 25px; line-height: 1.1; font-weight: 450; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .m-value small { margin-left: 3px; font-size: 11px; font-weight: 430; color: var(--graphite); letter-spacing: 0; }
+  .m-sub { margin-top: 4px; font-size: 11px; color: var(--dove); white-space: nowrap; }
+
+  .runway { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); border-top: 1px solid var(--hair-soft); }
+  .stage {
+    position: relative; min-height: 128px; padding: 21px 22px 23px; text-align: left;
+    border-left: 1px solid var(--hair-soft); transition: background 160ms ease;
+  }
+  .stage:first-child { border-left: 0; }
+  .stage:hover { background: rgba(23,25,28,.025); }
+  .stage.on { background: var(--apricot); }
+  .stage-bar { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--hair); }
+  .stage.s-signing .stage-bar { background: var(--sky); }
+  .stage.s-renovating .stage-bar { background: var(--rust); }
+  .stage.s-selling .stage-bar { background: var(--ink); }
+  .stage.s-sold .stage-bar { background: var(--dove); }
+  .stage.s-ended .stage-bar { background: var(--dove); }
+  .stage-top { display: flex; align-items: center; gap: 9px; }
+  .stage-no { font-size: 9.5px; letter-spacing: 0.12em; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .stage-label { font-size: 13px; font-weight: 480; letter-spacing: -0.01em; }
+  .stage.on .stage-no { color: var(--rust); }
+  .stage-count { display: block; margin-top: 12px; font-size: 30px; line-height: 1; font-weight: 450; letter-spacing: -0.035em; font-variant-numeric: tabular-nums; }
+  .stage-count em { margin-left: 3px; font-style: normal; font-size: 10.5px; font-weight: 430; color: var(--graphite); letter-spacing: 0; }
+  .stage.on .stage-count em { color: var(--rust); }
+  .stage-desc { display: block; margin-top: 5px; font-size: 11px; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* ---------- list ---------- */
+  .list-card { margin-top: 22px; background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-card); overflow: hidden; }
+  .list-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 19px 24px 16px; flex-wrap: wrap; }
+  .list-left { display: flex; align-items: center; gap: 12px; min-width: 250px; }
+  .list-title { display: flex; align-items: center; gap: 9px; }
+  .list-title h2 { font-size: 17px; font-weight: 480; letter-spacing: -0.015em; }
+  .count-pill { height: 21px; min-width: 21px; padding: 0 7px; border-radius: var(--r-pill); background: var(--fog); color: var(--graphite); display: inline-flex; align-items: center; justify-content: center; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .sort-btn { display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; border-radius: 8px; font-size: 11px; color: var(--graphite); }
+  .sort-btn:hover { background: var(--fog); color: var(--ink); }
+  .sort-btn .ic { width: 12px; height: 12px; color: var(--dove); }
+  .list-tools { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .search {
+    width: 252px; height: 40px; padding: 0 11px; border: 1px solid var(--hair); border-radius: var(--r-input);
+    background: var(--white); display: flex; align-items: center; gap: 8px; color: var(--dove);
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+  }
+  .search:focus-within { border-color: var(--ink); box-shadow: 0 0 0 3px rgba(23, 25, 28, 0.06); }
+  .search .ic { width: 15px; height: 15px; }
+  .search input { min-width: 0; flex: 1; height: 100%; border: 0; outline: 0; background: transparent; font-size: 12.5px; color: var(--ink); }
+  .search input::placeholder { color: var(--dove); }
+  .kbd { flex: none; padding: 1px 5px; border: 1px solid var(--hair-soft); border-radius: 5px; font-size: 9.5px; color: var(--dove); }
+  .select-wrap { position: relative; height: 40px; border: 1px solid var(--hair); border-radius: var(--r-input); background: var(--white); display: flex; align-items: center; }
+  .select-wrap select { height: 100%; padding: 0 30px 0 12px; border: 0; outline: 0; appearance: none; background: transparent; font-size: 12px; color: var(--ink); cursor: pointer; }
+  .select-wrap .chev { position: absolute; right: 10px; width: 13px; height: 13px; color: var(--dove); pointer-events: none; }
+  .seg { display: flex; gap: 2px; padding: 3px; border-radius: 11px; background: var(--fog); }
+  .seg button { width: 34px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--dove); transition: background 150ms ease, color 150ms ease; }
+  .seg button:hover { color: var(--ink); }
+  .seg button.on { background: var(--white); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06); }
+  .seg .ic { width: 15px; height: 15px; }
+
+  .filter-row { display: flex; align-items: center; gap: 6px; padding: 0 24px 14px; flex-wrap: wrap; }
+  .chip { height: 26px; padding: 0 4px 0 10px; border-radius: var(--r-pill); background: var(--fog); display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ash); }
+  .chip button { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--dove); }
+  .chip button:hover { background: var(--white); color: var(--ink); }
+  .chip .ic { width: 10px; height: 10px; }
+  .clear-all { margin-left: 4px; font-size: 11px; color: var(--graphite); text-decoration: underline; text-underline-offset: 2px; }
+  .clear-all:hover { color: var(--ink); }
+
+  .table-scroll { overflow-x: auto; }
+  .t-head, .p-row { display: grid; grid-template-columns: minmax(300px, 2.2fr) 128px 152px 104px 104px 128px 36px; column-gap: 12px; align-items: center; padding: 0 24px; }
+  .t-head { height: 42px; border-top: 1px solid var(--hair-soft); border-bottom: 1px solid var(--hair-soft); background: var(--fog); font-size: 10px; font-weight: 480; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dove); }
+  .t-head span:last-child { text-align: right; }
+  .p-row { min-height: 86px; border-bottom: 1px solid var(--hair-soft); position: relative; transition: background 150ms ease, box-shadow 150ms ease; }
+  .p-row:hover { background: rgba(23,25,28,.02); box-shadow: inset 2px 0 0 var(--rust); }
+  .p-row:last-child { border-bottom: 0; }
+  .prop { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .mono { width: 44px; height: 44px; flex: none; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-family: var(--font-ui); font-size: 17px; font-weight: 480; }
+  .mono.warm { background: var(--apricot); color: var(--rust); }
+  .mono.sky { background: var(--sky); color: var(--ink); }
+  .mono.ink { background: var(--ink); color: var(--white); }
+  .mono.fog { background: var(--fog); color: var(--graphite); }
+  .p-text { min-width: 0; }
+  .p-title { font-size: 14.5px; font-weight: 480; letter-spacing: -0.012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-meta { margin-top: 3px; font-size: 11px; color: var(--graphite); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .p-meta .dot { margin: 0 5px; color: var(--dove); }
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; height: 25px; padding: 0 10px; border-radius: var(--r-pill); font-size: 11px; font-weight: 450; white-space: nowrap; }
+  .status-pill::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.85; }
+  .st-signing { background: var(--sky); color: var(--ink); }
+  .st-renovating { background: var(--apricot); color: var(--rust); }
+  .st-selling { background: var(--ink); color: var(--white); }
+  .st-sold { background: var(--fog); color: var(--ash); }
+  .st-ended { background: rgba(163,166,175,.18); color: var(--graphite); }
+  .cell-sub { margin-top: 3px; font-size: 10.5px; color: var(--dove); white-space: nowrap; }
+  .price-main, .cycle-main { font-size: 14.5px; font-weight: 450; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .price-main .unit, .cycle-main .unit { margin-left: 2px; font-size: 10.5px; font-weight: 430; color: var(--graphite); }
+  .price-sub { margin-top: 3px; font-size: 10.5px; color: var(--graphite); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .price-sub .up { color: var(--rust); }
+  .price-end { margin-top: 2px; font-size: 9.5px; color: var(--dove); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .price-end.soon { color: var(--rust); }
+  .owner { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .owner-av { width: 26px; height: 26px; flex: none; border-radius: 50%; background: var(--fog); color: var(--graphite); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 480; }
+  .owner-name { font-size: 12px; color: var(--ash); white-space: nowrap; }
+  .cash-val { font-size: 13.5px; font-weight: 480; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .cash-val.pos { color: var(--rust); }
+  .cash-val.neg { color: var(--ink); }
+  .cash-sub { margin-top: 3px; font-size: 10.5px; color: var(--dove); white-space: nowrap; }
+  .row-arrow { width: 30px; height: 30px; justify-self: end; border: 1px solid var(--hair); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--dove); transition: background 150ms ease, border-color 150ms ease, color 150ms ease; }
+  .row-arrow .ic { width: 13px; height: 13px; }
+  .p-row:hover .row-arrow { background: var(--ink); border-color: var(--ink); color: var(--white); }
+
+  .empty-state { padding: 66px 24px 72px; text-align: center; }
+  .empty-icon { width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 14px; background: var(--fog); display: flex; align-items: center; justify-content: center; color: var(--dove); }
+  .empty-icon .ic { width: 20px; height: 20px; }
+  .empty-state h3 { font-size: 15px; font-weight: 480; }
+  .empty-state p { margin-top: 5px; font-size: 12px; color: var(--graphite); }
+  .btn-ghost { margin-top: 16px; height: 38px; padding: 0 18px; border: 1px solid var(--hair); border-radius: var(--r-pill); font-size: 12px; color: var(--ink); }
+  .btn-ghost:hover { border-color: var(--ink); }
+
+  .project-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 0 24px 22px; }
+  .p-card { display: flex; flex-direction: column; gap: 14px; padding: 18px; border: 1px solid var(--hair-soft); border-radius: 20px; background: var(--white); transition: border-color 160ms ease, box-shadow 160ms ease; }
+  .p-card:hover { border-color: var(--hair); box-shadow: var(--shadow-sm); }
+  .pc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .biz-tag { font-size: 10px; color: var(--graphite); border: 1px solid var(--hair-soft); border-radius: var(--r-pill); padding: 3px 8px; white-space: nowrap; }
+  .pc-name { font-size: 16px; font-weight: 480; letter-spacing: -0.015em; }
+  .pc-meta { margin-top: 4px; font-size: 11px; color: var(--graphite); }
+  .pc-prices { display: flex; gap: 22px; padding-top: 12px; border-top: 1px solid var(--hair-soft); }
+  .pc-price-label { font-size: 10px; color: var(--dove); }
+  .pc-price-value { margin-top: 2px; font-size: 17px; font-weight: 450; font-variant-numeric: tabular-nums; }
+  .pc-price-value small { font-size: 10px; color: var(--graphite); font-weight: 430; }
+  .pc-foot { display: flex; align-items: center; justify-content: space-between; margin-top: auto; }
+  .pc-cash { font-size: 12px; color: var(--rust); font-weight: 480; }
+  .pc-cash.neg { color: var(--ink); }
+  .pc-cash span { display: block; margin-top: 2px; font-size: 10px; color: var(--dove); font-weight: 430; }
+  .pc-arrow { width: 28px; height: 28px; border: 1px solid var(--hair); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--dove); }
+  .pc-arrow .ic { width: 12px; height: 12px; }
+
+  .list-foot { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 15px 24px; border-top: 1px solid var(--hair-soft); flex-wrap: wrap; }
+  .foot-info { font-size: 11px; color: var(--dove); font-variant-numeric: tabular-nums; }
+  .pager { display: flex; align-items: center; gap: 3px; }
+  .pager button { min-width: 30px; height: 30px; padding: 0 8px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 11.5px; color: var(--graphite); font-variant-numeric: tabular-nums; }
+  .pager button:hover { background: var(--fog); color: var(--ink); }
+  .pager button.on { background: var(--ink); color: var(--white); }
+  .pager button.is-off { opacity: 0.3; pointer-events: none; }
+  .pager .ic { width: 13px; height: 13px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 90;
+    display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px;
+    border-radius: var(--r-pill); background: var(--ink); color: var(--white); font-size: 12px; box-shadow: 0 16px 32px -12px rgba(23, 25, 28, 0.4);
+  }
+  .toast .ic { width: 14px; height: 14px; }
+
+  @media (max-width: 1180px) {
+    .wrap { padding: 18px 28px 40px; }
+    .pf-head { grid-template-columns: 1fr; gap: 24px; }
+    .pf-metrics { max-width: 620px; }
+    .list-tools .search { width: 220px; }
+    .project-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 900px) {
+    .rail { display: none; }
+    .page-head { align-items: flex-start; flex-direction: column; gap: 18px; }
+    .page-actions { padding-bottom: 0; }
+    .runway { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .stage:nth-child(4), .stage:nth-child(5) { border-top: 1px solid var(--hair-soft); }
+    .stage:nth-child(4) { border-left: 0; }
+  }
+  @media (max-width: 720px) {
+    .wrap { padding: 14px 16px 32px; }
+    .topbar-right .sync { display: none; }
+    .pf-metrics { grid-template-columns: 1fr; gap: 14px; }
+    .pf-metric { padding: 0; border-left: 0; }
+    .runway { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .stage { min-height: 112px; }
+    .stage:nth-child(3) { border-left: 0; }
+    .stage:nth-child(4) { border-left: 1px solid var(--hair-soft); }
+    .list-tools { width: 100%; }
+    .search { width: 100%; }
+    .project-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M8 21v-2h4v2"/><path d="M2 21h20"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16.5 4.8a3.2 3.2 0 0 1 0 6.4M18 14.4a6 6 0 0 1 3 5.6"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v1h-5a3 3 0 0 0 0 6h5v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M14 10h7v4h-7a2 2 0 0 1 0-4Z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.6 2.6 0 0 1 5 .8c0 1.7-2.5 2-2.5 3.7"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+  <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16M15 10l-2 2 2 2"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-table" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></symbol>
+  <symbol id="i-grid-view" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 13l2.2-7A2 2 0 0 1 8.1 4.5h7.8a2 2 0 0 1 1.9 1.5L20 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M4 13h4l1 2h6l1-2h4"/></symbol>
+</svg>
+
+<div class="app">
+  <aside class="rail" aria-label="主导航">
+    <div class="logo" aria-label="P">P</div>
+    <nav class="rail-nav">
+      <button class="rail-btn" type="button" aria-label="工作台"><svg class="ic"><use href="#i-grid"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="房源管理"><svg class="ic"><use href="#i-building"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="项目管理" aria-current="page"><svg class="ic"><use href="#i-folder"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="线索中心"><svg class="ic"><use href="#i-target"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="客户管理"><svg class="ic"><use href="#i-users"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="数据报表"><svg class="ic"><use href="#i-chart"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="财务结算"><svg class="ic"><use href="#i-wallet"></use></svg></button>
+    </nav>
+    <div class="rail-bottom">
+      <button class="rail-btn small" type="button" aria-label="帮助中心"><svg class="ic"><use href="#i-help"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="系统设置"><svg class="ic"><use href="#i-settings"></use></svg></button>
+      <button class="rail-btn small" type="button" aria-label="收起导航"><svg class="ic"><use href="#i-panel"></use></svg></button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="crumb"><span>经营中心</span><span class="slash">/</span><span class="here">项目管理</span></div>
+        <div class="topbar-right">
+          <span class="sync"><span class="live"></span>数据同步于 09:41 · 2 分钟前</span>
+          <button class="avatar-btn" type="button" aria-label="账户菜单：唐欣帆">唐</button>
+        </div>
+      </div>
+
+      <header class="page-head">
+        <div class="page-title">
+          <div class="eyebrow">Projects · 资产全周期</div>
+          <h1>项目管理</h1>
+          <p class="page-desc">从签约、装修到成交，每一套房源的进度、现金流与责任人都在这张表里。</p>
+        </div>
+        <div class="page-actions">
+          <button class="text-action" type="button" onClick="{{onExport}}"><svg class="ic"><use href="#i-download"></use></svg>导出台账</button>
+          <a class="btn-primary" href="Create.dc.html"><svg class="ic"><use href="#i-plus"></use></svg>新建项目</a>
+        </div>
+      </header>
+
+      <section class="portfolio" aria-label="资产组合概览">
+        <div class="pf-head">
+          <div class="pf-main">
+            <div class="pf-kicker">在管资产 / Portfolio</div>
+            <div class="pf-number"><span class="pf-num">{{activeCount}}</span><span class="pf-unit">套在管</span></div>
+            <div class="pf-sub">{{totalCount}} 套累计项目 · 累计签约 <b>¥{{totalSigning}} 万</b> · 覆盖 6 个行政区</div>
+          </div>
+          <div class="pf-metrics">
+            <div class="pf-metric">
+              <span class="m-label">10 月成交</span>
+              <div class="m-value">{{octSold}}<small>套</small></div>
+              <div class="m-sub">回款 ¥{{octRevenue}} 万</div>
+            </div>
+            <div class="pf-metric">
+              <span class="m-label">在售挂牌</span>
+              <div class="m-value">¥{{sellingList}}<small>万</small></div>
+              <div class="m-sub">{{sellingCount}} 套在售 · 待成交</div>
+            </div>
+            <div class="pf-metric">
+              <span class="m-label">平均单套签约</span>
+              <div class="m-value">¥{{avgSigning}}<small>万</small></div>
+              <div class="m-sub">35 套项目均值</div>
+            </div>
+          </div>
+        </div>
+        <div class="runway" aria-label="生命周期阶段筛选">
+          <sc-for list="{{stages}}" as="s" hint-placeholder-count="5">
+            <button class="stage {{s.cls}} {{s.onClass}}" type="button" onClick="{{s.onClick}}" aria-pressed="{{s.aria}}">
+              <span class="stage-bar" aria-hidden="true"></span>
+              <span class="stage-top"><span class="stage-no">{{s.no}}</span><span class="stage-label">{{s.label}}</span></span>
+              <span class="stage-count">{{s.count}}<em>套</em></span>
+              <span class="stage-desc">{{s.desc}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </section>
+
+      <section class="list-card" aria-label="项目列表">
+        <div class="list-head">
+          <div class="list-left">
+            <div class="list-title"><h2>{{listTitle}}</h2><span class="count-pill">{{listCount}}</span></div>
+            <button class="sort-btn" type="button" onClick="{{cycleSort}}">{{sortLabel}}<svg class="ic"><use href="#i-chevron-down"></use></svg></button>
+          </div>
+          <div class="list-tools">
+            <label class="search" for="proj-search">
+              <svg class="ic"><use href="#i-search"></use></svg>
+              <input id="proj-search" type="search" placeholder="搜索小区、地址或合同编号" value="{{query}}" onInput="{{onSearch}}" />
+              <span class="kbd">⌘K</span>
+            </label>
+            <div class="select-wrap">
+              <select aria-label="业务形式筛选" value="{{formFilter}}" onChange="{{onForm}}">
+                <option value="all">全部业务形式</option>
+                <option value="agent">代理美化</option>
+                <option value="wholesale">收购美化</option>
+              </select>
+              <svg class="ic chev"><use href="#i-chevron-down"></use></svg>
+            </div>
+            <div class="select-wrap">
+              <select aria-label="归档状态筛选" value="{{archiveFilter}}" onChange="{{onArchive}}">
+                <option value="all">全部归档状态</option>
+                <option value="active">未归档</option>
+                <option value="archived">已归档</option>
+              </select>
+              <svg class="ic chev"><use href="#i-chevron-down"></use></svg>
+            </div>
+            <div class="seg" aria-label="视图切换">
+              <button class="{{tableOnClass}}" type="button" onClick="{{showTable}}" aria-label="表格视图" aria-pressed="{{tableAria}}"><svg class="ic"><use href="#i-table"></use></svg></button>
+              <button class="{{gridOnClass}}" type="button" onClick="{{showGrid}}" aria-label="卡片视图" aria-pressed="{{gridAria}}"><svg class="ic"><use href="#i-grid-view"></use></svg></button>
+            </div>
+          </div>
+        </div>
+
+        <sc-if value="{{showClear}}">
+          <div class="filter-row">
+            <sc-if value="{{hasStatus}}"><span class="chip">{{statusLabel}}<button type="button" onClick="{{clearStatus}}" aria-label="移除阶段筛选"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-if>
+            <sc-if value="{{hasQuery}}"><span class="chip">“{{query}}”<button type="button" onClick="{{clearQuery}}" aria-label="移除关键词筛选"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-if>
+            <sc-if value="{{hasForm}}"><span class="chip">{{formLabel}}<button type="button" onClick="{{clearForm}}" aria-label="移除业务形式筛选"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-if>
+            <sc-if value="{{hasArchive}}"><span class="chip">{{archiveLabel}}<button type="button" onClick="{{clearArchive}}" aria-label="移除归档状态筛选"><svg class="ic"><use href="#i-x"></use></svg></button></span></sc-if>
+            <button class="clear-all" type="button" onClick="{{clearAll}}">清空全部</button>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isTable}}">
+          <div class="table-scroll">
+            <sc-if value="{{hasRows}}">
+              <div class="t-head"><span>房源</span><span>阶段</span><span>价格</span><span>周期</span><span>负责人</span><span>现金流</span><span><span class="sr-only">查看</span></span></div>
+              <sc-for list="{{rows}}" as="row" hint-placeholder-count="8">
+                <a class="p-row" href="{{row.href}}" aria-label="查看 {{row.title}} 项目详情">
+                  <div class="prop">
+                    <span class="mono {{row.monoClass}}">{{row.initial}}</span>
+                    <span class="p-text">
+                      <span class="p-title">{{row.title}}</span>
+                      <span class="p-meta">{{row.metaLine}}</span>
+                    </span>
+                  </div>
+                  <div>
+                    <span class="status-pill {{row.statusClass}}">{{row.statusLabel}}</span>
+                    <div class="cell-sub">{{row.stageNote}}</div>
+                  </div>
+                  <div>
+                    <div class="price-main">¥ {{row.priceMain}} <span class="unit">万</span></div>
+                    <div class="price-sub">{{row.priceSub}}</div>
+                    <div class="price-end {{row.priceEndClass}}">{{row.priceEndText}}</div>
+                  </div>
+                  <div>
+                    <div class="cycle-main">{{row.cycleMain}} <span class="unit">{{row.cycleUnit}}</span></div>
+                    <div class="cell-sub">{{row.cycleSub}}</div>
+                  </div>
+                  <div class="owner"><span class="owner-av">{{row.ownerInitial}}</span><span class="owner-name">{{row.owner}}</span></div>
+                  <div>
+                    <sc-if value="{{row.hasCash}}"><div class="cash-val {{row.cashClass}}">{{row.cashText}}</div><div class="cash-sub">{{row.cashSub}}</div></sc-if>
+                    <sc-if value="{{row.noCash}}"><div class="cash-sub">待定价</div><div class="cash-sub">挂牌后测算</div></sc-if>
+                  </div>
+                  <span class="row-arrow"><svg class="ic"><use href="#i-arrow-right"></use></svg></span>
+                </a>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{noRows}}">
+              <div class="empty-state">
+                <div class="empty-icon"><svg class="ic"><use href="#i-search"></use></svg></div>
+                <h3>没有找到匹配的项目</h3>
+                <p>试试更换关键词，或清空当前筛选条件。</p>
+                <button class="btn-ghost" type="button" onClick="{{clearAll}}">清空筛选</button>
+              </div>
+            </sc-if>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{isGrid}}">
+          <sc-if value="{{hasRows}}">
+            <div class="project-grid">
+              <sc-for list="{{rows}}" as="row" hint-placeholder-count="6">
+                <a class="p-card" href="{{row.href}}" aria-label="查看 {{row.title}} 项目详情">
+                  <div class="pc-top">
+                    <span class="status-pill {{row.statusClass}}">{{row.statusLabel}}</span>
+                    <span class="biz-tag">{{row.bizLabel}}</span>
+                  </div>
+                  <div>
+                    <div class="pc-name">{{row.title}}</div>
+                    <div class="pc-meta">{{row.metaLine}}</div>
+                  </div>
+                  <div class="pc-prices">
+                    <div><div class="pc-price-label">签约价</div><div class="pc-price-value">¥{{row.priceMain}}<small> 万</small></div></div>
+                    <div><div class="pc-price-label">挂牌 / 成交</div><div class="pc-price-value">¥{{row.priceAlt}}<small> 万</small></div></div>
+                  </div>
+                  <div class="pc-foot">
+                    <div class="pc-cash {{row.cashClass}}">{{row.cashText}}<span>{{row.cashSub}}</span></div>
+                    <span class="pc-arrow"><svg class="ic"><use href="#i-arrow-right"></use></svg></span>
+                  </div>
+                </a>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{noRows}}">
+            <div class="empty-state">
+              <div class="empty-icon"><svg class="ic"><use href="#i-search"></use></svg></div>
+              <h3>没有找到匹配的项目</h3>
+              <p>试试更换关键词，或清空当前筛选条件。</p>
+              <button class="btn-ghost" type="button" onClick="{{clearAll}}">清空筛选</button>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <div class="list-foot">
+          <div class="foot-info">第 {{rangeStart}}–{{rangeEnd}} 条 · 共 {{totalLabel}} 个项目</div>
+          <div class="pager">
+            <button class="{{prevClass}}" type="button" onClick="{{prevPage}}" aria-label="上一页"><svg class="ic"><use href="#i-chevron-left"></use></svg></button>
+            <sc-for list="{{pageButtons}}" as="p" hint-placeholder-count="5">
+              <button class="{{p.onClass}}" type="button" onClick="{{p.onClick}}" aria-current="{{p.aria}}">{{p.label}}</button>
+            </sc-for>
+            <button class="{{nextClass}}" type="button" onClick="{{nextPage}}" aria-label="下一页"><svg class="ic"><use href="#i-chevron-right"></use></svg></button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<sc-if value="{{toast}}">
+  <div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div>
+</sc-if>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1560}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      stage: "all",
+      q: "",
+      form: "all",
+      archive: "all",
+      view: "table",
+      sort: "recent",
+      page: 1,
+      toast: null
+    };
+    this._toastTimer = null;
+  }
+
+  componentWillUnmount() {
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+  }
+
+  pickStage(id) {
+    this.setState({ stage: this.state.stage === id ? "all" : id, page: 1 });
+  }
+
+  showToast(text) {
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this.setState({ toast: text });
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+
+  daysSince(iso) {
+    if (!iso) return 0;
+    return Math.max(0, Math.floor((NOW - new Date(iso + "T00:00:00+08:00")) / 86400000));
+  }
+
+  fmtNum(n) {
+    if (n == null) return "—";
+    return Number(n).toLocaleString("zh-CN", { maximumFractionDigits: 1 });
+  }
+
+  districtOf(p) {
+    const h = p.community + p.address;
+    if (/金杨|朱家门/.test(h)) return "浦东新区 · 金杨";
+    if (/泗塘/.test(h)) return "宝山区 · 泗塘";
+    if (/呼玛/.test(h)) return "宝山区 · 呼玛";
+    if (/通河/.test(h)) return "宝山区 · 通河";
+    if (/淞南|长江路/.test(h)) return "宝山区 · 淞南";
+    if (/共康|保德路|场中路|临汾路|阳曲路|三泉路|闻喜路|景凤|彭顺|康平/.test(h)) return "静安区 · 彭浦";
+    if (/新泾|天山西路/.test(h)) return "长宁区 · 新泾";
+    if (/上师大|师大新村/.test(h)) return "徐汇区 · 康健";
+    if (/唐家宅|西藏南路|市民新村|茶陵路/.test(h)) return "黄浦区 · 老西门";
+    if (/振兴|重庆北路/.test(h)) return "黄浦区 · 人民广场";
+    return "上海市 · 中心城区";
+  }
+
+  layoutOf(p) {
+    if (p.layout) return p.layout;
+    if (p.area < 40) return "1室1厅1卫";
+    if (p.area < 62) return "2室1厅1卫";
+    return "3室1厅1卫";
+  }
+
+  titleOf(p) {
+    let room = p.room.replace(/^(静安区|宝山区|浦东新区|长宁区|徐汇区|黄浦区)/, "");
+    if (room.indexOf(p.community) === 0) room = room.slice(p.community.length);
+    room = room.replace(/^[-\s·]+/, "");
+    return room ? p.community + " " + room : p.community;
+  }
+
+  updatedOf(p) {
+    return p.soldDate || p.listingDate || p.signingDate || "2025-01-01";
+  }
+
+  rowVals(p, index) {
+    const st = STATUS[p.status];
+    const title = this.titleOf(p);
+    const layout = this.layoutOf(p);
+    const area = p.area ? this.fmtNum(p.area) + "㎡" : "面积待补";
+    const floor = p.floor || "中楼层";
+    const manager = MANAGERS[index % MANAGERS.length];
+    const totalDays = p.signingDate ? this.daysSince(p.signingDate) : 0;
+    const soldDays = p.signingDate && p.soldDate ? Math.max(1, Math.round((new Date(p.soldDate) - new Date(p.signingDate)) / 86400000)) : 0;
+    const marketDays = p.listingDate ? this.daysSince(p.listingDate) : 0;
+    let stageNote = "";
+    if (p.status === "selling") stageNote = "上架 " + marketDays + " 天";
+    else if (p.status === "renovating") stageNote = "工期第 " + Math.max(1, totalDays - 10) + " 天";
+    else if (p.status === "signing") stageNote = "已签 " + totalDays + " 天";
+    else if (p.status === "sold") stageNote = "成交周期 " + soldDays + " 天";
+    else stageNote = "已结束";
+    let priceSub = "待挂牌";
+    if (p.soldPrice) priceSub = "成交 ¥" + this.fmtNum(p.soldPrice) + " 万";
+    else if (p.listPrice) priceSub = "挂牌 ¥" + this.fmtNum(p.listPrice) + " 万" + (p.signingPrice ? " · +" + this.fmtNum(p.listPrice - p.signingPrice) : "");
+    let cycleMain = totalDays ? totalDays + " 天" : "—";
+    let cycleUnit = "";
+    let cycleSub = "签约至今";
+    if (p.status === "sold") { cycleMain = soldDays + " 天"; cycleSub = "签约 → 成交"; }
+    else if (p.status === "signing") { cycleSub = "等待交房"; }
+    else if (p.status === "renovating") { cycleSub = "装修进行中"; }
+    else if (p.status === "selling") { cycleSub = "签约至今"; }
+    else if (p.status === "ended") { cycleMain = "—"; cycleUnit = ""; cycleSub = "已归档"; }
+    let hasCash = false, cashText = "", cashSub = "", cashClass = "pos", priceAlt = "—";
+    const reference = p.soldPrice || p.listPrice;
+    if (reference && p.signingPrice) {
+      const cost = p.signingPrice + (p.area || 50) * 0.36 + 6;
+      const net = reference * 0.965 - cost;
+      const roi = cost ? Math.round((net / cost) * 100) : 0;
+      hasCash = true;
+      cashText = (net >= 0 ? "+" : "−") + "¥" + this.fmtNum(Math.abs(net)) + " 万";
+      cashSub = (p.status === "sold" ? "已实现" : "预计净收益") + " · ROI " + roi + "%";
+      cashClass = net >= 0 ? "pos" : "neg";
+    }
+    if (p.soldPrice) priceAlt = this.fmtNum(p.soldPrice);
+    else if (p.listPrice) priceAlt = this.fmtNum(p.listPrice);
+    const commissionEnd = p.commissionEnd || (typeof COMMISSION_END !== "undefined" ? COMMISSION_END[p.contract] : "") || "";
+    let priceEndText = "委托期未录入";
+    let priceEndClass = "";
+    if (commissionEnd) {
+      const daysLeft = Math.ceil((new Date(commissionEnd + "T00:00:00+08:00") - NOW) / 86400000);
+      priceEndText = "委托至 " + commissionEnd;
+      if (p.status !== "sold" && p.status !== "ended" && daysLeft >= 0 && daysLeft <= 30) priceEndClass = "soon";
+    }
+    return {
+      id: p.id,
+      title: title,
+      initial: p.community.slice(0, 1),
+      monoClass: st.mono,
+      metaLine: this.districtOf(p) + " · " + layout + " · " + area + " · " + floor,
+      href: ({ signing: "DetailSigning.dc.html", renovating: "DetailRenovation.dc.html", selling: "Detail.dc.html", sold: "DetailSold.dc.html", ended: "DetailEnded.dc.html" })[p.status] || "Detail.dc.html",
+      statusLabel: st.label,
+      statusClass: st.cls,
+      stageNote: stageNote,
+      priceMain: this.fmtNum(p.signingPrice),
+      priceSub: priceSub,
+      priceEndText: priceEndText,
+      priceEndClass: priceEndClass,
+      priceAlt: priceAlt,
+      cycleMain: cycleMain,
+      cycleUnit: cycleUnit,
+      cycleSub: cycleSub,
+      owner: manager,
+      ownerInitial: manager.slice(0, 1),
+      bizLabel: p.business === "agent" ? "代理美化" : "收购美化",
+      hasCash: hasCash,
+      noCash: !hasCash,
+      cashText: cashText,
+      cashSub: cashSub,
+      cashClass: cashClass
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    let list = PROJECTS.filter((p) => {
+      if (s.stage !== "all" && p.status !== s.stage) return false;
+      if (s.form !== "all" && p.business !== s.form) return false;
+      if (s.archive === "active" && p.archived) return false;
+      if (s.archive === "archived" && !p.archived) return false;
+      if (s.q) {
+        const q = s.q.toLowerCase();
+        const hay = (p.community + " " + p.room + " " + p.address + " " + p.contract + " " + (p.layout || "")).toLowerCase();
+        if (hay.indexOf(q) < 0) return false;
+      }
+      return true;
+    });
+    list = list.slice().sort((a, b) => {
+      if (s.sort === "price") return (b.signingPrice || 0) - (a.signingPrice || 0);
+      if (s.sort === "cycle") return this.daysSince(b.signingDate) - this.daysSince(a.signingDate);
+      return new Date(this.updatedOf(b)) - new Date(this.updatedOf(a));
+    });
+    const PAGE_SIZE = 8;
+    const total = list.length;
+    const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    const page = Math.min(s.page, pageCount);
+    const pageRows = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const rows = pageRows.map((p, i) => this.rowVals(p, i));
+    const countOf = (status) => PROJECTS.filter((p) => p.status === status).length;
+    const sumSigning = (status) => PROJECTS.filter((p) => p.status === status).reduce((a, p) => a + (p.signingPrice || 0), 0);
+    const sumList = (status) => PROJECTS.filter((p) => p.status === status).reduce((a, p) => a + (p.listPrice || 0), 0);
+    const sumSold = (status) => PROJECTS.filter((p) => p.status === status).reduce((a, p) => a + (p.soldPrice || 0), 0);
+    const stageDefs = [
+      { id: "signing", no: "01", label: "签约", desc: "合同推进中" },
+      { id: "renovating", no: "02", label: "装修", desc: "投入 " + this.fmtNum(sumSigning("renovating")) + " 万" },
+      { id: "selling", no: "03", label: "在售", desc: "挂牌 " + this.fmtNum(sumList("selling")) + " 万" },
+      { id: "sold", no: "04", label: "已售", desc: "回款 " + this.fmtNum(sumSold("sold")) + " 万" },
+      { id: "ended", no: "05", label: "已下架", desc: "归档留存" }
+    ];
+    const stages = stageDefs.map((x) => ({
+      ...x,
+      count: countOf(x.id),
+      cls: "s-" + x.id,
+      onClass: s.stage === x.id ? "on" : "",
+      aria: s.stage === x.id ? "true" : "false",
+      onClick: () => this.pickStage(x.id)
+    }));
+    const sortLabels = { recent: "最近更新", price: "签约金额", cycle: "持有周期" };
+    const statusLabels = { signing: "签约", renovating: "装修", selling: "在售", sold: "已售", ended: "已下架" };
+    const totalCount = PROJECTS.length;
+    const activeCount = PROJECTS.filter((p) => ["signing", "renovating", "selling"].indexOf(p.status) >= 0).length;
+    const totalSigning = PROJECTS.reduce((a, p) => a + (p.signingPrice || 0), 0);
+    const avgSigning = totalSigning / totalCount;
+    const sellingCount = countOf("selling");
+    const sellingList = sumList("selling");
+    const octRows = PROJECTS.filter((p) => p.soldDate && p.soldDate.slice(0, 7) === "2026-10");
+    const octSold = octRows.length;
+    const octRevenue = octRows.reduce((a, p) => a + (p.soldPrice || 0), 0);
+    const hasQuery = !!s.q;
+    const hasStatus = s.stage !== "all";
+    const hasForm = s.form !== "all";
+    const hasArchive = s.archive !== "all";
+    const pageButtons = [];
+    for (let i = 1; i <= pageCount; i++) pageButtons.push({
+      label: String(i),
+      onClass: i === page ? "on" : "",
+      aria: i === page ? "page" : "false",
+      onClick: () => this.setState({ page: i })
+    });
+    return {
+      totalCount: totalCount,
+      activeCount: activeCount,
+      totalSigning: this.fmtNum(Math.round(totalSigning)),
+      avgSigning: this.fmtNum(Math.round(avgSigning)),
+      sellingCount: sellingCount,
+      sellingList: this.fmtNum(Math.round(sellingList)),
+      octSold: octSold,
+      octRevenue: this.fmtNum(Math.round(octRevenue)),
+      stages: stages,
+      rows: rows,
+      hasRows: rows.length > 0,
+      noRows: rows.length === 0,
+      listTitle: hasStatus ? statusLabels[s.stage] + "项目" : "全部项目",
+      listCount: total + " 个",
+      totalLabel: total,
+      rangeStart: total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1,
+      rangeEnd: Math.min(page * PAGE_SIZE, total),
+      pageButtons: pageButtons,
+      prevClass: page <= 1 ? "is-off" : "",
+      nextClass: page >= pageCount ? "is-off" : "",
+      prevPage: () => this.setState({ page: Math.max(1, page - 1) }),
+      nextPage: () => this.setState({ page: Math.min(pageCount, page + 1) }),
+      sortLabel: sortLabels[s.sort],
+      cycleSort: () => {
+        const order = ["recent", "price", "cycle"];
+        this.setState({ sort: order[(order.indexOf(s.sort) + 1) % order.length], page: 1 });
+      },
+      query: s.q,
+      onSearch: (e) => this.setState({ q: e.target.value, page: 1 }),
+      formFilter: s.form,
+      onForm: (e) => this.setState({ form: e.target.value, page: 1 }),
+      archiveFilter: s.archive,
+      onArchive: (e) => this.setState({ archive: e.target.value, page: 1 }),
+      hasQuery: hasQuery,
+      hasStatus: hasStatus,
+      hasForm: hasForm,
+      hasArchive: hasArchive,
+      showClear: hasQuery || hasStatus || hasForm || hasArchive,
+      statusLabel: hasStatus ? statusLabels[s.stage] + "阶段" : "",
+      formLabel: s.form === "agent" ? "代理美化" : s.form === "wholesale" ? "收购美化" : "",
+      archiveLabel: s.archive === "archived" ? "已归档" : s.archive === "active" ? "未归档" : "",
+      clearStatus: () => this.setState({ stage: "all", page: 1 }),
+      clearQuery: () => this.setState({ q: "", page: 1 }),
+      clearForm: () => this.setState({ form: "all", page: 1 }),
+      clearArchive: () => this.setState({ archive: "all", page: 1 }),
+      clearAll: () => this.setState({ stage: "all", q: "", form: "all", archive: "all", page: 1 }),
+      isTable: s.view === "table",
+      showTable: () => this.setState({ view: "table" }),
+      showGrid: () => this.setState({ view: "grid" }),
+      tableOnClass: s.view === "table" ? "on" : "",
+      gridOnClass: s.view === "grid" ? "on" : "",
+      tableAria: s.view === "table" ? "true" : "false",
+      gridAria: s.view === "grid" ? "true" : "false",
+      onExport: () => this.showToast("已按当前筛选生成导出文件（演示）"),
+      toast: s.toast
+    };
+  }
+}
+
+const NOW = new Date("2026-11-07T12:00:00+08:00");
+const MANAGERS = ["唐欣帆", "支武平", "何义", "阮文琪"];
+const STATUS = {
+  signing: { label: "签约", cls: "st-signing", mono: "sky" },
+  renovating: { label: "装修", cls: "st-renovating", mono: "warm" },
+  selling: { label: "在售", cls: "st-selling", mono: "ink" },
+  sold: { label: "已售", cls: "st-sold", mono: "fog" },
+  ended: { label: "已下架", cls: "st-ended", mono: "fog" }
+};
+
+const PROJECTS = [{"id":"p01","community":"金杨十街坊","room":"金杨路660弄21号 102","address":"金杨十街坊 金杨路660弄21号 102","status":"signing","business":"wholesale","area":26.81,"layout":"1室0厅1卫","floor":"1/6层","contract":"SH0035-SG","signingPrice":115.0,"listPrice":null,"soldPrice":null,"signingDate":"2026-10-20","listingDate":"","soldDate":"","archived":false},{"id":"p02","community":"景凤路521弄","room":"静安区景凤路521弄16号404室","address":"静安区景凤路521弄16号404室","status":"signing","business":"agent","area":64.87,"layout":"2室1厅1卫","floor":"4/6层","contract":"SH0034-DL","signingPrice":230.0,"listPrice":null,"soldPrice":null,"signingDate":"2026-10-12","listingDate":"","soldDate":"","archived":false},{"id":"p03","community":"闻喜路251弄","room":"静安区闻喜路251弄22号102","address":"静安区闻喜路251弄22号102","status":"signing","business":"agent","area":36.05,"layout":"1室1厅1卫","floor":"1/6层","contract":"SH0033-DL","signingPrice":131.0,"listPrice":null,"soldPrice":null,"signingDate":"2026-09-12","listingDate":"","soldDate":"","archived":false},{"id":"p04","community":"呼玛二村","room":"285号103室","address":"呼玛二村285号103室","status":"sold","business":"wholesale","area":50.74,"layout":"2室1厅1卫","floor":"1/6层","contract":"SH0028-SG","signingPrice":157.0,"listPrice":222.0,"soldPrice":216.0,"signingDate":"2026-07-26","listingDate":"2026-10-15","soldDate":"2026-10-20","archived":false},{"id":"p05","community":"泗塘三村","room":"61号401","address":"泗塘三村61号401","status":"selling","business":"agent","area":50.76,"layout":"2室1厅1卫","floor":"4/6层","contract":"SH0026-DL","signingPrice":142.0,"listPrice":183.0,"soldPrice":null,"signingDate":"2026-07-02","listingDate":"2026-09-22","soldDate":"","archived":false},{"id":"p06","community":"泗塘五村","room":"106号401","address":"泗塘五村106号401","status":"selling","business":"wholesale","area":65.11,"layout":"2室1厅1卫","floor":"4/6层","contract":"SH0025-SG","signingPrice":165.0,"listPrice":225.0,"soldPrice":null,"signingDate":"2026-07-02","listingDate":"2026-10-09","soldDate":"","archived":false},{"id":"p07","community":"金杨七街坊","room":"枣庄路810弄44号401","address":"枣庄路810弄44号401","status":"selling","business":"wholesale","area":56.8,"layout":"2室1厅1卫","floor":"4/6层","contract":"SH0023-SG","signingPrice":198.0,"listPrice":262.0,"soldPrice":null,"signingDate":"","listingDate":"2026-10-08","soldDate":"","archived":false},{"id":"p08","community":"彭顺小区","room":"岭南路15弄5号104室","address":"岭南路15弄5号104室","status":"sold","business":"agent","area":64.03,"layout":"2室1厅1卫","floor":"1/6层","contract":"SH0014-DL","signingPrice":228.0,"listPrice":285.0,"soldPrice":265.0,"signingDate":"2025-11-21","listingDate":"2026-03-04","soldDate":"2026-04-27","archived":false},{"id":"p09","community":"呼玛一村","room":"134号101室","address":"呼玛一村134号101室","status":"sold","business":"agent","area":53.24,"layout":"2室1厅1卫","floor":"1/6层","contract":"SH0013-DL","signingPrice":170.0,"listPrice":225.0,"soldPrice":205.0,"signingDate":"2025-11-19","listingDate":"2026-04-23","soldDate":"2026-05-16","archived":false},{"id":"p10","community":"康平小区","room":"临汾路894弄13号101室","address":"临汾路894弄13号101室","status":"sold","business":"agent","area":46.95,"layout":"2室1厅1卫","floor":"1/6层","contract":"SH0012-DL","signingPrice":190.0,"listPrice":245.0,"soldPrice":225.0,"signingDate":"2025-11-10","listingDate":"2026-04-08","soldDate":"2026-05-17","archived":false},{"id":"p11","community":"通河七村","room":"186号101","address":"通河七村186号101","status":"sold","business":"agent","area":67.49,"layout":"2室1厅1卫","floor":"1/6层","contract":"SH0011-DL","signingPrice":215.0,"listPrice":260.0,"soldPrice":251.0,"signingDate":"2025-11-10","listingDate":"2026-03-04","soldDate":"2026-05-02","archived":false},{"id":"p12","community":"上师大新村","room":"师大新村66号402","address":"师大新村66号402","status":"sold","business":"agent","area":54.51,"layout":"2室1厅1卫","floor":"4/6层","contract":"SH0010-DL","signingPrice":312.0,"listPrice":355.0,"soldPrice":350.0,"signingDate":"2025-11-06","listingDate":"2026-01-23","soldDate":"2026-03-20","archived":false},{"id":"p13","community":"呼玛五村","room":"57号204室","address":"呼玛五村57号204室","status":"renovating","business":"agent","area":57.62,"layout":"2室1厅1卫","floor":"2/6层","contract":"SH0032-DL","signingPrice":190.0,"listPrice":null,"soldPrice":null,"signingDate":"2026-09-08","listingDate":"","soldDate":"","archived":false},{"id":"p14","community":"景凤路521弄","room":"5号404室","address":"景凤路521弄5号404室","status":"selling","business":"wholesale","area":50.34,"layout":null,"floor":"4层","contract":"SH0027-SG","signingPrice":149.5,"listPrice":255.0,"soldPrice":null,"signingDate":"2026-06-18","listingDate":"2026-09-04","soldDate":"","archived":false},{"id":"p15","community":"景凤小区","room":"景凤路480弄19号401室","address":"景凤路480弄19号401室","status":"selling","business":"agent","area":58.53,"layout":"2室1厅1卫","floor":"4/6层","contract":"SH0024-DL","signingPrice":213.84,"listPrice":255.0,"soldPrice":null,"signingDate":"2026-06-07","listingDate":"2026-09-09","soldDate":"","archived":false},{"id":"p16","community":"共康八村","room":"弄101号301室","address":"共康八村弄101号301室","status":"renovating","business":"agent","area":63.97,"layout":"2室1厅1卫","floor":"3/6层","contract":"SH0031-DL","signingPrice":207.07,"listPrice":null,"soldPrice":null,"signingDate":"2026-09-07","listingDate":"","soldDate":"","archived":false},{"id":"p17","community":"朱家门小区","room":"浦东大道2970弄67号102室","address":"浦东大道2970弄67号102室","status":"renovating","business":"agent","area":58.58,"layout":"2室1厅1卫","floor":"1/6层","contract":"SH0030-DL","signingPrice":213.0,"listPrice":null,"soldPrice":null,"signingDate":"2026-08-24","listingDate":"","soldDate":"","archived":false},{"id":"p18","community":"保德路241弄小区","room":"保德路241弄80号604室","address":"保德路241弄80号604室","status":"renovating","business":"agent","area":57.65,"layout":null,"floor":"6层","contract":"SH0029-DL","signingPrice":205.5,"listPrice":null,"soldPrice":null,"signingDate":"2026-08-17","listingDate":"","soldDate":"","archived":false},{"id":"p19","community":"共康四村","room":"长临路380弄104号401室","address":"长临路380弄104号401室","status":"sold","business":"agent","area":63.11,"layout":null,"floor":"4层","contract":"SH0009-Dl","signingPrice":206.0,"listPrice":250.0,"soldPrice":238.2,"signingDate":"2025-10-28","listingDate":"2026-01-15","soldDate":"2026-02-06","archived":false},{"id":"p20","community":"通河八村","room":"142号303室","address":"通河八村142号303室","status":"sold","business":"agent","area":44.19,"layout":null,"floor":"3层","contract":"SH0008-DL","signingPrice":149.5,"listPrice":175.0,"soldPrice":173.0,"signingDate":"2025-10-26","listingDate":"2026-01-27","soldDate":"2026-02-09","archived":false},{"id":"p21","community":"共康五村","room":"32号402室","address":"共康五村32号402室","status":"sold","business":"agent","area":71.19,"layout":null,"floor":"4层","contract":"SH0007-DL","signingPrice":233.0,"listPrice":280.0,"soldPrice":270.0,"signingDate":"2025-10-12","listingDate":"2026-01-07","soldDate":"2026-05-05","archived":false},{"id":"p22","community":"景凤小区","room":"景凤路480弄22号101室","address":"景凤路480弄22号101室","status":"sold","business":"agent","area":53.69,"layout":null,"floor":null,"contract":"SH0006-DL","signingPrice":223.5,"listPrice":260.0,"soldPrice":253.0,"signingDate":"2025-08-09","listingDate":"2025-10-31","soldDate":"2026-03-10","archived":false},{"id":"p23","community":"共康五村","room":"195号103室","address":"共康五村195号103室","status":"selling","business":"wholesale","area":52.57,"layout":"2室1厅1卫","floor":"1/6层","contract":"SH0020-SG","signingPrice":165.0,"listPrice":248.0,"soldPrice":null,"signingDate":"2026-04-29","listingDate":"2026-09-03","soldDate":"","archived":false},{"id":"p24","community":"通河二村","room":"26号102室","address":"通河二村26号102室","status":"sold","business":"agent","area":37.0,"layout":"1室0厅0卫","floor":null,"contract":"SH0021-DL","signingPrice":116.0,"listPrice":162.0,"soldPrice":142.0,"signingDate":"2026-05-18","listingDate":"2026-08-31","soldDate":"2026-10-17","archived":false},{"id":"p25","community":"新泾四村","room":"天山西路385弄12号404室","address":"天山西路385弄12号404室","status":"selling","business":"wholesale","area":56.8,"layout":null,"floor":"4层","contract":"SH0022-SG","signingPrice":258.0,"listPrice":345.0,"soldPrice":null,"signingDate":"2026-05-21","listingDate":"2026-08-20","soldDate":"","archived":false},{"id":"p26","community":"阳曲路470弄","room":"41号101室","address":"阳曲路470弄41号101室","status":"sold","business":"wholesale","area":46.7,"layout":null,"floor":null,"contract":"SH0018-SG","signingPrice":160.0,"listPrice":228.0,"soldPrice":218.0,"signingDate":"2026-04-19","listingDate":"2026-09-09","soldDate":"2026-10-14","archived":false},{"id":"p27","community":"淞南四村","room":"长江路440弄28号102室","address":"长江路440弄28号102室","status":"sold","business":"wholesale","area":46.47,"layout":"2室1厅1卫","floor":"1/6层","contract":"SH0017-SG","signingPrice":142.8,"listPrice":200.0,"soldPrice":187.2,"signingDate":"2026-04-10","listingDate":"2026-08-27","soldDate":"2026-10-19","archived":false},{"id":"p28","community":"通河八村","room":"98号201室","address":"通河八村98号201室","status":"sold","business":"wholesale","area":53.59,"layout":null,"floor":"2/6层","contract":"SH0019-SG","signingPrice":160.0,"listPrice":229.0,"soldPrice":220.0,"signingDate":"2026-04-22","listingDate":"2026-08-05","soldDate":"2026-08-14","archived":false},{"id":"p29","community":"金杨七街坊","room":"枣庄路810弄30号201室","address":"枣庄路810弄30号201室","status":"sold","business":"agent","area":55.67,"layout":null,"floor":"2层","contract":"SH0005-DL","signingPrice":212.0,"listPrice":260.0,"soldPrice":253.8,"signingDate":"2025-07-14","listingDate":"2025-10-19","soldDate":"2025-10-20","archived":false},{"id":"p30","community":"场中路2401弄","room":"23号101室","address":"场中路2401弄23号101室","status":"sold","business":"agent","area":51.15,"layout":null,"floor":null,"contract":"SH0004-DL","signingPrice":210.0,"listPrice":250.0,"soldPrice":245.0,"signingDate":"2025-07-05","listingDate":"2025-09-24","soldDate":"2025-09-25","archived":false},{"id":"p31","community":"唐家宅小区","room":"西藏南路1566弄13号502室","address":"西藏南路1566弄13号502室","status":"ended","business":"agent","area":46.6,"layout":null,"floor":"5层","contract":"SH0003-DL","signingPrice":435.0,"listPrice":440.0,"soldPrice":null,"signingDate":"2025-06-26","listingDate":"2025-09-11","soldDate":"","archived":true},{"id":"p32","community":"市民新村","room":"茶陵路345弄9号101室","address":"茶陵路345弄9号101室","status":"sold","business":"agent","area":53.96,"layout":null,"floor":null,"contract":"SH0002-DL","signingPrice":470.0,"listPrice":520.0,"soldPrice":515.0,"signingDate":"2025-04-26","listingDate":"2025-07-21","soldDate":"2025-10-11","archived":false},{"id":"p33","community":"兴泉小区","room":"三泉路821弄58号404室","address":"三泉路821弄58号404室","status":"sold","business":"agent","area":43.56,"layout":null,"floor":"4层","contract":"SH0015-DL","signingPrice":142.0,"listPrice":175.0,"soldPrice":169.0,"signingDate":"2025-12-20","listingDate":"2026-04-08","soldDate":"2026-07-01","archived":false},{"id":"p34","community":"泗塘三村","room":"13号504","address":"泗塘三村13号504","status":"sold","business":"wholesale","area":51.24,"layout":"2室1厅1卫","floor":"5/6层","contract":"SH0016-DL","signingPrice":125.0,"listPrice":178.0,"soldPrice":170.0,"signingDate":"2026-03-31","listingDate":"2026-07-30","soldDate":"2026-08-03","archived":false},{"id":"p35","community":"振兴大楼","room":"重庆北路235号305室","address":"重庆北路235号305室","status":"sold","business":"agent","area":72.35,"layout":null,"floor":"3/16层","contract":"SH0001-DL","signingPrice":580.0,"listPrice":630.0,"soldPrice":609.5,"signingDate":"2025-03-26","listingDate":"2025-06-09","soldDate":"2025-07-27","archived":false}];
+const COMMISSION_END = {"SH0035-SG":"","SH0034-DL":"2027-09-11","SH0033-DL":"2027-05-31","SH0028-SG":"2027-02-01","SH0026-DL":"2027-01-31","SH0025-SG":"2027-01-31","SH0023-SG":"","SH0014-DL":"2026-06-20","SH0013-DL":"2026-09-30","SH0012-DL":"2026-09-10","SH0011-DL":"2026-08-10","SH0010-DL":"2026-06-05","SH0032-DL":"2027-03-07","SH0027-SG":"2027-01-03","SH0024-DL":"2027-01-06","SH0031-DL":"2027-03-09","SH0030-DL":"2027-06-24","SH0029-DL":"2027-05-16","SH0009-Dl":"2026-07-27","SH0008-DL":"2026-07-25","SH0007-DL":"2026-08-11","SH0006-DL":"2026-02-07","SH0020-SG":"2026-11-05","SH0021-DL":"2026-11-17","SH0022-SG":"2026-11-24","SH0018-SG":"2026-11-19","SH0017-SG":"2026-11-19","SH0019-SG":"2026-10-28","SH0005-DL":"2026-01-10","SH0004-DL":"2026-01-04","SH0003-DL":"2026-04-30","SH0002-DL":"2025-11-10","SH0015-DL":"2026-10-19","SH0016-DL":"2026-09-30","SH0001-DL":"2025-09-29"};
+</script>
+</body>
+</html>

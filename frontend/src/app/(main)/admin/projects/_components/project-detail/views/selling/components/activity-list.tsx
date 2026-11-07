@@ -1,7 +1,8 @@
 "use client";
 
 import { safeFormatDate } from "@/lib/formatters";
-import { Eye, Loader2, MessageSquare, Tag, Trash2 } from "lucide-react";
+import { ChevronDown, Eye, Loader2, MessageSquare, Tag, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { SalesRecord } from "../../../../../types";
 
@@ -41,10 +42,13 @@ export function ActivityList({
   canEditSales = false,
   deletingId = null,
 }: ActivityListProps) {
-  // 按时间倒序排列
+  const [expanded, setExpanded] = useState(false);
+  // 按时间倒序排列；默认只展示最近 5 条，避免历史记录把详情页拉得过长。
   const sortedData = [...data].sort(
     (a, b) => new Date(b.record_date).getTime() - new Date(a.record_date).getTime(),
   );
+  const visibleData = expanded ? sortedData : sortedData.slice(0, 5);
+  const hiddenCount = Math.max(0, sortedData.length - visibleData.length);
 
   if (data.length === 0) {
     return (
@@ -62,7 +66,7 @@ export function ActivityList({
 
   return (
     <div>
-      {sortedData.map((item, index) => {
+      {visibleData.map((item, index) => {
         const isDeleting = deletingId === item.id;
         const isMax = type === "offer" && item.price != null && item.price === maxPrice;
         return (
@@ -144,6 +148,26 @@ export function ActivityList({
           </div>
         );
       })}
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="mt-2 inline-flex items-center gap-1 text-[12px] font-[450] text-graphite transition-colors hover:text-ink"
+        >
+          查看全部 {sortedData.length} 条
+          <ChevronDown className="size-3.5" />
+        </button>
+      )}
+      {expanded && sortedData.length > 5 && (
+        <button
+          type="button"
+          onClick={() => setExpanded(false)}
+          className="mt-2 inline-flex items-center gap-1 text-[12px] font-[450] text-graphite transition-colors hover:text-ink"
+        >
+          收起
+          <ChevronDown className="size-3.5 rotate-180" />
+        </button>
+      )}
     </div>
   );
 }

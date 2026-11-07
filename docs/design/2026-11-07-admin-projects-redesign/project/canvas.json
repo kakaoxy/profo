@@ -1,0 +1,127 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-11-07T06:45:00Z"
+  },
+  "title": "项目管理 · 重新设计",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1560,
+      "title": "01 · 项目总览",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Detail.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1980,
+      "title": "02 · 项目详情 · 在售",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "DetailSigning.dc.html": {
+      "x": 0,
+      "y": 2300,
+      "w": 1440,
+      "h": 2080,
+      "title": "03 · 项目详情 · 签约",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "DetailRenovation.dc.html": {
+      "x": 1520,
+      "y": 2300,
+      "w": 1440,
+      "h": 1920,
+      "title": "04 · 项目详情 · 装修",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "DetailSold.dc.html": {
+      "x": 0,
+      "y": 4420,
+      "w": 1440,
+      "h": 1940,
+      "title": "05 · 项目详情 · 成交",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "DetailEnded.dc.html": {
+      "x": 1520,
+      "y": 4420,
+      "w": 1440,
+      "h": 1880,
+      "title": "06 · 项目详情 · 已下架",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Create.dc.html": {
+      "x": 0,
+      "y": 6460,
+      "w": 1440,
+      "h": 980,
+      "title": "07 · 新建项目",
+      "is_interactive": true
+    },
+    "Mobile.dc.html": {
+      "x": 1520,
+      "y": 6460,
+      "w": 390,
+      "h": 844,
+      "title": "08 · 移动端项目列表",
+      "is_interactive": true
+    },
+    "States.dc.html": {
+      "x": 1990,
+      "y": 6460,
+      "w": 1440,
+      "h": 900,
+      "title": "09 · 加载 / 空 / 异常",
+      "is_interactive": true
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Detail.dc.html",
+    "DetailSigning.dc.html",
+    "DetailRenovation.dc.html",
+    "DetailSold.dc.html",
+    "DetailEnded.dc.html",
+    "Create.dc.html",
+    "Mobile.dc.html",
+    "States.dc.html"
+  ],
+  "notes": {
+    "intro": {
+      "x": 0,
+      "y": -300,
+      "text": "项目管理 · 重新设计",
+      "kind": "title1",
+      "maxW": 3430
+    },
+    "stages": {
+      "x": 0,
+      "y": 2000,
+      "text": "项目详情 · 各阶段",
+      "kind": "title1",
+      "maxW": 3430
+    },
+    "flows": {
+      "x": 0,
+      "y": 6380,
+      "text": "新建流程与边界状态",
+      "kind": "title1",
+      "maxW": 3430
+    }
+  },
+  "designSystems": []
+}

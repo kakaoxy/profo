@@ -1,45 +1,36 @@
-import { Suspense } from "react";
 import { fetchClient } from "@/lib/api-server";
 import { isRedirectError } from "@/lib/auth/server/session";
 import { logger } from "@/lib/logger";
-import { PageContainer, PageHeader } from "@/app/(main)/admin/_components";
-import { ProjectStats } from "./_components/project-stats";
+import { PageContainer } from "@/app/(main)/admin/_components";
 import { ProjectView } from "./_components/project-view";
-import { ProjectPagination } from "./_components/project-pagination";
 import { Project } from "./types";
-import { MonitorSheet } from "./_components/monitor/monitor-sheet";
 import type { paths, components } from "@/lib/api-types";
 import { toNumber } from "@/lib/number-utils";
-
-interface PageProps {
-  searchParams: Promise<{
-    status?: string;
-    page?: string;
-    page_size?: string;
-    community_name?: string;
-    business_form?: string;
-    is_archived?: string;
-  }>;
-}
-
-type QueryParams = NonNullable<paths["/api/v1/projects"]["get"]["parameters"]["query"]>;
 
 type ProjectListResponse =
   paths["/api/v1/projects"]["get"]["responses"][200]["content"]["application/json"];
 
-type ProjectStatsResponse =
-  paths["/api/v1/projects/stats"]["get"]["responses"][200]["content"]["application/json"];
+type CommunityListResponse =
+  components["schemas"]["schemas__community__CommunityListResponse"];
 
 type ApiProjectItem = components["schemas"]["ProjectResponse"];
 
-function mapProjectResponse(item: ApiProjectItem): Project {
+function mapProjectResponse(
+  item: ApiProjectItem,
+  community?: components["schemas"]["CommunityResponse"],
+): Project {
+  const district = community?.district ?? null;
+  const businessCircle = community?.business_circle ?? null;
   return {
     id: item.id,
     name: item.name ?? "",
     status: item.status,
     created_at: item.created_at,
     updated_at: item.updated_at,
+    community_id: item.community_id ?? undefined,
     community_name: item.community_name ?? undefined,
+    district: district ?? undefined,
+    business_circle: businessCircle ?? undefined,
     address: item.address ?? undefined,
     // 字典解析名称（surface-dict-binding-info；pending 时为待审名称）
     building_no: item.building_no ?? null,
@@ -48,6 +39,7 @@ function mapProjectResponse(item: ApiProjectItem): Project {
     area: toNumber(item.area),
     layout: item.layout ?? undefined,
     orientation: item.orientation ?? undefined,
+    floor_info: item.floor_info ?? undefined,
     business_form: (item.business_form ?? null) as Project["business_form"],
     signing_price: toNumber(item.signing_price),
     signing_date: item.signing_date ?? undefined,
@@ -95,104 +87,72 @@ function mapProjectResponse(item: ApiProjectItem): Project {
   };
 }
 
-export default async function ProjectsPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const page = Number(params.page) || 1;
-  const page_size = Number(params.page_size) || 20;
-
-  const queryParams: QueryParams = {
-    page: page,
-    page_size: page_size,
-    contract_sort: true,
-  };
-
-  if (params.status && params.status !== "all") {
-    queryParams.status = params.status as NonNullable<QueryParams>["status"];
-  }
-
-  if (params.community_name && params.community_name.trim() !== "") {
-    queryParams.community_name = params.community_name.trim();
-  }
-
-  if (
-    params.business_form &&
-    (params.business_form === "agent" || params.business_form === "wholesale")
-  ) {
-    queryParams.business_form = params.business_form;
-  }
-
-  // 归档状态筛选（三态：无参数=全部，true=仅已归档，false=仅未归档）
-  if (params.is_archived === "true" || params.is_archived === "false") {
-    queryParams.is_archived = params.is_archived === "true";
-  }
-
+export default async function ProjectsPage() {
   const client = await fetchClient();
 
-  let listData: ProjectListResponse | null = null;
-  let statsData: ProjectStatsResponse | null = null;
+  let projects: Project[] = [];
   try {
-    const [statsRes, listRes] = await Promise.all([
-      client.GET("/api/v1/projects/stats", {}),
-      client.GET("/api/v1/projects", {
-        params: { query: queryParams },
-      }),
-    ]);
-    listData = (listRes.data as ProjectListResponse | null) ?? null;
-    statsData = (statsRes.data as ProjectStatsResponse | null) ?? null;
+    const first = await client.GET("/api/v1/projects", {
+      params: { query: { page: 1, page_size: 200, contract_sort: true } },
+    });
+    if (first.error || !first.data) throw first.error ?? new Error("项目列表为空");
+
+    const firstData = first.data as ProjectListResponse;
+    const pageSize = 200;
+    const pageCount = Math.max(1, Math.ceil(firstData.total / pageSize));
+    const rest = pageCount > 1
+      ? await Promise.all(
+          Array.from({ length: pageCount - 1 }, (_, index) =>
+            client.GET("/api/v1/projects", {
+              params: { query: { page: index + 2, page_size: pageSize, contract_sort: true } },
+            }),
+          ),
+        )
+      : [];
+    const allItems = [
+      ...(firstData.items ?? []),
+      ...rest.flatMap((response) => ((response.data as ProjectListResponse | null)?.items ?? [])),
+    ];
+
+    // 行政区/商圈是小区字典的展示字段，列表接口不返回；在此按 community_id 映射。
+    let communities: components["schemas"]["CommunityResponse"][] = [];
+    try {
+      const communityRes = await client.GET("/api/v1/admin/communities", {
+        params: { query: { page: 1, page_size: 200 } },
+      });
+      communities = (communityRes.data as CommunityListResponse | null)?.items ?? [];
+    } catch {
+      // 小区字典不可用时不影响项目列表主体，仅缺失行政区/商圈展示。
+    }
+    const communityById = new Map(communities.map((community) => [community.id, community]));
+    const communityByName = new Map(communities.map((community) => [community.name, community]));
+    // 过滤本地 E2E 夹具（__E2E_BR...），避免测试项目污染业务列表；不影响真实项目。
+    const visibleItems = allItems.filter((item) => !item.name?.startsWith("__E2E_"));
+    projects = visibleItems.map((item) =>
+      mapProjectResponse(
+        item,
+        communityById.get(item.community_id ?? "") ??
+          communityByName.get(item.community_name ?? ""),
+      ),
+    );
   } catch (e) {
-    // 401 场景 fetchClient 会抛 NEXT_REDIRECT 交由 Next.js 渲染层执行刷新重定向，
-    // 必须放行（与 layout.tsx / dashboard-data.ts 的处理一致）。
+    // 401 场景 fetchClient 会抛 NEXT_REDIRECT 交由 Next.js 渲染层执行刷新重定向。
     if (isRedirectError(e)) throw e;
-    // 其余异常（后端瞬时不可用/连接中断，如生产后端进程重启掐断在途连接）降级渲染，
-    // 避免整页 RSC 渲染失败在浏览器端呈现 Minified React error #441。
     logger.error("项目管理列表数据获取失败", e);
     return (
       <div className="min-h-screen bg-fog">
-        <PageContainer className="flex flex-col gap-8">
-          <PageHeader
-            title="项目管理"
-            description="全生命周期管理您的房源资产，从签约到售出的每一分钱。"
-          />
+        <PageContainer className="flex flex-col gap-7 pb-10 pt-2">
+          <header>
+            <p className="text-[10px] font-[480] uppercase tracking-[0.16em] text-graphite">Projects <span className="mx-2 text-rust">·</span> 资产全周期</p>
+            <h1 className="mt-3 font-signifier text-[44px] font-[420] leading-none tracking-[-0.02em] text-ink">项目管理</h1>
+          </header>
           <div className="rounded-cards bg-white p-10 text-center shadow-steep">
-            <p className="text-sm text-ash">
-              数据加载失败，请刷新重试（当前筛选会保留在地址栏中）。
-            </p>
+            <p className="text-sm text-ash">数据加载失败，请刷新重试（当前筛选会保留在地址栏中）。</p>
           </div>
         </PageContainer>
       </div>
     );
   }
 
-  const projectData: Project[] = listData?.items?.map(mapProjectResponse) ?? [];
-  const total = listData?.total ?? 0;
-
-  const stats = statsData ?? {
-    signing: 0,
-    renovating: 0,
-    selling: 0,
-    sold: 0,
-  };
-
-  return (
-    <div className="min-h-screen bg-fog">
-      <PageContainer className="flex flex-col gap-8">
-        <PageHeader
-          title="项目管理"
-          description="全生命周期管理您的房源资产，从签约到售出的每一分钱。"
-        />
-
-        <ProjectStats stats={stats} />
-
-        <ProjectView data={projectData} total={total} counts={stats} />
-
-        <div className="mt-2 relative z-50">
-          <ProjectPagination total={total} />
-        </div>
-
-        <Suspense fallback={null}>
-          <MonitorSheet />
-        </Suspense>
-      </PageContainer>
-    </div>
-  );
+  return <ProjectView data={projects} />;
 }

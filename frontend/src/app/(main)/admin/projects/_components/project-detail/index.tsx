@@ -35,9 +35,7 @@ export function ProjectDetailSheet({
     currentProjectStageIndex,
     refreshProjectData,
     handleViewModeChange,
-    handleHandoverSuccess,
     handleListingSuccess,
-    handleDealSuccess,
   } = useProjectDetail({ initialProject, isOpen });
 
   const { attachments, createHandlers, onUpload } = useProjectAttachments({
@@ -117,7 +115,6 @@ export function ProjectDetailSheet({
                     key={viewKey}
                     project={project}
                     onRefresh={refreshProjectData}
-                    onDealSuccess={handleDealSuccess}
                   />
                 )}
                 {(viewMode === "signing" || !["renovation", "selling"].includes(viewMode)) && (
@@ -128,7 +125,6 @@ export function ProjectDetailSheet({
                     handlers={handlers}
                     onUpdateAttachments={handleUpdateAttachmentsWithRefresh}
                     onUploadAttachment={onUpdateAttachments ? onUpload : undefined}
-                    onHandoverSuccess={handleHandoverSuccess}
                   />
                 )}
               </div>

@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>边界状态 · 项目管理</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  @font-face {
+    font-family: "InterLocal";
+    src: url("/_blob/2dcd3612039a9aaa2660c0c9edd0f4b9") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "SourceSerifLocal";
+    src: url("/_blob/c4fbd9994039466f864b5f025fdb214f") format("woff2");
+    font-weight: 400 600;
+    font-style: normal;
+    font-display: swap;
+  }
+  :root {
+    --ink: #17191c; --white: #ffffff; --fog: #f7f7f8; --ash: #4c4c4c; --graphite: #777b86; --dove: #a3a6af;
+    --rust: #5d2a1a; --apricot: #fbe1d1; --sky: #d3e3fc;
+    --hair: rgba(163,166,175,.32); --hair-soft: rgba(163,166,175,.18);
+    --font-ui: "InterLocal", -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans SC", "Helvetica Neue", sans-serif;
+    --font-display: "SourceSerifLocal", "Songti SC", "Noto Serif SC", serif;
+    --shadow-card: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.10) 0 20px 25px -5px, rgba(0,0,0,.10) 0 8px 10px -6px;
+    --shadow-sm: rgba(4,23,43,.05) 0 0 0 1px, rgba(0,0,0,.06) 0 10px 20px -8px, rgba(0,0,0,.05) 0 3px 6px -4px;
+    --r-card: 24px; --r-pill: 9999px;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body { margin: 0; width: 1440px; height: 900px; overflow: hidden; background: var(--fog); color: var(--ink); font-family: var(--font-ui); font-size: 14px; font-weight: 430; letter-spacing: -0.009em; line-height: 1.5; }
+  button { font: inherit; letter-spacing: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  a { color: inherit; text-decoration: none; }
+  h1, h2, h3, p { margin: 0; }
+  svg { display: block; }
+  .ic { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  :focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .shell { display: grid; grid-template-columns: 76px minmax(0,1fr); width: 1440px; height: 900px; }
+  .rail { background: var(--white); border-right: 1px solid var(--hair-soft); display: flex; flex-direction: column; align-items: center; padding: 18px 0 20px; }
+  .logo { width: 34px; height: 34px; border-radius: 11px; background: var(--ink); color: var(--white); display: flex; align-items: center; justify-content: center; font-family: var(--font-ui); font-size: 19px; font-weight: 480; }
+  .rail-nav { display: flex; flex-direction: column; gap: 8px; margin-top: 34px; }
+  .rail-btn { width: 36px; height: 36px; border-radius: 11px; color: var(--dove); display: flex; align-items: center; justify-content: center; position: relative; }
+  .rail-btn .ic { width: 17px; height: 17px; }
+  .rail-btn.on { background: var(--apricot); color: var(--rust); }
+  .rail-btn.on::before { content: ""; position: absolute; left: -20px; top: 9px; width: 3px; height: 18px; border-radius: 0 3px 3px 0; background: var(--rust); }
+  .rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: 8px; color: var(--dove); }
+  .rail-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--sky); color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 480; margin-top: 8px; }
+
+  .main { overflow: hidden; }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 18px 44px 26px; }
+  .topbar { height: 30px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .crumb { display: flex; align-items: center; gap: 7px; font-size: 10.5px; color: var(--dove); }
+  .crumb b { color: var(--graphite); font-weight: 430; }
+  .crumb .sep { color: var(--dove); }
+  .topmeta { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--dove); }
+  .topmeta .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--dove); }
+  .topmeta .ver { display: inline-flex; align-items: center; height: 21px; padding: 0 8px; border-radius: var(--r-pill); background: var(--white); border: 1px solid var(--hair-soft); color: var(--graphite); font-size: 9px; letter-spacing: .02em; }
+
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; padding: 18px 0 22px; }
+  .eyebrow { display: flex; align-items: center; gap: 8px; font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; color: var(--graphite); }
+  .eyebrow::before { content: ""; width: 18px; height: 1px; background: var(--rust); }
+  h1 { margin-top: 9px; font-family: var(--font-display); font-size: 44px; line-height: 1.06; font-weight: 400; letter-spacing: -0.015em; }
+  .page-head p { max-width: 560px; margin-top: 10px; font-size: 13px; color: var(--graphite); line-height: 1.65; }
+  .legend { display: flex; align-items: center; gap: 18px; padding-bottom: 6px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--graphite); white-space: nowrap; }
+  .legend-item i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink); }
+  .legend-item.l2 i { background: var(--rust); }
+  .legend-item.l3 i { background: var(--dove); }
+  .legend-item.l4 i { background: var(--sky); }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+  .panel { height: 316px; background: var(--white); border-radius: var(--r-card); box-shadow: var(--shadow-card); padding: 16px 16px 14px; display: flex; flex-direction: column; }
+  .panel-head { height: 44px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 0 2px 10px; }
+  .ph-left { display: flex; align-items: center; gap: 10px; }
+  .num { font-family: var(--font-ui); font-size: 21px; line-height: 1; color: var(--dove); font-weight: 430; letter-spacing: -0.02em; }
+  .ph-title h2 { font-size: 13px; line-height: 1.2; font-weight: 480; }
+  .ph-title p { margin-top: 2px; font-size: 9.5px; color: var(--dove); }
+  .tag { display: inline-flex; align-items: center; height: 21px; padding: 0 8px; border-radius: var(--r-pill); background: var(--fog); color: var(--graphite); font-size: 8.5px; letter-spacing: .06em; text-transform: uppercase; }
+  .panel-body { flex: 1; min-height: 0; border-radius: 15px; background: var(--fog); padding: 10px; }
+  .mini { height: 100%; background: var(--white); border-radius: 13px; box-shadow: var(--shadow-sm); overflow: hidden; }
+
+  .mini-toolbar { height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 12px; border-bottom: 1px solid var(--hair-soft); }
+  .sk { background: rgba(163,166,175,.18); border-radius: 5px; position: relative; overflow: hidden; }
+  .sk::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255,255,255,.75), transparent); animation: shimmer 1.5s infinite; }
+  @keyframes shimmer { 100% { transform: translateX(100%); } }
+  .sk-title { width: 92px; height: 9px; }
+  .sk-pill { width: 56px; height: 22px; border-radius: 999px; }
+  .sk-row { display: grid; grid-template-columns: 28px minmax(0,1.4fr) minmax(0,.8fr) 54px 48px; align-items: center; gap: 10px; height: 46px; padding: 0 12px; border-bottom: 1px solid var(--hair-soft); }
+  .sk-row:last-child { border-bottom: 0; }
+  .sk-circle { width: 26px; height: 26px; border-radius: 8px; }
+  .sk-line { height: 8px; border-radius: 4px; }
+  .sk-line.sm { width: 72%; }
+  .sk-badge { height: 18px; border-radius: 999px; }
+
+  .empty-mini { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 14px 24px; }
+  .empty-art { position: relative; width: 78px; height: 46px; margin-bottom: 9px; }
+  .ghost-card { position: absolute; width: 48px; height: 34px; border-radius: 7px; border: 1px solid var(--hair); background: rgba(255,255,255,.65); }
+  .ghost-card.a { left: 0; top: 8px; transform: rotate(-8deg); }
+  .ghost-card.b { right: 0; top: 8px; transform: rotate(8deg); }
+  .ghost-card.c { left: 15px; top: 0; background: var(--white); box-shadow: var(--shadow-sm); display: flex; align-items: center; justify-content: center; }
+  .empty-icon { width: 26px; height: 26px; border-radius: 8px; background: var(--apricot); color: var(--rust); display: flex; align-items: center; justify-content: center; }
+  .empty-icon .ic { width: 13px; height: 13px; }
+  .empty-mini h3 { font-size: 13px; font-weight: 480; }
+  .empty-mini p { margin-top: 3px; max-width: 290px; font-size: 10px; color: var(--graphite); line-height: 1.55; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 5px; height: 31px; padding: 0 13px; border-radius: var(--r-pill); font-size: 10px; font-weight: 480; white-space: nowrap; }
+  .btn .ic { width: 12px; height: 12px; }
+  .btn-ink { background: var(--ink); color: var(--white); }
+  .btn-ghost { border: 1px solid var(--hair); color: var(--graphite); background: var(--white); }
+  .empty-mini .btn { margin-top: 10px; }
+
+  .error-mini { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 12px 20px; }
+  .error-icon { width: 32px; height: 32px; border-radius: 10px; background: rgba(163,166,175,.18); color: var(--ash); display: flex; align-items: center; justify-content: center; margin-bottom: 8px; }
+  .error-icon .ic { width: 17px; height: 17px; }
+  .error-mini h3 { font-size: 13px; font-weight: 480; }
+  .error-mini p { margin-top: 3px; max-width: 330px; font-size: 10px; color: var(--graphite); line-height: 1.5; }
+  .error-actions { display: flex; align-items: center; gap: 7px; margin-top: 9px; }
+  .error-code { margin-top: 7px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 8px; color: var(--dove); letter-spacing: 0; }
+  .success-inline { display: flex; align-items: center; gap: 6px; color: var(--rust); font-size: 10px; margin-top: 8px; }
+  .success-inline .ic { width: 12px; height: 12px; }
+
+  .filter-mini { display: flex; flex-direction: column; }
+  .filter-searchbar { height: 42px; padding: 7px 10px 0; display: flex; gap: 6px; }
+  .fake-search { flex: 1; height: 29px; border: 1px solid var(--hair); border-radius: 9px; display: flex; align-items: center; gap: 6px; padding: 0 9px; font-size: 9px; color: var(--ink); background: var(--white); }
+  .fake-search .ic { width: 11px; height: 11px; color: var(--dove); }
+  .fake-filter { width: 29px; height: 29px; border: 1px solid var(--hair); border-radius: 9px; display: flex; align-items: center; justify-content: center; color: var(--graphite); }
+  .fake-filter .ic { width: 12px; height: 12px; }
+  .filter-chipline { display: flex; gap: 5px; padding: 6px 10px 0; }
+  .fchip { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 999px; background: var(--apricot); color: var(--rust); font-size: 8px; }
+  .fchip .x { font-size: 9px; opacity: .7; }
+  .no-result { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 0 20px 10px; }
+  .no-result .nr-icon { width: 30px; height: 30px; border-radius: 9px; background: var(--fog); color: var(--dove); display: flex; align-items: center; justify-content: center; margin-bottom: 7px; }
+  .no-result .nr-icon .ic { width: 15px; height: 15px; }
+  .no-result h3 { font-size: 12.5px; font-weight: 480; }
+  .no-result p { margin-top: 3px; font-size: 9.5px; color: var(--graphite); }
+  .no-result .nr-actions { display: flex; gap: 6px; margin-top: 8px; }
+  .cleared-list { flex: 1; padding: 6px 10px; }
+  .cl-row { display: flex; align-items: center; gap: 9px; height: 44px; border-bottom: 1px solid var(--hair-soft); }
+  .cl-row:last-child { border-bottom: 0; }
+  .cl-mono { width: 24px; height: 24px; border-radius: 7px; background: var(--ink); color: var(--white); display: flex; align-items: center; justify-content: center; font-size: 9px; }
+  .cl-main { flex: 1; min-width: 0; }
+  .cl-main b { display: block; font-size: 9.5px; font-weight: 480; }
+  .cl-main span { display: block; margin-top: 1px; font-size: 7.5px; color: var(--dove); }
+  .cl-price { font-size: 9.5px; font-weight: 480; font-variant-numeric: tabular-nums; }
+  .cl-status { height: 17px; padding: 0 6px; display: inline-flex; align-items: center; border-radius: 999px; background: var(--ink); color: var(--white); font-size: 7px; }
+
+  .note-row { display: flex; align-items: center; gap: 6px; height: 17px; padding: 0 2px; font-size: 8.5px; color: var(--dove); }
+  .note-row .ic { width: 10px; height: 10px; }
+  .panel-foot { height: 22px; display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 0 2px; font-size: 8.5px; color: var(--dove); }
+  .panel-foot b { font-weight: 480; color: var(--graphite); }
+
+  .toast { position: fixed; left: 50%; bottom: 34px; transform: translateX(-50%); z-index: 80; display: flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px; border-radius: var(--r-pill); background: var(--ink); color: var(--white); font-size: 10.5px; box-shadow: 0 16px 36px -14px rgba(23,25,28,.45); }
+  .toast .ic { width: 12px; height: 12px; }
+</style>
+</helmet>
+
+<svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 21v-7h6v7"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M16 9h2a2 2 0 0 1 2 2v10"/><path d="M8 7h4M8 11h4M8 15h4M8 21v-2h4v2"/><path d="M2 21h20"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M16 12h2"/><path d="M4 9h16"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><path d="M4 4h16v12H4z"/><path d="M8 20h8M12 16v4"/><path d="m7 12 3-3 2 2 4-4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1 1.55V21h-4v-.08a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3v-4h.08a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.55V3h4v.08a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.14.61.67 1.06 1.3 1.08H21v4h-.08a1.7 1.7 0 0 0-1.52.92Z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9a2.5 2.5 0 1 1 3.6 2.26c-.75.4-1.2.9-1.2 1.74v.3"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 5 5"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Z"/><path d="M12 9v5M12 17h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 13 4 4 10-10"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M4 14h4l2 3h4l2-3h4"/></symbol>
+  <symbol id="i-arrow-up-right" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+</svg>
+
+<div class="shell">
+  <aside class="rail" aria-label="主导航">
+    <div class="logo">P</div>
+    <nav class="rail-nav">
+      <button class="rail-btn" type="button" aria-label="工作台"><svg class="ic"><use href="#i-home"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="房源"><svg class="ic"><use href="#i-building"></use></svg></button>
+      <button class="rail-btn on" type="button" aria-current="page" aria-label="项目管理"><svg class="ic"><use href="#i-folder"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="财务"><svg class="ic"><use href="#i-wallet"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="监控"><svg class="ic"><use href="#i-monitor"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="报表"><svg class="ic"><use href="#i-chart"></use></svg></button>
+    </nav>
+    <div class="rail-foot">
+      <button class="rail-btn" type="button" aria-label="帮助"><svg class="ic"><use href="#i-help"></use></svg></button>
+      <button class="rail-btn" type="button" aria-label="设置"><svg class="ic"><use href="#i-settings"></use></svg></button>
+      <button class="rail-avatar" type="button" aria-label="账户：唐欣帆">唐</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="wrap">
+      <div class="topbar">
+        <div class="crumb"><a href="Main.dc.html">项目管理</a><span class="sep">/</span><b>边界状态</b></div>
+        <div class="topmeta"><span>设计规范 · Steep</span><span class="dot"></span><span>2026.11.07</span><span class="ver">v4.3</span></div>
+      </div>
+
+      <header class="page-head">
+        <div>
+          <div class="eyebrow">States · Edge Cases</div>
+          <h1>边界状态</h1>
+          <p>加载、空数据、异常与筛选无结果，沿用同一套版式、语气与恢复路径。状态不是错误页，是产品在解释自己。</p>
+        </div>
+        <div class="legend" aria-label="状态图例">
+          <span class="legend-item l1"><i></i>加载</span>
+          <span class="legend-item l2"><i></i>空数据</span>
+          <span class="legend-item l3"><i></i>异常</span>
+          <span class="legend-item l4"><i></i>无结果</span>
+        </div>
+      </header>
+
+      <div class="grid">
+        <section class="panel" aria-labelledby="s1">
+          <div class="panel-head">
+            <div class="ph-left"><span class="num">01</span><div class="ph-title"><h2 id="s1">加载中</h2><p>骨架屏 · 保留既有布局尺寸</p></div></div>
+            <span class="tag">Loading</span>
+          </div>
+          <div class="panel-body">
+            <div class="mini" aria-hidden="true">
+              <div class="mini-toolbar"><div class="sk sk-title"></div><div class="sk sk-pill"></div></div>
+              <div class="sk-row"><div class="sk sk-circle"></div><div class="sk sk-line"></div><div class="sk sk-line sm"></div><div class="sk sk-badge"></div><div class="sk sk-line sm"></div></div>
+              <div class="sk-row"><div class="sk sk-circle"></div><div class="sk sk-line"></div><div class="sk sk-line sm"></div><div class="sk sk-badge"></div><div class="sk sk-line sm"></div></div>
+              <div class="sk-row"><div class="sk sk-circle"></div><div class="sk sk-line"></div><div class="sk sk-line sm"></div><div class="sk sk-badge"></div><div class="sk sk-line sm"></div></div>
+              <div class="sk-row"><div class="sk sk-circle"></div><div class="sk sk-line"></div><div class="sk sk-line sm"></div><div class="sk sk-badge"></div><div class="sk sk-line sm"></div></div>
+            </div>
+          </div>
+          <div class="panel-foot"><span>首屏请求未返回时进入</span><b>超过 800ms 才显示骨架屏</b></div>
+        </section>
+
+        <section class="panel" aria-labelledby="s2">
+          <div class="panel-head">
+            <div class="ph-left"><span class="num">02</span><div class="ph-title"><h2 id="s2">空数据</h2><p>第一次使用，还没有任何项目</p></div></div>
+            <span class="tag">Empty</span>
+          </div>
+          <div class="panel-body">
+            <div class="mini empty-mini">
+              <div class="empty-art" aria-hidden="true"><div class="ghost-card a"></div><div class="ghost-card b"></div><div class="ghost-card c"><span class="empty-icon"><svg class="ic"><use href="#i-folder"></use></svg></span></div></div>
+              <h3>还没有项目</h3>
+              <p>从一套房子的签约开始，建立第一份资产档案。合同、装修、销售和现金流会在这里连成一条线。</p>
+              <a class="btn btn-ink" href="Create.dc.html">新建第一个项目<svg class="ic"><use href="#i-arrow-up-right"></use></svg></a>
+            </div>
+          </div>
+          <div class="panel-foot"><span>项目总数 = 0 时进入</span><b>CTA 与页头「新建项目」同一动作</b></div>
+        </section>
+
+        <section class="panel" aria-labelledby="s3">
+          <div class="panel-head">
+            <div class="ph-left"><span class="num">03</span><div class="ph-title"><h2 id="s3">加载失败</h2><p>网络或服务异常，保留当前筛选</p></div></div>
+            <span class="tag">Error</span>
+          </div>
+          <div class="panel-body">
+            <div class="mini error-mini">
+              <sc-if value="{{retryDone}}">
+                <div class="error-icon" style="background:var(--apricot);color:var(--rust)"><svg class="ic"><use href="#i-check"></use></svg></div>
+                <h3>连接已恢复</h3>
+                <p>项目列表已重新载入，筛选条件仍然保留。</p>
+                <div class="success-inline"><svg class="ic"><use href="#i-check"></use></svg>GET /api/v1/projects · 200</div>
+              </sc-if>
+              <sc-if value="{{notRetryDone}}">
+                <div class="error-icon"><svg class="ic"><use href="#i-alert"></use></svg></div>
+                <h3>数据加载失败</h3>
+                <p>请刷新重试（当前筛选会保留在地址栏中）。如果持续失败，请联系管理员。</p>
+                <div class="error-actions"><button class="btn btn-ink" type="button" onClick="{{retry}}">{{retryLabel}}</button><a class="btn btn-ghost" href="Main.dc.html">返回项目列表</a></div>
+                <div class="error-code">GET /api/v1/projects · 502 Bad Gateway</div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="panel-foot"><span>服务端 5xx / 网络中断时进入</span><b>重试不清空筛选与分页</b></div>
+        </section>
+
+        <section class="panel" aria-labelledby="s4">
+          <div class="panel-head">
+            <div class="ph-left"><span class="num">04</span><div class="ph-title"><h2 id="s4">筛选无结果</h2><p>有数据，但当前条件下没有匹配</p></div></div>
+            <span class="tag">No results</span>
+          </div>
+          <div class="panel-body">
+            <div class="mini filter-mini">
+              <div class="filter-searchbar"><span class="fake-search"><svg class="ic"><use href="#i-search"></use></svg>金杨</span><span class="fake-filter"><svg class="ic"><use href="#i-filter"></use></svg></span></div>
+              <sc-if value="{{filterActive}}">
+                <div class="filter-chipline"><span class="fchip">搜索：金杨 <span class="x">×</span></span><span class="fchip">阶段：在售 <span class="x">×</span></span></div>
+                <div class="no-result"><div class="nr-icon"><svg class="ic"><use href="#i-search"></use></svg></div><h3>没有符合条件的项目</h3><p>试试清空筛选，或换一个小区名称。</p><div class="nr-actions"><button class="btn btn-ink" type="button" onClick="{{clearFilters}}">清空全部筛选</button><a class="btn btn-ghost" href="Create.dc.html">新建项目</a></div></div>
+              </sc-if>
+              <sc-if value="{{filterCleared}}">
+                <div class="cleared-list">
+                  <div class="cl-row"><span class="cl-mono">景</span><span class="cl-main"><b>景凤路521弄 5号404室</b><span>静安区 · 彭浦 · 2室1厅 · 50.34㎡</span></span><span class="cl-price">¥255万</span><span class="cl-status">在售</span></div>
+                  <div class="cl-row"><span class="cl-mono">泗</span><span class="cl-main"><b>泗塘三村 61号401</b><span>宝山区 · 泗塘 · 2室1厅 · 50.76㎡</span></span><span class="cl-price">¥183万</span><span class="cl-status">在售</span></div>
+                  <div class="cl-row"><span class="cl-mono">呼</span><span class="cl-main"><b>呼玛二村 285号103室</b><span>宝山区 · 呼玛 · 2室1厅 · 50.74㎡</span></span><span class="cl-price">¥216万</span><span class="cl-status">已售</span></div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+          <div class="panel-foot"><span>筛选或搜索命中 0 条时进入</span><b>一键清空并保留页面位置</b></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<sc-if value="{{toast}}"><div class="toast"><svg class="ic"><use href="#i-check"></use></svg>{{toast}}</div></sc-if>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { retrying: false, retryDone: false, filterActive: true, toast: null };
+    this._retryTimer = null;
+    this._toastTimer = null;
+  }
+  componentWillUnmount() {
+    if (this._retryTimer) clearTimeout(this._retryTimer);
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+  }
+  notify(text) {
+    if (this._toastTimer) clearTimeout(this._toastTimer);
+    this.setState({ toast: text });
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 2200);
+  }
+  renderVals() {
+    const s = this.state;
+    return {
+      retryDone: s.retryDone,
+      notRetryDone: !s.retryDone,
+      retryLabel: s.retrying ? "重新加载中…" : "重新加载",
+      retry: () => {
+        if (s.retrying) return;
+        this.setState({ retrying: true });
+        this._retryTimer = setTimeout(() => {
+          this.setState({ retrying: false, retryDone: true });
+          this.notify("项目列表已恢复（演示）");
+        }, 900);
+      },
+      filterActive: s.filterActive,
+      filterCleared: !s.filterActive,
+      clearFilters: () => {
+        this.setState({ filterActive: false });
+        this.notify("已清空全部筛选（演示）");
+      },
+      toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

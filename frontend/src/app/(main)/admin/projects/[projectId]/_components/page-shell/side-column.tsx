@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
-import { Briefcase, ChevronRight, Eye } from "lucide-react";
+import { Briefcase, ChevronRight, Eye, ListTodo } from "lucide-react";
 import { addDays, format } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -172,6 +172,10 @@ export function SideColumn({ project, viewMode, renovationMeta, usersById }: Sid
     <>
       <KeyManagementCard projectId={project.id} />
 
+      {(viewMode === "signing" || viewMode === "renovation") && (
+        <ProjectTodoCard projectId={project.id} />
+      )}
+
       {viewMode !== "ended" && (
         <SideCard title="团队与成员">
           {members.map((member, index) => (
@@ -215,7 +219,7 @@ export function SideColumn({ project, viewMode, renovationMeta, usersById }: Sid
         </div>
       </SideCard>
 
-      {viewMode === "signing" && (
+      {(viewMode === "signing" || viewMode === "selling") && (
         <SideCard title="备注">
           {noteText ? (
             <p className="whitespace-pre-wrap text-sm font-[430] leading-[1.65] text-ash">
@@ -227,6 +231,57 @@ export function SideColumn({ project, viewMode, renovationMeta, usersById }: Sid
         </SideCard>
       )}
     </>
+  );
+}
+
+/** 当前待办（只读快照：/projects/todo-board；不在详情页做本地完成态） */
+function ProjectTodoCard({ projectId }: { projectId: string }) {
+  const [todos, setTodos] = useState<
+    Array<{ rule_code: string; title: string; hint?: string | null; days_label?: string | null; days_hot?: boolean }>
+  >([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    client
+      .GET("/api/v1/projects/todo-board")
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        const card = data.projects.find((item) => item.project_id === projectId);
+        setTodos(card?.todos ?? []);
+      })
+      .catch(() => {
+        // 待办看板不可用时静默降级为空态，不影响项目详情主流程
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  return (
+    <SideCard title="当前待办">
+      {todos.length > 0 ? (
+        <div>
+          {todos.map((todo) => (
+            <div key={todo.rule_code} className="flex gap-2.5 border-b border-[#f0f0f2] py-2.5 last:border-b-0">
+              <ListTodo className="mt-0.5 size-3.5 shrink-0 text-graphite" />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-[12.5px] font-[450] leading-[1.45] text-ink">{todo.title}</span>
+                  {todo.days_label && (
+                    <span className={cn("shrink-0 text-[10.5px]", todo.days_hot ? "text-rust" : "text-graphite")}>
+                      {todo.days_label}
+                    </span>
+                  )}
+                </div>
+                {todo.hint && <p className="mt-0.5 text-[11px] leading-[1.45] text-graphite">{todo.hint}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="py-1 text-sm font-[430] text-graphite">暂无待办，项目资料已齐备。</p>
+      )}
+    </SideCard>
   );
 }
 

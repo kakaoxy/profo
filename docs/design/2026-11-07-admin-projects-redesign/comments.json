@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "threads": [
+    {
+      "id": "c_1568a1af30",
+      "anchor": "#dc-root > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > dct:nth-of-type(183) > dce0f8b3bf898d321816795:nth-of-type(1)",
+      "label": "02 · 项目详情 · 在售 › text \"装修\"",
+      "detail": "Detail.dc.html: #182:2/1/0/1/2/1/1/0 text \"装修\"",
+      "location": {
+        "file": "project/Detail.dc.html",
+        "board": "Detail.dc.html"
+      },
+      "status": "resolved",
+      "createdAt": "2026-11-07T08:17:33.914Z",
+      "updatedAt": "2026-11-07T08:34:01.142Z",
+      "messages": [
+        {
+          "id": "m_e116391d14",
+          "author": {
+            "kind": "user",
+            "name": "bugco"
+          },
+          "text": "文字跟下面线条有交叉",
+          "at": "2026-11-07T08:17:33.914Z"
+        },
+        {
+          "id": "m_f8fcefaf07",
+          "author": {
+            "kind": "agent",
+            "name": "agent"
+          },
+          "text": "已修复：将步骤标题的白底压在连接线上方，并只遮住文字宽度，「装修」与下方线条不再交叉。",
+          "at": "2026-11-07T08:34:01.142Z"
+        }
+      ],
+      "agent": {
+        "status": "replied",
+        "sentAt": "2026-11-07T08:25:28.788Z",
+        "deliveredAt": "2026-11-07T08:25:28.791Z",
+        "via": "wait",
+        "repliedAt": "2026-11-07T08:34:01.142Z"
+      },
+      "resolvedAt": "2026-11-07T08:34:01.142Z"
+    },
+    {
+      "id": "c_46d779a248",
+      "anchor": "#dc-root > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(2) > div:nth-of-type(2) > a:nth-of-type(1) > dct:nth-of-type(251) > dce15dd8cd198dd57386308:nth-of-type(1)",
+      "label": "01 · 项目总览 › text \"{{row.priceSub}}\"",
+      "detail": "Main.dc.html: #250:2/1/0/3/2/0/0/1/0/2/1 text \"{{row.priceSub}}\"",
+      "location": {
+        "file": "project/Main.dc.html",
+        "board": "Main.dc.html"
+      },
+      "status": "resolved",
+      "createdAt": "2026-11-07T08:21:06.944Z",
+      "updatedAt": "2026-11-07T08:34:01.191Z",
+      "messages": [
+        {
+          "id": "m_ac4b1aa2db",
+          "author": {
+            "kind": "user",
+            "name": "bugco"
+          },
+          "text": "添加个委托期结束时间",
+          "at": "2026-11-07T08:21:06.944Z"
+        },
+        {
+          "id": "m_6cdbec588f",
+          "author": {
+            "kind": "agent",
+            "name": "agent"
+          },
+          "text": "已在价格列下方增加「委托至 YYYY-MM-DD」一行，并按真实合同数据补齐；同时修正了周期列重复显示「18 天 天」的问题。",
+          "at": "2026-11-07T08:34:01.191Z"
+        }
+      ],
+      "agent": {
+        "status": "replied",
+        "sentAt": "2026-11-07T08:25:28.788Z",
+        "deliveredAt": "2026-11-07T08:25:28.791Z",
+        "via": "wait",
+        "repliedAt": "2026-11-07T08:34:01.191Z"
+      },
+      "resolvedAt": "2026-11-07T08:34:01.191Z"
+    },
+    {
+      "id": "c_799144b303",
+      "anchor": "#dc-root > div:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(2) > div:nth-of-type(3) > dct:nth-of-type(148) > dcee69c502aabc525695489:nth-of-type(1)",
+      "label": "03 · 新建项目 › element",
+      "detail": "Create.dc.html: #147:4/1/1/0/1/1/2/1/0 other",
+      "location": {
+        "file": "project/Create.dc.html",
+        "board": "Create.dc.html"
+      },
+      "status": "resolved",
+      "createdAt": "2026-11-07T08:24:31.471Z",
+      "updatedAt": "2026-11-07T08:34:01.240Z",
+      "messages": [
+        {
+          "id": "m_c6dd5cb15a",
+          "author": {
+            "kind": "user",
+            "name": "bugco"
+          },
+          "text": "跟现在的输入结构有差异，避免产生脏数据",
+          "at": "2026-11-07T08:24:31.471Z"
+        },
+        {
+          "id": "m_e5f9a74f8e",
+          "author": {
+            "kind": "agent",
+            "name": "agent"
+          },
+          "text": "已把楼层改成与现有 FloorInput 一致的两个数字输入（所在楼层 / 总楼层），避免自由文本产生脏数据。",
+          "at": "2026-11-07T08:34:01.240Z"
+        }
+      ],
+      "agent": {
+        "status": "replied",
+        "sentAt": "2026-11-07T08:25:28.788Z",
+        "deliveredAt": "2026-11-07T08:25:28.791Z",
+        "via": "wait",
+        "repliedAt": "2026-11-07T08:34:01.240Z"
+      },
+      "resolvedAt": "2026-11-07T08:34:01.240Z"
+    },
+    {
+      "id": "c_eefdabd9d3",
+      "anchor": "#dc-root > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(4) > a:nth-of-type(1) > div:nth-of-type(2) > div:nth-of-type(2) > dct:nth-of-type(90) > dcebbf51268af4849273009:nth-of-type(1)",
+      "label": "04 · 移动端项目列表 › text \"¥{{r.price}}万\"",
+      "detail": "Mobile.dc.html: #89:2/0/5/0/0/0/1/1/1 text \"¥{{r.price}}万\"",
+      "location": {
+        "file": "project/Mobile.dc.html",
+        "board": "Mobile.dc.html"
+      },
+      "status": "resolved",
+      "createdAt": "2026-11-07T08:25:07.461Z",
+      "updatedAt": "2026-11-07T08:34:01.288Z",
+      "messages": [
+        {
+          "id": "m_690104c8c6",
+          "author": {
+            "kind": "user",
+            "name": "bugco"
+          },
+          "text": "这个换行看起来很奇怪需要优化",
+          "at": "2026-11-07T08:25:07.461Z"
+        },
+        {
+          "id": "m_9d29d8f27f",
+          "author": {
+            "kind": "agent",
+            "name": "agent"
+          },
+          "text": "已修复：移动端价格恢复单行显示，不再把「¥ / 149.5 / 万」拆成三行；同类标题的 span 选择器也一并收紧了。",
+          "at": "2026-11-07T08:34:01.288Z"
+        }
+      ],
+      "agent": {
+        "status": "replied",
+        "sentAt": "2026-11-07T08:25:28.788Z",
+        "deliveredAt": "2026-11-07T08:25:28.791Z",
+        "via": "wait",
+        "repliedAt": "2026-11-07T08:34:01.288Z"
+      },
+      "resolvedAt": "2026-11-07T08:34:01.288Z"
+    },
+    {
+      "id": "c_4c18d3b2da",
+      "anchor": "#dc-root > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > section:nth-of-type(1) > div:nth-of-type(3) > div:nth-of-type(2) > dct:nth-of-type(182) > dce0f8b3bf898d390502370:nth-of-type(1)",
+      "label": "02 · 项目详情 · 在售 › text \"装修2026-09-02 验收\"",
+      "detail": "Detail.dc.html: #181:2/1/0/1/2/1/1 text \"装修2026-09-02 验收\"",
+      "location": {
+        "file": "project/Detail.dc.html",
+        "board": "Detail.dc.html"
+      },
+      "status": "resolved",
+      "createdAt": "2026-11-07T08:35:49.941Z",
+      "updatedAt": "2026-11-07T08:38:00.578Z",
+      "messages": [
+        {
+          "id": "m_b0df023a00",
+          "author": {
+            "kind": "user",
+            "name": "bugco"
+          },
+          "text": "现在的处理方式依然不够优雅，要么放节点上面，要么放节点下面，而不是穿过",
+          "at": "2026-11-07T08:35:49.941Z"
+        },
+        {
+          "id": "m_7e6ced2d46",
+          "author": {
+            "kind": "agent",
+            "name": "agent"
+          },
+          "text": "已按建议把步骤标题和日期移到节点下方，圆点与连接线在同一水平线上，文字不再被线穿过。",
+          "at": "2026-11-07T08:38:00.578Z"
+        }
+      ],
+      "agent": {
+        "status": "replied",
+        "sentAt": "2026-11-07T08:37:22.181Z",
+        "deliveredAt": "2026-11-07T08:37:22.184Z",
+        "via": "wait",
+        "repliedAt": "2026-11-07T08:38:00.578Z"
+      },
+      "resolvedAt": "2026-11-07T08:38:00.578Z"
+    }
+  ]
+}

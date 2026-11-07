@@ -7,6 +7,7 @@ import { getRenovationContractAction } from "../../../../actions/renovation";
 import { RenovationKPIs, type RenovationContractMeta } from "./kpi";
 import { RenovationTimeline } from "./timeline";
 import { RenovationContractForm } from "./contract-form";
+import { RenovationPhotos } from "./photos";
 
 export type { RenovationContractMeta };
 
@@ -86,6 +87,9 @@ export function RenovationView({
       <section id={SECTION_IDS.progress} className="scroll-mt-28 md:scroll-mt-24">
         <RenovationTimeline project={project} onRefresh={onRefresh} renovationMeta={contractMeta} />
       </section>
+
+      {/* 现场相册（只读摘要，数据来自项目 renovation_photos） */}
+      <RenovationPhotos project={project} />
     </div>
   );
 }

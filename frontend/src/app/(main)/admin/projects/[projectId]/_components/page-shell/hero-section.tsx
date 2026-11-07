@@ -15,6 +15,7 @@ import {
 } from "../../../_components/project-detail/constants";
 import type { RenovationContractMeta } from "../../../_components/project-detail/views/renovation/kpi";
 import { getBusinessFormLabel } from "./config";
+import { formatFullDate, managerName, projectTitle } from "../../../_components/project-display";
 import { StageStepper } from "./stage-stepper";
 
 interface HeroSectionProps {
@@ -185,6 +186,74 @@ function buildMetaParts(
   return parts;
 }
 
+interface HeroFact {
+  label: string;
+  value: ReactNode;
+  sub?: string;
+}
+
+function buildHeroFacts(
+  project: Project,
+  stageKey: string,
+  renovationMeta?: RenovationContractMeta,
+): HeroFact[] {
+  const num = (value: unknown): number | null => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+  const wan = (value: unknown): string => {
+    const n = num(value);
+    return n == null ? "—" : `¥${n.toFixed(1)} 万`;
+  };
+  const signing = wan(project.signing_price);
+  const manager = managerName(project);
+  if (stageKey === "renovation") {
+    return [
+      { label: "签约价", value: signing },
+      { label: "预计完工", value: formatFullDate(renovationMeta?.expectedEnd ?? renovationMeta?.actualEnd) },
+      { label: "当前阶段", value: project.renovation_stage || "装修中" },
+      { label: "项目负责人", value: manager, sub: "项目负责人" },
+    ];
+  }
+  if (stageKey === "selling") {
+    return [
+      { label: "挂牌价", value: project.list_price ? wan(project.list_price) : "未挂牌" },
+      { label: "上架日期", value: formatFullDate(project.listing_date) },
+      { label: "委托到期", value: formatFullDate(project.commission_end_date) },
+      { label: "项目负责人", value: manager, sub: "项目负责人" },
+    ];
+  }
+  if (stageKey === "sold") {
+    const soldPrice = num(project.sold_price) ?? 0;
+    const signingPrice = num(project.signing_price) ?? 0;
+    const area = num(project.area) ?? 0;
+    const estimatedCost = signingPrice + area * 0.36 + 6;
+    const estimatedRoi =
+      estimatedCost > 0 ? Math.max(0, soldPrice * 0.965 - estimatedCost) / estimatedCost * 100 : 0;
+    const roiValue = (num(project.roi) ?? 0) > 0 ? num(project.roi)! : estimatedRoi;
+    return [
+      { label: "成交价", value: project.sold_price ? wan(project.sold_price) : "—" },
+      { label: "成交日期", value: formatFullDate(project.sold_date) },
+      { label: "售出天数", value: project.days_on_market != null ? `${project.days_on_market} 天` : "—" },
+      { label: "净回报率", value: roiValue > 0 ? `${Math.round(roiValue)}%` : "—" },
+    ];
+  }
+  if (stageKey === "ended") {
+    return [
+      { label: "签约价", value: signing },
+      { label: "挂牌价", value: project.list_price ? wan(project.list_price) : "—" },
+      { label: "委托到期", value: formatFullDate(project.commission_end_date) },
+      { label: "项目负责人", value: manager, sub: "项目负责人" },
+    ];
+  }
+  return [
+    { label: "签约总价", value: signing, sub: "合同签约金额" },
+    { label: "计划交房", value: formatFullDate(project.planned_handover_date) },
+    { label: "委托到期", value: formatFullDate(project.commission_end_date) },
+    { label: "项目负责人", value: manager, sub: "项目负责人" },
+  ];
+}
+
 /**
  * Hero 区（V4.1）：Apricot 暖光晕 + 生命周期进度条 + Signifier 项目名（44px / <768px 27px）
  * + 阶段状态 pill + 业务形式 tag + 按阶段 Meta 行。
@@ -213,6 +282,7 @@ export function HeroSection({
   );
   // 归档态单一判据：归档后状态 pill 旁追加锁形 badge，隐藏「修改销售信息」写入口
   const isArchived = project.is_archived === true;
+  const facts = buildHeroFacts(project, statusStage.key, renovationMeta);
 
   return (
     <section className="relative pb-[22px] pt-2">
@@ -223,17 +293,12 @@ export function HeroSection({
       />
 
       <div className="relative z-[1]">
-        <StageStepper
-          currentProjectStageIndex={currentProjectStageIndex}
-          onViewModeChange={onViewModeChange}
-        />
-
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3.5">
               {/* 页面唯一衬线标题（Signifier 44px，<768px 降为 27px） */}
               <h1 className="font-signifier text-[27px] font-normal leading-[1.1] tracking-[-0.015em] text-ink md:text-[44px]">
-                {project.name}
+                {projectTitle(project)}
               </h1>
               <span
                 className={cn(
@@ -290,6 +355,23 @@ export function HeroSection({
               </button>
             </div>
           )}
+        </div>
+
+        <div className="mt-7">
+          <StageStepper
+            currentProjectStageIndex={currentProjectStageIndex}
+            onViewModeChange={onViewModeChange}
+          />
+        </div>
+
+        <div className="mt-7 grid grid-cols-2 gap-x-8 gap-y-5 border-t border-dove/20 pt-5 md:grid-cols-4 md:gap-x-10">
+          {facts.map((fact) => (
+            <div key={fact.label}>
+              <p className="text-[10px] uppercase tracking-[0.12em] text-dove">{fact.label}</p>
+              <p className="mt-2 font-signifier text-[21px] font-[450] leading-none text-ink">{fact.value}</p>
+              {fact.sub ? <p className="mt-1.5 text-[10px] text-graphite">{fact.sub}</p> : null}
+            </div>
+          ))}
         </div>
       </div>
     </section>

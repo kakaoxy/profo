@@ -9,9 +9,13 @@ import type { ViewMode } from "../../../_components/project-detail/constants";
 export const PROJECT_SECTION_IDS = {
   overview: "project-section-overview",
   documents: "project-section-documents",
+  tasks: "project-section-tasks",
   renovation: "project-section-renovation",
   renovationContract: "project-section-renovation-contract",
   selling: "project-section-selling",
+  sellingPricing: "project-section-selling-pricing",
+  sellingSales: "project-section-selling-sales",
+  sellingRenovation: "project-section-selling-renovation",
   sellingTeam: "project-section-selling-team",
   sellingActivity: "project-section-selling-activity",
   financial: "project-section-financial",
@@ -45,14 +49,15 @@ export function getSectionNavItems(
   const overview: SectionNavItem = { id: PROJECT_SECTION_IDS.overview, label: "概览" };
   switch (viewMode) {
     case "signing":
-      // V4.2 顺序渲染后「文书与附件」锚点始终存在，无需 tabKey 联动（直接锚点滚动）
+      // V4.2 顺序渲染后各区块锚点始终存在，无需 tabKey 联动（直接锚点滚动）
       return [
-        overview,
+        { ...overview, label: "项目信息" },
         {
           id: PROJECT_SECTION_IDS.documents,
           label: "文书与附件",
           count: counts?.documents,
         },
+        { id: PROJECT_SECTION_IDS.tasks, label: "待办与团队" },
       ];
     case "renovation":
       // V4.4：装修合同在前、装修进度在后（业务指定展示顺序）；
@@ -63,26 +68,10 @@ export function getSectionNavItems(
       ];
     case "selling":
       return [
-        { id: PROJECT_SECTION_IDS.selling, label: "销售看板" },
-        { id: PROJECT_SECTION_IDS.sellingTeam, label: "销售团队" },
-        {
-          id: PROJECT_SECTION_IDS.sellingActivity,
-          label: "带看",
-          count: counts?.viewing,
-          tabKey: "viewing",
-        },
-        {
-          id: PROJECT_SECTION_IDS.sellingActivity,
-          label: "出价",
-          count: counts?.offer,
-          tabKey: "offer",
-        },
-        {
-          id: PROJECT_SECTION_IDS.sellingActivity,
-          label: "面谈",
-          count: counts?.negotiation,
-          tabKey: "negotiation",
-        },
+        { id: PROJECT_SECTION_IDS.sellingPricing, label: "交易与定价" },
+        { id: PROJECT_SECTION_IDS.sellingSales, label: "销售进展" },
+        { id: PROJECT_SECTION_IDS.sellingRenovation, label: "装修档案" },
+        { id: PROJECT_SECTION_IDS.tasks, label: "待办与团队" },
       ];
     case "sold":
       return [

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { Plus, Loader2, Save, Trash2, AlertCircle, Lock } from "lucide-react";
+import { Plus, Loader2, Save, Trash2, AlertCircle, Lock, Check, ChevronLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -71,6 +72,16 @@ export function CreateProjectDialog({
   // 已售项目限制：后端只允许修改部分字段，其余字段修改会被静默丢弃
   const isSoldProject = isEditMode && project?.status === "sold";
 
+  const steps = [
+    { value: "basic", label: "基础信息", hint: "房源 · 面积 · 户型" },
+    { value: "agency", label: "代理协议", hint: "合同 · 价格 · 周期" },
+    { value: "owner", label: "业主信息", hint: "户号 · 产权人" },
+  ] as const;
+  const stepIndex = Math.max(0, steps.findIndex((step) => step.value === activeTab));
+  const isLastStep = activeTab === "owner";
+  const nextStep = () => setActiveTab(steps[Math.min(steps.length - 1, stepIndex + 1)].value);
+  const prevStep = () => setActiveTab(steps[Math.max(0, stepIndex - 1)].value);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -81,16 +92,80 @@ export function CreateProjectDialog({
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-187.5 p-0 gap-0 overflow-hidden h-[85vh] flex flex-col rounded-cards border-dove/40">
+      <DialogContent
+        className={cn(
+          "gap-0 overflow-hidden rounded-cards border-dove/40 p-0",
+          isEditMode
+            ? "flex h-[85vh] flex-col sm:max-w-187.5"
+            : "h-[min(900px,92vh)] w-[calc(100vw-32px)] max-w-[1160px] p-0 sm:max-w-[1160px]",
+        )}
+      >
+        <div className={cn("h-full min-h-0", isEditMode ? "flex flex-col" : "flex")}>
+          {!isEditMode && (
+            <aside className="hidden w-[258px] shrink-0 flex-col border-r border-[#ececef] bg-fog px-6 py-7 md:flex">
+              <div className="flex items-center gap-3">
+                <span className="grid h-9 w-9 place-items-center rounded-full bg-ink text-[15px] font-[480] text-pure-white">P</span>
+                <div>
+                  <p className="text-[13px] font-[480] text-ink">项目管理</p>
+                  <p className="text-[11px] font-[430] text-graphite">新建项目档案</p>
+                </div>
+              </div>
+              <div className="mt-10 space-y-1">
+                {steps.map((step, index) => {
+                  const active = index === stepIndex;
+                  const done = index < stepIndex;
+                  return (
+                    <button
+                      key={step.value}
+                      type="button"
+                      onClick={() => setActiveTab(step.value)}
+                      className={cn(
+                        "flex w-full items-start gap-3 rounded-inputs px-2 py-3 text-left transition-colors",
+                        active && "bg-pure-white shadow-[0_1px_2px_rgba(23,25,28,0.04)]",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "mt-0.5 grid h-[22px] w-[22px] shrink-0 place-items-center rounded-full border text-[11px] font-[480]",
+                          active && "border-rust bg-rust text-pure-white",
+                          done && "border-ink bg-ink text-pure-white",
+                          !active && !done && "border-[#d8d8dc] bg-transparent text-dove",
+                        )}
+                      >
+                        {done ? <Check className="h-3 w-3" /> : String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="min-w-0">
+                        <span className={cn("block text-[13px] font-[480]", active ? "text-ink" : "text-ash")}>{step.label}</span>
+                        <span className="mt-1 block text-[11px] font-[430] text-graphite">{step.hint}</span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-auto rounded-inputs border border-[#e8e8eb] bg-pure-white p-4">
+                <p className="text-[12px] font-[480] text-ink">填写提示</p>
+                <p className="mt-1.5 text-[11px] leading-relaxed font-[430] text-graphite">
+                  带 * 为必填项；离开前会自动保存草稿，下次打开可继续填写。
+                </p>
+              </div>
+            </aside>
+          )}
+
+          <div className="flex min-w-0 flex-1 flex-col">
         {/* --- Header --- */}
         <DialogHeader className="px-7 py-5 border-b border-dove/30 bg-pure-white shrink-0">
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-ink font-sohne font-medium text-[18px] tracking-tight">
+              {!isEditMode && (
+                <p className="mb-2 text-[10px] font-[480] uppercase tracking-[0.16em] text-rust">
+                  New Project · Step {String(stepIndex + 1).padStart(2, "0")} / 03
+                </p>
+              )}
+              <DialogTitle className="font-signifier text-[26px] font-[450] leading-tight tracking-[-0.01em] text-ink">
                 {project ? "编辑项目" : "新建项目"}
               </DialogTitle>
-              <DialogDescription className="mt-1.5 text-graphite text-[14px] font-normal">
-                {project ? "修改项目详细信息。" : "录入新项目信息。支持自动保存草稿。"}
+              <DialogDescription className="mt-1.5 text-graphite text-[13px] font-normal">
+                {project ? "修改项目详细信息。" : "录入房源与合同信息，建立新的项目档案。"}
               </DialogDescription>
             </div>
             {/* 顶部工具栏：仅在新建模式显示草稿控制 */}
@@ -152,8 +227,25 @@ export function CreateProjectDialog({
                 onValueChange={setActiveTab}
                 className="flex-1 min-h-0 flex flex-col overflow-hidden"
               >
+                {!isEditMode && (
+                  <div className="flex gap-1 overflow-x-auto px-7 pt-4 md:hidden">
+                    {steps.map((step, index) => (
+                      <button
+                        key={step.value}
+                        type="button"
+                        onClick={() => setActiveTab(step.value)}
+                        className={cn(
+                          "shrink-0 rounded-full px-3 py-1.5 text-[11px] font-[480]",
+                          index === stepIndex ? "bg-ink text-pure-white" : "bg-pure-white text-graphite",
+                        )}
+                      >
+                        {index + 1}. {step.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {/* Tabs 导航 — Steep: pill-style tabs on Fog canvas */}
-                <div className="px-7 pt-5 shrink-0">
+                <div className={cn("px-7 pt-5 shrink-0", !isEditMode && "hidden")}>
                   <TabsList className="grid w-full grid-cols-3 gap-1 bg-pure-white rounded-inputs p-1 border border-dove/30 h-10">
                     <TabsTrigger
                       value="basic"
@@ -204,25 +296,76 @@ export function CreateProjectDialog({
 
               {/* --- Footer — Steep: one filled CTA + text link secondary */}
               <DialogFooter className="px-7 py-4 border-t border-dove/30 bg-pure-white shrink-0">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setOpen(false)}
-                  className="text-graphite hover:text-ink hover:bg-transparent text-[14px] font-medium px-4"
-                >
-                  取消
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="bg-ink hover:bg-ink/90 text-pure-white rounded-full px-6 font-medium text-[14px] shadow-none border-0"
-                >
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isEditMode ? "保存修改" : "创建项目"}
-                </Button>
+                {!isEditMode ? (
+                  <div className="flex w-full items-center justify-between gap-4">
+                    <span className="inline-flex items-center gap-1.5 text-[12px] font-[430] text-graphite">
+                      <Save className="h-3.5 w-3.5" />
+                      草稿已自动保存 · {stepIndex + 1}/3
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {stepIndex > 0 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={prevStep}
+                          className="rounded-full px-4 text-[14px] font-[450] text-graphite hover:bg-fog hover:text-ink"
+                        >
+                          <ChevronLeft className="mr-1 h-4 w-4" /> 上一步
+                        </Button>
+                      )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={() => setOpen(false)}
+                        className="rounded-full px-4 text-[14px] font-[450] text-graphite hover:bg-fog hover:text-ink"
+                      >
+                        取消
+                      </Button>
+                      {!isLastStep ? (
+                        <Button
+                          type="button"
+                          onClick={nextStep}
+                          className="rounded-full border-0 bg-ink px-6 text-[14px] font-[450] text-pure-white shadow-none hover:bg-ink/90"
+                        >
+                          下一步：{steps[stepIndex + 1].label}
+                        </Button>
+                      ) : (
+                        <Button
+                          type="submit"
+                          disabled={loading}
+                          className="rounded-full border-0 bg-ink px-6 text-[14px] font-[450] text-pure-white shadow-none hover:bg-ink/90"
+                        >
+                          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          创建项目
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => setOpen(false)}
+                      className="rounded-full px-4 text-[14px] font-medium text-graphite hover:bg-fog hover:text-ink"
+                    >
+                      取消
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="rounded-full border-0 bg-ink px-6 text-[14px] font-medium text-pure-white shadow-none hover:bg-ink/90"
+                    >
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      保存修改
+                    </Button>
+                  </div>
+                )}
               </DialogFooter>
             </form>
           </Form>
+        </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -26,7 +26,6 @@ import type { AttachmentSaveOptions } from "../../_components/project-detail/typ
 import { RenovationView } from "../../_components/project-detail/views/renovation";
 import { DefaultView } from "../../_components/project-detail/views/default";
 import { SellingView } from "../../_components/project-detail/views/selling";
-import type { ActivityTabKey } from "../../_components/project-detail/views/selling/activity-tabs";
 import { SoldView } from "../../_components/project-detail/views/sold";
 import { EndedView } from "../../_components/project-detail/views/ended";
 import { ArchiveDialog } from "../../_components/archive-dialog";
@@ -89,15 +88,6 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
 
   // 阶段流转确认弹窗开关（null = 全部关闭）
   const [stageDialog, setStageDialog] = useState<StageDialogKind | null>(null);
-
-  // 在售销售动态：三类记录计数（分区导航徽标）+ 外部指定激活 tab（分区导航联动）
-  const [activityCounts, setActivityCounts] = useState<{
-    viewing: number;
-    offer: number;
-    negotiation: number;
-  }>();
-  const [activeActivityTab, setActiveActivityTab] = useState<ActivityTabKey>();
-
   // 在售「结束项目」→ SellingView 内 ActualEndDateDialog 受控开关（flowbar 接线）
   const [endProjectOpen, setEndProjectOpen] = useState(false);
 
@@ -277,47 +267,34 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
 
   return (
     <div className="min-h-screen overflow-x-clip bg-fog font-sohne text-ink">
-      {/* 顶部工具行 + Hero 区 */}
-      <div className="mx-auto w-full max-w-[1200px] px-4 pt-2 sm:px-6 lg:px-8">
-        <TopToolbar
-          project={project}
-          viewMode={viewMode}
-          onBack={handleClose}
-          onEdit={handleEditClick}
-          onDelete={() => setIsDeleteOpen(true)}
-          onArchive={() => setArchiveMode("archive")}
-          onUnarchive={() => setArchiveMode("unarchive")}
-        />
-        <HeroSection
-          project={project}
-          currentProjectStageIndex={currentProjectStageIndex}
-          onViewModeChange={handleViewModeChange}
-          onEditSalesInfo={isSoldMode ? () => setSoldEditOpen(true) : undefined}
-          renovationMeta={pageRenovationMeta}
-        />
+      {/* 顶部工具行 + Hero 区（白色档案卡，设计稿 1:1） */}
+      <div className="mx-auto w-full max-w-[1200px] px-4 pt-3 sm:px-6 lg:px-8">
+        <div className="relative overflow-hidden rounded-cards border border-[#e8e8eb] bg-pure-white shadow-steep">
+          <div className="px-5 sm:px-7">
+            <TopToolbar
+              project={project}
+              viewMode={viewMode}
+              onBack={handleClose}
+              onEdit={handleEditClick}
+              onDelete={() => setIsDeleteOpen(true)}
+              onArchive={() => setArchiveMode("archive")}
+              onUnarchive={() => setArchiveMode("unarchive")}
+            />
+            <HeroSection
+              project={project}
+              currentProjectStageIndex={currentProjectStageIndex}
+              onViewModeChange={handleViewModeChange}
+              onEditSalesInfo={isSoldMode ? () => setSoldEditOpen(true) : undefined}
+              renovationMeta={pageRenovationMeta}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Sticky 分区导航（key 随 viewMode 重置选中态；已下架不渲染） */}
       {viewMode !== "ended" && (
         <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
-          <SectionNav
-            key={viewMode}
-            viewMode={viewMode}
-            counts={{
-              documents: attachments.length,
-              viewing: activityCounts?.viewing,
-              offer: activityCounts?.offer,
-              negotiation: activityCounts?.negotiation,
-            }}
-            onTabSelect={(tabKey) => {
-              // 按 viewMode 分发到对应视图的内 tab 联动（分区导航 tabKey 条目）
-              if (viewMode === "selling") {
-                setActiveActivityTab(tabKey as ActivityTabKey);
-              }
-              // 装修（V4.4 顺序渲染后）不再需要 tabKey 联动，直接锚点滚动；
-              // 签约（V4.2 顺序渲染后）同理
-            }}
-          />
+          <SectionNav key={viewMode} viewMode={viewMode} />
         </div>
       )}
 
@@ -364,11 +341,9 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
                     key={viewKey}
                     project={project}
                     onRefresh={refreshProjectData}
-                    onDealSuccess={handleDealSuccess}
-                    onActivityCounts={setActivityCounts}
-                    activeActivityTab={activeActivityTab}
                     endProjectDialogOpen={endProjectOpen}
                     onEndProjectDialogOpenChange={setEndProjectOpen}
+                    onEdit={handleEditClick}
                   />
                 )}
                 {(viewMode === "signing" || !["renovation", "selling"].includes(viewMode)) && (
@@ -379,7 +354,6 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
                     handlers={handlers}
                     onUpdateAttachments={handleUpdateAttachmentsWithRefresh}
                     onUploadAttachment={onUpload}
-                    onHandoverSuccess={handleHandoverSuccess}
                     onEditProject={handleEditClick}
                     onProjectSaved={async () => {
                       // 就地编辑保存成功 → 局部刷新（无 skeleton），右侧副列/关键日期联动
@@ -406,7 +380,7 @@ export function ProjectDetailPageView({ initialProject }: ProjectDetailPageViewP
         </main>
 
         {/* 副列：网格项自身 sticky（设计稿 .col-side），self-start 高度不拉伸，随主列滚动吸附 */}
-        <aside className="min-w-0 lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
+        <aside id="project-section-tasks" className="min-w-0 scroll-mt-28 lg:col-span-4 lg:sticky lg:top-24 lg:self-start md:scroll-mt-24">
           <div className="flex flex-col gap-5">
             <SideColumn
               project={project}

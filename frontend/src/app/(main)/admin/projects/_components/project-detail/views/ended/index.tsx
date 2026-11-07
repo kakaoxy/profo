@@ -74,7 +74,8 @@ export function EndedView({ project, onClose, onDelete }: EndedViewProps) {
 
   return (
     <div className="h-full flex flex-col bg-muted/30">
-      {/* 顶部 Header：项目名 + 已下架徽标（删除入口已迁至 danger-zone 卡） */}
+      {/* 顶部 Header 仅抽屉场景使用；页面级详情已由 HeroSection 展示项目名 */}
+      {!onDelete && (
       <div className="border-b bg-background px-6 py-5">
         <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
@@ -99,6 +100,8 @@ export function EndedView({ project, onClose, onDelete }: EndedViewProps) {
           </div>
         </div>
       </div>
+
+      )}
 
       {/* 内容区 */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
